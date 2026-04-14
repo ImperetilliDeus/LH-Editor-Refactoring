@@ -6,6 +6,7 @@ public enum EditorMode
 {
     Default = 0,
     RoomCreate = 1,
+    FurniturePlace = 9,
     DetailEdit = 3,
     DoorInsert = 6,
     WindowInsert = 7,
@@ -13,6 +14,11 @@ public enum EditorMode
 
 public class ModeManager : MonoBehaviour
 {
+    private const string DefaultModeButtonName = "_Button_Default";
+    private const string DefaultRoomCreateButtonName = "_Button_Room";
+    private const string DefaultFurnitureButtonName = "_Button_EditFurnish";
+    private const string DefaultDetailEditButtonName = "_Button_EditDetail";
+
     private const int LegacyRoomCreateModeA = 2;
     private const int LegacyRoomCreateModeB = 4;
     private const int LegacyRoomCreateModeC = 5;
@@ -23,6 +29,7 @@ public class ModeManager : MonoBehaviour
     [Header("UI Buttons")]
     [SerializeField] private Button defaultModeButton;
     [SerializeField] private Button roomCreateModeButton;
+    [SerializeField] private Button furniturePlaceModeButton;
     [SerializeField] private Button detailEditModeButton;
     [SerializeField] private Button doorInsertModeButton;
     [SerializeField] private Button windowInsertModeButton;
@@ -43,6 +50,7 @@ public class ModeManager : MonoBehaviour
         }
 
         Instance = this;
+        ResolveButtons();
         CurrentMode = NormalizeLegacyMode(initialMode);
         BindButtons();
         RefreshButtonState();
@@ -92,6 +100,11 @@ public class ModeManager : MonoBehaviour
         SetMode(EditorMode.DetailEdit);
     }
 
+    public void SetFurniturePlaceMode()
+    {
+        SetMode(EditorMode.FurniturePlace);
+    }
+
     public void SetDoorInsertMode()
     {
         SetMode(EditorMode.DoorInsert);
@@ -114,6 +127,11 @@ public class ModeManager : MonoBehaviour
             roomCreateModeButton.onClick.AddListener(SetRoomCreateMode);
         }
 
+        if (furniturePlaceModeButton != null)
+        {
+            furniturePlaceModeButton.onClick.AddListener(SetFurniturePlaceMode);
+        }
+
         if (detailEditModeButton != null)
         {
             detailEditModeButton.onClick.AddListener(SetDetailEditMode);
@@ -130,6 +148,25 @@ public class ModeManager : MonoBehaviour
         }
     }
 
+    private void ResolveButtons()
+    {
+        defaultModeButton = ResolveButton(defaultModeButton, DefaultModeButtonName);
+        roomCreateModeButton = ResolveButton(roomCreateModeButton, DefaultRoomCreateButtonName);
+        furniturePlaceModeButton = ResolveButton(furniturePlaceModeButton, DefaultFurnitureButtonName);
+        detailEditModeButton = ResolveButton(detailEditModeButton, DefaultDetailEditButtonName);
+    }
+
+    private static Button ResolveButton(Button currentButton, string objectName)
+    {
+        if (currentButton != null || string.IsNullOrWhiteSpace(objectName))
+        {
+            return currentButton;
+        }
+
+        Transform target = LayerUtility.FindTransformByName(objectName, true);
+        return target != null ? target.GetComponent<Button>() : null;
+    }
+
     private void UnbindButtons()
     {
         if (defaultModeButton != null)
@@ -140,6 +177,11 @@ public class ModeManager : MonoBehaviour
         if (roomCreateModeButton != null)
         {
             roomCreateModeButton.onClick.RemoveListener(SetRoomCreateMode);
+        }
+
+        if (furniturePlaceModeButton != null)
+        {
+            furniturePlaceModeButton.onClick.RemoveListener(SetFurniturePlaceMode);
         }
 
         if (detailEditModeButton != null)
@@ -169,6 +211,11 @@ public class ModeManager : MonoBehaviour
         if (roomCreateModeButton != null)
         {
             roomCreateModeButton.interactable = !isRoomCreateMode;
+        }
+
+        if (furniturePlaceModeButton != null)
+        {
+            furniturePlaceModeButton.interactable = CurrentMode != EditorMode.FurniturePlace;
         }
 
         if (detailEditModeButton != null)

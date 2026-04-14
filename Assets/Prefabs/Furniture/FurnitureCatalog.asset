@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67a1b7d410648164da10ba8b9e7bed04, type: 3}
+  m_Name: FurnitureCatalog
+  m_EditorClassIdentifier: 
+  items:
+  - code: E001
+    displayName: E001
+    prefab: {fileID: 569507486651759752, guid: acca1e657e3c79a4aa2de6a289f5713a, type: 3}
+    thumbnail: {fileID: 2800000, guid: f5a4c3568e1b02b468111699a1d3c7ab, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 0.52734995, y: 1, z: 1}
+  - code: F001
+    displayName: F001
+    prefab: {fileID: 8098451665189820380, guid: 3b8b4c52a73d33d4d80b00de508e3992, type: 3}
+    thumbnail: {fileID: 2800000, guid: 69022158980b59245a1ca89460299dc9, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 9, y: 22, z: 0.21125029}
+  - code: PassThrough
+    displayName: PassThrough
+    prefab: {fileID: 1999070072311887432, guid: c013cfe5ffdc352469061cb631ff5f79, type: 3}
+    thumbnail: {fileID: 2800000, guid: 80257eda4c8a8ce4c8300fd7c646e695, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 1, y: 1, z: 1}
+  - code: S001
+    displayName: S001
+    prefab: {fileID: 8283230652478690410, guid: 183af97433bed3f43b81315811ab62db, type: 3}
+    thumbnail: {fileID: 2800000, guid: 6aa85fe23a962be4fa604954b77680c6, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 1.002, y: 1.0009999, z: 1}
+  - code: BT001
+    displayName: BT001
+    prefab: {fileID: 7839336646225356268, guid: 037db5b46b40cef43af5e053afa7f401, type: 3}
+    thumbnail: {fileID: 2800000, guid: 28002668527e18648afb81f824efe277, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 12.091058, y: 6.5568876, z: 23.576994}
+  - code: S001
+    displayName: S001
+    prefab: {fileID: 5944794387999990638, guid: 9f14e34061c09d343906b01edbef1277, type: 3}
+    thumbnail: {fileID: 2800000, guid: 6aa85fe23a962be4fa604954b77680c6, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 8.540098, y: 9.305132, z: 9.896665}
+  - code: S001_Original
+    displayName: S001_Original
+    prefab: {fileID: 1419702501407830645, guid: 29ca7f8f26bee5640b6fc390d6bc4e74, type: 3}
+    thumbnail: {fileID: 2800000, guid: d241eb9ec2bb86343b24d9fd6d470ba8, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 8.540098, y: 9.305133, z: 9.896665}
+  - code: SB001
+    displayName: SB001
+    prefab: {fileID: 8842340224103360588, guid: c2753959d9c3a684e88b09cdaf5fcb20, type: 3}
+    thumbnail: {fileID: 2800000, guid: 9c7e193015414954399aa938955335d3, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 10.017376, y: 22, z: 10}
+  - code: T001
+    displayName: T001
+    prefab: {fileID: 5766226947990164030, guid: b5503b4f82fc18b46ad8c935542741a8, type: 3}
+    thumbnail: {fileID: 2800000, guid: 537c8795ee07a8b4aa427013e14c5b5c, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 11.887857, y: 11.042879, z: 6.891798}
+  - code: T001_Original
+    displayName: T001_Original
+    prefab: {fileID: 6017100943722803059, guid: 10d4ee2e07ed6c043bcfb109fd37b49a, type: 3}
+    thumbnail: {fileID: 2800000, guid: 8df6a84b18b9e6249bb4096584b7f30b, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 11.887857, y: 11.042879, z: 6.891798}
+  - code: CT001
+    displayName: CT001
+    prefab: {fileID: 4534668954108190729, guid: 6b1a6970003a48d4d96080a47b1bf618, type: 3}
+    thumbnail: {fileID: 2800000, guid: 879c5c80e504c6e46a3bcd388bee7e06, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 10, y: 21.945, z: 22}
+  - code: CT002
+    displayName: CT002
+    prefab: {fileID: 5830008870542596919, guid: 6ab041cc81b49a54e9f4c008b53a2e0e, type: 3}
+    thumbnail: {fileID: 2800000, guid: a1e2c2eac5f45f74daa7251ec2f407ed, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 10.01, y: 21.945, z: 35.15313}
+  - code: A001
+    displayName: A001
+    prefab: {fileID: 8283230652478690410, guid: 2081003168260e44fb6dcfd772dfe07e, type: 3}
+    thumbnail: {fileID: 2800000, guid: 90c48c19f310ca4489ca39c0a8b89c93, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 1.0000001, y: 1, z: 1}
+  - code: W001
+    displayName: W001
+    prefab: {fileID: 8283230652478690410, guid: a4bc47720fa69ad4d82a7de56bd6160b, type: 3}
+    thumbnail: {fileID: 2800000, guid: 45414970bd583e945be21fb85194d8e3, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 1.002, y: 0.99045, z: 1}

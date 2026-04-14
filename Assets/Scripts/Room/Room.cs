@@ -466,8 +466,9 @@ public class Room : MonoBehaviour
         {
             ceilingObject = new GameObject(CeilingObjectName);
             ceilingObject.transform.SetParent(transform, false);
-            LayerUtility.ApplyLayer(ceilingObject, LayerUtility.FloorLayerName, false);
         }
+
+        LayerUtility.ApplyLayer(ceilingObject, LayerUtility.CeilLayerName, false);
 
         if (ceilingMeshFilter == null)
         {
