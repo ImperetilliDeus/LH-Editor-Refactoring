@@ -1,0 +1,354 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public partial class TopViewRenderManager : MonoBehaviour
+{
+    private const string DefaultCanvasName = "_Screen";
+    private const string DefaultContentRootName = "TopPlanContent";
+    private const string LegacyContentRootName = "_TopPlanContent";
+
+    [Header("References")]
+    [SerializeField] private Camera topViewCamera;
+    [SerializeField] private Canvas targetCanvas;
+    [SerializeField] private RectTransform contentRoot;
+    [SerializeField] private Transform wallRoot;
+    [SerializeField] private DrawManager drawManager;
+    [SerializeField] private HandleManager handleManager;
+    [SerializeField] private WallSelectionManager wallSelectionManager;
+    [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
+    [SerializeField] private RoomManager roomManager;
+    [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
+    [SerializeField] private RoomHandleManager roomHandleManager;
+    [SerializeField] private ModeManager modeManager;
+
+    [Header("Visibility")]
+    [SerializeField] private bool showOnlyInDetailEdit = false;
+
+    [Header("Colors")]
+    [SerializeField] private Color floorColor = new Color(0.34f, 0.86f, 0.58f, 0.22f);
+    [SerializeField] private Color selectedFloorColor = new Color(0.28f, 0.6f, 1f, 0.35f);
+    [SerializeField] private Color wallColor = new Color(0.12f, 0.12f, 0.12f, 0.92f);
+    [SerializeField] private Color selectedWallColor = new Color(1f, 0.64f, 0.12f, 1f);
+    [SerializeField] private Color previewWallColor = new Color(0.2f, 0.8f, 1f, 0.45f);
+    [SerializeField] private Color doorColor = new Color(0.58f, 0.30f, 0.12f, 0.95f);
+    [SerializeField] private Color selectedDoorColor = new Color(1f, 0.68f, 0.22f, 1f);
+    [SerializeField] private Color windowColor = new Color(0.22f, 0.62f, 0.95f, 0.95f);
+    [SerializeField] private Color selectedWindowColor = new Color(0.42f, 0.84f, 1f, 1f);
+    [SerializeField] private Color virtualBoundaryColor = new Color(0.1f, 0.82f, 1f, 0.95f);
+    [SerializeField] private float virtualBoundaryThickness = 2f;
+    [SerializeField] private float virtualBoundaryDashLength = 14f;
+    [SerializeField] private float virtualBoundaryGapLength = 10f;
+
+    private readonly Dictionary<Transform, Image> openingImages = new Dictionary<Transform, Image>();
+    private readonly List<Transform> removedKeys = new List<Transform>();
+    private readonly List<Vector2> cachedPolygonPoints = new List<Vector2>();
+    private readonly List<GameObject> cachedSelectedWalls = new List<GameObject>();
+    private readonly List<TopPlanPolygonBatchGraphic.PolygonData> cachedFloorPolygons = new List<TopPlanPolygonBatchGraphic.PolygonData>();
+    private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedWallSegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
+    private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedVirtualBoundarySegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
+
+    private TopPlanPolygonBatchGraphic floorBatchGraphic;
+    private TopPlanSegmentBatchGraphic wallBatchGraphic;
+    private TopPlanSegmentBatchGraphic virtualBoundaryBatchGraphic;
+
+    private Vector3 lastCameraPosition;
+    private Quaternion lastCameraRotation;
+    private float lastCameraOrthoSize;
+    private bool visualsDirty = true;
+    public Camera TopViewCamera => topViewCamera;
+    public Canvas TargetCanvas => targetCanvas;
+    public RectTransform ContentRoot => contentRoot;
+
+    private void Reset()
+    {
+        topViewCamera = Camera.main;
+        ResolveReferences();
+        targetCanvas = LayerUtility.FindCanvasByNameOrFirst(DefaultCanvasName);
+    }
+
+    private void Awake()
+    {
+        if (topViewCamera == null)
+        {
+            topViewCamera = Camera.main;
+        }
+
+        ResolveReferences();
+
+        EnsureWallRoot();
+        EnsureCanvas();
+        BindEvents();
+        CacheCameraState();
+        RefreshAllVisuals();
+    }
+
+    private void OnDestroy()
+    {
+        UnbindEvents();
+        ClearVisuals(openingImages);
+        ClearPolygonBatchGraphic(ref floorBatchGraphic);
+        ClearBatchGraphic(ref wallBatchGraphic);
+        ClearBatchGraphic(ref virtualBoundaryBatchGraphic);
+    }
+
+    private void Update()
+    {
+        bool visible = !showOnlyInDetailEdit || modeManager == null || modeManager.IsMode(EditorMode.DetailEdit);
+        if (contentRoot != null && contentRoot.gameObject.activeSelf != visible)
+        {
+            contentRoot.gameObject.SetActive(visible);
+        }
+
+        if (!visible)
+        {
+            return;
+        }
+
+        if (visualsDirty || HasCameraStateChanged())
+        {
+            RefreshAllVisuals();
+            visualsDirty = false;
+        }
+
+        CacheCameraState();
+    }
+
+    public void MarkDirty()
+    {
+        visualsDirty = true;
+    }
+
+    private void BindEvents()
+    {
+        if (handleManager != null)
+        {
+            handleManager.WallHierarchyChanged += MarkDirty;
+        }
+
+        if (wallSelectionManager != null)
+        {
+            wallSelectionManager.SelectionChanged += HandleWallSelectionChanged;
+            wallSelectionManager.SelectionSetChanged += HandleWallSelectionSetChanged;
+        }
+
+        if (wallOpeningPlacementManager != null)
+        {
+            wallOpeningPlacementManager.OpeningSelectionChanged += HandleOpeningSelectionChanged;
+        }
+
+        if (roomManager != null)
+        {
+            roomManager.RoomsChanged += MarkDirty;
+        }
+
+        VirtualBoundary.BoundariesChanged += MarkDirty;
+
+        if (modeManager != null)
+        {
+            modeManager.ModeChanged += HandleModeChanged;
+        }
+    }
+
+    private void UnbindEvents()
+    {
+        if (handleManager != null)
+        {
+            handleManager.WallHierarchyChanged -= MarkDirty;
+        }
+
+        if (wallSelectionManager != null)
+        {
+            wallSelectionManager.SelectionChanged -= HandleWallSelectionChanged;
+            wallSelectionManager.SelectionSetChanged -= HandleWallSelectionSetChanged;
+        }
+
+        if (wallOpeningPlacementManager != null)
+        {
+            wallOpeningPlacementManager.OpeningSelectionChanged -= HandleOpeningSelectionChanged;
+        }
+
+        if (roomManager != null)
+        {
+            roomManager.RoomsChanged -= MarkDirty;
+        }
+
+        VirtualBoundary.BoundariesChanged -= MarkDirty;
+
+        if (modeManager != null)
+        {
+            modeManager.ModeChanged -= HandleModeChanged;
+        }
+    }
+
+    private void HandleWallSelectionChanged(GameObject selectedWall)
+    {
+        MarkDirty();
+    }
+
+    private void HandleOpeningSelectionChanged(WallOpening selectedOpening)
+    {
+        MarkDirty();
+    }
+
+    private void HandleWallSelectionSetChanged()
+    {
+        MarkDirty();
+    }
+
+    private void HandleModeChanged(EditorMode mode)
+    {
+        MarkDirty();
+    }
+
+    private void ResolveReferences()
+    {
+        if (handleManager == null)
+        {
+            handleManager = FindFirstObjectByType<HandleManager>();
+        }
+
+        if (drawManager == null)
+        {
+            drawManager = FindFirstObjectByType<DrawManager>();
+        }
+
+        if (wallSelectionManager == null)
+        {
+            wallSelectionManager = FindFirstObjectByType<WallSelectionManager>();
+        }
+
+        if (wallOpeningPlacementManager == null)
+        {
+            wallOpeningPlacementManager = FindFirstObjectByType<WallOpeningPlacementManager>();
+        }
+
+        if (roomManager == null)
+        {
+            roomManager = FindFirstObjectByType<RoomManager>();
+        }
+
+        if (roomAuthoringPanelManager == null)
+        {
+            roomAuthoringPanelManager = FindFirstObjectByType<RoomAuthoringPanelManager>();
+        }
+
+        if (roomHandleManager == null)
+        {
+            roomHandleManager = FindFirstObjectByType<RoomHandleManager>();
+        }
+
+        if (modeManager == null)
+        {
+            modeManager = FindFirstObjectByType<ModeManager>();
+        }
+    }
+
+    private void EnsureCanvas()
+    {
+        if (targetCanvas == null)
+        {
+            targetCanvas = LayerUtility.FindCanvasByNameOrFirst(DefaultCanvasName);
+        }
+
+        if (targetCanvas == null)
+        {
+            return;
+        }
+
+        targetCanvas.pixelPerfect = false;
+
+        if (contentRoot == null)
+        {
+            Transform existing = targetCanvas.transform.Find(DefaultContentRootName);
+            if (existing != null)
+            {
+                contentRoot = existing as RectTransform;
+            }
+            else
+            {
+                existing = targetCanvas.transform.Find(LegacyContentRootName);
+                if (existing != null)
+                {
+                    contentRoot = existing as RectTransform;
+                }
+            }
+        }
+
+        if (contentRoot == null)
+        {
+            GameObject contentObject = new GameObject(DefaultContentRootName, typeof(RectTransform));
+            contentObject.transform.SetParent(targetCanvas.transform, false);
+            contentRoot = contentObject.GetComponent<RectTransform>();
+        }
+
+        LayerUtility.ApplyLayer(contentRoot.gameObject, LayerUtility.TopPlanUILayerName, true);
+        NormalizeRectTransform(contentRoot, true);
+        contentRoot.SetAsLastSibling();
+    }
+
+    private void NormalizeRectTransform(RectTransform rectTransform, bool stretchToParent)
+    {
+        if (rectTransform == null)
+        {
+            return;
+        }
+
+        rectTransform.localScale = Vector3.one;
+        rectTransform.localRotation = Quaternion.identity;
+        rectTransform.anchoredPosition3D = Vector3.zero;
+
+        if (!stretchToParent)
+        {
+            return;
+        }
+
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+    }
+
+    private void EnsureWallRoot()
+    {
+        if (wallRoot != null)
+        {
+            return;
+        }
+
+        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
+        if (wallRootTransform != null)
+        {
+            wallRoot = wallRootTransform;
+        }
+    }
+
+    private void CacheCameraState()
+    {
+        if (topViewCamera == null)
+        {
+            return;
+        }
+
+        Transform cameraTransform = topViewCamera.transform;
+        lastCameraPosition = cameraTransform.position;
+        lastCameraRotation = cameraTransform.rotation;
+        lastCameraOrthoSize = topViewCamera.orthographicSize;
+    }
+
+    private bool HasCameraStateChanged()
+    {
+        if (topViewCamera == null)
+        {
+            return false;
+        }
+
+        Transform cameraTransform = topViewCamera.transform;
+        return cameraTransform.position != lastCameraPosition ||
+               cameraTransform.rotation != lastCameraRotation ||
+               !Mathf.Approximately(topViewCamera.orthographicSize, lastCameraOrthoSize);
+    }
+
+}
+

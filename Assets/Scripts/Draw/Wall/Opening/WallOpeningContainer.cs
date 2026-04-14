@@ -1,0 +1,106 @@
+using UnityEngine;
+
+public class WallOpeningContainer : MonoBehaviour
+{
+    [SerializeField] private Vector3 wallStart;
+    [SerializeField] private Vector3 wallEnd;
+    [SerializeField] private float wallThickness;
+    [SerializeField] private float wallHeight;
+    [SerializeField] private float centerY;
+    [SerializeField] private float wallBottomY;
+    [SerializeField] private float wallTopY;
+    [SerializeField] private Material wallMaterial;
+    [SerializeField] private Material wallTopMaterial;
+    [SerializeField] private int outerStartVertexId;
+    [SerializeField] private int outerEndVertexId;
+    [SerializeField] private bool suppressOuterStartHandle;
+    [SerializeField] private bool suppressOuterEndHandle;
+
+    public Vector3 WallStart => wallStart;
+    public Vector3 WallEnd => wallEnd;
+    public float WallThickness => wallThickness;
+    public float WallHeight => wallHeight;
+    public float CenterY => centerY;
+    public float WallBottomY => wallBottomY;
+    public float WallTopY => wallTopY;
+    public float WallPlaneY => wallStart.y;
+    public Material WallMaterial => wallMaterial;
+    public Material WallTopMaterial => wallTopMaterial;
+    public bool SuppressOuterStartHandle => suppressOuterStartHandle;
+    public bool SuppressOuterEndHandle => suppressOuterEndHandle;
+
+    public Vector3 WallDirection
+    {
+        get
+        {
+            Vector3 direction = wallEnd - wallStart;
+            direction.y = 0f;
+            return direction.sqrMagnitude > 0.000001f ? direction.normalized : Vector3.forward;
+        }
+    }
+
+    public float WallLength
+    {
+        get
+        {
+            Vector3 direction = wallEnd - wallStart;
+            direction.y = 0f;
+            return direction.magnitude;
+        }
+    }
+
+    public int OuterStartVertexId => outerStartVertexId;
+    public int OuterEndVertexId => outerEndVertexId;
+
+    public void Initialize(
+        Vector3 start,
+        Vector3 end,
+        float thickness,
+        float height,
+        float center,
+        Material material,
+        Material topMaterial,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle)
+    {
+        wallStart = start;
+        wallEnd = end;
+        wallThickness = thickness;
+        wallHeight = height;
+        centerY = center;
+        wallBottomY = center - height * 0.5f;
+        wallTopY = wallBottomY + height;
+        wallMaterial = material;
+        wallTopMaterial = topMaterial;
+        outerStartVertexId = startVertexId;
+        outerEndVertexId = endVertexId;
+        suppressOuterStartHandle = suppressStartHandle;
+        suppressOuterEndHandle = suppressEndHandle;
+    }
+
+    public void SetOuterVertexIds(int startVertexId, int endVertexId)
+    {
+        outerStartVertexId = startVertexId;
+        outerEndVertexId = endVertexId;
+    }
+
+    public void SetWallSpan(Vector3 start, Vector3 end)
+    {
+        wallStart = start;
+        wallEnd = end;
+    }
+
+    public void SetWallThickness(float thickness)
+    {
+        wallThickness = thickness;
+    }
+
+    public void SetWallHeightKeepingBottom(float height)
+    {
+        wallHeight = height;
+        centerY = wallBottomY + height * 0.5f;
+        wallTopY = wallBottomY + height;
+    }
+}
