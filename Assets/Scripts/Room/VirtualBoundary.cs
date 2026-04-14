@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteAlways]
 public sealed class VirtualBoundary : MonoBehaviour
 {
     public static event Action BoundariesChanged;
+    private static readonly List<VirtualBoundary> registeredBoundaries = new List<VirtualBoundary>();
 
     [Header("Endpoints")]
     [SerializeField] private Transform startAnchor;
@@ -23,6 +25,7 @@ public sealed class VirtualBoundary : MonoBehaviour
     [SerializeField] private bool drawSceneGizmo = true;
 
     public bool VisibleInTopView => visibleInTopView;
+    public static IReadOnlyList<VirtualBoundary> All => registeredBoundaries;
     public bool IncludeInRoomGraph => !previewOnly;
     public bool PreviewOnly => previewOnly;
     public int StartVertexId => startVertexId;
@@ -80,11 +83,13 @@ public sealed class VirtualBoundary : MonoBehaviour
 
     private void OnEnable()
     {
+        Register(this);
         NotifyBoundariesChanged();
     }
 
     private void OnDisable()
     {
+        Unregister(this);
         NotifyBoundariesChanged();
     }
 
@@ -115,5 +120,25 @@ public sealed class VirtualBoundary : MonoBehaviour
     private static void NotifyBoundariesChanged()
     {
         BoundariesChanged?.Invoke();
+    }
+
+    private static void Register(VirtualBoundary boundary)
+    {
+        if (boundary == null || registeredBoundaries.Contains(boundary))
+        {
+            return;
+        }
+
+        registeredBoundaries.Add(boundary);
+    }
+
+    private static void Unregister(VirtualBoundary boundary)
+    {
+        if (boundary == null)
+        {
+            return;
+        }
+
+        registeredBoundaries.Remove(boundary);
     }
 }

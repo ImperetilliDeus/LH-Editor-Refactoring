@@ -13,6 +13,11 @@ public enum EditorMode
 
 public class ModeManager : MonoBehaviour
 {
+    private const int LegacyRoomCreateModeA = 2;
+    private const int LegacyRoomCreateModeB = 4;
+    private const int LegacyRoomCreateModeC = 5;
+    private const int LegacyRoomCreateModeD = 8;
+
     public static ModeManager Instance { get; private set; }
 
     [Header("UI Buttons")]
@@ -185,7 +190,10 @@ public class ModeManager : MonoBehaviour
     private static EditorMode NormalizeLegacyMode(EditorMode mode)
     {
         int rawMode = (int)mode;
-        if (rawMode == 2 || rawMode == 4 || rawMode == 5 || rawMode == 8)
+        if (rawMode == LegacyRoomCreateModeA ||
+            rawMode == LegacyRoomCreateModeB ||
+            rawMode == LegacyRoomCreateModeC ||
+            rawMode == LegacyRoomCreateModeD)
         {
             return EditorMode.RoomCreate;
         }

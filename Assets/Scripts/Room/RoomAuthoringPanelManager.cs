@@ -14,6 +14,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     [SerializeField] private TopViewRenderManager topViewRenderManager;
     [SerializeField] private TMP_Dropdown roomTypeDropdown;
     [SerializeField] private GameObject roomEditMenu;
+    [SerializeField] private InputField roomNameInputField;
     [SerializeField] private InputField roomAreaInputField;
 
     [Header("Label")]
@@ -43,6 +44,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         ResolveReferences();
         BindEvents();
         RefreshDropdownState();
+        RefreshNameField();
         RefreshAreaField();
     }
 
@@ -109,6 +111,11 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             roomTypeDropdown.onValueChanged.AddListener(HandleRoomTypeDropdownChanged);
         }
 
+        if (roomNameInputField != null)
+        {
+            roomNameInputField.onValueChanged.AddListener(HandleRoomNameChanged);
+        }
+
         if (roomManager != null)
         {
             roomManager.RoomsChanged -= HandleRoomsChanged;
@@ -128,6 +135,11 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             roomTypeDropdown.onValueChanged.RemoveListener(HandleRoomTypeDropdownChanged);
         }
 
+        if (roomNameInputField != null)
+        {
+            roomNameInputField.onValueChanged.RemoveListener(HandleRoomNameChanged);
+        }
+
         if (roomManager != null)
         {
             roomManager.RoomsChanged -= HandleRoomsChanged;
@@ -143,6 +155,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         }
 
         RefreshDropdownState();
+        RefreshNameField();
         RefreshAreaField();
         labelsDirty = true;
         UpdateRoomEditMenuState();
@@ -151,6 +164,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     private void HandleRoomsChanged()
     {
         SyncSelectionFromFocusedRoom();
+        RefreshNameField();
         RefreshAreaField();
         labelsDirty = true;
         UpdateRoomEditMenuState();
@@ -171,6 +185,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
         SetSelectedRoomInternal(focusedRoom);
         RefreshDropdownState();
+        RefreshNameField();
         RefreshAreaField();
         UpdateRoomEditMenuState();
     }
@@ -303,6 +318,32 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         }
     }
 
+    private void RefreshNameField()
+    {
+        if (roomNameInputField == null)
+        {
+            return;
+        }
+
+        bool canEdit = IsRoomAuthoringMode() && selectedRoom != null;
+        string nextText = canEdit ? selectedRoom.RoomName : string.Empty;
+
+        if (!roomNameInputField.isFocused && roomNameInputField.text != nextText)
+        {
+            roomNameInputField.SetTextWithoutNotify(nextText);
+        }
+
+        if (roomNameInputField.interactable != canEdit)
+        {
+            roomNameInputField.interactable = canEdit;
+        }
+
+        if (roomNameInputField.readOnly == canEdit)
+        {
+            roomNameInputField.readOnly = !canEdit;
+        }
+    }
+
     private int FindOptionIndex(string typeKey)
     {
         if (roomTypeDropdown == null || roomTypeDropdown.options == null)
@@ -348,6 +389,18 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         TMP_Dropdown.OptionData option = roomTypeDropdown.options[optionIndex];
         string typeKey = option != null ? option.text ?? string.Empty : string.Empty;
         selectedRoom.SetRoomTypeKey(typeKey);
+        RefreshLabelForRoom(selectedRoom);
+        labelsDirty = true;
+    }
+
+    private void HandleRoomNameChanged(string roomName)
+    {
+        if (selectedRoom == null || !IsRoomAuthoringMode())
+        {
+            return;
+        }
+
+        selectedRoom.SetRoomName(roomName);
         RefreshLabelForRoom(selectedRoom);
         labelsDirty = true;
     }
@@ -404,9 +457,9 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             return;
         }
 
-        string typeKey = room.RoomTypeKey;
-        label.text = typeKey;
-        label.gameObject.SetActive(!string.IsNullOrWhiteSpace(typeKey));
+        string labelText = BuildRoomLabelText(room);
+        label.text = labelText;
+        label.gameObject.SetActive(!string.IsNullOrWhiteSpace(labelText));
 
         RectTransform contentRoot = topViewRenderManager != null ? topViewRenderManager.ContentRoot : null;
         Camera topCamera = topViewRenderManager != null ? topViewRenderManager.TopViewCamera : null;
@@ -438,6 +491,31 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     {
         RectTransform contentRoot = topViewRenderManager != null ? topViewRenderManager.ContentRoot : null;
         return contentRoot != null && contentRoot.gameObject.activeInHierarchy;
+    }
+
+    private static string BuildRoomLabelText(Room room)
+    {
+        if (room == null)
+        {
+            return string.Empty;
+        }
+
+        string roomName = room.RoomName;
+        string typeKey = room.RoomTypeKey;
+        bool hasName = !string.IsNullOrWhiteSpace(roomName);
+        bool hasType = !string.IsNullOrWhiteSpace(typeKey);
+
+        if (hasName && hasType)
+        {
+            return $"{roomName}\n({typeKey})";
+        }
+
+        if (hasName)
+        {
+            return roomName;
+        }
+
+        return hasType ? typeKey : string.Empty;
     }
 
     private static bool TryCalculatePolygonCentroid(List<Vector2> polygon, out Vector2 centroid)
@@ -538,7 +616,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         {
             if (pair.Value != null)
             {
-                pair.Value.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(pair.Key != null ? pair.Key.RoomTypeKey : string.Empty));
+                pair.Value.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(BuildRoomLabelText(pair.Key)));
             }
         }
     }
