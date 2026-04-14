@@ -7,10 +7,12 @@ public static class LayerUtility
     public const string DoorLayerName = "Door";
     public const string WindowLayerName = "Window";
     public const string FloorLayerName = "Floor";
+    public const string CeilLayerName = "Ceil";
     public const string WallUILayerName = "WallUI";
     public const string DoorUILayerName = "DoorUI";
     public const string WindowUILayerName = "WindowUI";
     public const string TopPlanUILayerName = "TopPlanUI";
+    public const string FurnishLayerName = "Furnish";
 
     public static bool IsLayer(GameObject target, string layerName)
     {

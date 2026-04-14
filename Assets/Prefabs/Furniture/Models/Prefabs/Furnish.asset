@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b906e985d6b49847970a0c8fa80be3b, type: 3}
+  m_Name: Furnish
+  m_EditorClassIdentifier: 
+  prefabs:
+  - prefabName: S001
+    prefab: {fileID: 5944794387999990638, guid: 9f14e34061c09d343906b01edbef1277, type: 3}
+  - prefabName: T001
+    prefab: {fileID: 5766226947990164030, guid: b5503b4f82fc18b46ad8c935542741a8, type: 3}
+  - prefabName: CT001
+    prefab: {fileID: 4534668954108190729, guid: 6b1a6970003a48d4d96080a47b1bf618, type: 3}
+  - prefabName: CT002
+    prefab: {fileID: 5830008870542596919, guid: 6ab041cc81b49a54e9f4c008b53a2e0e, type: 3}
+  - prefabName: BT001
+    prefab: {fileID: 7839336646225356268, guid: 037db5b46b40cef43af5e053afa7f401, type: 3}
+  - prefabName: SB001
+    prefab: {fileID: 8842340224103360588, guid: c2753959d9c3a684e88b09cdaf5fcb20, type: 3}

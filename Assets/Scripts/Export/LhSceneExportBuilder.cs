@@ -180,8 +180,44 @@ namespace LH.Export
                 walls = BuildRoomWallReferences(room, context),
                 floor = BuildSurface(floor, room.FloorTextureCode),
                 ceil = BuildSurface(ceil, room.CeilingTextureCode),
-                furnish = new List<LhFurnitureDto>(),
+                furnish = BuildFurniture(room),
             };
+        }
+
+        private static List<LhFurnitureDto> BuildFurniture(Room room)
+        {
+            List<LhFurnitureDto> results = new List<LhFurnitureDto>();
+            if (room == null)
+            {
+                return results;
+            }
+
+            FurnitureInstance[] furnitureInstances = Object.FindObjectsByType<FurnitureInstance>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            for (int i = 0; i < furnitureInstances.Length; i++)
+            {
+                FurnitureInstance instance = furnitureInstances[i];
+                if (instance == null || !instance.IsPlaced)
+                {
+                    continue;
+                }
+
+                if (instance.CurrentRoom != room)
+                {
+                    continue;
+                }
+
+                results.Add(new LhFurnitureDto
+                {
+                    name = instance.gameObject.name,
+                    code = instance.CatalogCode ?? string.Empty,
+                    transform = CreateRelativeTransform(room.transform, instance.transform),
+                });
+            }
+
+            return results;
         }
 
         private static List<int> BuildRoomWallReferences(Room room, BuildContext context)

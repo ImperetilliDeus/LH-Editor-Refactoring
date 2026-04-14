@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d436999de1f7234295aa6eb22b3fb6e, type: 3}
+  m_Name: Floor
+  m_EditorClassIdentifier: 
+  materials:
+  - materialName: F000
+    material: {fileID: 2100000, guid: 7245245260510894395a240003248753, type: 2}
+    sprite: {fileID: 21300000, guid: c942b7791286175448ffdc099fff87ac, type: 3}
+  - materialName: F001
+    material: {fileID: 2100000, guid: a482f6fa03315c9469d660dfac3635f7, type: 2}
+    sprite: {fileID: 21300000, guid: f7f99725401af2c43998697774def894, type: 3}
+  - materialName: F002
+    material: {fileID: 2100000, guid: f58f2cb391b41c04083ffd44abf42268, type: 2}
+    sprite: {fileID: 21300000, guid: 9f79d53a8b5ceaa48a60579b7594ffed, type: 3}
+  - materialName: F003
+    material: {fileID: 2100000, guid: e0cbfd1e4ba5f054f9cd202c20842470, type: 2}
+    sprite: {fileID: 21300000, guid: 110d6c57266e0a04c910900ec2d6c728, type: 3}
+  - materialName: F004
+    material: {fileID: 2100000, guid: 0d411c3d74c4a644fa74d4b1a77faead, type: 2}
+    sprite: {fileID: 21300000, guid: 14a2c2e0d71d98f45b75f774e75acbf3, type: 3}
