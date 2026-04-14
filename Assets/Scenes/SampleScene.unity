@@ -2902,6 +2902,7 @@ MonoBehaviour:
   topViewRenderManager: {fileID: 2109814131}
   roomTypeDropdown: {fileID: 1834706696}
   roomEditMenu: {fileID: 251944472}
+  roomNameInputField: {fileID: 1219239940}
   roomAreaInputField: {fileID: 245494212}
   roomTypeLabelPrefab: {fileID: 1561621627}
   roomTypeLabelColor: {r: 1, g: 1, b: 1, a: 0.55}
@@ -3492,7 +3493,9 @@ MonoBehaviour:
   roomManager: {fileID: 0}
   handleSize: {x: 20, y: 20}
   handleColor: {r: 0.16, g: 0.66, b: 1, a: 1}
+  splitPointHandleColor: {r: 1, g: 0.32, b: 0.32, a: 1}
   activeHandleColor: {r: 1, g: 0.65, b: 0.12, a: 1}
+  activeSplitPointHandleColor: {r: 1, g: 0.86, b: 0.2, a: 1}
   snappedHandleColor: {r: 0.28, g: 1, b: 0.28, a: 1}
   handleCanvasSortingOrder: 5
   minimumWallLength: 0.01
@@ -6106,6 +6109,17 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1219239940 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 992464558250092620, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
+  m_PrefabInstance: {fileID: 548512550}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d199490a83bb2b844b9695cbf13b01ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1243706535
 GameObject:
   m_ObjectHideFlags: 0

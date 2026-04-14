@@ -98,7 +98,7 @@ public class RoomManager : MonoBehaviour
         if (!RoomGraphUtility.TryBuildOrderedVertices(
                 wallSet,
                 wallConnectionThreshold,
-                FindObjectsByType<VirtualBoundary>(FindObjectsInactive.Include, FindObjectsSortMode.None),
+                VirtualBoundary.All,
                 out List<Vector3> vertices) || vertices.Count < 3)
         {
             Debug.LogWarning("Cannot create room: failed to resolve a valid outer boundary from the selected walls");
@@ -120,7 +120,7 @@ public class RoomManager : MonoBehaviour
 
         Room room = roomObject.AddComponent<Room>();
         room.SetPlacementOffset(roomSpawnLocalOffset);
-        room.Initialize(wallSet, CalculateRoomGeometry(vertices));
+        room.Initialize(wallSet, PolygonUtility.CalculateGeometry(vertices));
         room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
 
         allRooms.Add(room);
@@ -131,7 +131,7 @@ public class RoomManager : MonoBehaviour
 
     public Room CreateRoomFromPolygon(List<Vector3> polygonVertices, HashSet<Wall> wallSet = null)
     {
-        List<Vector3> sanitizedPolygonVertices = Room.CreateSanitizedPolygonCopy(polygonVertices);
+        List<Vector3> sanitizedPolygonVertices = PolygonUtility.CreateSanitizedPolygonCopy(polygonVertices);
         if (sanitizedPolygonVertices.Count < 3)
         {
             Debug.LogWarning("Cannot create room: polygon requires at least three vertices");
@@ -154,7 +154,7 @@ public class RoomManager : MonoBehaviour
                 continue;
             }
 
-            if (ArePolygonsEquivalent(existingVertices, sanitizedPolygonVertices))
+            if (PolygonUtility.ArePolygonsEquivalent(existingVertices, sanitizedPolygonVertices))
             {
                 return existingRoom;
             }
@@ -166,7 +166,7 @@ public class RoomManager : MonoBehaviour
 
         Room room = roomObject.AddComponent<Room>();
         room.SetPlacementOffset(roomSpawnLocalOffset);
-        room.Initialize(wallSet ?? new HashSet<Wall>(), CalculateRoomGeometry(sanitizedPolygonVertices), sanitizedPolygonVertices);
+        room.Initialize(wallSet ?? new HashSet<Wall>(), PolygonUtility.CalculateGeometry(sanitizedPolygonVertices), sanitizedPolygonVertices);
         room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
 
         allRooms.Add(room);
@@ -291,63 +291,13 @@ public class RoomManager : MonoBehaviour
         if (!RoomGraphUtility.TryBuildOrderedVertices(
                 wallSet,
                 wallConnectionThreshold,
-                FindObjectsByType<VirtualBoundary>(FindObjectsInactive.Include, FindObjectsSortMode.None),
+                VirtualBoundary.All,
                 out List<Vector3> vertices) || vertices.Count == 0)
         {
             return new RoomGeometry();
         }
 
-        return CalculateRoomGeometry(vertices);
-    }
-
-    private static RoomGeometry CalculateRoomGeometry(List<Vector3> vertices)
-    {
-        if (vertices == null || vertices.Count == 0)
-        {
-            return new RoomGeometry();
-        }
-
-        float signedAreaTwice = 0f;
-        float centroidX = 0f;
-        float centroidZ = 0f;
-
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            Vector3 p1 = vertices[i];
-            Vector3 p2 = vertices[(i + 1) % vertices.Count];
-            float cross = p1.x * p2.z - p2.x * p1.z;
-            signedAreaTwice += cross;
-            centroidX += (p1.x + p2.x) * cross;
-            centroidZ += (p1.z + p2.z) * cross;
-        }
-
-        float area = Mathf.Abs(signedAreaTwice) * 0.5f;
-        Vector3 center;
-        if (Mathf.Abs(signedAreaTwice) <= 0.000001f)
-        {
-            Vector3 sum = Vector3.zero;
-            for (int i = 0; i < vertices.Count; i++)
-            {
-                sum += vertices[i];
-            }
-
-            center = sum / vertices.Count;
-        }
-        else
-        {
-            float factor = 1f / (3f * signedAreaTwice);
-            center = new Vector3(
-                centroidX * factor,
-                vertices[0].y,
-                centroidZ * factor);
-        }
-
-        return new RoomGeometry
-        {
-            Center = center,
-            Area = area,
-            WallCount = vertices.Count,
-        };
+        return PolygonUtility.CalculateGeometry(vertices);
     }
 
     private void EnsureWallRoot()
@@ -393,53 +343,4 @@ public class RoomManager : MonoBehaviour
         return fallbackRoomMaterial;
     }
 
-    private static bool ArePolygonsEquivalent(List<Vector3> left, List<Vector3> right, float epsilon = 0.01f)
-    {
-        if (left == null || right == null || left.Count != right.Count)
-        {
-            return false;
-        }
-
-        if (left.Count == 0)
-        {
-            return true;
-        }
-
-        float epsilonSqr = epsilon * epsilon;
-        for (int offset = 0; offset < right.Count; offset++)
-        {
-            bool matchesForward = true;
-            bool matchesReverse = true;
-            for (int i = 0; i < left.Count; i++)
-            {
-                if ((left[i] - right[(offset + i) % right.Count]).sqrMagnitude > epsilonSqr)
-                {
-                    matchesForward = false;
-                }
-
-                int reverseIndex = offset - i;
-                if (reverseIndex < 0)
-                {
-                    reverseIndex += right.Count;
-                }
-
-                if ((left[i] - right[reverseIndex]).sqrMagnitude > epsilonSqr)
-                {
-                    matchesReverse = false;
-                }
-
-                if (!matchesForward && !matchesReverse)
-                {
-                    break;
-                }
-            }
-
-            if (matchesForward || matchesReverse)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

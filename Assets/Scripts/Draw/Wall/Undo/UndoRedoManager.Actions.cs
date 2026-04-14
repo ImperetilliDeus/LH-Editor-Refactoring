@@ -91,12 +91,16 @@ public partial class UndoRedoManager
         private Room room;
         private readonly List<WallReference> wallReferences;
         private readonly List<Vector3> manualVertices;
+        private readonly string roomName;
+        private readonly string roomTypeKey;
 
         public RoomCreateAction(Room createdRoom)
         {
             room = createdRoom;
             wallReferences = new List<WallReference>();
             manualVertices = new List<Vector3>();
+            roomName = createdRoom != null ? createdRoom.RoomName : string.Empty;
+            roomTypeKey = createdRoom != null ? createdRoom.RoomTypeKey : string.Empty;
 
             if (createdRoom != null && createdRoom.WallSet != null)
             {
@@ -156,6 +160,7 @@ public partial class UndoRedoManager
             if (manualVertices.Count >= 3)
             {
                 room = manager.CreateRoomFromPolygon(new List<Vector3>(manualVertices), walls.Count > 0 ? walls : null);
+                ApplyRoomMetadata(room);
                 return;
             }
 
@@ -165,6 +170,18 @@ public partial class UndoRedoManager
             }
 
             room = manager.CreateRoom(walls);
+            ApplyRoomMetadata(room);
+        }
+
+        private void ApplyRoomMetadata(Room targetRoom)
+        {
+            if (targetRoom == null)
+            {
+                return;
+            }
+
+            targetRoom.SetRoomName(roomName);
+            targetRoom.SetRoomTypeKey(roomTypeKey);
         }
     }
 
@@ -280,6 +297,8 @@ public partial class UndoRedoManager
         {
             public List<WallReference> wallReferences;
             public List<Vector3> manualVertices;
+            public string roomName;
+            public string roomTypeKey;
         }
 
         private readonly List<RoomSnapshot> deletedSnapshots;
@@ -341,6 +360,8 @@ public partial class UndoRedoManager
                 {
                     wallReferences = new List<WallReference>(),
                     manualVertices = new List<Vector3>(),
+                    roomName = room.RoomName,
+                    roomTypeKey = room.RoomTypeKey,
                 };
 
                 if (room.WallSet != null)
@@ -402,6 +423,8 @@ public partial class UndoRedoManager
 
                 if (room != null)
                 {
+                    room.SetRoomName(snapshot.roomName);
+                    room.SetRoomTypeKey(snapshot.roomTypeKey);
                     restoredRooms.Add(room);
                 }
             }
@@ -454,6 +477,8 @@ public partial class UndoRedoManager
         {
             public List<WallReference> wallReferences;
             public List<Vector3> manualVertices;
+            public string roomName;
+            public string roomTypeKey;
         }
 
         private readonly List<OpeningLayoutSnapshot> deletedLayouts;
@@ -481,6 +506,8 @@ public partial class UndoRedoManager
                 {
                     wallReferences = new List<WallReference>(),
                     manualVertices = new List<Vector3>(),
+                    roomName = room.RoomName,
+                    roomTypeKey = room.RoomTypeKey,
                 };
 
                 foreach (Wall wall in room.WallSet)
@@ -531,7 +558,12 @@ public partial class UndoRedoManager
 
                 if (snapshot.manualVertices != null && snapshot.manualVertices.Count >= 3)
                 {
-                    manager.CreateRoomFromPolygon(new List<Vector3>(snapshot.manualVertices), walls.Count > 0 ? walls : null);
+                    Room restoredRoom = manager.CreateRoomFromPolygon(new List<Vector3>(snapshot.manualVertices), walls.Count > 0 ? walls : null);
+                    if (restoredRoom != null)
+                    {
+                        restoredRoom.SetRoomName(snapshot.roomName);
+                        restoredRoom.SetRoomTypeKey(snapshot.roomTypeKey);
+                    }
                     continue;
                 }
 
@@ -540,7 +572,12 @@ public partial class UndoRedoManager
                     continue;
                 }
 
-                manager.CreateRoom(walls);
+                Room restoredRoomFromWalls = manager.CreateRoom(walls);
+                if (restoredRoomFromWalls != null)
+                {
+                    restoredRoomFromWalls.SetRoomName(snapshot.roomName);
+                    restoredRoomFromWalls.SetRoomTypeKey(snapshot.roomTypeKey);
+                }
             }
 
             manager.RefreshAllRooms();
