@@ -558,35 +558,12 @@ public sealed class RoomCreateManager : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (roomManager == null)
-        {
-            roomManager = FindFirstObjectByType<RoomManager>();
-        }
-
-        if (snapManager == null)
-        {
-            snapManager = FindFirstObjectByType<SnapManager>();
-        }
-
-        if (wallHandleManager == null)
-        {
-            wallHandleManager = FindFirstObjectByType<HandleManager>();
-        }
-
-        if (roomHandleManager == null)
-        {
-            roomHandleManager = FindFirstObjectByType<RoomHandleManager>();
-        }
-
-        if (modeManager == null)
-        {
-            modeManager = FindFirstObjectByType<ModeManager>();
-        }
-
-        if (undoRedoManager == null)
-        {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
-        }
+        LayerUtility.ResolveObject(ref roomManager);
+        LayerUtility.ResolveObject(ref snapManager);
+        LayerUtility.ResolveObject(ref wallHandleManager);
+        LayerUtility.ResolveObject(ref roomHandleManager);
+        LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref undoRedoManager);
     }
 
     private void RefreshDrawingPlane()

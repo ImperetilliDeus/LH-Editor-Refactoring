@@ -104,6 +104,30 @@ public static class LayerUtility
         return preferredCanvas;
     }
 
+    public static void ResolveObject<T>(ref T reference) where T : Object
+    {
+        if (reference == null)
+        {
+            reference = Object.FindFirstObjectByType<T>();
+        }
+    }
+
+    public static void ResolveTransformByName(ref Transform reference, string objectName, bool includeInactive = true)
+    {
+        if (reference == null)
+        {
+            reference = FindTransformByName(objectName, includeInactive);
+        }
+    }
+
+    public static void ResolveCanvasByNameOrFirst(ref Canvas reference, string preferredName = "_Screen")
+    {
+        if (reference == null)
+        {
+            reference = FindCanvasByNameOrFirst(preferredName);
+        }
+    }
+
     public static Transform FindTransformByName(string objectName, bool includeInactive = true)
     {
         if (string.IsNullOrWhiteSpace(objectName))

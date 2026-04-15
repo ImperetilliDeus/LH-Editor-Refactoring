@@ -1269,45 +1269,14 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (drawManager == null)
-        {
-            drawManager = FindFirstObjectByType<DrawManager>();
-        }
-
-        if (handleManager == null)
-        {
-            handleManager = FindFirstObjectByType<HandleManager>();
-        }
-
-        if (snapManager == null)
-        {
-            snapManager = FindFirstObjectByType<SnapManager>();
-        }
-
-        if (wallLengthDisplay == null)
-        {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
-        }
-
-        if (undoRedoManager == null)
-        {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
-        }
-
-        if (modeManager == null)
-        {
-            modeManager = FindFirstObjectByType<ModeManager>();
-        }
-
-        if (wallOpeningPlacementManager == null)
-        {
-            wallOpeningPlacementManager = FindFirstObjectByType<WallOpeningPlacementManager>();
-        }
-
-        if (roomManager == null)
-        {
-            roomManager = FindFirstObjectByType<RoomManager>();
-        }
+        LayerUtility.ResolveObject(ref drawManager);
+        LayerUtility.ResolveObject(ref handleManager);
+        LayerUtility.ResolveObject(ref snapManager);
+        LayerUtility.ResolveObject(ref wallLengthDisplay);
+        LayerUtility.ResolveObject(ref undoRedoManager);
+        LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
+        LayerUtility.ResolveObject(ref roomManager);
     }
 
     private void RefreshDragPlane()

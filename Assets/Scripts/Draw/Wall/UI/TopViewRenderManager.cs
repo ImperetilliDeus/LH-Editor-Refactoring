@@ -312,16 +312,7 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        if (wallRoot != null)
-        {
-            return;
-        }
-
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
-        if (wallRootTransform != null)
-        {
-            wallRoot = wallRootTransform;
-        }
+        LayerUtility.ResolveTransformByName(ref wallRoot, "Walls", true);
     }
 
     private void CacheCameraState()
@@ -349,6 +340,5 @@ public partial class TopViewRenderManager : MonoBehaviour
                cameraTransform.rotation != lastCameraRotation ||
                !Mathf.Approximately(topViewCamera.orthographicSize, lastCameraOrthoSize);
     }
-
 }
 

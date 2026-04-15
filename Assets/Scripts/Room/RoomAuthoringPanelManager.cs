@@ -77,25 +77,10 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (modeManager == null)
-        {
-            modeManager = FindFirstObjectByType<ModeManager>();
-        }
-
-        if (roomManager == null)
-        {
-            roomManager = FindFirstObjectByType<RoomManager>();
-        }
-
-        if (roomHandleManager == null)
-        {
-            roomHandleManager = FindFirstObjectByType<RoomHandleManager>();
-        }
-
-        if (topViewRenderManager == null)
-        {
-            topViewRenderManager = FindFirstObjectByType<TopViewRenderManager>();
-        }
+        LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref roomManager);
+        LayerUtility.ResolveObject(ref roomHandleManager);
+        LayerUtility.ResolveObject(ref topViewRenderManager);
     }
 
     private void BindEvents()
