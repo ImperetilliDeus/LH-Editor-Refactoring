@@ -33,6 +33,7 @@ public class FurniturePlacementManager : MonoBehaviour
     [Header("Preview")]
     [SerializeField] private Color validTint = new Color(0.45f, 1f, 0.55f, 0.85f);
     [SerializeField] private Color invalidTint = new Color(1f, 0.4f, 0.4f, 0.85f);
+    [SerializeField] private bool enableValidationDebugLogs;
 
     private readonly List<Renderer> previewRenderers = new List<Renderer>();
     private readonly List<Collider> currentColliders = new List<Collider>();
@@ -43,6 +44,7 @@ public class FurniturePlacementManager : MonoBehaviour
     private FurnitureInstance activeInstance;
     private float currentYaw;
     private bool lastPlacementValidity;
+    private string lastValidationDebugMessage = string.Empty;
     private int furnishLayer = -1;
     private float nextQRotationTime;
     private float nextERotationTime;
@@ -336,22 +338,31 @@ public class FurniturePlacementManager : MonoBehaviour
         }
 
         bool hasSurface = TryGetPlacementPoint(out _, out _);
-        Room room = ResolveRoomAtPosition(activeInstance.transform.position);
-        bool overlaps = CheckOverlaps(activeInstance);
+        Bounds bounds = activeInstance.CalculateWorldBounds();
+        Room room = ResolveRoomForBounds(bounds);
+        bool overlaps = CheckOverlaps(activeInstance, bounds, out Collider blockingCollider);
         lastPlacementValidity = hasSurface && room != null && !overlaps;
+        EmitValidationDebug(hasSurface, room, overlaps, blockingCollider, bounds);
         ApplyPreviewTint(lastPlacementValidity ? validTint : invalidTint);
     }
 
-    private bool CheckOverlaps(FurnitureInstance instance)
+    private bool CheckOverlaps(FurnitureInstance instance, Bounds bounds, out Collider blockingCollider)
     {
-        Bounds bounds = instance.CalculateWorldBounds();
+        blockingCollider = null;
         Vector3 halfExtents = bounds.extents;
         halfExtents.x = Mathf.Max(0.01f, halfExtents.x - overlapPadding);
         halfExtents.y = Mathf.Max(0.01f, halfExtents.y - overlapPadding);
         halfExtents.z = Mathf.Max(0.01f, halfExtents.z - overlapPadding);
 
-        int queryMask = Physics.DefaultRaycastLayers;
-        Collider[] overlaps = Physics.OverlapBox(bounds.center, halfExtents, instance.transform.rotation, queryMask, QueryTriggerInteraction.Ignore);
+        int queryMask = Physics.DefaultRaycastLayers & ~placementSurfaceMask.value;
+        if (LayerUtility.TryGetLayer(LayerUtility.CeilLayerName, out int ceilLayer))
+        {
+            queryMask &= ~(1 << ceilLayer);
+        }
+
+        // Renderer.bounds is already a world-space AABB. Applying the furniture rotation again
+        // inflates the overlap volume and causes false wall hits near angled boundaries.
+        Collider[] overlaps = Physics.OverlapBox(bounds.center, halfExtents, Quaternion.identity, queryMask, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < overlaps.Length; i++)
         {
             Collider current = overlaps[i];
@@ -365,11 +376,7 @@ public class FurniturePlacementManager : MonoBehaviour
                 continue;
             }
 
-            if (((1 << current.gameObject.layer) & placementSurfaceMask.value) != 0)
-            {
-                continue;
-            }
-
+            blockingCollider = current;
             return true;
         }
 
@@ -496,6 +503,37 @@ public class FurniturePlacementManager : MonoBehaviour
         return null;
     }
 
+    private Room ResolveRoomForBounds(Bounds bounds)
+    {
+        if (roomManager == null)
+        {
+            return null;
+        }
+
+        List<Room> rooms = roomManager.GetAllRooms();
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            Room room = rooms[i];
+            if (room == null)
+            {
+                continue;
+            }
+
+            List<Vector3> vertices = new List<Vector3>();
+            if (!room.TryGetOrderedVertices(vertices))
+            {
+                continue;
+            }
+
+            if (IsBoundsFootprintInsidePolygonXZ(bounds, vertices))
+            {
+                return room;
+            }
+        }
+
+        return null;
+    }
+
     private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> polygon)
     {
         if (polygon == null || polygon.Count < 3)
@@ -521,6 +559,34 @@ public class FurniturePlacementManager : MonoBehaviour
         }
 
         return inside;
+    }
+
+    private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, List<Vector3> polygon)
+    {
+        if (polygon == null || polygon.Count < 3)
+        {
+            return false;
+        }
+
+        float y = bounds.center.y;
+        Vector3[] testPoints =
+        {
+            new Vector3(bounds.center.x, y, bounds.center.z),
+            new Vector3(bounds.min.x, y, bounds.min.z),
+            new Vector3(bounds.min.x, y, bounds.max.z),
+            new Vector3(bounds.max.x, y, bounds.min.z),
+            new Vector3(bounds.max.x, y, bounds.max.z),
+        };
+
+        for (int i = 0; i < testPoints.Length; i++)
+        {
+            if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void CachePreviewRenderers(GameObject root)
@@ -588,6 +654,28 @@ public class FurniturePlacementManager : MonoBehaviour
         Vector3 position = activeInstance.transform.position;
         position.y += surfaceY - bounds.min.y;
         activeInstance.transform.position = position;
+    }
+
+    private void EmitValidationDebug(bool hasSurface, Room room, bool overlaps, Collider blockingCollider, Bounds bounds)
+    {
+        if (!enableValidationDebugLogs || activeInstance == null)
+        {
+            return;
+        }
+
+        string roomName = room != null ? room.name : "<none>";
+        string blockerName = blockingCollider != null ? blockingCollider.name : "<none>";
+        string blockerLayer = blockingCollider != null ? LayerMask.LayerToName(blockingCollider.gameObject.layer) : "<none>";
+        string message =
+            $"[FurniturePlacement] item={activeInstance.name} valid={lastPlacementValidity} hasSurface={hasSurface} room={roomName} overlaps={overlaps} blocker={blockerName} blockerLayer={blockerLayer} pos={activeInstance.transform.position} boundsCenter={bounds.center} boundsSize={bounds.size}";
+
+        if (message == lastValidationDebugMessage)
+        {
+            return;
+        }
+
+        lastValidationDebugMessage = message;
+        Debug.Log(message, activeInstance);
     }
 
     private bool IsPointerOverUI()
