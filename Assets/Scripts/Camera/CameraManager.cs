@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class CameraManager : MonoBehaviour
@@ -106,6 +107,11 @@ public class CameraManager : MonoBehaviour
             return;
         }
 
+        if (IsPointerOverUI())
+        {
+            return;
+        }
+
         float scrollInput = Mouse.current.scroll.ReadValue().y;
         if (Mathf.Approximately(scrollInput, 0f))
         {
@@ -113,6 +119,16 @@ public class CameraManager : MonoBehaviour
         }
 
         MainCamera.orthographicSize -= scrollInput * zoomSpeed * Time.unscaledDeltaTime;
+    }
+
+    private static bool IsPointerOverUI()
+    {
+        if (EventSystem.current == null || Mouse.current == null)
+        {
+            return false;
+        }
+
+        return EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId);
     }
 
     private void RefreshGridBounds()

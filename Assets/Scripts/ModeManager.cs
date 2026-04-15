@@ -10,6 +10,7 @@ public enum EditorMode
     DetailEdit = 3,
     DoorInsert = 6,
     WindowInsert = 7,
+    DrawingOverlayCalibrate = 10,
 }
 
 public class ModeManager : MonoBehaviour
