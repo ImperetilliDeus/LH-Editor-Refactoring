@@ -1,0 +1,748 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using TMPro;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+public static class DrawingOverlaySceneBootstrap
+{
+    private const string PanelRootName = "DrawingOverlayCalibrationPanel";
+    private const string ManagerRootName = "DrawingOverlayManager";
+    private const string ImportControllerRootName = "DrawingOverlayImportController";
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void EnsureOverlaySystem()
+    {
+        EventSystemBootstrap.EnsureEventSystemExists();
+
+        DrawingOverlayManager manager = UnityEngine.Object.FindFirstObjectByType<DrawingOverlayManager>(FindObjectsInactive.Include);
+        if (manager == null)
+        {
+            manager = new GameObject(ManagerRootName).AddComponent<DrawingOverlayManager>();
+        }
+
+        OverlayCalibrationPanelController existingPanel =
+            UnityEngine.Object.FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include);
+        if (existingPanel != null)
+        {
+            existingPanel.Close();
+        }
+
+        manager.Initialize(
+            UnityEngine.Object.FindFirstObjectByType<ModeManager>(),
+            FindGridObject(),
+            existingPanel);
+
+        DrawingOverlayImportController importController =
+            UnityEngine.Object.FindFirstObjectByType<DrawingOverlayImportController>(FindObjectsInactive.Include);
+        if (importController == null)
+        {
+            importController = new GameObject(ImportControllerRootName).AddComponent<DrawingOverlayImportController>();
+        }
+
+        importController.Initialize(FindImportButton(), manager);
+    }
+
+    internal static OverlayCalibrationPanelController EnsurePanel(DrawingOverlayManager manager)
+    {
+        if (manager == null)
+        {
+            return null;
+        }
+
+        OverlayCalibrationPanelController panel =
+            UnityEngine.Object.FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include);
+        if (panel == null)
+        {
+            Canvas canvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
+            if (canvas == null)
+            {
+                return null;
+            }
+
+            if (manager.CalibrationPanelPrefab != null)
+            {
+                panel = UnityEngine.Object.Instantiate(manager.CalibrationPanelPrefab, canvas.transform);
+                panel.name = manager.CalibrationPanelPrefab.name;
+            }
+            else
+            {
+                panel = CreatePanel(canvas, manager);
+            }
+        }
+
+        panel.Close();
+        manager.SetCalibrationPanel(panel);
+        return panel;
+    }
+
+    private static OverlayCalibrationPanelController CreatePanel(Canvas canvas, DrawingOverlayManager manager)
+    {
+        TMP_FontAsset tmpFont = manager != null ? manager.UiTmpFont : null;
+        Font legacyFont = manager != null && manager.UiLegacyFont != null
+            ? manager.UiLegacyFont
+            : Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+        GameObject root = CreateUIObject(PanelRootName, canvas.transform as RectTransform);
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        rootRect.anchorMin = rootRect.anchorMax = rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.sizeDelta = new Vector2(760f, 700f);
+        rootRect.anchoredPosition = Vector2.zero;
+
+        Image rootImage = root.AddComponent<Image>();
+        rootImage.color = new Color32(35, 36, 42, 244);
+        CanvasGroup canvasGroup = root.AddComponent<CanvasGroup>();
+        root.AddComponent<UIDragManager>();
+
+        CreateButton("_DragButton", rootRect, string.Empty, new Color(0f, 0f, 0f, 0f), tmpFont, out RectTransform dragRect);
+        dragRect.anchorMin = new Vector2(0f, 1f);
+        dragRect.anchorMax = new Vector2(1f, 1f);
+        dragRect.pivot = new Vector2(0.5f, 1f);
+        dragRect.sizeDelta = new Vector2(-32f, 56f);
+        dragRect.anchoredPosition = new Vector2(0f, -12f);
+
+        TMP_Text titleText = CreateTmpText("Title", rootRect, "도면 보정 시뮬레이터", 28, FontStyles.Bold, tmpFont);
+        SetTopLeft(titleText.rectTransform, new Vector2(28f, -20f), new Vector2(340f, 44f));
+
+        TMP_Text statusText = CreateTmpText("StatusText", rootRect, "이미지나 PDF를 불러온 뒤 기준점을 찍으세요.", 18, FontStyles.Normal, tmpFont);
+        statusText.color = new Color32(204, 213, 255, 255);
+        SetTopLeft(statusText.rectTransform, new Vector2(28f, -62f), new Vector2(460f, 34f));
+
+        TMP_Text scaleValue = CreateMetric(rootRect, "배율 (SCALE)", "-", new Vector2(415f, -28f), new Vector2(415f, -54f), tmpFont);
+        TMP_Text rotValue = CreateMetric(rootRect, "회전 (TOTAL ROT)", "-", new Vector2(535f, -28f), new Vector2(535f, -54f), tmpFont);
+        TMP_Text offXValue = CreateMetric(rootRect, "오프셋 X", "-", new Vector2(665f, -28f), new Vector2(665f, -54f), tmpFont);
+        TMP_Text offYValue = CreateMetric(rootRect, "오프셋 Y", "-", new Vector2(665f, -92f), new Vector2(665f, -118f), tmpFont);
+
+        GameObject previewFrame = CreateUIObject("PreviewFrame", rootRect);
+        RectTransform previewFrameRect = previewFrame.GetComponent<RectTransform>();
+        previewFrameRect.anchorMin = new Vector2(0f, 1f);
+        previewFrameRect.anchorMax = new Vector2(1f, 1f);
+        previewFrameRect.pivot = new Vector2(0.5f, 1f);
+        previewFrameRect.sizeDelta = new Vector2(-34f, 430f);
+        previewFrameRect.anchoredPosition = new Vector2(0f, -112f);
+        previewFrame.AddComponent<Image>().color = new Color32(19, 21, 29, 255);
+
+        GameObject previewImageObject = CreateUIObject("PreviewImage", previewFrameRect);
+        RectTransform previewRect = previewImageObject.GetComponent<RectTransform>();
+        previewRect.anchorMin = previewRect.anchorMax = previewRect.pivot = new Vector2(0.5f, 0.5f);
+        previewRect.sizeDelta = new Vector2(660f, 390f);
+        RawImage rawImage = previewImageObject.AddComponent<RawImage>();
+        rawImage.color = new Color(1f, 1f, 1f, 0.9f);
+        AspectRatioFitter aspectRatioFitter = previewImageObject.AddComponent<AspectRatioFitter>();
+        aspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+        OverlayPreviewController previewController = previewImageObject.AddComponent<OverlayPreviewController>();
+        previewController.Initialize(rawImage, previewRect, aspectRatioFitter, tmpFont);
+
+        Button pickAnchorAButton = CreateButton("PickAnchorAButton", rootRect, "기준점 1 찍기", new Color32(67, 72, 98, 255), tmpFont, out RectTransform pickAnchorARect);
+        SetBottomStretchLeft(pickAnchorARect, new Vector2(28f, 122f), new Vector2(-40f, 52f));
+
+        Button pickAnchorBButton = CreateButton("PickAnchorBButton", rootRect, "기준점 2 찍기", new Color32(67, 72, 98, 255), tmpFont, out RectTransform pickAnchorBRect);
+        SetBottomStretchRight(pickAnchorBRect, new Vector2(-28f, 122f), new Vector2(-40f, 52f));
+
+        TMP_Text distanceLabel = CreateTmpText("DistanceLabel", rootRect, "실제 거리 입력 (m)", 19, FontStyles.Normal, tmpFont);
+        SetBottomLeft(distanceLabel.rectTransform, new Vector2(28f, 84f), new Vector2(180f, 28f));
+        InputField distanceInput = CreateInputField("DistanceInput", rootRect, "3", legacyFont, out RectTransform distanceRect);
+        SetBottomLeft(distanceRect, new Vector2(170f, 62f), new Vector2(190f, 48f));
+
+        Button applyButton = CreateButton("ApplyScaleButton", rootRect, "스케일 적용", new Color32(67, 72, 98, 255), tmpFont, out RectTransform applyRect);
+        SetBottomStretchRight(applyRect, new Vector2(-28f, 62f), new Vector2(-40f, 48f));
+
+        TMP_Text rotationLabel = CreateTmpText("FineRotationLabel", rootRect, "미세 회전 (deg)", 19, FontStyles.Normal, tmpFont);
+        SetBottomLeft(rotationLabel.rectTransform, new Vector2(28f, 28f), new Vector2(180f, 28f));
+        Slider rotationSlider = CreateSlider("FineRotationSlider", rootRect, out RectTransform sliderRect);
+        SetBottomLeft(sliderRect, new Vector2(170f, 10f), new Vector2(210f, 40f));
+
+        InputField rotationInput = CreateInputField("FineRotationInput", rootRect, "0.0", legacyFont, out RectTransform rotationInputRect);
+        SetBottomLeft(rotationInputRect, new Vector2(400f, 8f), new Vector2(72f, 44f));
+
+        Button originButton = CreateButton("PickOriginButton", rootRect, "원점 찍기", new Color32(67, 72, 98, 255), tmpFont, out RectTransform originRect);
+        SetBottomStretchRight(originRect, new Vector2(-28f, 8f), new Vector2(-40f, 44f));
+
+        Button rotationGuideButton = CreateButton("PickRotationGuideButton", rootRect, "회전 기준선", new Color32(67, 72, 98, 255), tmpFont, out RectTransform rotationGuideRect);
+        SetBottomStretchRight(rotationGuideRect, new Vector2(-28f, 58f), new Vector2(-40f, 44f));
+
+        Button resetButton = CreateButton("ResetButton", rootRect, "설정 초기화", new Color32(67, 72, 98, 255), tmpFont, out RectTransform resetRect);
+        SetBottomStretchRight(resetRect, new Vector2(-28f, -42f), new Vector2(-40f, 44f));
+
+        Button completeButton = CreateButton("CompleteButton", rootRect, "완료", new Color32(95, 132, 255, 255), tmpFont, out RectTransform completeRect);
+        SetBottomLeft(completeRect, new Vector2(28f, -42f), new Vector2(180f, 44f));
+
+        OverlayCalibrationPanelController controller = root.AddComponent<OverlayCalibrationPanelController>();
+        controller.Initialize(
+            canvasGroup,
+            previewController,
+            pickAnchorAButton,
+            pickAnchorBButton,
+            applyButton,
+            resetButton,
+            completeButton,
+            originButton,
+            rotationGuideButton,
+            rotationSlider,
+            distanceInput,
+            rotationInput,
+            scaleValue,
+            rotValue,
+            offXValue,
+            offYValue,
+            statusText);
+        controller.Close();
+        return controller;
+    }
+
+    private static TMP_Text CreateMetric(RectTransform parent, string label, string value, Vector2 labelPos, Vector2 valuePos, TMP_FontAsset font)
+    {
+        TMP_Text labelText = CreateTmpText(label.Replace(" ", string.Empty) + "_Label", parent, label, 15, FontStyles.Bold, font);
+        labelText.color = new Color32(213, 218, 244, 255);
+        SetTopLeft(labelText.rectTransform, labelPos, new Vector2(150f, 22f));
+
+        TMP_Text valueText = CreateTmpText(label.Replace(" ", string.Empty) + "_Value", parent, value, 28, FontStyles.Bold, font);
+        SetTopLeft(valueText.rectTransform, valuePos, new Vector2(120f, 34f));
+        return valueText;
+    }
+
+    private static Button FindImportButton()
+    {
+        Transform buttonTransform = LayerUtility.FindTransformByName("_ImportButton", true);
+        return buttonTransform != null ? buttonTransform.GetComponent<Button>() : null;
+    }
+
+    private static GameObject FindGridObject()
+    {
+        Transform gridTransform = LayerUtility.FindTransformByName("Grid", true);
+        return gridTransform != null ? gridTransform.gameObject : null;
+    }
+
+    private static GameObject CreateUIObject(string name, Transform parent)
+    {
+        GameObject target = new GameObject(name, typeof(RectTransform));
+        target.transform.SetParent(parent, false);
+        return target;
+    }
+
+    private static TMP_Text CreateTmpText(string name, RectTransform parent, string text, float fontSize, FontStyles style, TMP_FontAsset font)
+    {
+        GameObject obj = CreateUIObject(name, parent);
+        TMP_Text label = obj.AddComponent<TextMeshProUGUI>();
+        label.font = font != null ? font : TMP_Settings.defaultFontAsset;
+        label.text = text;
+        label.fontSize = fontSize;
+        label.fontStyle = style;
+        label.color = Color.white;
+        label.alignment = TextAlignmentOptions.Left;
+        return label;
+    }
+
+    private static Button CreateButton(string name, RectTransform parent, string text, Color backgroundColor, TMP_FontAsset font, out RectTransform rectTransform)
+    {
+        GameObject obj = CreateUIObject(name, parent);
+        rectTransform = obj.GetComponent<RectTransform>();
+        Image image = obj.AddComponent<Image>();
+        image.color = backgroundColor;
+        Button button = obj.AddComponent<Button>();
+
+        if (!string.IsNullOrEmpty(text))
+        {
+            TMP_Text label = CreateTmpText("Label", rectTransform, text, 22, FontStyles.Bold, font);
+            label.alignment = TextAlignmentOptions.Center;
+            RectTransform labelRect = label.rectTransform;
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+        }
+
+        return button;
+    }
+
+    private static InputField CreateInputField(string name, RectTransform parent, string initialValue, Font font, out RectTransform rectTransform)
+    {
+        GameObject obj = CreateUIObject(name, parent);
+        rectTransform = obj.GetComponent<RectTransform>();
+        obj.AddComponent<Image>().color = new Color32(24, 26, 36, 255);
+        InputField inputField = obj.AddComponent<InputField>();
+
+        Text text = CreateLegacyText("Text", rectTransform, font, initialValue, Color.white);
+        Text placeholder = CreateLegacyText("Placeholder", rectTransform, font, initialValue, new Color(1f, 1f, 1f, 0.4f));
+        inputField.textComponent = text;
+        inputField.placeholder = placeholder;
+        inputField.text = initialValue;
+        return inputField;
+    }
+
+    private static Text CreateLegacyText(string name, RectTransform parent, Font font, string textValue, Color color)
+    {
+        GameObject obj = CreateUIObject(name, parent);
+        Text text = obj.AddComponent<Text>();
+        text.font = font;
+        text.fontSize = 22;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.text = textValue;
+        text.color = color;
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(10f, 6f);
+        rect.offsetMax = new Vector2(-10f, -6f);
+        return text;
+    }
+
+    private static Slider CreateSlider(string name, RectTransform parent, out RectTransform rectTransform)
+    {
+        GameObject root = CreateUIObject(name, parent);
+        rectTransform = root.GetComponent<RectTransform>();
+
+        Image bg = CreateUIObject("Background", rectTransform).AddComponent<Image>();
+        bg.color = new Color32(138, 141, 152, 255);
+        RectTransform bgRect = bg.rectTransform;
+        bgRect.anchorMin = new Vector2(0f, 0.5f);
+        bgRect.anchorMax = new Vector2(1f, 0.5f);
+        bgRect.sizeDelta = new Vector2(0f, 8f);
+
+        RectTransform fillArea = CreateUIObject("FillArea", rectTransform).GetComponent<RectTransform>();
+        fillArea.anchorMin = Vector2.zero;
+        fillArea.anchorMax = Vector2.one;
+        fillArea.offsetMin = new Vector2(10f, 10f);
+        fillArea.offsetMax = new Vector2(-10f, -10f);
+
+        Image fill = CreateUIObject("Fill", fillArea).AddComponent<Image>();
+        fill.color = new Color32(144, 185, 255, 255);
+        fill.rectTransform.anchorMin = Vector2.zero;
+        fill.rectTransform.anchorMax = Vector2.one;
+
+        RectTransform handleArea = CreateUIObject("HandleArea", rectTransform).GetComponent<RectTransform>();
+        handleArea.anchorMin = Vector2.zero;
+        handleArea.anchorMax = Vector2.one;
+        handleArea.offsetMin = new Vector2(10f, 0f);
+        handleArea.offsetMax = new Vector2(-10f, 0f);
+
+        Image handle = CreateUIObject("Handle", handleArea).AddComponent<Image>();
+        handle.color = new Color32(155, 193, 255, 255);
+        handle.rectTransform.sizeDelta = new Vector2(12f, 30f);
+
+        Slider slider = root.AddComponent<Slider>();
+        slider.fillRect = fill.rectTransform;
+        slider.handleRect = handle.rectTransform;
+        slider.targetGraphic = handle;
+        slider.minValue = -5f;
+        slider.maxValue = 5f;
+        return slider;
+    }
+
+    private static void SetTopLeft(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static void SetBottomLeft(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(0f, 0f);
+        rect.pivot = new Vector2(0f, 0f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static void SetBottomStretchLeft(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(0.5f, 0f);
+        rect.pivot = new Vector2(0f, 0f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static void SetBottomStretchRight(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(0.5f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(1f, 0f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static class EventSystemBootstrap
+    {
+        public static void EnsureEventSystemExists()
+        {
+            if (UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() != null)
+            {
+                return;
+            }
+
+            GameObject eventSystemObject = new GameObject("EventSystem");
+            eventSystemObject.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            eventSystemObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            SceneManager.MoveGameObjectToScene(eventSystemObject, SceneManager.GetActiveScene());
+        }
+    }
+}
+
+[DisallowMultipleComponent]
+public sealed class DrawingOverlayImportController : MonoBehaviour
+{
+    [SerializeField] private Button importButton;
+    [SerializeField] private DrawingOverlayManager overlayManager;
+
+    public void Initialize(Button resolvedImportButton, DrawingOverlayManager resolvedOverlayManager)
+    {
+        if (importButton != null)
+        {
+            importButton.onClick.RemoveListener(HandleImportButtonClicked);
+        }
+
+        importButton = resolvedImportButton;
+        overlayManager = resolvedOverlayManager;
+
+        if (importButton != null)
+        {
+            importButton.onClick.RemoveListener(HandleImportButtonClicked);
+            importButton.onClick.AddListener(HandleImportButtonClicked);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (importButton != null)
+        {
+            importButton.onClick.RemoveListener(HandleImportButtonClicked);
+        }
+    }
+
+    private void HandleImportButtonClicked()
+    {
+        if (overlayManager == null)
+        {
+            return;
+        }
+
+        DrawingOverlaySceneBootstrap.EnsurePanel(overlayManager);
+        string path = ShowOpenFileDialog();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        string extension = Path.GetExtension(path).ToLowerInvariant();
+        switch (extension)
+        {
+            case ".png":
+            case ".jpg":
+            case ".jpeg":
+                ImportImage(path);
+                break;
+            case ".pdf":
+                ImportPdf(path);
+                break;
+            default:
+                overlayManager.ShowStatusOnly("지원하지 않는 파일 형식입니다.");
+                break;
+        }
+    }
+
+    private void ImportImage(string path)
+    {
+        try
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+            if (!ImageConversion.LoadImage(texture, bytes, false))
+            {
+                UnityEngine.Object.Destroy(texture);
+                overlayManager.ShowStatusOnly("이미지를 읽지 못했습니다.");
+                return;
+            }
+
+            texture.name = Path.GetFileName(path);
+            overlayManager.BeginCalibration(texture, path, OverlaySourceType.Image, 0);
+        }
+        catch (Exception exception)
+        {
+            UnityEngine.Debug.LogException(exception, this);
+            overlayManager.ShowStatusOnly("이미지 로드 중 오류가 발생했습니다.");
+        }
+    }
+
+    private void ImportPdf(string path)
+    {
+        if (PdfThumbnailLoader.TryLoadFirstPageThumbnail(path, 2048, out Texture2D texture, out string error))
+        {
+            texture.name = Path.GetFileName(path);
+            overlayManager.BeginCalibration(texture, path, OverlaySourceType.PdfPage, 0);
+            return;
+        }
+
+        overlayManager.ShowStatusOnly($"PDF 미리보기를 만들지 못했습니다.\n{error}");
+    }
+
+    private static string ShowOpenFileDialog()
+    {
+#if UNITY_EDITOR
+        return EditorUtility.OpenFilePanel("도면 파일 선택", string.Empty, "png,jpg,jpeg,pdf");
+#else
+        if (Application.platform != RuntimePlatform.WindowsPlayer)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using Process process = new Process();
+            process.StartInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = BuildPowerShellArguments(),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+            return output;
+        }
+        catch (Exception exception)
+        {
+            UnityEngine.Debug.LogException(exception);
+            return string.Empty;
+        }
+#endif
+    }
+
+    private static string BuildPowerShellArguments()
+    {
+        string script = @"
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Filter = 'Supported Files (*.png;*.jpg;*.jpeg;*.pdf)|*.png;*.jpg;*.jpeg;*.pdf|Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|PDF Files (*.pdf)|*.pdf|All Files (*.*)|*.*'
+$dialog.Multiselect = $false
+$dialog.Title = '도면 파일 선택'
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    Write-Output $dialog.FileName
+}";
+        return "-NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+    }
+}
+
+internal static class PdfThumbnailLoader
+{
+    public static bool TryLoadFirstPageThumbnail(string path, int maxPixelSize, out Texture2D texture, out string error)
+    {
+        texture = null;
+        error = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            error = "PDF 파일 경로가 유효하지 않습니다.";
+            return false;
+        }
+
+        IntPtr hBitmap = IntPtr.Zero;
+        try
+        {
+            Guid guid = typeof(IShellItemImageFactory).GUID;
+            NativePdfThumbnail.SHCreateItemFromParsingName(path, IntPtr.Zero, ref guid, out IShellItemImageFactory imageFactory);
+
+            NativePdfThumbnail.SIZE size = new NativePdfThumbnail.SIZE
+            {
+                cx = maxPixelSize,
+                cy = maxPixelSize,
+            };
+
+            imageFactory.GetImage(
+                size,
+                NativePdfThumbnail.SIIGBF.ResizeToFit |
+                NativePdfThumbnail.SIIGBF.BiggerSizeOk |
+                NativePdfThumbnail.SIIGBF.ThumbnailOnly,
+                out hBitmap);
+
+            if (hBitmap == IntPtr.Zero)
+            {
+                error = "Windows Shell 썸네일을 가져오지 못했습니다.";
+                return false;
+            }
+
+            texture = NativePdfThumbnail.CreateTextureFromHBitmap(hBitmap, out error);
+            return texture != null;
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+            return false;
+        }
+        finally
+        {
+            if (hBitmap != IntPtr.Zero)
+            {
+                NativePdfThumbnail.DeleteObject(hBitmap);
+            }
+        }
+    }
+}
+
+[ComImport]
+[Guid("bcc18b79-ba16-442f-80c4-8a59c30c463b")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IShellItemImageFactory
+{
+    void GetImage(NativePdfThumbnail.SIZE size, NativePdfThumbnail.SIIGBF flags, out IntPtr phbm);
+}
+
+internal static class NativePdfThumbnail
+{
+    [Flags]
+    internal enum SIIGBF
+    {
+        ResizeToFit = 0x00,
+        BiggerSizeOk = 0x01,
+        ThumbnailOnly = 0x08,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SIZE
+    {
+        public int cx;
+        public int cy;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BITMAP
+    {
+        public int bmType;
+        public int bmWidth;
+        public int bmHeight;
+        public int bmWidthBytes;
+        public short bmPlanes;
+        public short bmBitsPixel;
+        public IntPtr bmBits;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BITMAPINFOHEADER
+    {
+        public uint biSize;
+        public int biWidth;
+        public int biHeight;
+        public ushort biPlanes;
+        public ushort biBitCount;
+        public uint biCompression;
+        public uint biSizeImage;
+        public int biXPelsPerMeter;
+        public int biYPelsPerMeter;
+        public uint biClrUsed;
+        public uint biClrImportant;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BITMAPINFO
+    {
+        public BITMAPINFOHEADER bmiHeader;
+    }
+
+    private const uint DIB_RGB_COLORS = 0;
+    private const uint BI_RGB = 0;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+    internal static extern void SHCreateItemFromParsingName(
+        [MarshalAs(UnmanagedType.LPWStr)] string path,
+        IntPtr pbc,
+        ref Guid riid,
+        [MarshalAs(UnmanagedType.Interface)] out IShellItemImageFactory ppv);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    private static extern int GetObject(IntPtr hObject, int cbBuffer, out BITMAP lpvObject);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    private static extern int GetDIBits(
+        IntPtr hdc,
+        IntPtr hbmp,
+        uint uStartScan,
+        uint cScanLines,
+        [Out] byte[] lpvBits,
+        ref BITMAPINFO lpbmi,
+        uint uUsage);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    internal static extern bool DeleteObject(IntPtr hObject);
+
+    internal static Texture2D CreateTextureFromHBitmap(IntPtr hBitmap, out string error)
+    {
+        error = string.Empty;
+        if (GetObject(hBitmap, Marshal.SizeOf<BITMAP>(), out BITMAP bitmap) == 0)
+        {
+            error = "비트맵 정보를 읽지 못했습니다.";
+            return null;
+        }
+
+        int width = bitmap.bmWidth;
+        int height = bitmap.bmHeight;
+        if (width <= 0 || height <= 0)
+        {
+            error = "비트맵 크기가 유효하지 않습니다.";
+            return null;
+        }
+
+        BITMAPINFO info = new BITMAPINFO
+        {
+            bmiHeader = new BITMAPINFOHEADER
+            {
+                biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
+                biWidth = width,
+                biHeight = -height,
+                biPlanes = 1,
+                biBitCount = 32,
+                biCompression = BI_RGB,
+                biSizeImage = (uint)(width * height * 4),
+            }
+        };
+
+        byte[] bgra = new byte[width * height * 4];
+        IntPtr hdc = GetDC(IntPtr.Zero);
+        try
+        {
+            if (GetDIBits(hdc, hBitmap, 0, (uint)height, bgra, ref info, DIB_RGB_COLORS) == 0)
+            {
+                error = "비트맵 픽셀을 읽지 못했습니다.";
+                return null;
+            }
+        }
+        finally
+        {
+            ReleaseDC(IntPtr.Zero, hdc);
+        }
+
+        byte[] rgba = new byte[bgra.Length];
+        for (int i = 0; i < bgra.Length; i += 4)
+        {
+            rgba[i] = bgra[i + 2];
+            rgba[i + 1] = bgra[i + 1];
+            rgba[i + 2] = bgra[i];
+            rgba[i + 3] = bgra[i + 3];
+        }
+
+        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false, false);
+        texture.LoadRawTextureData(rgba);
+        texture.Apply(false, false);
+        return texture;
+    }
+}
