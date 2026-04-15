@@ -997,53 +997,17 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        if (wallRoot != null)
-        {
-            return;
-        }
-
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
-        if (wallRootTransform != null)
-        {
-            wallRoot = wallRootTransform;
-        }
+        LayerUtility.ResolveTransformByName(ref wallRoot, "Walls", true);
     }
 
     private void ResolveReferences()
     {
-        if (wallSelectionManager == null)
-        {
-            wallSelectionManager = FindFirstObjectByType<WallSelectionManager>();
-        }
-
-        if (handleManager == null)
-        {
-            handleManager = FindFirstObjectByType<HandleManager>();
-        }
-
-        if (wallLengthDisplay == null)
-        {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
-        }
-
-        if (undoRedoManager == null)
-        {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
-        }
-
-        if (modeManager == null)
-        {
-            modeManager = FindFirstObjectByType<ModeManager>();
-        }
-
-        if (roomManager == null)
-        {
-            roomManager = FindFirstObjectByType<RoomManager>();
-        }
-
-        if (wallOpeningPlacementManager == null)
-        {
-            wallOpeningPlacementManager = FindFirstObjectByType<WallOpeningPlacementManager>();
-        }
+        LayerUtility.ResolveObject(ref wallSelectionManager);
+        LayerUtility.ResolveObject(ref handleManager);
+        LayerUtility.ResolveObject(ref wallLengthDisplay);
+        LayerUtility.ResolveObject(ref undoRedoManager);
+        LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref roomManager);
+        LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
     }
 }

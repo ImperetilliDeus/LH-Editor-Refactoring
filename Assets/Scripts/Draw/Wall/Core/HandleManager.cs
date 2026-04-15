@@ -1784,30 +1784,10 @@ public partial class HandleManager : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (snapManager == null)
-        {
-            snapManager = FindFirstObjectByType<SnapManager>();
-        }
-
-        if (wallLengthDisplay == null)
-        {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
-        }
-
-        if (undoRedoManager == null)
-        {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
-        }
-
-        if (modeManager == null)
-        {
-            modeManager = FindFirstObjectByType<ModeManager>();
-        }
-
-        if (roomManager == null)
-        {
-            roomManager = FindFirstObjectByType<RoomManager>();
-        }
+        LayerUtility.ResolveObject(ref snapManager);
+        LayerUtility.ResolveObject(ref wallLengthDisplay);
+        LayerUtility.ResolveObject(ref undoRedoManager);
+        LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref roomManager);
     }
-
 }

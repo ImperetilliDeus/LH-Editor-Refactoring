@@ -161,10 +161,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             windowUIController = GetComponentInChildren<WindowOpeningUIController>(true);
         }
 
-        if (previewCanvas == null)
-        {
-            previewCanvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
-        }
+        LayerUtility.ResolveCanvasByNameOrFirst(ref previewCanvas, "_Screen");
 
         EnsureWallRoot();
         EnsureCachedResources();
@@ -1890,49 +1887,17 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        if (wallRoot != null)
-        {
-            return;
-        }
-
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
-        if (wallRootTransform != null)
-        {
-            wallRoot = wallRootTransform;
-        }
+        LayerUtility.ResolveTransformByName(ref wallRoot, "Walls", true);
     }
 
     private void ResolveReferences()
     {
-        if (handleManager == null)
-        {
-            handleManager = FindFirstObjectByType<HandleManager>();
-        }
-
-        if (wallLengthDisplay == null)
-        {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
-        }
-
-        if (undoRedoManager == null)
-        {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
-        }
-
-        if (modeManager == null)
-        {
-            modeManager = FindFirstObjectByType<ModeManager>();
-        }
-
-        if (wallSelectionManager == null)
-        {
-            wallSelectionManager = FindFirstObjectByType<WallSelectionManager>();
-        }
-
-        if (roomManager == null)
-        {
-            roomManager = FindFirstObjectByType<RoomManager>();
-        }
+        LayerUtility.ResolveObject(ref handleManager);
+        LayerUtility.ResolveObject(ref wallLengthDisplay);
+        LayerUtility.ResolveObject(ref undoRedoManager);
+        LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref wallSelectionManager);
+        LayerUtility.ResolveObject(ref roomManager);
     }
 
     private float MillimetersToUnits(float millimeters)
@@ -1957,13 +1922,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
 
     private bool TryParsePositiveMillimeters(string inputText, out float value)
     {
-        bool parsed = TryParseMillimeters(inputText, out value);
+        bool parsed = UnitDisplayUtility.TryParseMillimeters(inputText, out value);
         return parsed && value > 0f;
     }
-
-    private bool TryParseMillimeters(string inputText, out float value)
-    {
-        return UnitDisplayUtility.TryParseMillimeters(inputText, out value);
-    }
-
 }

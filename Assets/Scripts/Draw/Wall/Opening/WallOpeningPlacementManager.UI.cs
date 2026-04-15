@@ -222,7 +222,7 @@ public partial class WallOpeningPlacementManager
 
     private void ApplySelectedOpeningBottomOffsetFromInput(string inputText, OpeningPlacementType requiredType)
     {
-        if (!TryParseMillimeters(inputText, out float millimeters))
+        if (!UnitDisplayUtility.TryParseMillimeters(inputText, out float millimeters))
         {
             RefreshOpeningDetailInputs(true);
             return;
