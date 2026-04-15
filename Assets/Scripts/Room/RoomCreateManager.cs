@@ -50,6 +50,7 @@ public sealed class RoomCreateManager : MonoBehaviour
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
     private Room selectedRoom;
     private Room pendingSelectedRoom;
+    private bool isRoomCreateModeActive;
 
     private void Reset()
     {
@@ -67,6 +68,8 @@ public sealed class RoomCreateManager : MonoBehaviour
         ResolveReferences();
         RefreshDrawingPlane();
         EnsurePreviewObjects();
+        BindModeEvents();
+        SyncModeState();
     }
 
     private void Update()
@@ -76,11 +79,8 @@ public sealed class RoomCreateManager : MonoBehaviour
             return;
         }
 
-        bool isRoomCreateMode = modeManager != null && modeManager.IsMode(EditorMode.RoomCreate);
-        if (!isRoomCreateMode)
+        if (!isRoomCreateModeActive)
         {
-            CancelCurrentInteraction();
-            ClearSelectedRoom();
             return;
         }
 
@@ -356,29 +356,13 @@ public sealed class RoomCreateManager : MonoBehaviour
 
     private bool TryBuildRectanglePolygon(Vector3 startPoint, Vector3 endPoint, out List<Vector3> polygonVertices, out Bounds bounds)
     {
-        polygonVertices = new List<Vector3>();
-        float minX = Mathf.Min(startPoint.x, endPoint.x);
-        float maxX = Mathf.Max(startPoint.x, endPoint.x);
-        float minZ = Mathf.Min(startPoint.z, endPoint.z);
-        float maxZ = Mathf.Max(startPoint.z, endPoint.z);
-        float width = maxX - minX;
-        float height = maxZ - minZ;
-        float y = startPoint.y;
-
-        bounds = new Bounds(
-            new Vector3((minX + maxX) * 0.5f, y, (minZ + maxZ) * 0.5f),
-            new Vector3(width, 0.01f, height));
-
-        if (width < minimumRoomWidth || height < minimumRoomHeight)
-        {
-            return false;
-        }
-
-        polygonVertices.Add(new Vector3(minX, y, minZ));
-        polygonVertices.Add(new Vector3(maxX, y, minZ));
-        polygonVertices.Add(new Vector3(maxX, y, maxZ));
-        polygonVertices.Add(new Vector3(minX, y, maxZ));
-        return true;
+        return RoomCreateGeometryService.TryBuildRectanglePolygon(
+            startPoint,
+            endPoint,
+            minimumRoomWidth,
+            minimumRoomHeight,
+            out polygonVertices,
+            out bounds);
     }
 
     private void UpdatePreviewFromRectangle(Vector3 startPoint, Vector3 endPoint)
@@ -566,6 +550,66 @@ public sealed class RoomCreateManager : MonoBehaviour
         LayerUtility.ResolveObject(ref undoRedoManager);
     }
 
+    private void BindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+        modeManager.ModeChanged += HandleModeChanged;
+    }
+
+    private void UnbindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+    }
+
+    private void SyncModeState()
+    {
+        SetRoomCreateModeActive(modeManager != null && modeManager.IsMode(EditorMode.RoomCreate));
+    }
+
+    private void HandleModeChanged(EditorMode mode)
+    {
+        SetRoomCreateModeActive(mode == EditorMode.RoomCreate);
+    }
+
+    private void SetRoomCreateModeActive(bool active)
+    {
+        if (isRoomCreateModeActive == active)
+        {
+            return;
+        }
+
+        isRoomCreateModeActive = active;
+        if (active)
+        {
+            OnEnterRoomCreateMode();
+            return;
+        }
+
+        OnExitRoomCreateMode();
+    }
+
+    private void OnEnterRoomCreateMode()
+    {
+        RefreshDrawingPlane();
+        EnsurePreviewObjects();
+    }
+
+    private void OnExitRoomCreateMode()
+    {
+        CancelCurrentInteraction();
+        ClearSelectedRoom();
+    }
+
     private void RefreshDrawingPlane()
     {
         hasDrawingPlane = false;
@@ -709,9 +753,9 @@ public sealed class RoomCreateManager : MonoBehaviour
                 continue;
             }
 
-            if (ContainsPointXZ(bounds, wall.StartPoint) ||
-                ContainsPointXZ(bounds, wall.EndPoint) ||
-                SegmentIntersectsBoundsXZ(bounds, wall.StartPoint, wall.EndPoint))
+            if (RoomCreateGeometryService.ContainsPointXZ(bounds, wall.StartPoint) ||
+                RoomCreateGeometryService.ContainsPointXZ(bounds, wall.EndPoint) ||
+                RoomCreateGeometryService.SegmentIntersectsBoundsXZ(bounds, wall.StartPoint, wall.EndPoint))
             {
                 results.Add(wall);
             }
@@ -733,12 +777,16 @@ public sealed class RoomCreateManager : MonoBehaviour
             return false;
         }
 
-        if (AreBoundsNearlyEqual(innerBounds, outerBounds))
+        if (RoomCreateGeometryService.AreBoundsNearlyEqual(innerBounds, outerBounds))
         {
             return false;
         }
 
-        List<Bounds> splitBounds = BuildSplitBounds(outerBounds, innerBounds);
+        List<Bounds> splitBounds = RoomCreateGeometryService.BuildSplitBounds(
+            outerBounds,
+            innerBounds,
+            minimumRoomWidth,
+            minimumRoomHeight);
         if (splitBounds.Count == 0)
         {
             return false;
@@ -749,7 +797,7 @@ public sealed class RoomCreateManager : MonoBehaviour
 
         for (int i = 0; i < splitBounds.Count; i++)
         {
-            List<Vector3> polygon = BuildPolygonFromBounds(splitBounds[i], innerBounds.center.y);
+            List<Vector3> polygon = RoomCreateGeometryService.BuildPolygonFromBounds(splitBounds[i], innerBounds.center.y);
             HashSet<Wall> walls = CollectWallsIntersectingBounds(splitBounds[i]);
             Room room = roomManager.CreateRoomFromPolygon(polygon, walls.Count > 0 ? walls : null);
             if (room != null)
@@ -777,12 +825,16 @@ public sealed class RoomCreateManager : MonoBehaviour
         for (int i = 0; i < cachedRooms.Count; i++)
         {
             Room room = cachedRooms[i];
-            if (!TryGetRoomBounds(room, out Bounds roomBounds))
+            if (!RoomCreateGeometryService.TryGetAxisAlignedRoomBounds(
+                    room != null ? room.ManualBoundaryVertices : null,
+                    minimumRoomWidth,
+                    minimumRoomHeight,
+                    out Bounds roomBounds))
             {
                 continue;
             }
 
-            if (!BoundsContainBoundsXZ(roomBounds, targetBounds))
+            if (!RoomCreateGeometryService.BoundsContainBoundsXZ(roomBounds, targetBounds))
             {
                 continue;
             }
@@ -821,12 +873,12 @@ public sealed class RoomCreateManager : MonoBehaviour
                 continue;
             }
 
-            if (!IsPointInsidePolygonXZ(worldPoint, cachedRoomVertices))
+            if (!RoomCreateGeometryService.IsPointInsidePolygonXZ(worldPoint, cachedRoomVertices))
             {
                 continue;
             }
 
-            float area = Mathf.Abs(CalculateSignedAreaXZ(cachedRoomVertices));
+            float area = Mathf.Abs(RoomCreateGeometryService.CalculateSignedAreaXZ(cachedRoomVertices));
             if (area >= bestArea)
             {
                 continue;
@@ -837,195 +889,6 @@ public sealed class RoomCreateManager : MonoBehaviour
         }
 
         return bestRoom;
-    }
-
-    private bool TryGetRoomBounds(Room room, out Bounds bounds)
-    {
-        bounds = default;
-        if (room == null || room.ManualBoundaryVertices == null || room.ManualBoundaryVertices.Count != 4)
-        {
-            return false;
-        }
-
-        float minX = float.MaxValue;
-        float maxX = float.MinValue;
-        float minZ = float.MaxValue;
-        float maxZ = float.MinValue;
-        float y = room.ManualBoundaryVertices[0].y;
-
-        for (int i = 0; i < room.ManualBoundaryVertices.Count; i++)
-        {
-            Vector3 current = room.ManualBoundaryVertices[i];
-            Vector3 next = room.ManualBoundaryVertices[(i + 1) % room.ManualBoundaryVertices.Count];
-            bool horizontal = Mathf.Abs(current.z - next.z) <= 0.0001f;
-            bool vertical = Mathf.Abs(current.x - next.x) <= 0.0001f;
-            if (!horizontal && !vertical)
-            {
-                return false;
-            }
-
-            minX = Mathf.Min(minX, current.x);
-            maxX = Mathf.Max(maxX, current.x);
-            minZ = Mathf.Min(minZ, current.z);
-            maxZ = Mathf.Max(maxZ, current.z);
-        }
-
-        bounds = new Bounds(
-            new Vector3((minX + maxX) * 0.5f, y, (minZ + maxZ) * 0.5f),
-            new Vector3(maxX - minX, 0.01f, maxZ - minZ));
-        return bounds.size.x >= minimumRoomWidth && bounds.size.z >= minimumRoomHeight;
-    }
-
-    private bool BoundsContainBoundsXZ(Bounds outer, Bounds inner)
-    {
-        const float epsilon = 0.0001f;
-        return inner.min.x >= outer.min.x - epsilon &&
-               inner.max.x <= outer.max.x + epsilon &&
-               inner.min.z >= outer.min.z - epsilon &&
-               inner.max.z <= outer.max.z + epsilon;
-    }
-
-    private static bool AreBoundsNearlyEqual(Bounds left, Bounds right)
-    {
-        return Mathf.Abs(left.min.x - right.min.x) <= 0.0001f &&
-               Mathf.Abs(left.max.x - right.max.x) <= 0.0001f &&
-               Mathf.Abs(left.min.z - right.min.z) <= 0.0001f &&
-               Mathf.Abs(left.max.z - right.max.z) <= 0.0001f;
-    }
-
-    private List<Bounds> BuildSplitBounds(Bounds outerBounds, Bounds innerBounds)
-    {
-        List<Bounds> results = new List<Bounds>();
-        TryAddSplitBounds(results, outerBounds.min.x, outerBounds.max.x, outerBounds.min.z, innerBounds.min.z, innerBounds.center.y);
-        TryAddSplitBounds(results, outerBounds.min.x, outerBounds.max.x, innerBounds.max.z, outerBounds.max.z, innerBounds.center.y);
-        TryAddSplitBounds(results, outerBounds.min.x, innerBounds.min.x, innerBounds.min.z, innerBounds.max.z, innerBounds.center.y);
-        TryAddSplitBounds(results, innerBounds.max.x, outerBounds.max.x, innerBounds.min.z, innerBounds.max.z, innerBounds.center.y);
-        TryAddSplitBounds(results, innerBounds.min.x, innerBounds.max.x, innerBounds.min.z, innerBounds.max.z, innerBounds.center.y);
-        return results;
-    }
-
-    private void TryAddSplitBounds(List<Bounds> results, float minX, float maxX, float minZ, float maxZ, float y)
-    {
-        float width = maxX - minX;
-        float height = maxZ - minZ;
-        if (width < minimumRoomWidth || height < minimumRoomHeight)
-        {
-            return;
-        }
-
-        results.Add(new Bounds(
-            new Vector3((minX + maxX) * 0.5f, y, (minZ + maxZ) * 0.5f),
-            new Vector3(width, 0.01f, height)));
-    }
-
-    private static List<Vector3> BuildPolygonFromBounds(Bounds bounds, float y)
-    {
-        return new List<Vector3>
-        {
-            new Vector3(bounds.min.x, y, bounds.min.z),
-            new Vector3(bounds.max.x, y, bounds.min.z),
-            new Vector3(bounds.max.x, y, bounds.max.z),
-            new Vector3(bounds.min.x, y, bounds.max.z),
-        };
-    }
-
-    private static bool ContainsPointXZ(Bounds bounds, Vector3 point)
-    {
-        return point.x >= bounds.min.x &&
-               point.x <= bounds.max.x &&
-               point.z >= bounds.min.z &&
-               point.z <= bounds.max.z;
-    }
-
-    private static bool SegmentIntersectsBoundsXZ(Bounds bounds, Vector3 start, Vector3 end)
-    {
-        if (ContainsPointXZ(bounds, start) || ContainsPointXZ(bounds, end))
-        {
-            return true;
-        }
-
-        Vector2 a = new Vector2(start.x, start.z);
-        Vector2 b = new Vector2(end.x, end.z);
-        Vector2 rectMin = new Vector2(bounds.min.x, bounds.min.z);
-        Vector2 rectMax = new Vector2(bounds.max.x, bounds.max.z);
-
-        Vector2 topLeft = new Vector2(rectMin.x, rectMax.y);
-        Vector2 topRight = rectMax;
-        Vector2 bottomLeft = rectMin;
-        Vector2 bottomRight = new Vector2(rectMax.x, rectMin.y);
-
-        return SegmentsIntersect2D(a, b, bottomLeft, topLeft) ||
-               SegmentsIntersect2D(a, b, topLeft, topRight) ||
-               SegmentsIntersect2D(a, b, topRight, bottomRight) ||
-               SegmentsIntersect2D(a, b, bottomRight, bottomLeft);
-    }
-
-    private static bool SegmentsIntersect2D(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2)
-    {
-        float o1 = Orientation(a1, a2, b1);
-        float o2 = Orientation(a1, a2, b2);
-        float o3 = Orientation(b1, b2, a1);
-        float o4 = Orientation(b1, b2, a2);
-
-        if (o1 * o2 < 0f && o3 * o4 < 0f)
-        {
-            return true;
-        }
-
-        return Mathf.Approximately(o1, 0f) && OnSegment(a1, b1, a2) ||
-               Mathf.Approximately(o2, 0f) && OnSegment(a1, b2, a2) ||
-               Mathf.Approximately(o3, 0f) && OnSegment(b1, a1, b2) ||
-               Mathf.Approximately(o4, 0f) && OnSegment(b1, a2, b2);
-    }
-
-    private static float Orientation(Vector2 a, Vector2 b, Vector2 c)
-    {
-        return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-    }
-
-    private static bool OnSegment(Vector2 a, Vector2 point, Vector2 b)
-    {
-        return point.x >= Mathf.Min(a.x, b.x) - 0.0001f &&
-               point.x <= Mathf.Max(a.x, b.x) + 0.0001f &&
-               point.y >= Mathf.Min(a.y, b.y) - 0.0001f &&
-               point.y <= Mathf.Max(a.y, b.y) + 0.0001f;
-    }
-
-    private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> polygon)
-    {
-        bool inside = false;
-        int count = polygon != null ? polygon.Count : 0;
-        if (count < 3)
-        {
-            return false;
-        }
-
-        for (int i = 0, j = count - 1; i < count; j = i++)
-        {
-            Vector3 pi = polygon[i];
-            Vector3 pj = polygon[j];
-            bool intersects = ((pi.z > point.z) != (pj.z > point.z)) &&
-                              (point.x < (pj.x - pi.x) * (point.z - pi.z) / ((pj.z - pi.z) + 0.000001f) + pi.x);
-            if (intersects)
-            {
-                inside = !inside;
-            }
-        }
-
-        return inside;
-    }
-
-    private static float CalculateSignedAreaXZ(List<Vector3> polygon)
-    {
-        float area = 0f;
-        for (int i = 0; i < polygon.Count; i++)
-        {
-            Vector3 a = polygon[i];
-            Vector3 b = polygon[(i + 1) % polygon.Count];
-            area += (a.x * b.z) - (b.x * a.z);
-        }
-
-        return area * 0.5f;
     }
 
     private bool IsPointerOverUI()
@@ -1052,6 +915,8 @@ public sealed class RoomCreateManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnbindModeEvents();
+
         for (int i = 0; i < previewBoundaries.Count; i++)
         {
             if (previewBoundaries[i] != null)
