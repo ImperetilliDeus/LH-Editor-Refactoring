@@ -48,6 +48,7 @@ public class FurniturePlacementManager : MonoBehaviour
     private int furnishLayer = -1;
     private float nextQRotationTime;
     private float nextERotationTime;
+    private bool isFurniturePlaceModeActive;
 
     private void Awake()
     {
@@ -55,12 +56,15 @@ public class FurniturePlacementManager : MonoBehaviour
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
+        BindModeEvents();
+        SyncModeState();
+        ValidateConfiguration();
     }
 
     private void Update()
     {
         EnsureCameraCulling();
-        if (modeManager == null || !modeManager.IsMode(EditorMode.FurniturePlace))
+        if (!isFurniturePlaceModeActive)
         {
             if (state != PlacementState.Idle)
             {
@@ -699,6 +703,50 @@ public class FurniturePlacementManager : MonoBehaviour
         {
             roomManager = FindFirstObjectByType<RoomManager>();
         }
+    }
+
+    private void BindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+        modeManager.ModeChanged += HandleModeChanged;
+    }
+
+    private void UnbindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+    }
+
+    private void HandleModeChanged(EditorMode mode)
+    {
+        isFurniturePlaceModeActive = mode == EditorMode.FurniturePlace;
+        enabled = isFurniturePlaceModeActive || state != PlacementState.Idle;
+    }
+
+    private void SyncModeState()
+    {
+        HandleModeChanged(modeManager != null ? modeManager.CurrentMode : EditorMode.Default);
+    }
+
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(modeManager != null, $"{nameof(FurniturePlacementManager)} requires {nameof(modeManager)}.", this);
+        Debug.Assert(targetCamera != null, $"{nameof(FurniturePlacementManager)} requires {nameof(targetCamera)}.", this);
+        Debug.Assert(roomManager != null, $"{nameof(FurniturePlacementManager)} requires {nameof(roomManager)}.", this);
+    }
+
+    private void OnDestroy()
+    {
+        UnbindModeEvents();
     }
 
     private void EnsureFurnitureRoot()

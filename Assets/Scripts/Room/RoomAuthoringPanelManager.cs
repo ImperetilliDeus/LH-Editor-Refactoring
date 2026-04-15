@@ -36,16 +36,20 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     private Vector3 lastTopViewCameraPosition;
     private Quaternion lastTopViewCameraRotation;
     private float lastTopViewCameraOrthoSize;
+    private bool isRoomAuthoringModeActive;
 
     public Room SelectedRoom => selectedRoom;
+    public event System.Action<Room> SelectedRoomChanged;
 
     private void Awake()
     {
         ResolveReferences();
         BindEvents();
+        SyncModeState();
         RefreshDropdownState();
         RefreshNameField();
         RefreshAreaField();
+        ValidateConfiguration();
     }
 
     private void OnDestroy()
@@ -57,8 +61,6 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
     private void Update()
     {
-        SyncSelectionFromFocusedRoom();
-
         if (labelsDirty || HasTopViewCameraStateChanged())
         {
             RefreshRoomTypeLabels();
@@ -66,12 +68,6 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         }
 
         CacheTopViewCameraState();
-
-        if (!IsRoomAuthoringMode())
-        {
-            UpdateRoomEditMenuState();
-            return;
-        }
         UpdateRoomEditMenuState();
     }
 
@@ -89,6 +85,12 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         {
             modeManager.ModeChanged -= HandleModeChanged;
             modeManager.ModeChanged += HandleModeChanged;
+        }
+
+        if (roomHandleManager != null)
+        {
+            roomHandleManager.FocusedRoomChanged -= HandleFocusedRoomChanged;
+            roomHandleManager.FocusedRoomChanged += HandleFocusedRoomChanged;
         }
 
         if (roomTypeDropdown != null)
@@ -115,6 +117,11 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             modeManager.ModeChanged -= HandleModeChanged;
         }
 
+        if (roomHandleManager != null)
+        {
+            roomHandleManager.FocusedRoomChanged -= HandleFocusedRoomChanged;
+        }
+
         if (roomTypeDropdown != null)
         {
             roomTypeDropdown.onValueChanged.RemoveListener(HandleRoomTypeDropdownChanged);
@@ -133,7 +140,8 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
     private void HandleModeChanged(EditorMode mode)
     {
-        if (mode != EditorMode.RoomCreate)
+        isRoomAuthoringModeActive = mode == EditorMode.RoomCreate;
+        if (!isRoomAuthoringModeActive)
         {
             SetSelectedRoomInternal(null);
             roomHandleManager?.ClearFocusedRoom();
@@ -146,9 +154,27 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         UpdateRoomEditMenuState();
     }
 
+    private void HandleFocusedRoomChanged(Room room)
+    {
+        if (!isRoomAuthoringModeActive && room != null)
+        {
+            return;
+        }
+
+        if (selectedRoom == room)
+        {
+            return;
+        }
+
+        SetSelectedRoomInternal(room);
+        RefreshDropdownState();
+        RefreshNameField();
+        RefreshAreaField();
+        UpdateRoomEditMenuState();
+    }
+
     private void HandleRoomsChanged()
     {
-        SyncSelectionFromFocusedRoom();
         RefreshNameField();
         RefreshAreaField();
         labelsDirty = true;
@@ -157,22 +183,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
     private bool IsRoomAuthoringMode()
     {
-        return modeManager != null && modeManager.CurrentMode == EditorMode.RoomCreate;
-    }
-
-    private void SyncSelectionFromFocusedRoom()
-    {
-        Room focusedRoom = roomHandleManager != null ? roomHandleManager.FocusedRoom : null;
-        if (selectedRoom == focusedRoom)
-        {
-            return;
-        }
-
-        SetSelectedRoomInternal(focusedRoom);
-        RefreshDropdownState();
-        RefreshNameField();
-        RefreshAreaField();
-        UpdateRoomEditMenuState();
+        return isRoomAuthoringModeActive;
     }
 
     private bool TryBuildRoomPolygonInCanvas(
@@ -225,8 +236,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         {
             selectedRoom.SetSelectionState(true, selectedRoomHighlightColor);
         }
-
-        topViewRenderManager?.MarkDirty();
+        SelectedRoomChanged?.Invoke(selectedRoom);
     }
 
     private void UpdateRoomEditMenuState()
@@ -373,9 +383,10 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
         TMP_Dropdown.OptionData option = roomTypeDropdown.options[optionIndex];
         string typeKey = option != null ? option.text ?? string.Empty : string.Empty;
-        selectedRoom.SetRoomTypeKey(typeKey);
-        RefreshLabelForRoom(selectedRoom);
-        labelsDirty = true;
+        if (roomManager != null)
+        {
+            roomManager.UpdateRoomMetadata(selectedRoom, selectedRoom.RoomName, typeKey);
+        }
     }
 
     private void HandleRoomNameChanged(string roomName)
@@ -385,9 +396,10 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             return;
         }
 
-        selectedRoom.SetRoomName(roomName);
-        RefreshLabelForRoom(selectedRoom);
-        labelsDirty = true;
+        if (roomManager != null)
+        {
+            roomManager.UpdateRoomMetadata(selectedRoom, roomName, selectedRoom.RoomTypeKey);
+        }
     }
 
     private void RefreshRoomTypeLabels()
@@ -667,6 +679,19 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         lastTopViewCameraPosition = cameraTransform.position;
         lastTopViewCameraRotation = cameraTransform.rotation;
         lastTopViewCameraOrthoSize = topCamera.orthographicSize;
+    }
+
+    private void SyncModeState()
+    {
+        HandleModeChanged(modeManager != null ? modeManager.CurrentMode : EditorMode.Default);
+        HandleFocusedRoomChanged(roomHandleManager != null ? roomHandleManager.FocusedRoom : null);
+    }
+
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(modeManager != null, $"{nameof(RoomAuthoringPanelManager)} requires {nameof(modeManager)}.", this);
+        Debug.Assert(roomManager != null, $"{nameof(RoomAuthoringPanelManager)} requires {nameof(roomManager)}.", this);
+        Debug.Assert(roomHandleManager != null, $"{nameof(RoomAuthoringPanelManager)} requires {nameof(roomHandleManager)}.", this);
     }
 }
 

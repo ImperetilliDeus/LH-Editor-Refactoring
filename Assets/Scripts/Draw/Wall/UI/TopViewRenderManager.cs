@@ -56,6 +56,8 @@ public partial class TopViewRenderManager : MonoBehaviour
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
     private bool visualsDirty = true;
+    private bool isTopViewVisible = true;
+    private Room highlightedRoom;
     public Camera TopViewCamera => topViewCamera;
     public Canvas TargetCanvas => targetCanvas;
     public RectTransform ContentRoot => contentRoot;
@@ -80,7 +82,9 @@ public partial class TopViewRenderManager : MonoBehaviour
         EnsureCanvas();
         BindEvents();
         CacheCameraState();
+        SyncVisibilityState();
         RefreshAllVisuals();
+        ValidateConfiguration();
     }
 
     private void OnDestroy()
@@ -94,13 +98,7 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void Update()
     {
-        bool visible = !showOnlyInDetailEdit || modeManager == null || modeManager.IsMode(EditorMode.DetailEdit);
-        if (contentRoot != null && contentRoot.gameObject.activeSelf != visible)
-        {
-            contentRoot.gameObject.SetActive(visible);
-        }
-
-        if (!visible)
+        if (!isTopViewVisible)
         {
             return;
         }
@@ -142,6 +140,16 @@ public partial class TopViewRenderManager : MonoBehaviour
             roomManager.RoomsChanged += MarkDirty;
         }
 
+        if (roomAuthoringPanelManager != null)
+        {
+            roomAuthoringPanelManager.SelectedRoomChanged += HandleSelectedRoomChanged;
+        }
+
+        if (roomHandleManager != null)
+        {
+            roomHandleManager.FocusedRoomChanged += HandleFocusedRoomChanged;
+        }
+
         VirtualBoundary.BoundariesChanged += MarkDirty;
 
         if (modeManager != null)
@@ -173,6 +181,16 @@ public partial class TopViewRenderManager : MonoBehaviour
             roomManager.RoomsChanged -= MarkDirty;
         }
 
+        if (roomAuthoringPanelManager != null)
+        {
+            roomAuthoringPanelManager.SelectedRoomChanged -= HandleSelectedRoomChanged;
+        }
+
+        if (roomHandleManager != null)
+        {
+            roomHandleManager.FocusedRoomChanged -= HandleFocusedRoomChanged;
+        }
+
         VirtualBoundary.BoundariesChanged -= MarkDirty;
 
         if (modeManager != null)
@@ -198,6 +216,30 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void HandleModeChanged(EditorMode mode)
     {
+        isTopViewVisible = !showOnlyInDetailEdit || mode == EditorMode.DetailEdit;
+        if (contentRoot != null && contentRoot.gameObject.activeSelf != isTopViewVisible)
+        {
+            contentRoot.gameObject.SetActive(isTopViewVisible);
+        }
+
+        enabled = isTopViewVisible;
+        MarkDirty();
+    }
+
+    private void HandleSelectedRoomChanged(Room room)
+    {
+        highlightedRoom = room ?? (roomHandleManager != null ? roomHandleManager.FocusedRoom : null);
+        MarkDirty();
+    }
+
+    private void HandleFocusedRoomChanged(Room room)
+    {
+        if (highlightedRoom != null)
+        {
+            return;
+        }
+
+        highlightedRoom = room;
         MarkDirty();
     }
 
@@ -242,6 +284,21 @@ public partial class TopViewRenderManager : MonoBehaviour
         {
             modeManager = FindFirstObjectByType<ModeManager>();
         }
+    }
+
+    private void SyncVisibilityState()
+    {
+        HandleModeChanged(modeManager != null ? modeManager.CurrentMode : EditorMode.DetailEdit);
+        highlightedRoom = roomAuthoringPanelManager != null
+            ? roomAuthoringPanelManager.SelectedRoom
+            : roomHandleManager != null ? roomHandleManager.FocusedRoom : null;
+    }
+
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(topViewCamera != null, $"{nameof(TopViewRenderManager)} requires {nameof(topViewCamera)}.", this);
+        Debug.Assert(contentRoot != null, $"{nameof(TopViewRenderManager)} requires {nameof(contentRoot)}.", this);
+        Debug.Assert(roomManager != null, $"{nameof(TopViewRenderManager)} requires {nameof(roomManager)}.", this);
     }
 
     private void EnsureCanvas()
