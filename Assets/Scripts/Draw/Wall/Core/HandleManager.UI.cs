@@ -199,6 +199,7 @@ public partial class HandleManager
 
     private void OnDestroy()
     {
+        UnbindModeEvents();
         previewSnappedGroup = null;
 
         for (int i = 0; i < vertexGroups.Count; i++)

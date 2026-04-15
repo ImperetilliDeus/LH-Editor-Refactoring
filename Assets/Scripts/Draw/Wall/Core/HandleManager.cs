@@ -96,6 +96,7 @@ public partial class HandleManager : MonoBehaviour
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
+    private bool isDefaultModeActive = true;
 
     public bool IsDraggingHandle => draggingGroup != null;
 
@@ -119,6 +120,9 @@ public partial class HandleManager : MonoBehaviour
         RegisterExistingWalls();
         RefreshAllGroupWorldPoints();
         CacheCameraState();
+        BindModeEvents();
+        SyncModeState();
+        ValidateConfiguration();
     }
 
     private void OnValidate()
@@ -133,7 +137,7 @@ public partial class HandleManager : MonoBehaviour
 
     private void Update()
     {
-        if (mainCamera == null || Mouse.current == null)
+        if (!isDefaultModeActive || mainCamera == null || Mouse.current == null)
         {
             return;
         }
@@ -164,15 +168,6 @@ public partial class HandleManager : MonoBehaviour
         }
 
         CacheCameraState();
-
-        if (modeManager != null && !modeManager.IsMode(EditorMode.Default))
-        {
-            SetHandlesVisible(false);
-            CancelInteractionState();
-            return;
-        }
-
-        SetHandlesVisible(true);
         HandleDraggingInput();
     }
 
@@ -417,11 +412,6 @@ public partial class HandleManager : MonoBehaviour
 
     private void TryBeginPendingDrag(Vector2 mousePosition)
     {
-        if (modeManager != null && !modeManager.IsMode(EditorMode.Default))
-        {
-            return;
-        }
-
         pendingGroup = null;
 
         for (int i = 0; i < vertexGroups.Count; i++)
@@ -1725,6 +1715,44 @@ public partial class HandleManager : MonoBehaviour
         dragPlane = new Plane(Vector3.up, new Vector3(0f, planeY, 0f));
     }
 
+    private void BindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+        modeManager.ModeChanged += HandleModeChanged;
+    }
+
+    private void UnbindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+    }
+
+    private void SyncModeState()
+    {
+        HandleModeChanged(modeManager != null ? modeManager.CurrentMode : EditorMode.Default);
+    }
+
+    private void HandleModeChanged(EditorMode mode)
+    {
+        isDefaultModeActive = mode == EditorMode.Default;
+        SetHandlesVisible(isDefaultModeActive);
+        if (!isDefaultModeActive)
+        {
+            CancelInteractionState();
+        }
+
+        enabled = isDefaultModeActive;
+    }
+
     private void RegisterExistingWalls()
     {
         if (wallRoot == null)
@@ -1789,5 +1817,11 @@ public partial class HandleManager : MonoBehaviour
         LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref roomManager);
+    }
+
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(mainCamera != null, $"{nameof(HandleManager)} requires {nameof(mainCamera)}.", this);
+        Debug.Assert(modeManager != null, $"{nameof(HandleManager)} requires {nameof(modeManager)}.", this);
     }
 }

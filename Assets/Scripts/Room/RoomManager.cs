@@ -65,6 +65,7 @@ public class RoomManager : MonoBehaviour
 
         Instance = this;
         EnsureWallRoot();
+        ValidateConfiguration();
     }
 
     private void Start()
@@ -132,9 +133,9 @@ public class RoomManager : MonoBehaviour
     public Room CreateRoomFromPolygon(List<Vector3> polygonVertices, HashSet<Wall> wallSet = null)
     {
         List<Vector3> sanitizedPolygonVertices = PolygonUtility.CreateSanitizedPolygonCopy(polygonVertices);
-        if (sanitizedPolygonVertices.Count < 3)
+        if (!RoomPolygonValidationUtility.IsValidPolygon(sanitizedPolygonVertices))
         {
-            Debug.LogWarning("Cannot create room: polygon requires at least three vertices");
+            Debug.LogWarning("Cannot create room: polygon is invalid");
             return null;
         }
 
@@ -181,6 +182,11 @@ public class RoomManager : MonoBehaviour
             return false;
         }
 
+        if (!RoomPolygonValidationUtility.IsValidPolygon(polygonVertices))
+        {
+            return false;
+        }
+
         if (!room.SetManualBoundaryVertices(polygonVertices, clearWallSet))
         {
             return false;
@@ -188,6 +194,37 @@ public class RoomManager : MonoBehaviour
 
         RoomsChanged?.Invoke();
         return true;
+    }
+
+    public bool UpdateRoomMetadata(Room room, string roomName, string roomTypeKey)
+    {
+        if (room == null)
+        {
+            return false;
+        }
+
+        bool changed = false;
+        string normalizedName = roomName ?? string.Empty;
+        string normalizedTypeKey = roomTypeKey ?? string.Empty;
+
+        if (!string.Equals(room.RoomName, normalizedName, System.StringComparison.Ordinal))
+        {
+            room.SetRoomName(normalizedName);
+            changed = true;
+        }
+
+        if (!string.Equals(room.RoomTypeKey, normalizedTypeKey, System.StringComparison.Ordinal))
+        {
+            room.SetRoomTypeKey(normalizedTypeKey);
+            changed = true;
+        }
+
+        if (changed)
+        {
+            RoomsChanged?.Invoke();
+        }
+
+        return changed;
     }
 
     public void DeleteRoom(Room room)
@@ -343,4 +380,8 @@ public class RoomManager : MonoBehaviour
         return fallbackRoomMaterial;
     }
 
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(wallRoot != null, $"{nameof(RoomManager)} requires {nameof(wallRoot)} or a scene Walls root.", this);
+    }
 }

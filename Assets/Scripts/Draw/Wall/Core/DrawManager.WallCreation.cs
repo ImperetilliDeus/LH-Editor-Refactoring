@@ -4,6 +4,7 @@ public partial class DrawManager
 {
     private void OnDestroy()
     {
+        UnbindModeEvents();
         ClearPreviewWallDisplay();
 
         if (previewWall != null)

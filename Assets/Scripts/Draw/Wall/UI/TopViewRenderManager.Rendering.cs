@@ -19,11 +19,11 @@ public partial class TopViewRenderManager
 
     private void RefreshFloorVisuals()
     {
-        Room[] rooms = FindObjectsByType<Room>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         TopPlanPolygonBatchGraphic batchGraphic = GetOrCreateFloorBatchGraphic();
         cachedFloorPolygons.Clear();
+        List<Room> rooms = roomManager != null ? roomManager.GetAllRooms() : new List<Room>();
 
-        for (int i = 0; i < rooms.Length; i++)
+        for (int i = 0; i < rooms.Count; i++)
         {
             Room room = rooms[i];
             if (room == null || !room.gameObject.activeInHierarchy)
@@ -168,10 +168,6 @@ public partial class TopViewRenderManager
         {
             return false;
         }
-
-        Room highlightedRoom = roomAuthoringPanelManager != null
-            ? roomAuthoringPanelManager.SelectedRoom
-            : roomHandleManager != null ? roomHandleManager.FocusedRoom : null;
 
         polygon = new TopPlanPolygonBatchGraphic.PolygonData(
             cachedPolygonPoints,

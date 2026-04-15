@@ -52,6 +52,7 @@ public partial class DrawManager : MonoBehaviour
     private IDrawManagerEditorState currentEditorState;
     private DrawManagerIdleState idleEditorState;
     private DrawManagerWallCreationState wallCreationEditorState;
+    private bool isDefaultModeActive = true;
 
     public bool IsWallCreationMode => isWallCreationMode;
     public GameObject PreviewWall => previewWall;
@@ -77,6 +78,9 @@ public partial class DrawManager : MonoBehaviour
         previewMaterial = CreateWallMaterial(previewColor, true);
         wallMaterial = CreateWallMaterial(wallColor, false);
         InitializeEditorStates();
+        BindModeEvents();
+        SyncModeState();
+        ValidateConfiguration();
     }
 
     private void OnValidate()
@@ -96,22 +100,50 @@ public partial class DrawManager : MonoBehaviour
 
     private void Update()
     {
-        if (mainCamera == null || Mouse.current == null)
+        if (!isDefaultModeActive || mainCamera == null || Mouse.current == null)
         {
-            return;
-        }
-
-        if (modeManager != null && !modeManager.IsMode(EditorMode.Default))
-        {
-            if (isWallCreationMode)
-            {
-                TransitionToState(idleEditorState);
-            }
-
             return;
         }
 
         currentEditorState?.Tick();
+    }
+
+    private void BindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+        modeManager.ModeChanged += HandleModeChanged;
+    }
+
+    private void UnbindModeEvents()
+    {
+        if (modeManager == null)
+        {
+            return;
+        }
+
+        modeManager.ModeChanged -= HandleModeChanged;
+    }
+
+    private void SyncModeState()
+    {
+        HandleModeChanged(modeManager != null ? modeManager.CurrentMode : EditorMode.Default);
+    }
+
+    private void HandleModeChanged(EditorMode mode)
+    {
+        bool shouldBeActive = mode == EditorMode.Default;
+        if (!shouldBeActive && isWallCreationMode)
+        {
+            TransitionToState(idleEditorState);
+        }
+
+        isDefaultModeActive = shouldBeActive;
+        enabled = shouldBeActive;
     }
 
     private void EnsureWallRoot()
@@ -299,6 +331,13 @@ public partial class DrawManager : MonoBehaviour
         {
             modeManager = FindFirstObjectByType<ModeManager>();
         }
+    }
+
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(mainCamera != null, $"{nameof(DrawManager)} requires {nameof(mainCamera)}.", this);
+        Debug.Assert(modeManager != null, $"{nameof(DrawManager)} requires {nameof(modeManager)}.", this);
+        Debug.Assert(handleManager != null, $"{nameof(DrawManager)} requires {nameof(handleManager)}.", this);
     }
 
     private void CollectWallSegmentSnapCandidates(List<SnapManager.WallSnapSegment> segments)

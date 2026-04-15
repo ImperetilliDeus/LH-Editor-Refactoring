@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-public sealed class RoomCreateManager : MonoBehaviour
+public sealed partial class RoomCreateManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Camera mainCamera;
@@ -70,94 +70,7 @@ public sealed class RoomCreateManager : MonoBehaviour
         EnsurePreviewObjects();
         BindModeEvents();
         SyncModeState();
-    }
-
-    private void Update()
-    {
-        if (mainCamera == null || Mouse.current == null)
-        {
-            return;
-        }
-
-        if (!isRoomCreateModeActive)
-        {
-            return;
-        }
-
-        if (wallHandleManager != null && wallHandleManager.IsDraggingHandle)
-        {
-            return;
-        }
-
-        if (roomHandleManager != null && roomHandleManager.IsDraggingHandle)
-        {
-            return;
-        }
-
-        bool isPointerOverUI = IsPointerOverUI();
-        bool isPointerOverRoomHandle = roomHandleManager != null && roomHandleManager.IsPointerOverHandle(Mouse.current.position.ReadValue());
-
-        if (Mouse.current.rightButton.wasPressedThisFrame)
-        {
-            CancelCurrentInteraction();
-            ClearSelectedRoom();
-            return;
-        }
-
-        if (isDraggingSelectedRoom)
-        {
-            UpdateSelectedRoomDrag();
-            return;
-        }
-
-        if (!isDraggingRectangle)
-        {
-            if (pendingRoomSelection)
-            {
-                HandlePendingRoomSelection();
-                return;
-            }
-
-            if (!isPointerOverUI &&
-                !isPointerOverRoomHandle &&
-                Mouse.current.leftButton.wasPressedThisFrame &&
-                TryGetMouseWorldPoint(out Vector3 startPoint))
-            {
-                pendingSelectedRoom = PickRoomAtWorldPoint(startPoint);
-                if (pendingSelectedRoom != null)
-                {
-                    pendingRoomSelection = true;
-                    pendingSelectionStartPoint = startPoint;
-                    pendingSelectionStartMousePosition = Mouse.current.position.ReadValue();
-                    return;
-                }
-
-                BeginRectangleDrag(startPoint);
-            }
-
-            return;
-        }
-
-        if (Mouse.current.leftButton.isPressed)
-        {
-            UpdatePreviewWhileDragging();
-        }
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-        {
-            CommitDraggedRoom();
-        }
-    }
-
-    private void UpdatePreviewWhileDragging()
-    {
-        if (!TryGetMouseWorldPoint(out Vector3 currentPoint))
-        {
-            HidePreviewObjects();
-            return;
-        }
-
-        UpdatePreviewFromRectangle(dragStartPoint, currentPoint);
+        ValidateConfiguration();
     }
 
     private void CommitDraggedRoom()
@@ -211,48 +124,6 @@ public sealed class RoomCreateManager : MonoBehaviour
             SetSelectedRoom(createdRooms[createdRooms.Count - 1]);
         }
         HidePreviewObjects();
-    }
-
-    private void HandlePendingRoomSelection()
-    {
-        if (Mouse.current == null)
-        {
-            ClearPendingRoomSelection();
-            return;
-        }
-
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-        float thresholdSqr = clickToSelectThresholdPixels * clickToSelectThresholdPixels;
-        float movedSqr = (mousePosition - pendingSelectionStartMousePosition).sqrMagnitude;
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-        {
-            FocusRoomForEditing(pendingSelectedRoom);
-            ClearPendingRoomSelection();
-            return;
-        }
-
-        if (!Mouse.current.leftButton.isPressed)
-        {
-            ClearPendingRoomSelection();
-            return;
-        }
-
-        if (movedSqr < thresholdSqr)
-        {
-            return;
-        }
-
-        Room room = pendingSelectedRoom;
-        Vector3 startPoint = pendingSelectionStartPoint;
-        ClearPendingRoomSelection();
-        if (room != null)
-        {
-            BeginSelectedRoomDrag(room, startPoint);
-            return;
-        }
-
-        BeginRectangleDrag(startPoint);
     }
 
     private void BeginRectangleDrag(Vector3 startPoint)
@@ -589,6 +460,7 @@ public sealed class RoomCreateManager : MonoBehaviour
         }
 
         isRoomCreateModeActive = active;
+        enabled = active;
         if (active)
         {
             OnEnterRoomCreateMode();
@@ -936,5 +808,12 @@ public sealed class RoomCreateManager : MonoBehaviour
         {
             Destroy(previewBoxMaterial);
         }
+    }
+
+    private void ValidateConfiguration()
+    {
+        Debug.Assert(mainCamera != null, $"{nameof(RoomCreateManager)} requires {nameof(mainCamera)}.", this);
+        Debug.Assert(roomManager != null, $"{nameof(RoomCreateManager)} requires {nameof(roomManager)}.", this);
+        Debug.Assert(modeManager != null, $"{nameof(RoomCreateManager)} requires {nameof(modeManager)}.", this);
     }
 }
