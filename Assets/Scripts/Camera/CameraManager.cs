@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class CameraManager : MonoBehaviour
 {
@@ -128,7 +129,14 @@ public class CameraManager : MonoBehaviour
             return false;
         }
 
-        return EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId);
+        PointerEventData pointerData = new PointerEventData(EventSystem.current)
+        {
+            position = Mouse.current.position.ReadValue(),
+        };
+
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, results);
+        return results.Count > 0;
     }
 
     private void RefreshGridBounds()

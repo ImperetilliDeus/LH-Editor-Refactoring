@@ -61,6 +61,7 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
             aspectRatioFitter = previewImage.GetComponent<AspectRatioFitter>();
         }
 
+        EnsureViewportMask();
         EnsureOverlayVisuals();
     }
 
@@ -87,6 +88,7 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
         viewportRect = resolvedViewportRect;
         aspectRatioFitter = resolvedAspectRatioFitter;
         tmpFontAsset = resolvedTmpFontAsset;
+        EnsureViewportMask();
         EnsureOverlayVisuals();
         ResetViewTransform();
         RefreshVisuals();
@@ -552,6 +554,25 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
             rect.pivot = new Vector2(0f, 1f);
             rect.sizeDelta = new Vector2(280f, 28f);
             rect.anchoredPosition = new Vector2(14f, -14f);
+        }
+    }
+
+    private void EnsureViewportMask()
+    {
+        if (viewportRect == null)
+        {
+            return;
+        }
+
+        RectTransform maskRoot = viewportRect.parent as RectTransform;
+        if (maskRoot == null)
+        {
+            maskRoot = viewportRect;
+        }
+
+        if (maskRoot.GetComponent<RectMask2D>() == null)
+        {
+            maskRoot.gameObject.AddComponent<RectMask2D>();
         }
     }
 

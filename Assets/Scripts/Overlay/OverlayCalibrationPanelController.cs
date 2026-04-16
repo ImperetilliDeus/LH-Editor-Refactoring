@@ -6,6 +6,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class OverlayCalibrationPanelController : MonoBehaviour
 {
+    private const bool ShowAdvancedCalibrationControls = false;
+
     [Header("References")]
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private OverlayPreviewController previewController;
@@ -58,8 +60,10 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
             previewController.SetCalibrationStep(step);
         }
 
+        ConfigureVisibleControls();
         SyncInputsFromDocument();
         SetStep(OverlayCalibrationStep.Idle);
+        SetStatus(GetDefaultStatusMessage());
         SetVisible(true);
     }
 
@@ -175,6 +179,12 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
             previewController.PixelPointPicked -= HandlePixelPointPicked;
             previewController.PixelPointPicked += HandlePixelPointPicked;
         }
+    }
+
+    private void ConfigureVisibleControls()
+    {
+        SetControlVisible(pickOriginButton, ShowAdvancedCalibrationControls);
+        SetControlVisible(pickRotationGuideButton, ShowAdvancedCalibrationControls);
     }
 
     private void UnbindUI()
@@ -455,6 +465,28 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
         {
             statusText.text = text;
         }
+    }
+
+    private string GetDefaultStatusMessage()
+    {
+        if (document == null || document.source == null)
+        {
+            return "미리보기를 불러온 뒤 기준점을 찍으세요.";
+        }
+
+        return document.source.sourceType == OverlaySourceType.PdfPage
+            ? "PDF 미리보기를 불러왔습니다. 기준점을 찍으세요."
+            : "이미지를 불러왔습니다. 기준점을 찍으세요.";
+    }
+
+    private static void SetControlVisible(Behaviour control, bool visible)
+    {
+        if (control == null)
+        {
+            return;
+        }
+
+        control.gameObject.SetActive(visible);
     }
 
     private void SetVisible(bool visible)

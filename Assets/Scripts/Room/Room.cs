@@ -8,6 +8,7 @@ public class Room : MonoBehaviour
     private const string FloorObjectName = "Floor";
     private const string CeilingObjectName = "Ceiling";
     private const float CeilingColliderThickness = 0.02f;
+    private const float FloorWorldY = 0.1f;
 
     public HashSet<Wall> WallSet { get; private set; }
     public IReadOnlyList<Vector3> ManualBoundaryVertices => manualBoundaryVertices;
@@ -391,7 +392,7 @@ public class Room : MonoBehaviour
             }
         }
 
-        floorObject.transform.localPosition = Vector3.zero;
+        floorObject.transform.localPosition = new Vector3(0f, FloorWorldY - transform.position.y, 0f);
         floorObject.transform.localRotation = Quaternion.identity;
         floorObject.transform.localScale = Vector3.one;
     }

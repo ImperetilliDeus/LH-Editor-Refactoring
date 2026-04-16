@@ -54,7 +54,7 @@ public sealed class DrawingOverlayCalibration
     public bool hasOriginPixel;
 
     public float manualRotationOffsetDeg;
-    [Range(0f, 1f)] public float opacity = 0.35f;
+    [Range(0f, 1f)] public float opacity = 0.18f;
     public bool flipX;
     public bool flipY;
 }

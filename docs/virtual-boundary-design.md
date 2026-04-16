@@ -1,15 +1,17 @@
 # Virtual Boundary Design
 
-이 문서는 보관용 설계 기록입니다.
+virtual boundary 관련 설계 메모입니다.
 
-현재 메인 room 작성 흐름은 `RoomCreate` 기반이며, virtual boundary는 주력 authoring 수단이 아닙니다.
+## 현재 역할
 
-## 기록 목적
+- room boundary 계산의 보조 입력으로 사용될 수 있습니다.
+- top view에서는 별도 dashed segment로 렌더링됩니다.
 
-- 이전 room 분할 실험의 방향을 남겨 두기 위함
-- 필요 시 추후 공간 분할 기능을 재검토할 때 참고하기 위함
+## 현재 구현과의 관계
 
-## 현재 상태
+- 메인 wall 편집 흐름의 주체는 실제 `Wall` 데이터입니다.
+- 최근 수정된 wall join, handle snap, floor height 정책은 virtual boundary 자체보다 wall/room 편집 경로에 집중되어 있습니다.
 
-- room 생성/선택/이동/크기 조절은 `RoomCreate` 중심으로 동작한다.
-- virtual boundary 문서는 참고 자료로만 유지한다.
+## 용도
+
+- 추후 room 분할/보조 경계 처리 검토 시 참고

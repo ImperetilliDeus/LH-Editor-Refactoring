@@ -3,7 +3,10 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class DrawingOverlayRuntime : MonoBehaviour
 {
-    private const string OverlayMaterialShader = "Unlit/Transparent";
+    private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
+    private static readonly int BaseColorPropertyId = Shader.PropertyToID("_BaseColor");
+    private static readonly int MainTexPropertyId = Shader.PropertyToID("_MainTex");
+    private static readonly int BaseMapPropertyId = Shader.PropertyToID("_BaseMap");
 
     [SerializeField] private MeshFilter meshFilter;
     [SerializeField] private MeshRenderer meshRenderer;
@@ -72,8 +75,7 @@ public sealed class DrawingOverlayRuntime : MonoBehaviour
 
         Color color = Color.white;
         color.a = Mathf.Clamp01(Document.calibration.opacity);
-        runtimeMaterial.color = color;
-        runtimeMaterial.mainTexture = DisplayTexture;
+        ApplyMaterialState(color, DisplayTexture);
         meshRenderer.sharedMaterial = runtimeMaterial;
         meshFilter.sharedMesh = quadMesh;
     }
@@ -133,16 +135,86 @@ public sealed class DrawingOverlayRuntime : MonoBehaviour
 
         if (runtimeMaterial == null)
         {
-            Shader shader = Shader.Find(OverlayMaterialShader);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
-                shader = Shader.Find("Sprites/Default");
+                shader = Shader.Find("Standard");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Transparent");
             }
 
             runtimeMaterial = new Material(shader)
             {
                 name = "DrawingOverlayRuntimeMaterial",
             };
+
+            if (runtimeMaterial.HasProperty("_Surface"))
+            {
+                runtimeMaterial.SetFloat("_Surface", 1f);
+            }
+
+            if (runtimeMaterial.HasProperty("_Blend"))
+            {
+                runtimeMaterial.SetFloat("_Blend", 0f);
+            }
+
+            if (runtimeMaterial.HasProperty("_SrcBlend"))
+            {
+                runtimeMaterial.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            }
+
+            if (runtimeMaterial.HasProperty("_DstBlend"))
+            {
+                runtimeMaterial.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            }
+
+            if (runtimeMaterial.HasProperty("_ZWrite"))
+            {
+                runtimeMaterial.SetFloat("_ZWrite", 0f);
+            }
+
+            if (runtimeMaterial.HasProperty("_Cull"))
+            {
+                runtimeMaterial.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
+            }
+
+            runtimeMaterial.SetOverrideTag("RenderType", "Transparent");
+            runtimeMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            runtimeMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        }
+    }
+
+    private void ApplyMaterialState(Color color, Texture texture)
+    {
+        if (runtimeMaterial == null)
+        {
+            return;
+        }
+
+        runtimeMaterial.color = color;
+        runtimeMaterial.mainTexture = texture;
+
+        if (runtimeMaterial.HasProperty(ColorPropertyId))
+        {
+            runtimeMaterial.SetColor(ColorPropertyId, color);
+        }
+
+        if (runtimeMaterial.HasProperty(BaseColorPropertyId))
+        {
+            runtimeMaterial.SetColor(BaseColorPropertyId, color);
+        }
+
+        if (runtimeMaterial.HasProperty(MainTexPropertyId))
+        {
+            runtimeMaterial.SetTexture(MainTexPropertyId, texture);
+        }
+
+        if (runtimeMaterial.HasProperty(BaseMapPropertyId))
+        {
+            runtimeMaterial.SetTexture(BaseMapPropertyId, texture);
         }
     }
 }

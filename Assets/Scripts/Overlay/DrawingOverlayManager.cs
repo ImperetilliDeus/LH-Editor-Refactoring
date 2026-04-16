@@ -11,6 +11,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private GameObject grid;
+    [SerializeField] private Canvas parentCanvas;
     [SerializeField] private DrawingOverlayRuntime activeRuntime;
     [SerializeField] private OverlayCalibrationPanelController calibrationPanel;
     [SerializeField] private OverlayCalibrationPanelController calibrationPanelPrefab;
@@ -18,6 +19,9 @@ public sealed class DrawingOverlayManager : MonoBehaviour
     [Header("UI Fonts")]
     [SerializeField] private TMP_FontAsset tmpFontAsset;
     [SerializeField] private Font legacyFont;
+
+    [Header("Overlay Defaults")]
+    [SerializeField] [Range(0f, 1f)] private float defaultOpacity = 0.18f;
 
     [Header("State")]
     [SerializeField] private DrawingOverlayDocument activeDocument;
@@ -28,6 +32,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
     public TMP_FontAsset UiTmpFont => tmpFontAsset;
     public Font UiLegacyFont => legacyFont;
     public OverlayCalibrationPanelController CalibrationPanelPrefab => calibrationPanelPrefab;
+    public Canvas ParentCanvas => parentCanvas;
 
     public event Action<DrawingOverlayDocument> ActiveOverlayChanged;
 
@@ -55,7 +60,10 @@ public sealed class DrawingOverlayManager : MonoBehaviour
                 pixelWidth = texture.width,
                 pixelHeight = texture.height,
             },
-            calibration = new DrawingOverlayCalibration(),
+            calibration = new DrawingOverlayCalibration
+            {
+                opacity = defaultOpacity,
+            },
             solved = new DrawingOverlayTransform(),
         };
 
@@ -105,6 +113,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
         }
 
         activeDocument.ResetCalibration();
+        activeDocument.calibration.opacity = defaultOpacity;
         if (activeRuntime != null)
         {
             activeRuntime.gameObject.SetActive(false);
@@ -165,6 +174,11 @@ public sealed class DrawingOverlayManager : MonoBehaviour
         if (calibrationPanel == null)
         {
             calibrationPanel = FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include);
+        }
+
+        if (parentCanvas == null)
+        {
+            parentCanvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
         }
     }
 
