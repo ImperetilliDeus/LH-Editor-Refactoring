@@ -1,65 +1,45 @@
 # Conventions
 
-## Purpose
+## 목적
 
-이 문서는 현재 코드베이스에서 유지하면 좋은 구현 규칙을 정리합니다. 이미 코드에 드러난 패턴을 기준으로 작성했으며, 팀 합의가 생기면 계속 갱신하는 문서로 사용하면 좋습니다.
+현재 코드베이스에서 유지하면 좋은 구현 규칙과 문서 규칙을 정리합니다.
 
-## Code Organization
+## 코드 구조
 
 - 기능 단위로 폴더를 나눕니다.
-- 큰 매니저는 partial class로 역할을 나눕니다.
-- Unity 생명주기 메서드는 파일 상단에 모아 두는 편을 권장합니다.
-- `SerializeField` 참조와 상태 필드는 구분해 배치합니다.
+- 큰 매니저는 partial class로 분리할 수 있습니다.
+- geometry 계산과 UI 반영 로직은 분리합니다.
+- `SerializeField` 참조와 런타임 캐시는 구분해서 둡니다.
 
-## Responsibilities
+## 책임 분리
 
-- `ModeManager`는 모드 전환만 담당하고 기능 구현 세부사항은 각 매니저에 둡니다.
-- 입력 해석은 가능한 한 해당 도메인의 매니저 내부에서 처리합니다.
-- 렌더링 표현과 도메인 상태 관리는 분리합니다.
-- UI 동기화는 상태 변경 이벤트 또는 dirty flag를 통해 처리합니다.
+- `ModeManager`는 모드 상태만 관리합니다.
+- 입력 해석은 해당 도메인 매니저에서 처리합니다.
+- top view 렌더링은 데이터 소유 로직과 분리합니다.
+- room/wall/opening 데이터와 실제 표시 계층은 가능한 한 느슨하게 연결합니다.
 
-## References
+## 이벤트와 갱신
 
-- 가능하면 Inspector 연결을 우선합니다.
-- 보조 수단으로 `FindFirstObjectByType`를 사용하되, 의존성이 중요한 경우 문서에 반드시 남깁니다.
-- 자동 탐색이 성공한다고 해서 씬 구성이 올바르다는 뜻은 아니므로, 핵심 레퍼런스는 검증 루틴에 포함합니다.
+- 이벤트 구독은 `Awake` 또는 초기화 루틴에서 수행합니다.
+- 해제는 `OnDestroy`에서 수행합니다.
+- 큰 화면 갱신은 직접 즉시 렌더링하기보다 dirty flag 또는 명시적 `MarkDirty()`를 우선합니다.
+- 단, 사용자 입력 직후 화면 반영이 필요한 편집은 즉시 refresh를 허용합니다.
 
-## Events
+## wall / handle 규칙
 
-- 구독은 보통 `Awake` 또는 초기화 메서드에서 수행합니다.
-- 해제는 `OnDestroy`에서 반드시 수행합니다.
-- 상태 변경을 외부에 알릴 때는 도메인에 맞는 이벤트 이름을 사용합니다.
-  예: `ModeChanged`, `RoomsChanged`, `SelectedWallsChanged`
+- wall 편집 로직은 `StartPoint`, `EndPoint`, vertex id를 기준으로 유지합니다.
+- handle snap modifier와 grid snap modifier는 별도 정책으로 관리합니다.
+- split point는 일반 endpoint와 다르게 슬라이드 제약이 있을 수 있으므로 별도 플래그를 유지합니다.
+- 3D wall join 보정은 시각 보정이어야 하며, 기본 endpoint 데이터는 가능하면 훼손하지 않습니다.
 
-## Update Loop
+## room 규칙
 
-- `Update`에서는 입력 처리, dirty flag 확인, 상태 동기화처럼 프레임 의존 로직만 수행합니다.
-- 계산 비용이 큰 갱신은 이벤트 또는 dirty flag로 제한합니다.
-- 카메라 변화 감지를 사용하는 경우 마지막 상태를 캐시하는 패턴을 유지합니다.
+- room polygon은 sanitize 후 사용합니다.
+- room floor mesh는 polygon triangulation 결과를 사용합니다.
+- floor 시각 오브젝트의 월드 높이 정책이 있으면 문서와 코드에 함께 반영합니다.
 
-## UI Rules
+## 문서 규칙
 
-- UI 클릭이 월드 입력을 막아야 하는 경우 레이캐스트 기준을 명확히 둡니다.
-- 탑뷰 전용 UI와 일반 UI를 구분합니다.
-- 선택 상태, 미리보기 상태, 확정 상태는 색상과 상호작용이 일관되어야 합니다.
-
-## Data And Geometry
-
-- 벽과 방의 최소 유효 조건을 상수 또는 직렬화 필드로 관리합니다.
-- 방 생성 로직은 polygon validity를 먼저 검증한 뒤 오브젝트를 생성합니다.
-- geometry 계산 유틸리티와 UI 반영 코드는 분리하는 편을 권장합니다.
-
-## Documentation Rules
-
-- 루트 `README.md`에는 프로젝트 개요만 유지합니다.
-- 상세 기능 설명은 `docs` 하위 파일로 분리합니다.
-- 새 매니저를 추가하면 최소한 책임, 참조 관계, 관련 워크플로를 문서에 반영합니다.
-- 씬 연결이 필요한 컴포넌트는 `docs/scenes-and-references.md`에 체크리스트를 추가합니다.
-
-## Suggested Review Checklist
-
-- 이 클래스가 너무 많은 역할을 하고 있지 않은가
-- 이벤트 구독과 해제가 대칭적인가
-- 모드별 입력 제한이 분명한가
-- Inspector 참조가 빠졌을 때 안전하게 동작하는가
-- 시각화 갱신이 불필요하게 매 프레임 전체 재생성되지 않는가
+- `README.md`는 프로젝트 개요와 현재 편집 흐름을 설명합니다.
+- 세부 동작은 `docs/*.md`로 분리합니다.
+- 사용자 체감 변경이 있으면 최소한 `README.md`, `docs/workflows.md`, `docs/operations.md`를 함께 갱신합니다.

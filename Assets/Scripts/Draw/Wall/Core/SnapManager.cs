@@ -24,6 +24,8 @@ public class SnapManager : MonoBehaviour
     [SerializeField] private bool enableAxisSnapModifier = true;
     [SerializeField] private SnapModifierKey axisSnapModifier = SnapModifierKey.Shift;
     [SerializeField] private bool enableHandleSnap = true;
+    [SerializeField] private bool enableHandleSnapModifier = true;
+    [SerializeField] private SnapModifierKey handleSnapModifier = SnapModifierKey.Ctrl;
     [SerializeField] private float handleSnapDistance = 1f;
     [SerializeField] private bool useScreenPixelHandleSnap = false;
     [SerializeField] private float handleSnapPixelDistance = 16f;
@@ -74,6 +76,11 @@ public class SnapManager : MonoBehaviour
         if (enableHandleDragGridSnapModifier && IsModifierPressed(handleDragGridSnapModifier))
         {
             return ApplyGridSnap(rawPoint, handleDragGridSnapSize);
+        }
+
+        if (!ShouldApplyHandleSnap())
+        {
+            return GetSnappedPoint(rawPoint, anchorPoint, false);
         }
 
         return GetSnappedHandlePoint(rawPoint, anchorPoint, handlePoints, camera, wallSegments, out snappedByWallSegment, out snappedByHandlePoint);
@@ -182,6 +189,11 @@ public class SnapManager : MonoBehaviour
         snappedByWallSegment = false;
         snappedByHandlePoint = false;
 
+        if (!ShouldApplyHandleSnap())
+        {
+            return baseSnappedPoint;
+        }
+
         bool canPointSnap = enableHandleSnap && handlePoints != null && handlePoints.Count > 0;
         bool canSegmentSnap = enableWallSegmentSnap && wallSegments != null && wallSegments.Count > 0;
         if (!canPointSnap && !canSegmentSnap)
@@ -251,6 +263,11 @@ public class SnapManager : MonoBehaviour
 
         float maxDistanceSqr = wallSegmentSnapDistance * wallSegmentSnapDistance;
         return TryGetClosestSegmentSnap(rawPoint, wallSegments, maxDistanceSqr, out snapPoint);
+    }
+
+    private bool ShouldApplyHandleSnap()
+    {
+        return !enableHandleSnapModifier || IsModifierPressed(handleSnapModifier);
     }
 
     private bool TryGetClosestPointSnap(Vector3 currentPoint, List<Vector3> handlePoints, float maxDistanceSqr, Camera camera, out Vector3 snapPoint)

@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using System.Collections.Generic;
 
 public class CameraManager_3D : MonoBehaviour
 {
@@ -165,6 +167,11 @@ public class CameraManager_3D : MonoBehaviour
 
     private void HandleZoom()
     {
+        if (IsPointerOverUI())
+        {
+            return;
+        }
+
         float scrollValue = Mouse.current.scroll.ReadValue().y;
         if (Mathf.Approximately(scrollValue, 0f))
         {
@@ -259,5 +266,22 @@ public class CameraManager_3D : MonoBehaviour
     private float NormalizePitch(float eulerX)
     {
         return eulerX > 180f ? eulerX - 360f : eulerX;
+    }
+
+    private static bool IsPointerOverUI()
+    {
+        if (EventSystem.current == null || Mouse.current == null)
+        {
+            return false;
+        }
+
+        PointerEventData pointerData = new PointerEventData(EventSystem.current)
+        {
+            position = Mouse.current.position.ReadValue(),
+        };
+
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, results);
+        return results.Count > 0;
     }
 }

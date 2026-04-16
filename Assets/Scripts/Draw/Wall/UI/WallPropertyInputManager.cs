@@ -50,6 +50,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
     private readonly List<GameObject> selectedWallObjects = new List<GameObject>();
     private readonly List<Wall> selectedWallComponents = new List<Wall>();
     private readonly HashSet<WallOpeningContainer> selectedOpeningContainers = new HashSet<WallOpeningContainer>();
+    private readonly List<TopViewRenderManager> topViewRenderManagers = new List<TopViewRenderManager>();
     private bool suppressInputCallback;
 
     private void Reset()
@@ -503,6 +504,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             roomManager.RefreshAllRooms();
         }
 
+        MarkTopViewDirty();
         UpdateInputFieldValues(true);
 
         if (selectedWall != null && wallSelectionManager != null)
@@ -785,6 +787,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             roomManager.RefreshAllRooms();
         }
 
+        MarkTopViewDirty();
         UpdateInputFieldValues(true);
 
         return true;
@@ -906,6 +909,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             handleManager.RefreshRegisteredWalls();
         }
 
+        MarkTopViewDirty();
         UpdateInputFieldValues(true);
 
         return true;
@@ -932,6 +936,8 @@ public partial class WallPropertyInputManager : MonoBehaviour
         {
             roomManager.RefreshAllRooms();
         }
+
+        MarkTopViewDirty();
     }
 
     private bool TryApplyContainerThicknessFromSelectedWall(Wall selectedWallComponent, float targetThicknessUnits)
@@ -967,6 +973,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             roomManager.RefreshAllRooms();
         }
 
+        MarkTopViewDirty();
         UpdateInputFieldValues(true);
 
         return true;
@@ -993,6 +1000,8 @@ public partial class WallPropertyInputManager : MonoBehaviour
         {
             roomManager.RefreshAllRooms();
         }
+
+        MarkTopViewDirty();
     }
 
     private void EnsureWallRoot()
@@ -1009,5 +1018,32 @@ public partial class WallPropertyInputManager : MonoBehaviour
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
+    }
+
+    private void MarkTopViewDirty()
+    {
+        if (topViewRenderManagers.Count == 0)
+        {
+            TopViewRenderManager[] managers = FindObjectsByType<TopViewRenderManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < managers.Length; i++)
+            {
+                if (managers[i] != null)
+                {
+                    topViewRenderManagers.Add(managers[i]);
+                }
+            }
+        }
+
+        for (int i = topViewRenderManagers.Count - 1; i >= 0; i--)
+        {
+            TopViewRenderManager manager = topViewRenderManagers[i];
+            if (manager == null)
+            {
+                topViewRenderManagers.RemoveAt(i);
+                continue;
+            }
+
+            manager.MarkDirty();
+        }
     }
 }

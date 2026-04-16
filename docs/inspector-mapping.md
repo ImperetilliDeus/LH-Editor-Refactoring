@@ -1,77 +1,96 @@
 # Inspector Mapping
 
-`SampleScene` 기준으로 자주 확인하는 Inspector 연결 요약입니다.
+`Assets/Scenes/SampleScene.unity` 기준으로 자주 확인하는 Inspector 연결 요약입니다.
 
 ## `ModeManager`
 
 - `Default Mode Button` -> `_Button_Default`
 - `Room Create Mode Button` -> `_Button_Room`
 - `Detail Edit Mode Button` -> `_Button_EditDetail`
-- `Door Insert Mode Button` -> 필요 시 연결
-- `Window Insert Mode Button` -> 필요 시 연결
-- `Initial Mode` -> 보통 `Default`
+- 필요 시 door/window insert 버튼 연결
 
-## `RoomManager` GameObject
+## `RoomManager`
 
-### `RoomManager`
+- `wallRoot`
+- `roomRoot`
+- `roomMaterial`
+- `roomSpawnLocalOffset`
 
-- room prefab/material 관련 필드가 있다면 기존 프로젝트 설정 유지
+참고:
+- room floor 실제 시각 오브젝트 높이는 `Room` 내부 정책으로 월드 `y = 0.1`에 배치됩니다.
+- `roomSpawnLocalOffset`은 room 루트 위치 기준값이며 floor 자체 높이와는 별개입니다.
 
-### `RoomAuthoringPanelManager`
-
-- `modeManager`
-- `roomManager`
-- `roomHandleManager`
-- `topViewRenderManager`
-- `roomTypeDropdown`
-- `roomEditMenu`
-- `roomAreaInputField`
-- `roomTypeLabelPrefab`
-
-### `RoomHandleManager`
-
-- `mainCamera`
-- `grid`
-- `targetCanvas`
-- `snapManager`
-- `wallHandleManager`
-- `roomManager`
-- `modeManager`
-- `showHandlesOnlyForFocusedRoom` -> `true` 권장
-
-### `RoomCreateManager`
+## `HandleManager`
 
 - `mainCamera`
 - `grid`
 - `wallRoot`
-- `roomManager`
+- `targetCanvas`
 - `snapManager`
-- `wallHandleManager`
-- `roomHandleManager`
-- `modeManager`
+- `wallLengthDisplay`
 - `undoRedoManager`
+- `modeManager`
+- `roomManager`
+
+참고:
+- handle 시각은 `Default` 모드에서만 활성화됩니다.
+- wall 변경 후 3D end-cap 재계산도 이 매니저 refresh 경로에 묶여 있습니다.
+
+## `SnapManager`
+
+- `gridSnapModifier`
+- `axisSnapModifier`
+- `enableHandleSnap`
+- `enableHandleSnapModifier`
+- `handleSnapModifier`
+- `enableHandleDragGridSnapModifier`
+- `handleDragGridSnapModifier`
+
+권장:
+- 현재 기본 정책은 `handleSnapModifier = Ctrl`
+
+## `WallSelectionManager`
+
+- `mainCamera`
+- `grid`
+- `wallRoot`
+- `drawManager`
+- `handleManager`
+- `snapManager`
+- `wallLengthDisplay`
+- `undoRedoManager`
+- `modeManager`
+- `wallOpeningPlacementManager`
+- `roomManager`
+
+## `WallPropertyInputManager`
+
+- `wallSelectionManager`
+- `wallRoot`
+- `handleManager`
+- `wallLengthDisplay`
+- `undoRedoManager`
+- `modeManager`
+- `roomManager`
+- `wallOpeningPlacementManager`
+- `wallLengthInputField`
+- `wallHeightInputField`
+- `wallThicknessInputField`
+
+참고:
+- 속성 변경 직후 handle / room / top view 갱신이 여기서 같이 일어납니다.
 
 ## `TopViewRenderManager`
 
+- `topViewCamera`
+- `targetCanvas`
+- `contentRoot`
+- `wallRoot`
+- `drawManager`
+- `handleManager`
+- `wallSelectionManager`
+- `wallOpeningPlacementManager`
 - `roomManager`
 - `roomAuthoringPanelManager`
-- `wallOpeningPlacementManager`
+- `roomHandleManager`
 - `modeManager`
-- top view 색상 필드
-  - 기본 floor 색
-  - 선택 room 색
-  - wall 색
-  - virtual boundary 색
-
-## `WallEditManager` 계열
-
-- `DrawManager`, `HandleManager`, `WallSelectionManager`, `SnapManager` 사이 참조가 비어 있지 않은지 확인
-- `HandleManager`의 handle canvas가 wall 선보다 위에 그려지는지 확인
-
-## 권장 확인 순서
-
-1. `RoomAuthoringPanelManager.roomHandleManager`
-2. `RoomCreateManager.roomHandleManager`
-3. `RoomCreateManager.undoRedoManager`
-4. `TopViewRenderManager.roomAuthoringPanelManager`
-5. `ModeManager`의 room 버튼 연결

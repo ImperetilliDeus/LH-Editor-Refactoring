@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Paroxe.PdfRenderer;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -57,11 +58,14 @@ public static class DrawingOverlaySceneBootstrap
             return null;
         }
 
+        Canvas canvas = manager.ParentCanvas != null
+            ? manager.ParentCanvas
+            : LayerUtility.FindCanvasByNameOrFirst("_Screen");
+
         OverlayCalibrationPanelController panel =
             UnityEngine.Object.FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include);
         if (panel == null)
         {
-            Canvas canvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
             if (canvas == null)
             {
                 return null;
@@ -78,6 +82,7 @@ public static class DrawingOverlaySceneBootstrap
             }
         }
 
+        ConfigurePanelCanvas(panel, canvas);
         panel.Close();
         manager.SetCalibrationPanel(panel);
         return panel;
@@ -372,6 +377,53 @@ public static class DrawingOverlaySceneBootstrap
         rect.anchoredPosition = anchoredPosition;
     }
 
+    private static void ConfigurePanelCanvas(OverlayCalibrationPanelController panel, Canvas parentCanvas)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        Canvas panelCanvas = panel.GetComponent<Canvas>();
+        if (panelCanvas != null)
+        {
+            panelCanvas.renderMode = parentCanvas != null ? parentCanvas.renderMode : RenderMode.ScreenSpaceOverlay;
+            panelCanvas.overrideSorting = true;
+            panelCanvas.sortingOrder = parentCanvas != null
+                ? Mathf.Max(parentCanvas.sortingOrder + 25, panelCanvas.sortingOrder)
+                : Mathf.Max(30, panelCanvas.sortingOrder);
+            panelCanvas.worldCamera = panelCanvas.renderMode == RenderMode.ScreenSpaceOverlay
+                ? null
+                : parentCanvas != null ? parentCanvas.worldCamera : null;
+        }
+
+        if (panel.GetComponent<GraphicRaycaster>() == null)
+        {
+            panel.gameObject.AddComponent<GraphicRaycaster>();
+        }
+
+        int uiLayer = parentCanvas != null ? parentCanvas.gameObject.layer : LayerMask.NameToLayer("UI");
+        if (uiLayer >= 0)
+        {
+            SetLayerRecursively(panel.gameObject, uiLayer);
+        }
+    }
+
+    private static void SetLayerRecursively(GameObject target, int layer)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.layer = layer;
+        Transform transform = target.transform;
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            SetLayerRecursively(transform.GetChild(i).gameObject, layer);
+        }
+    }
+
     private static class EventSystemBootstrap
     {
         public static void EnsureEventSystemExists()
@@ -551,6 +603,13 @@ internal static class PdfThumbnailLoader
             return false;
         }
 
+        if (TryRenderWithParoxe(path, maxPixelSize, out texture, out error))
+        {
+            return true;
+        }
+
+        string paroxeError = error;
+
         IntPtr hBitmap = IntPtr.Zero;
         try
         {
@@ -577,11 +636,16 @@ internal static class PdfThumbnailLoader
             }
 
             texture = NativePdfThumbnail.CreateTextureFromHBitmap(hBitmap, out error);
+            if (texture == null && !string.IsNullOrEmpty(paroxeError))
+            {
+                error = $"Paroxe render failed: {paroxeError}\n{error}";
+            }
+
             return texture != null;
         }
         catch (Exception exception)
         {
-            error = exception.Message;
+            error = $"Paroxe render failed: {paroxeError}\n{exception.Message}";
             return false;
         }
         finally
@@ -591,6 +655,65 @@ internal static class PdfThumbnailLoader
                 NativePdfThumbnail.DeleteObject(hBitmap);
             }
         }
+    }
+
+    private static bool TryRenderWithParoxe(string path, int maxPixelSize, out Texture2D texture, out string error)
+    {
+        texture = null;
+        error = string.Empty;
+
+        try
+        {
+            using PDFDocument document = new PDFDocument(path);
+            if (!document.IsValid)
+            {
+                error = "Paroxe could not open the PDF document.";
+                return false;
+            }
+
+            if (document.GetPageCount() <= 0)
+            {
+                error = "Paroxe opened the document but found no pages.";
+                return false;
+            }
+
+            using PDFPage page = document.GetPage(0);
+            Vector2Int renderSize = ComputeRenderSize(page.GetPageSize(), maxPixelSize);
+
+            using PDFRenderer renderer = new PDFRenderer();
+            texture = renderer.RenderPageToTexture(page, renderSize.x, renderSize.y);
+            if (texture == null)
+            {
+                error = "Paroxe returned a null texture.";
+                return false;
+            }
+
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+            return false;
+        }
+    }
+
+    private static Vector2Int ComputeRenderSize(Vector2 pageSize, int maxPixelSize)
+    {
+        int safeMax = Mathf.Max(256, maxPixelSize);
+        float width = Mathf.Max(1f, pageSize.x);
+        float height = Mathf.Max(1f, pageSize.y);
+        float scale = Mathf.Min(safeMax / width, safeMax / height);
+
+        if (float.IsNaN(scale) || float.IsInfinity(scale) || scale <= 0f)
+        {
+            scale = 1f;
+        }
+
+        return new Vector2Int(
+            Mathf.Max(1, Mathf.RoundToInt(width * scale)),
+            Mathf.Max(1, Mathf.RoundToInt(height * scale)));
     }
 }
 

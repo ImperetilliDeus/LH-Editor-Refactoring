@@ -1,6 +1,6 @@
 # Direct Connection Checklist
 
-Inspector에서 직접 연결해 두는 편이 좋은 참조 목록입니다.
+자동 탐색 fallback가 있더라도 아래 핵심 참조는 Inspector에서 직접 연결하는 편이 안전합니다.
 
 ## `ModeManager`
 
@@ -10,7 +10,7 @@ Inspector에서 직접 연결해 두는 편이 좋은 참조 목록입니다.
 - 필요 시 `doorInsertModeButton`
 - 필요 시 `windowInsertModeButton`
 
-## `RoomManager` GameObject
+## `RoomManager` 계열
 
 ### `RoomAuthoringPanelManager`
 
@@ -44,11 +44,19 @@ Inspector에서 직접 연결해 두는 편이 좋은 참조 목록입니다.
 - `modeManager`
 - `undoRedoManager`
 
-## `TopViewRenderManager`
+## wall edit 계열
 
-- `roomManager`
-- `roomAuthoringPanelManager`
-- `wallOpeningPlacementManager`
-- `modeManager`
+- `DrawManager`
+- `HandleManager`
+- `WallSelectionManager`
+- `SnapManager`
+- `WallPropertyInputManager`
+- `WallOpeningPlacementManager`
 
-자동 탐색 fallback이 있더라도, 위 참조는 직접 연결해 두는 것이 안전합니다.
+다음 참조는 특히 비어 있으면 최근 수정 동작이 깨질 수 있습니다.
+
+- `HandleManager.snapManager`
+- `HandleManager.roomManager`
+- `WallPropertyInputManager.handleManager`
+- `WallPropertyInputManager.wallSelectionManager`
+- `TopViewRenderManager.handleManager`

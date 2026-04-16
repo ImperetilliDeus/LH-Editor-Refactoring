@@ -320,7 +320,9 @@ public partial class HandleManager : MonoBehaviour
         }
 
         RebuildGroupsFromEntries();
+        RefreshWallEndCaps();
         MarkHandleLayoutDirty();
+        SetHandlesVisible(isDefaultModeActive);
     }
 
     public void RefreshHandleVisuals()
@@ -330,6 +332,7 @@ public partial class HandleManager : MonoBehaviour
             handleLayoutDirty = true;
         }
 
+        RefreshWallEndCaps();
         MarkHandleLayoutDirty();
     }
 
@@ -1251,12 +1254,7 @@ public partial class HandleManager : MonoBehaviour
             }
 
             bool isTaggedSplitPoint = endpointRef.isStart ? wall.IsStartSplitPoint : wall.IsEndSplitPoint;
-            if (!isTaggedSplitPoint)
-            {
-                return false;
-            }
-
-            hasTaggedEndpoint = true;
+            hasTaggedEndpoint |= isTaggedSplitPoint;
         }
 
         return hasTaggedEndpoint;
@@ -1817,6 +1815,18 @@ public partial class HandleManager : MonoBehaviour
         LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref roomManager);
+    }
+
+    private void RefreshWallEndCaps()
+    {
+        foreach (KeyValuePair<int, WallHandleEntry> pair in wallEntries)
+        {
+            Wall wall = pair.Value?.wallComponent;
+            if (wall != null)
+            {
+                wall.RefreshEndCapVisuals();
+            }
+        }
     }
 
     private void ValidateConfiguration()

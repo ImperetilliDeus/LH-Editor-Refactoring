@@ -69,7 +69,9 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic
                 continue;
             }
 
-            AddQuad(vh, segment.start, segment.end, normal, segment.color, ref vertexOffset);
+            float capExtension = Mathf.Max(0f, segment.thickness) * 0.5f;
+            Vector2 extension = direction * capExtension;
+            AddQuad(vh, segment.start - extension, segment.end + extension, normal, segment.color, ref vertexOffset);
         }
     }
 
