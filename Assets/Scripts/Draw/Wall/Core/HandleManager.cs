@@ -387,18 +387,17 @@ public partial class HandleManager : MonoBehaviour
         else
         {
             dragSnapCandidates.Clear();
-            for (int i = 0; i < vertexGroups.Count; i++)
+            if (snapManager != null)
             {
-                VertexGroup group = vertexGroups[i];
-                if (group == null || group == draggingGroup)
-                {
-                    continue;
-                }
-
-                dragSnapCandidates.Add(group.worldPoint);
+                snapManager.CollectNearbyHandleSnapCandidates(
+                    dragPoint,
+                    dragSnapCandidates,
+                    wallRoot,
+                    null,
+                    draggingGroup != null ? draggingGroup.vertexId : 0);
             }
 
-            CollectDragWallSegmentSnapCandidates(dragWallSegmentSnapCandidates, draggingGroup);
+            CollectDragWallSegmentSnapCandidates(dragPoint, dragWallSegmentSnapCandidates, draggingGroup);
 
             snappedPoint = snapManager != null
                 ? snapManager.GetSnappedHandleDragPoint(dragPoint, dragAnchorPoint, dragSnapCandidates, mainCamera, dragWallSegmentSnapCandidates, out _, out _)
@@ -509,7 +508,7 @@ public partial class HandleManager : MonoBehaviour
         dragStartStates.Clear();
 
         RefreshAllGroupWorldPoints();
-        roomManager?.RefreshAllRooms();
+        RoomTopologyEvents.RequestRefreshAll();
         MarkTopViewDirty();
         handlePositionsDirty = true;
     }
@@ -526,7 +525,7 @@ public partial class HandleManager : MonoBehaviour
         if (TryApplyOpeningContainerEndpointDrag(group, newPoint))
         {
             RefreshAllGroupWorldPoints();
-            roomManager?.RefreshAllRooms();
+            RoomTopologyEvents.RequestRefreshAll();
             MarkTopViewDirty();
             MarkHandlePositionsDirty();
             return;
@@ -548,7 +547,7 @@ public partial class HandleManager : MonoBehaviour
 
         RefreshAllGroupWorldPoints();
         group.worldPoint = appliedSplitChain ? appliedPoint : group.worldPoint;
-        roomManager?.RefreshAllRooms();
+        RoomTopologyEvents.RequestRefreshAll();
         MarkTopViewDirty();
         MarkHandlePositionsDirty();
     }
@@ -630,8 +629,8 @@ public partial class HandleManager : MonoBehaviour
             return false;
         }
 
-        Vector3 oldStart = startWall.StartPoint;
-        Vector3 oldEnd = endWall.EndPoint;
+        Vector3 oldStart = startWall.Data.startPoint;
+        Vector3 oldEnd = endWall.Data.endPoint;
         oldStart.y = dragPlaneHeight;
         oldEnd.y = dragPlaneHeight;
 
@@ -698,8 +697,8 @@ public partial class HandleManager : MonoBehaviour
 
             if (child.TryGetComponent(out Wall wall))
             {
-                Vector3 wallStart = wall.StartPoint;
-                Vector3 wallEnd = wall.EndPoint;
+                Vector3 wallStart = wall.Data.startPoint;
+                Vector3 wallEnd = wall.Data.endPoint;
                 Vector3 nextStart = ResolveContainerEndpoint(
                     wallStart,
                     wall.StartVertexId,
@@ -833,8 +832,8 @@ public partial class HandleManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPoint = wall.StartPoint;
-        Vector3 endPoint = wall.EndPoint;
+        Vector3 startPoint = wall.Data.startPoint;
+        Vector3 endPoint = wall.Data.endPoint;
 
         int startId = wall.StartVertexId;
         int endId = wall.EndVertexId;
@@ -911,7 +910,7 @@ public partial class HandleManager : MonoBehaviour
             return;
         }
 
-        Vector3 point = isStart ? entry.wallComponent.StartPoint : entry.wallComponent.EndPoint;
+        Vector3 point = isStart ? entry.wallComponent.Data.startPoint : entry.wallComponent.Data.endPoint;
 
         VertexGroup group = GetOrCreateGroup(vertexId, point);
         group.endpoints.Add(new EndpointRef
@@ -1003,8 +1002,8 @@ public partial class HandleManager : MonoBehaviour
             }
 
             Vector3 point = endpointRef.isStart
-                ? endpointRef.entry.wallComponent.StartPoint
-                : endpointRef.entry.wallComponent.EndPoint;
+                ? endpointRef.entry.wallComponent.Data.startPoint
+                : endpointRef.entry.wallComponent.Data.endPoint;
 
             sum += point;
             count++;
@@ -1471,7 +1470,7 @@ public partial class HandleManager : MonoBehaviour
             return Vector3.zero;
         }
 
-        return wall.StartVertexId == vertexId ? wall.StartPoint : wall.EndPoint;
+        return wall.StartVertexId == vertexId ? wall.Data.startPoint : wall.Data.endPoint;
     }
 
     private bool TryGetSplitPointDragSegment(VertexGroup group, out Vector3 segmentStart, out Vector3 segmentEnd)
@@ -1494,7 +1493,7 @@ public partial class HandleManager : MonoBehaviour
                 continue;
             }
 
-            Vector3 oppositePoint = endpointRef.isStart ? wall.EndPoint : wall.StartPoint;
+            Vector3 oppositePoint = endpointRef.isStart ? wall.Data.endPoint : wall.Data.startPoint;
             oppositePoint.y = dragPlaneHeight;
 
             bool alreadyAdded = false;
@@ -1594,7 +1593,7 @@ public partial class HandleManager : MonoBehaviour
         return true;
     }
 
-    private void CollectDragWallSegmentSnapCandidates(List<SnapManager.WallSnapSegment> segments, VertexGroup draggingSource)
+    private void CollectDragWallSegmentSnapCandidates(Vector3 aroundPoint, List<SnapManager.WallSnapSegment> segments, VertexGroup draggingSource)
     {
         if (segments == null)
         {
@@ -1602,33 +1601,18 @@ public partial class HandleManager : MonoBehaviour
         }
 
         segments.Clear();
-        if (wallRoot == null)
+        if (wallRoot == null || snapManager == null)
         {
             return;
         }
 
-        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls);
-        for (int i = 0; i < cachedWalls.Count; i++)
-        {
-            Wall wall = cachedWalls[i];
-            if (wall == null || !wall.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            GameObject childObject = wall.gameObject;
-            if (draggingSource != null && GroupContainsWall(draggingSource, childObject))
-            {
-                continue;
-            }
-
-            if (!wall.TryGetSnapSegment(dragPlaneHeight, minimumWallLength, out SnapManager.WallSnapSegment segment))
-            {
-                continue;
-            }
-
-            segments.Add(segment);
-        }
+        snapManager.CollectNearbyWallSegmentSnapCandidates(
+            aroundPoint,
+            dragPlaneHeight,
+            minimumWallLength,
+            segments,
+            wallRoot,
+            wall => wall != null && draggingSource != null && GroupContainsWall(draggingSource, wall.gameObject));
     }
 
     private bool CleanupDestroyedWalls()

@@ -32,9 +32,31 @@ public class SnapManager : MonoBehaviour
     [SerializeField] private bool enableWallSegmentSnap = true;
     [SerializeField] private float wallSegmentSnapDistance = 10f;
     [SerializeField] private bool preferWallSegmentSnap = true;
+    [SerializeField] private float wallSpatialHashCellSize = 4f;
     [SerializeField] private bool enableHandleDragGridSnapModifier = true;
     [SerializeField] private SnapModifierKey handleDragGridSnapModifier = SnapModifierKey.Shift;
     [SerializeField] private float handleDragGridSnapSize = 10f;
+
+    private readonly List<Wall> spatialHashCandidates = new List<Wall>();
+    private readonly HashSet<int> nearbyHandleVertexIds = new HashSet<int>();
+    private WallSpatialHash wallSpatialHash;
+    private bool wallSpatialHashDirty = true;
+
+    private void Awake()
+    {
+        EnsureSpatialHash();
+    }
+
+    private void OnEnable()
+    {
+        WallRegistry.RegistryChanged += MarkSpatialHashDirty;
+        wallSpatialHashDirty = true;
+    }
+
+    private void OnDisable()
+    {
+        WallRegistry.RegistryChanged -= MarkSpatialHashDirty;
+    }
 
     private void OnValidate()
     {
@@ -42,7 +64,109 @@ public class SnapManager : MonoBehaviour
         handleSnapDistance = Mathf.Max(0.01f, handleSnapDistance);
         handleSnapPixelDistance = Mathf.Max(1f, handleSnapPixelDistance);
         wallSegmentSnapDistance = Mathf.Max(0.01f, wallSegmentSnapDistance);
+        wallSpatialHashCellSize = Mathf.Max(0.01f, wallSpatialHashCellSize);
         handleDragGridSnapSize = Mathf.Max(0.01f, handleDragGridSnapSize);
+        wallSpatialHash = null;
+        wallSpatialHashDirty = true;
+    }
+
+    public void CollectNearbyWallSegmentSnapCandidates(
+        Vector3 rawPoint,
+        float planeY,
+        float minimumLength,
+        List<WallSnapSegment> segments,
+        Transform root = null,
+        System.Predicate<Wall> excludePredicate = null)
+    {
+        if (segments == null)
+        {
+            return;
+        }
+
+        segments.Clear();
+        if (!enableWallSegmentSnap)
+        {
+            return;
+        }
+
+        RebuildSpatialHashIfNeeded();
+        wallSpatialHash.CollectCandidates(rawPoint, wallSegmentSnapDistance, spatialHashCandidates, root);
+
+        for (int i = 0; i < spatialHashCandidates.Count; i++)
+        {
+            Wall wall = spatialHashCandidates[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            if (excludePredicate != null && excludePredicate(wall))
+            {
+                continue;
+            }
+
+            if (!wall.TryGetSnapSegment(planeY, minimumLength, out WallSnapSegment segment))
+            {
+                continue;
+            }
+
+            segments.Add(segment);
+        }
+    }
+
+    public void CollectNearbyHandleSnapCandidates(
+        Vector3 rawPoint,
+        List<Vector3> handleCandidates,
+        Transform root = null,
+        Wall ignoreWall = null,
+        int ignoreVertexId = 0)
+    {
+        if (handleCandidates == null)
+        {
+            return;
+        }
+
+        handleCandidates.Clear();
+        if (!enableHandleSnap)
+        {
+            return;
+        }
+
+        RebuildSpatialHashIfNeeded();
+        wallSpatialHash.CollectCandidates(rawPoint, handleSnapDistance, spatialHashCandidates, root);
+
+        nearbyHandleVertexIds.Clear();
+        int ignoredStartVertexId = ignoreWall != null ? ignoreWall.StartVertexId : 0;
+        int ignoredEndVertexId = ignoreWall != null ? ignoreWall.EndVertexId : 0;
+
+        for (int i = 0; i < spatialHashCandidates.Count; i++)
+        {
+            Wall wall = spatialHashCandidates[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            TryAddHandleSnapCandidate(
+                handleCandidates,
+                nearbyHandleVertexIds,
+                wall.StartVertexId,
+                wall.Data.startPoint,
+                wall.SuppressStartHandle,
+                ignoreVertexId,
+                ignoredStartVertexId,
+                ignoredEndVertexId);
+
+            TryAddHandleSnapCandidate(
+                handleCandidates,
+                nearbyHandleVertexIds,
+                wall.EndVertexId,
+                wall.Data.endPoint,
+                wall.SuppressEndHandle,
+                ignoreVertexId,
+                ignoredStartVertexId,
+                ignoredEndVertexId);
+        }
     }
 
     public Vector3 GetSnappedPoint(Vector3 rawPoint, Vector3 anchorPoint)
@@ -454,5 +578,71 @@ public class SnapManager : MonoBehaviour
             default:
                 return false;
         }
+    }
+
+    private void EnsureSpatialHash()
+    {
+        if (wallSpatialHash == null)
+        {
+            wallSpatialHash = new WallSpatialHash(wallSpatialHashCellSize);
+            wallSpatialHashDirty = true;
+        }
+    }
+
+    private void RebuildSpatialHashIfNeeded()
+    {
+        EnsureSpatialHash();
+        if (!wallSpatialHashDirty)
+        {
+            return;
+        }
+
+        wallSpatialHash.Clear();
+        WallRegistry.CollectWalls(spatialHashCandidates);
+        for (int i = 0; i < spatialHashCandidates.Count; i++)
+        {
+            Wall wall = spatialHashCandidates[i];
+            if (wall == null || !wall.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            wallSpatialHash.Insert(wall);
+        }
+
+        wallSpatialHashDirty = false;
+    }
+
+    private void MarkSpatialHashDirty()
+    {
+        wallSpatialHashDirty = true;
+    }
+
+    private static void TryAddHandleSnapCandidate(
+        List<Vector3> handleCandidates,
+        HashSet<int> uniqueVertexIds,
+        int vertexId,
+        Vector3 point,
+        bool isSuppressed,
+        int ignoreVertexId,
+        int ignoredStartVertexId,
+        int ignoredEndVertexId)
+    {
+        if (isSuppressed || vertexId <= 0)
+        {
+            return;
+        }
+
+        if (vertexId == ignoreVertexId || vertexId == ignoredStartVertexId || vertexId == ignoredEndVertexId)
+        {
+            return;
+        }
+
+        if (!uniqueVertexIds.Add(vertexId))
+        {
+            return;
+        }
+
+        handleCandidates.Add(point);
     }
 }

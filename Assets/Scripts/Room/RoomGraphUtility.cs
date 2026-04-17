@@ -89,12 +89,12 @@ public static partial class RoomGraphUtility
 
             if (!pointByVertexId.ContainsKey(wall.StartVertexId))
             {
-                pointByVertexId[wall.StartVertexId] = wall.StartPoint;
+                pointByVertexId[wall.StartVertexId] = wall.Data.startPoint;
             }
 
             if (!pointByVertexId.ContainsKey(wall.EndVertexId))
             {
-                pointByVertexId[wall.EndVertexId] = wall.EndPoint;
+                pointByVertexId[wall.EndVertexId] = wall.Data.endPoint;
             }
         }
 
@@ -189,7 +189,7 @@ public static partial class RoomGraphUtility
 
         orderedWalls.Add(currentWall);
         visitedWalls.Add(currentWall);
-        Vector3 nextStartPoint = currentWall.EndPoint;
+        Vector3 nextStartPoint = currentWall.Data.endPoint;
 
         while (orderedWalls.Count < wallSet.Count)
         {
@@ -201,7 +201,7 @@ public static partial class RoomGraphUtility
                     continue;
                 }
 
-                if ((nextStartPoint - wall.StartPoint).sqrMagnitude < endpointThresholdSqr)
+                if ((nextStartPoint - wall.Data.startPoint).sqrMagnitude < endpointThresholdSqr)
                 {
                     nextWall = wall;
                     break;
@@ -215,13 +215,13 @@ public static partial class RoomGraphUtility
 
             orderedWalls.Add(nextWall);
             visitedWalls.Add(nextWall);
-            nextStartPoint = nextWall.EndPoint;
+            nextStartPoint = nextWall.Data.endPoint;
         }
 
         List<Vector3> vertices = new List<Vector3>(orderedWalls.Count);
         for (int i = 0; i < orderedWalls.Count; i++)
         {
-            vertices.Add(orderedWalls[i].StartPoint);
+            vertices.Add(orderedWalls[i].Data.startPoint);
         }
 
         return vertices;
@@ -268,8 +268,8 @@ public static partial class RoomGraphUtility
 
                 rawSegments.Add(new RawBoundarySegment
                 {
-                    start = wall.StartPoint,
-                    end = wall.EndPoint,
+                    start = wall.Data.startPoint,
+                    end = wall.Data.endPoint,
                     startVertexId = wall.StartVertexId,
                     endVertexId = wall.EndVertexId,
                     wall = wall,

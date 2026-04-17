@@ -236,9 +236,9 @@ public partial class DrawManager : MonoBehaviour
             if (isWallCreationMode)
             {
                 handleSnapCandidates.Clear();
-                if (handleManager != null)
+                if (snapManager != null)
                 {
-                    handleManager.CollectSnapPoints(handleSnapCandidates);
+                    snapManager.CollectNearbyHandleSnapCandidates(worldPoint, handleSnapCandidates, wallRoot);
                 }
 
                 bool hasHandleCandidate = false;
@@ -248,7 +248,7 @@ public partial class DrawManager : MonoBehaviour
                     hasHandleCandidate = snapManager.TryGetClosestHandleSnapPoint(worldPoint, handleSnapCandidates, mainCamera, out handleCandidatePoint);
                 }
 
-                CollectWallSegmentSnapCandidates(wallSegmentSnapCandidates);
+                CollectWallSegmentSnapCandidates(worldPoint, wallSegmentSnapCandidates);
                 worldPoint = snapManager.GetSnappedWallDrawPoint(
                     worldPoint,
                     anchorPoint,
@@ -340,7 +340,7 @@ public partial class DrawManager : MonoBehaviour
         Debug.Assert(handleManager != null, $"{nameof(DrawManager)} requires {nameof(handleManager)}.", this);
     }
 
-    private void CollectWallSegmentSnapCandidates(List<SnapManager.WallSnapSegment> segments)
+    private void CollectWallSegmentSnapCandidates(Vector3 aroundPoint, List<SnapManager.WallSnapSegment> segments)
     {
         if (segments == null)
         {
@@ -348,30 +348,19 @@ public partial class DrawManager : MonoBehaviour
         }
 
         segments.Clear();
-        if (wallRoot == null)
+        if (wallRoot == null || snapManager == null)
         {
             return;
         }
 
         Transform previewTransform = previewWall != null ? previewWall.transform : null;
-        float planeY = drawingPlaneHeight;
-        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls);
-
-        for (int i = 0; i < cachedWalls.Count; i++)
-        {
-            Wall wall = cachedWalls[i];
-            if (wall == null || wall.transform == previewTransform)
-            {
-                continue;
-            }
-
-            if (!wall.TryGetSnapSegment(planeY, MinimumWallLength, out SnapManager.WallSnapSegment segment))
-            {
-                continue;
-            }
-
-            segments.Add(segment);
-        }
+        snapManager.CollectNearbyWallSegmentSnapCandidates(
+            aroundPoint,
+            drawingPlaneHeight,
+            MinimumWallLength,
+            segments,
+            wallRoot,
+            wall => wall != null && wall.transform == previewTransform);
     }
 
     private void InitializeEditorStates()

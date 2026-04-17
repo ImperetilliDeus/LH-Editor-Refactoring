@@ -5,14 +5,13 @@ public partial class UndoRedoManager
     public struct WallStateSnapshot
     {
         public GameObject wallObject;
+        public WallData wallData;
         public Vector3 position;
         public Quaternion rotation;
         public Vector3 scale;
         public string name;
         public Material sharedMaterial;
         public Material topMaterial;
-        public Vector3 startPoint;
-        public Vector3 endPoint;
         public int startVertexId;
         public int endVertexId;
         public bool suppressStartHandle;
@@ -40,8 +39,7 @@ public partial class UndoRedoManager
                 name = wallObject.name,
                 sharedMaterial = renderer != null ? renderer.sharedMaterial : null,
                 topMaterial = wallComponent != null ? wallComponent.GetTopMaterial() : null,
-                startPoint = wallComponent != null ? wallComponent.StartPoint : Vector3.zero,
-                endPoint = wallComponent != null ? wallComponent.EndPoint : Vector3.zero,
+                wallData = wallComponent != null ? wallComponent.Data.Clone() : null,
                 startVertexId = wallComponent != null ? wallComponent.StartVertexId : 0,
                 endVertexId = wallComponent != null ? wallComponent.EndVertexId : 0,
                 suppressStartHandle = wallComponent != null && wallComponent.SuppressStartHandle,
@@ -67,13 +65,16 @@ public partial class UndoRedoManager
                     Vector3 originalPosition = wallTransform.position;
                     Quaternion originalRotation = wallTransform.rotation;
                     Vector3 originalScale = wallTransform.localScale;
+                    WallData originalWallData = wallComponent.Data.Clone();
 
                     wallTransform.SetPositionAndRotation(position, rotation);
                     wallTransform.localScale = scale;
-                    wallComponent.GetEndpointsFromTransform(wallComponent.StartPoint.y, out snapshot.startPoint, out snapshot.endPoint);
+                    wallComponent.SyncEndpointsFromTransform(wallComponent.Data.startPoint.y);
+                    snapshot.wallData = wallComponent.Data.Clone();
 
                     wallTransform.SetPositionAndRotation(originalPosition, originalRotation);
                     wallTransform.localScale = originalScale;
+                    wallComponent.CopyDataFrom(originalWallData);
                 }
             }
 
@@ -85,8 +86,7 @@ public partial class UndoRedoManager
             bool moved = (after.position - before.position).sqrMagnitude > PositionEpsilonSqr;
             bool scaled = (after.scale - before.scale).sqrMagnitude > ScaleEpsilonSqr;
             bool endpointsChanged =
-                (after.startPoint - before.startPoint).sqrMagnitude > PositionEpsilonSqr ||
-                (after.endPoint - before.endPoint).sqrMagnitude > PositionEpsilonSqr ||
+                !AreWallDataEquivalent(before.wallData, after.wallData) ||
                 after.startVertexId != before.startVertexId ||
                 after.endVertexId != before.endVertexId ||
                 after.suppressStartHandle != before.suppressStartHandle ||
@@ -96,6 +96,26 @@ public partial class UndoRedoManager
             float rotationDot = Mathf.Abs(Quaternion.Dot(before.rotation, after.rotation));
             bool rotated = rotationDot < RotationEpsilonDot;
             return moved || scaled || rotated || endpointsChanged;
+        }
+
+        private static bool AreWallDataEquivalent(WallData left, WallData right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return
+                (left.startPoint - right.startPoint).sqrMagnitude <= PositionEpsilonSqr &&
+                (left.endPoint - right.endPoint).sqrMagnitude <= PositionEpsilonSqr &&
+                Mathf.Abs(left.thickness - right.thickness) <= 0.0001f &&
+                Mathf.Abs(left.height - right.height) <= 0.0001f &&
+                Mathf.Abs(left.centerY - right.centerY) <= 0.0001f;
         }
     }
 

@@ -10,8 +10,7 @@ public class Wall : MonoBehaviour
     private const float MinimumExtension = 0.0001f;
     private const float ParallelThreshold = 0.0001f;
 
-    private Vector3 startPoint;
-    private Vector3 endPoint;
+    [SerializeField] private WallData data = new WallData();
     private int startVertexId;
     private int endVertexId;
     private bool suppressStartHandle;
@@ -29,18 +28,6 @@ public class Wall : MonoBehaviour
     private MeshFilter endCapFilter;
     private float topFaceWorldOffset = 0.01f;
 
-    public Vector3 StartPoint
-    {
-        get => startPoint;
-        set => startPoint = value;
-    }
-
-    public Vector3 EndPoint
-    {
-        get => endPoint;
-        set => endPoint = value;
-    }
-
     public int StartVertexId
     {
         get => startVertexId;
@@ -53,17 +40,43 @@ public class Wall : MonoBehaviour
         set => endVertexId = value;
     }
 
-    public float Length => Vector3.Distance(startPoint, endPoint);
+    public WallData Data => EnsureData();
     public bool HasValidVertexIds => startVertexId > 0 && endVertexId > 0;
     public bool SuppressStartHandle => suppressStartHandle;
     public bool SuppressEndHandle => suppressEndHandle;
     public bool IsStartSplitPoint => startSplitPoint;
     public bool IsEndSplitPoint => endSplitPoint;
 
-    public void Initialize(Vector3 start, Vector3 end)
+    public float Thickness
     {
-        startPoint = start;
-        endPoint = end;
+        get => Data.thickness;
+        set => Data.thickness = value;
+    }
+
+    public float Height
+    {
+        get => Data.height;
+        set => Data.height = value;
+    }
+
+    public float CenterY
+    {
+        get => Data.centerY;
+        set => Data.centerY = value;
+    }
+
+    public void Initialize(WallData wallData)
+    {
+        data = wallData ?? new WallData();
+        EnsureWallId();
+        WallRegistry.NotifyWallChanged(this);
+    }
+
+    public void CopyDataFrom(WallData wallData)
+    {
+        EnsureData().CopyFrom(wallData);
+        EnsureWallId();
+        WallRegistry.NotifyWallChanged(this);
     }
 
     public void SetVertexIds(int startId, int endId)
@@ -113,19 +126,6 @@ public class Wall : MonoBehaviour
         return 0;
     }
 
-    public float GetLength()
-    {
-        return Length;
-    }
-
-    public Vector3 GetDirection()
-    {
-        Vector3 dir = endPoint - startPoint;
-        if (dir.magnitude > 0)
-            return dir.normalized;
-        return Vector3.zero;
-    }
-
     public bool TryApplyGeometry(Vector3 start, Vector3 end, float thickness, float height, float centerY, float minimumLength)
     {
         if (!TryGetFlatGeometry(start, end, minimumLength, out Vector3 flatDirection, out float length))
@@ -141,9 +141,15 @@ public class Wall : MonoBehaviour
             Quaternion.LookRotation(flatDirection.normalized, Vector3.up));
         transform.localScale = new Vector3(thickness, height, length);
 
-        Initialize(start, end);
+        WallData wallData = EnsureData();
+        wallData.startPoint = start;
+        wallData.endPoint = end;
+        wallData.thickness = thickness;
+        wallData.height = height;
+        wallData.centerY = centerY;
         RefreshTopFaceVisual();
         RefreshEndCapVisuals();
+        WallRegistry.NotifyWallChanged(this);
         return true;
     }
 
@@ -172,9 +178,9 @@ public class Wall : MonoBehaviour
         return TryApplyGeometry(
             start,
             end,
-            transform.localScale.x,
-            transform.localScale.y,
-            transform.position.y,
+            Mathf.Max(Data.thickness, transform.localScale.x),
+            Mathf.Max(Data.height, transform.localScale.y),
+            Mathf.Abs(Data.centerY) > 0.000001f ? Data.centerY : transform.position.y,
             minimumLength);
     }
 
@@ -198,7 +204,25 @@ public class Wall : MonoBehaviour
     public void SyncEndpointsFromTransform(float planeY)
     {
         GetEndpointsFromTransform(planeY, out Vector3 start, out Vector3 end);
-        Initialize(start, end);
+        WallData wallData = EnsureData();
+        wallData.startPoint = start;
+        wallData.endPoint = end;
+        wallData.thickness = transform.localScale.x;
+        wallData.height = transform.localScale.y;
+        wallData.centerY = transform.position.y;
+        WallRegistry.NotifyWallChanged(this);
+    }
+
+    public bool UpdateView(float minimumLength)
+    {
+        WallData wallData = EnsureData();
+        return TryApplyGeometry(
+            wallData.startPoint,
+            wallData.endPoint,
+            wallData.thickness,
+            wallData.height,
+            wallData.centerY,
+            minimumLength);
     }
 
     public bool TryGetSnapSegment(float planeY, float minimumLength, out SnapManager.WallSnapSegment segment)
@@ -225,7 +249,7 @@ public class Wall : MonoBehaviour
             return;
         }
 
-        wallLengthDisplay.SetWallLength(transform, Length, transform.localScale.y, isPreview);
+        wallLengthDisplay.SetWallLength(transform, Data.GetLength(), transform.localScale.y, isPreview);
     }
 
     public void ClearLengthDisplay(WallLengthDisplay wallLengthDisplay)
@@ -352,9 +376,9 @@ public class Wall : MonoBehaviour
         Gizmos.color = Color.yellow;
         if (Application.isPlaying)
         {
-            Gizmos.DrawWireSphere(startPoint, 0.1f);
-            Gizmos.DrawWireSphere(endPoint, 0.1f);
-            Gizmos.DrawLine(startPoint, endPoint);
+            Gizmos.DrawWireSphere(Data.startPoint, 0.1f);
+            Gizmos.DrawWireSphere(Data.endPoint, 0.1f);
+            Gizmos.DrawLine(Data.startPoint, Data.endPoint);
         }
     }
 
@@ -446,7 +470,7 @@ public class Wall : MonoBehaviour
 
     private Vector2 GetEndpointOutwardDirection2D(bool isStartEndpoint)
     {
-        Vector3 direction = GetDirection();
+        Vector3 direction = Data.GetDirection();
         Vector2 forward = new Vector2(direction.x, direction.z);
         if (forward.sqrMagnitude <= 0.000001f)
         {
@@ -460,13 +484,13 @@ public class Wall : MonoBehaviour
     {
         if (startVertexId == vertexId)
         {
-            point = startPoint;
+            point = Data.startPoint;
             return true;
         }
 
         if (endVertexId == vertexId)
         {
-            point = endPoint;
+            point = Data.endPoint;
             return true;
         }
 
@@ -482,7 +506,7 @@ public class Wall : MonoBehaviour
             return false;
         }
 
-        Vector3 direction3 = wall.GetDirection();
+        Vector3 direction3 = wall.Data.GetDirection();
         Vector2 direction = new Vector2(direction3.x, direction3.z);
         if (direction.sqrMagnitude <= 0.000001f)
         {
@@ -637,5 +661,24 @@ public class Wall : MonoBehaviour
         }
 
         return sharedCubeMesh;
+    }
+
+    private WallData EnsureData()
+    {
+        if (data == null)
+        {
+            data = new WallData();
+        }
+
+        EnsureWallId();
+        return data;
+    }
+
+    private void EnsureWallId()
+    {
+        if (data != null && string.IsNullOrEmpty(data.id))
+        {
+            data.id = System.Guid.NewGuid().ToString("N");
+        }
     }
 }

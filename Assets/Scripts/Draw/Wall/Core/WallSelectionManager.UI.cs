@@ -151,7 +151,7 @@ public partial class WallSelectionManager
                 continue;
             }
 
-            float lengthSqr = (wall.EndPoint - wall.StartPoint).sqrMagnitude;
+            float lengthSqr = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
             if (lengthSqr <= bestLengthSqr)
             {
                 continue;

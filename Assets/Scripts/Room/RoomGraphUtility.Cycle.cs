@@ -24,15 +24,6 @@ public static partial class RoomGraphUtility
         public Vector3 centroid;
     }
 
-    private struct DirectedBoundaryEdge
-    {
-        public int startVertexId;
-        public int endVertexId;
-        public int boundaryEdgeIndex;
-        public int oppositeDirectedEdgeIndex;
-        public float angle;
-    }
-
     public static List<Vector3> BuildLargestCycleVerticesFromBoundaryGraph(HashSet<Wall> wallSet, IEnumerable<VirtualBoundary> virtualBoundaries)
     {
         List<BoundaryCycleResult> cycles = BuildBoundaryCycles(wallSet, virtualBoundaries);
@@ -222,104 +213,133 @@ public static partial class RoomGraphUtility
         return BuildBoundaryFacesFromEdges(edges);
     }
 
+    public static RoomPlanarGraph BuildPlanarGraph(HashSet<Wall> wallSet, IEnumerable<VirtualBoundary> virtualBoundaries)
+    {
+        return BuildPlanarGraphFromEdges(BuildBoundaryEdges(wallSet, virtualBoundaries));
+    }
+
+    public static RoomPlanarGraph BuildPlanarGraph(List<Vector3> outerPolygon, IEnumerable<VirtualBoundary> virtualBoundaries)
+    {
+        return BuildPlanarGraphFromEdges(BuildBoundaryEdges(outerPolygon, virtualBoundaries));
+    }
+
     private static List<BoundaryFaceResult> BuildBoundaryFacesFromEdges(List<BoundaryEdge> edges)
     {
         List<BoundaryFaceResult> results = new List<BoundaryFaceResult>();
-        if (edges == null || edges.Count < 3)
+        RoomPlanarGraph graph = BuildPlanarGraphFromEdges(edges);
+        if (graph == null || graph.Faces.Count == 0)
         {
             return results;
         }
 
-        Dictionary<int, Vector3> pointByVertexId = new Dictionary<int, Vector3>();
-        Dictionary<int, List<int>> outgoingDirectedEdgesByVertex = new Dictionary<int, List<int>>();
-        List<DirectedBoundaryEdge> directedEdges = new List<DirectedBoundaryEdge>(edges.Count * 2);
+        for (int i = 0; i < graph.Faces.Count; i++)
+        {
+            RoomPlanarGraph.Face face = graph.Faces[i];
+            if (face == null || face.Vertices.Count < 3 || Mathf.Abs(face.SignedArea) <= MinFaceAreaEpsilon)
+            {
+                continue;
+            }
+
+            results.Add(new BoundaryFaceResult
+            {
+                vertices = new List<Vector3>(face.Vertices),
+                walls = new HashSet<Wall>(face.Walls),
+                virtualBoundaries = new HashSet<VirtualBoundary>(face.VirtualBoundaries),
+                area = Mathf.Abs(face.SignedArea),
+                centroid = face.Centroid,
+            });
+        }
+
+        results.Sort((left, right) => Mathf.Abs(left.area).CompareTo(Mathf.Abs(right.area)));
+        return results;
+    }
+
+    private static RoomPlanarGraph BuildPlanarGraphFromEdges(List<BoundaryEdge> edges)
+    {
+        if (edges == null || edges.Count < 3)
+        {
+            return null;
+        }
+
+        RoomPlanarGraph graph = new RoomPlanarGraph();
+        List<RoomPlanarGraph.HalfEdge> halfEdges = new List<RoomPlanarGraph.HalfEdge>(edges.Count * 2);
 
         for (int i = 0; i < edges.Count; i++)
         {
             BoundaryEdge edge = edges[i];
             if (edge.startVertexId <= 0 || edge.endVertexId <= 0)
             {
-                return results;
+                return graph;
             }
 
-            pointByVertexId[edge.startVertexId] = edge.start;
-            pointByVertexId[edge.endVertexId] = edge.end;
+            RoomPlanarGraph.Node startNode = graph.GetOrCreateNode(edge.startVertexId, edge.start);
+            RoomPlanarGraph.Node endNode = graph.GetOrCreateNode(edge.endVertexId, edge.end);
 
-            int forwardIndex = directedEdges.Count;
-            int reverseIndex = directedEdges.Count + 1;
+            RoomPlanarGraph.HalfEdge forward = graph.CreateHalfEdge(
+                startNode,
+                edge.wall,
+                edge.virtualBoundary,
+                Mathf.Atan2(edge.end.z - edge.start.z, edge.end.x - edge.start.x));
+            RoomPlanarGraph.HalfEdge reverse = graph.CreateHalfEdge(
+                endNode,
+                edge.wall,
+                edge.virtualBoundary,
+                Mathf.Atan2(edge.start.z - edge.end.z, edge.start.x - edge.end.x));
 
-            DirectedBoundaryEdge forward = new DirectedBoundaryEdge
-            {
-                startVertexId = edge.startVertexId,
-                endVertexId = edge.endVertexId,
-                boundaryEdgeIndex = i,
-                oppositeDirectedEdgeIndex = reverseIndex,
-                angle = Mathf.Atan2(edge.end.z - edge.start.z, edge.end.x - edge.start.x),
-            };
-
-            DirectedBoundaryEdge reverse = new DirectedBoundaryEdge
-            {
-                startVertexId = edge.endVertexId,
-                endVertexId = edge.startVertexId,
-                boundaryEdgeIndex = i,
-                oppositeDirectedEdgeIndex = forwardIndex,
-                angle = Mathf.Atan2(edge.start.z - edge.end.z, edge.start.x - edge.end.x),
-            };
-
-            directedEdges.Add(forward);
-            directedEdges.Add(reverse);
-            AddDirectedEdgeToVertexMap(outgoingDirectedEdgesByVertex, forward.startVertexId, forwardIndex);
-            AddDirectedEdgeToVertexMap(outgoingDirectedEdgesByVertex, reverse.startVertexId, reverseIndex);
+            forward.Twin = reverse;
+            reverse.Twin = forward;
+            halfEdges.Add(forward);
+            halfEdges.Add(reverse);
         }
 
-        foreach (KeyValuePair<int, List<int>> pair in outgoingDirectedEdgesByVertex)
+        for (int i = 0; i < graph.Nodes.Count; i++)
         {
-            pair.Value.Sort((left, right) => directedEdges[left].angle.CompareTo(directedEdges[right].angle));
+            RoomPlanarGraph.Node node = graph.Nodes[i];
+            node.OutgoingEdges.Sort((left, right) => left.AngleRadians.CompareTo(right.AngleRadians));
         }
 
-        bool[] consumedDirectedEdges = new bool[directedEdges.Count];
+        for (int i = 0; i < halfEdges.Count; i++)
+        {
+            RoomPlanarGraph.HalfEdge halfEdge = halfEdges[i];
+            RoomPlanarGraph.Node destination = halfEdge.Destination;
+            if (destination == null || destination.OutgoingEdges.Count == 0 || halfEdge.Twin == null)
+            {
+                continue;
+            }
+
+            List<RoomPlanarGraph.HalfEdge> outgoing = destination.OutgoingEdges;
+            int twinPosition = outgoing.IndexOf(halfEdge.Twin);
+            if (twinPosition < 0)
+            {
+                continue;
+            }
+
+            int nextPosition = twinPosition - 1;
+            if (nextPosition < 0)
+            {
+                nextPosition = outgoing.Count - 1;
+            }
+
+            halfEdge.Next = outgoing[nextPosition];
+        }
+
+        bool[] visited = new bool[halfEdges.Count];
         HashSet<string> faceKeys = new HashSet<string>();
-
-        for (int i = 0; i < directedEdges.Count; i++)
+        for (int i = 0; i < halfEdges.Count; i++)
         {
-            if (consumedDirectedEdges[i])
+            RoomPlanarGraph.HalfEdge startHalfEdge = halfEdges[i];
+            if (startHalfEdge == null || visited[startHalfEdge.Id] || startHalfEdge.Next == null)
             {
                 continue;
             }
 
-            if (!TryTraceFace(
-                    i,
-                    directedEdges,
-                    edges,
-                    outgoingDirectedEdgesByVertex,
-                    pointByVertexId,
-                    out BoundaryFaceResult face,
-                    out List<int> traversedDirectedEdges))
+            if (!TryCreateFace(startHalfEdge, visited, faceKeys, graph))
             {
                 continue;
             }
-
-            for (int j = 0; j < traversedDirectedEdges.Count; j++)
-            {
-                consumedDirectedEdges[traversedDirectedEdges[j]] = true;
-            }
-
-            if (face.vertices == null || face.vertices.Count < 3 || Mathf.Abs(face.area) <= MinFaceAreaEpsilon)
-            {
-                continue;
-            }
-
-            string key = BuildPolygonKey(face.vertices);
-            if (!faceKeys.Add(key))
-            {
-                continue;
-            }
-
-            results.Add(face);
         }
 
-        results.Sort((left, right) => Mathf.Abs(left.area).CompareTo(Mathf.Abs(right.area)));
-        return results;
+        return graph;
     }
 
     private static void AddWallToAdjacency(Dictionary<int, List<Wall>> adjacency, int vertexId, Wall wall)
@@ -336,85 +356,41 @@ public static partial class RoomGraphUtility
         }
     }
 
-    private static void AddDirectedEdgeToVertexMap(Dictionary<int, List<int>> outgoingDirectedEdgesByVertex, int vertexId, int directedEdgeIndex)
+    private static bool TryCreateFace(
+        RoomPlanarGraph.HalfEdge startHalfEdge,
+        bool[] visited,
+        HashSet<string> faceKeys,
+        RoomPlanarGraph graph)
     {
-        if (!outgoingDirectedEdgesByVertex.TryGetValue(vertexId, out List<int> outgoing))
-        {
-            outgoing = new List<int>();
-            outgoingDirectedEdgesByVertex[vertexId] = outgoing;
-        }
-
-        outgoing.Add(directedEdgeIndex);
-    }
-
-    private static bool TryTraceFace(
-        int startDirectedEdgeIndex,
-        List<DirectedBoundaryEdge> directedEdges,
-        List<BoundaryEdge> boundaryEdges,
-        Dictionary<int, List<int>> outgoingDirectedEdgesByVertex,
-        Dictionary<int, Vector3> pointByVertexId,
-        out BoundaryFaceResult face,
-        out List<int> traversedDirectedEdges)
-    {
-        face = default;
-        traversedDirectedEdges = new List<int>();
-        HashSet<int> seenDirectedEdges = new HashSet<int>();
-        List<int> faceVertexIds = new List<int>();
-
-        int currentDirectedEdgeIndex = startDirectedEdgeIndex;
-        int safetyLimit = directedEdges.Count + 1;
+        HashSet<int> seenHalfEdges = new HashSet<int>();
+        List<RoomPlanarGraph.HalfEdge> boundary = new List<RoomPlanarGraph.HalfEdge>();
+        RoomPlanarGraph.HalfEdge current = startHalfEdge;
+        int safetyLimit = graph.HalfEdges.Count + 1;
 
         while (safetyLimit-- > 0)
         {
-            if (!seenDirectedEdges.Add(currentDirectedEdgeIndex))
+            if (current == null || current.Next == null || !seenHalfEdges.Add(current.Id))
             {
                 return false;
             }
 
-            DirectedBoundaryEdge currentDirectedEdge = directedEdges[currentDirectedEdgeIndex];
-            faceVertexIds.Add(currentDirectedEdge.startVertexId);
-            traversedDirectedEdges.Add(currentDirectedEdgeIndex);
-
-            if (!outgoingDirectedEdgesByVertex.TryGetValue(currentDirectedEdge.endVertexId, out List<int> outgoingDirectedEdges) ||
-                outgoingDirectedEdges.Count == 0)
-            {
-                return false;
-            }
-
-            int oppositeIndex = currentDirectedEdge.oppositeDirectedEdgeIndex;
-            int oppositePosition = outgoingDirectedEdges.IndexOf(oppositeIndex);
-            if (oppositePosition < 0)
-            {
-                return false;
-            }
-
-            int nextPosition = oppositePosition - 1;
-            if (nextPosition < 0)
-            {
-                nextPosition = outgoingDirectedEdges.Count - 1;
-            }
-
-            currentDirectedEdgeIndex = outgoingDirectedEdges[nextPosition];
-            if (currentDirectedEdgeIndex == startDirectedEdgeIndex)
+            boundary.Add(current);
+            current = current.Next;
+            if (current == startHalfEdge)
             {
                 break;
             }
         }
 
-        if (traversedDirectedEdges.Count < 3 || safetyLimit <= 0)
+        if (boundary.Count < 3 || safetyLimit <= 0)
         {
             return false;
         }
 
-        List<Vector3> vertices = new List<Vector3>(faceVertexIds.Count);
-        for (int i = 0; i < faceVertexIds.Count; i++)
+        List<Vector3> vertices = new List<Vector3>(boundary.Count);
+        for (int i = 0; i < boundary.Count; i++)
         {
-            if (!pointByVertexId.TryGetValue(faceVertexIds[i], out Vector3 vertex))
-            {
-                return false;
-            }
-
-            vertices.Add(vertex);
+            vertices.Add(boundary[i].Origin.Position);
         }
 
         RemoveSequentialDuplicateVertices(vertices);
@@ -424,38 +400,47 @@ public static partial class RoomGraphUtility
             return false;
         }
 
+        string key = BuildPolygonKey(vertices);
+        if (!faceKeys.Add(key))
+        {
+            return false;
+        }
+
         float area = CalculateSignedAreaXZ(vertices);
+        if (Mathf.Abs(area) <= MinFaceAreaEpsilon)
+        {
+            return false;
+        }
+
         if (area < 0f)
         {
             vertices.Reverse();
             area = -area;
         }
 
-        HashSet<Wall> faceWalls = new HashSet<Wall>();
-        HashSet<VirtualBoundary> faceVirtualBoundaries = new HashSet<VirtualBoundary>();
+        RoomPlanarGraph.Face face = graph.CreateFace();
+        face.SignedArea = area;
+        face.Centroid = CalculatePolygonCentroidXZ(vertices);
+        face.Vertices.AddRange(vertices);
 
-        for (int i = 0; i < traversedDirectedEdges.Count; i++)
+        for (int i = 0; i < boundary.Count; i++)
         {
-            BoundaryEdge boundaryEdge = boundaryEdges[directedEdges[traversedDirectedEdges[i]].boundaryEdgeIndex];
-            if (boundaryEdge.wall != null)
+            RoomPlanarGraph.HalfEdge halfEdge = boundary[i];
+            visited[halfEdge.Id] = true;
+            halfEdge.Face = face;
+            face.Boundary.Add(halfEdge);
+
+            if (halfEdge.SourceWall != null)
             {
-                faceWalls.Add(boundaryEdge.wall);
+                face.Walls.Add(halfEdge.SourceWall);
             }
 
-            if (boundaryEdge.virtualBoundary != null)
+            if (halfEdge.SourceVirtualBoundary != null)
             {
-                faceVirtualBoundaries.Add(boundaryEdge.virtualBoundary);
+                face.VirtualBoundaries.Add(halfEdge.SourceVirtualBoundary);
             }
         }
 
-        face = new BoundaryFaceResult
-        {
-            vertices = vertices,
-            walls = faceWalls,
-            virtualBoundaries = faceVirtualBoundaries,
-            area = area,
-            centroid = CalculatePolygonCentroidXZ(vertices),
-        };
         return true;
     }
 

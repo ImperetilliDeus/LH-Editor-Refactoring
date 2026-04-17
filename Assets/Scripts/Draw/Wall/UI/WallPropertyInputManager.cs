@@ -132,8 +132,8 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPoint = selectedWallComponent.StartPoint;
-        Vector3 currentEndPoint = selectedWallComponent.EndPoint;
+        Vector3 startPoint = selectedWallComponent.Data.startPoint;
+        Vector3 currentEndPoint = selectedWallComponent.Data.endPoint;
         Vector3 direction = currentEndPoint - startPoint;
         direction.y = 0f;
 
@@ -309,7 +309,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
                 multiPosition.y = multiBottomY + targetHeightUnits * 0.5f;
                 multiWallTransform.position = multiPosition;
 
-                wall.SyncEndpointsFromTransform(wall.StartPoint.y);
+                wall.SyncEndpointsFromTransform(wall.Data.startPoint.y);
                 wall.RefreshLengthDisplay(wallLengthDisplay, false);
                 multiRecords.Add(new UndoRedoManager.WallStateChangeRecord
                 {
@@ -346,7 +346,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
         position.y = bottomY + targetHeightUnits * 0.5f;
         wallTransform.position = position;
 
-        selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.StartPoint.y);
+        selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.Data.startPoint.y);
         selectedWallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
 
         RecordAndRefresh(new List<UndoRedoManager.WallStateChangeRecord>
@@ -433,7 +433,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
                 multiScale.x = targetThicknessUnits;
                 wallObject.transform.localScale = multiScale;
 
-                wall.SyncEndpointsFromTransform(wall.StartPoint.y);
+                wall.SyncEndpointsFromTransform(wall.Data.startPoint.y);
                 wall.RefreshLengthDisplay(wallLengthDisplay, false);
                 multiRecords.Add(new UndoRedoManager.WallStateChangeRecord
                 {
@@ -463,7 +463,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
         scale.x = targetThicknessUnits;
         selectedWall.transform.localScale = scale;
 
-        selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.StartPoint.y);
+        selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.Data.startPoint.y);
         selectedWallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
 
         RecordAndRefresh(new List<UndoRedoManager.WallStateChangeRecord>
@@ -499,10 +499,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             handleManager.RefreshRegisteredWalls();
         }
 
-        if (roomManager != null)
-        {
-            roomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         MarkTopViewDirty();
         UpdateInputFieldValues(true);
@@ -627,7 +624,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
         }
 
         WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-        return container != null ? container.WallLength : wall.Length;
+        return container != null ? container.WallLength : wall.Data.GetLength();
     }
 
     private float GetDisplayedHeightUnits(GameObject selectedWall)
@@ -782,10 +779,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             handleManager.RefreshRegisteredWalls();
         }
 
-        if (roomManager != null)
-        {
-            roomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         MarkTopViewDirty();
         UpdateInputFieldValues(true);
@@ -800,8 +794,8 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPoint = selectedWallComponent.StartPoint;
-        Vector3 currentEndPoint = selectedWallComponent.EndPoint;
+        Vector3 startPoint = selectedWallComponent.Data.startPoint;
+        Vector3 currentEndPoint = selectedWallComponent.Data.endPoint;
         Vector3 direction = currentEndPoint - startPoint;
         direction.y = 0f;
         if (direction.sqrMagnitude <= 0.000001f)
@@ -932,10 +926,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
         }
 
-        if (roomManager != null)
-        {
-            roomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         MarkTopViewDirty();
     }
@@ -968,10 +959,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             handleManager.RefreshRegisteredWalls();
         }
 
-        if (roomManager != null)
-        {
-            roomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         MarkTopViewDirty();
         UpdateInputFieldValues(true);
@@ -996,10 +984,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
         }
 
-        if (roomManager != null)
-        {
-            roomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         MarkTopViewDirty();
     }

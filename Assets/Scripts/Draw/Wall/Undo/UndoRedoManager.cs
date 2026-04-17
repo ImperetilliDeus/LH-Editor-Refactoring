@@ -293,12 +293,13 @@ public partial class UndoRedoManager : MonoBehaviour
         }
 
         Wall wall = wallObject.AddComponent<Wall>();
-        wall.Initialize(snapshot.startPoint, snapshot.endPoint);
+        wall.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
         wall.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
         wall.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
         wall.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
         wall.SetTopMaterial(snapshot.topMaterial);
         wall.SetTopFaceOffset(0.01f);
+        wall.UpdateView(0.01f);
 
         return wallObject;
     }
@@ -362,13 +363,14 @@ public partial class UndoRedoManager : MonoBehaviour
             wallComponent = wallObject.AddComponent<Wall>();
         }
 
-        wallComponent.Initialize(snapshot.startPoint, snapshot.endPoint);
+        wallComponent.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
         wallComponent.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
         wallComponent.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
         wallComponent.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
         wallComponent.SetTopMaterial(snapshot.topMaterial);
         wallComponent.SetTopFaceOffset(0.01f);
         wallObject.name = snapshot.name;
+        wallComponent.UpdateView(0.01f);
         wallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
     }
 
@@ -471,8 +473,8 @@ public partial class UndoRedoManager : MonoBehaviour
             }
 
             if (wall.name == wallReference.name &&
-                ArePointsClose(wall.StartPoint, wallReference.startPoint) &&
-                ArePointsClose(wall.EndPoint, wallReference.endPoint))
+                ArePointsClose(wall.Data.startPoint, wallReference.startPoint) &&
+                ArePointsClose(wall.Data.endPoint, wallReference.endPoint))
             {
                 fallbackMatch = wall;
             }
@@ -552,11 +554,7 @@ public partial class UndoRedoManager : MonoBehaviour
             handleManager.RefreshRegisteredWalls();
         }
 
-        RoomManager currentRoomManager = GetRoomManager();
-        if (currentRoomManager != null)
-        {
-            currentRoomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         WallOpeningPlacementManager openingManager = GetWallOpeningPlacementManager();
         if (openingManager != null)

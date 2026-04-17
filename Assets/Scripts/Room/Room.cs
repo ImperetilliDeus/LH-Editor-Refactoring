@@ -13,6 +13,8 @@ public class Room : MonoBehaviour
     public HashSet<Wall> WallSet { get; private set; }
     public IReadOnlyList<Vector3> ManualBoundaryVertices => manualBoundaryVertices;
     public RoomGeometry Geometry { get; private set; }
+    public Vector3 Centroid => Geometry.Center;
+    public bool IsManualRoom => manualBoundaryVertices.Count >= 3;
     public string RoomName => roomName;
     public string RoomTypeKey => roomTypeKey;
     public string RoomCode => roomCode;
@@ -91,6 +93,14 @@ public class Room : MonoBehaviour
         Geometry = PolygonUtility.CalculateGeometry(manualBoundaryVertices);
         CreateOrUpdateVisual();
         return true;
+    }
+
+    public void UpdateGeometry(IReadOnlyList<Vector3> polygonVertices, IEnumerable<Wall> walls, IEnumerable<VirtualBoundary> virtualBoundaries = null)
+    {
+        WallSet = walls != null ? new HashSet<Wall>(walls) : new HashSet<Wall>();
+        manualBoundaryVertices.Clear();
+        Geometry = PolygonUtility.CalculateGeometry(polygonVertices);
+        CreateOrUpdateVisualFromVertices(polygonVertices);
     }
 
     public void SetMaterial(Material material, Color color)
@@ -187,9 +197,25 @@ public class Room : MonoBehaviour
             return;
         }
 
-        RoomGeometry geometry = PolygonUtility.CalculateGeometry(worldVertices);
+        CreateOrUpdateVisualFromVertices(worldVertices);
+    }
+
+    private void CreateOrUpdateVisualFromVertices(IReadOnlyList<Vector3> worldVertices)
+    {
+        if (worldVertices == null || worldVertices.Count < 3)
+        {
+            return;
+        }
+
+        List<Vector3> sanitizedWorldVertices = PolygonUtility.CreateSanitizedPolygonCopy(worldVertices);
+        if (sanitizedWorldVertices.Count < 3)
+        {
+            return;
+        }
+
+        RoomGeometry geometry = PolygonUtility.CalculateGeometry(sanitizedWorldVertices);
         ApplyTransformFromGeometry(geometry);
-        BuildLocalVertices(worldVertices, geometry.Center, cachedLocalVertices);
+        BuildLocalVertices(sanitizedWorldVertices, geometry.Center, cachedLocalVertices);
 
         if (roomMaterial == null)
         {
@@ -218,7 +244,7 @@ public class Room : MonoBehaviour
 
         UpdateCeilingVisual();
         Geometry = geometry;
-        CacheVertices(worldVertices);
+        CacheVertices(sanitizedWorldVertices);
     }
 
     private void ApplyRuntimeColors()
