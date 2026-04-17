@@ -283,8 +283,8 @@ namespace LH.Export
                 return null;
             }
 
-            float segmentMin = GetDistanceAlongContainer(container, segmentWall.StartPoint);
-            float segmentMax = GetDistanceAlongContainer(container, segmentWall.EndPoint);
+            float segmentMin = GetDistanceAlongContainer(container, segmentWall.Data.startPoint);
+            float segmentMax = GetDistanceAlongContainer(container, segmentWall.Data.endPoint);
             if (segmentMin > segmentMax)
             {
                 float swap = segmentMin;

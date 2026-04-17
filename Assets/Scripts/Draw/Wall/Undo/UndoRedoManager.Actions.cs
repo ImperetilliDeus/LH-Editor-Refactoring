@@ -205,7 +205,6 @@ public partial class UndoRedoManager
 
         public void Undo(UndoRedoManager context)
         {
-            RoomManager roomManager = context.GetRoomManager();
             List<Wall> removedWalls = CollectExistingWalls(restoredFirstSplitWall, restoredSecondSplitWall);
 
             DeleteWall(context, ref restoredFirstSplitWall);
@@ -217,18 +216,14 @@ public partial class UndoRedoManager
                 context.RegisterWallVisuals(restoredOriginalWall);
             }
 
-            if (roomManager != null)
-            {
-                Wall restoredWallComponent = restoredOriginalWall != null ? restoredOriginalWall.GetComponent<Wall>() : null;
-                roomManager.RefreshRoomsForWallReplacement(
-                    removedWalls,
-                    restoredWallComponent != null ? new[] { restoredWallComponent } : null);
-            }
+            Wall restoredWallComponent = restoredOriginalWall != null ? restoredOriginalWall.GetComponent<Wall>() : null;
+            RoomTopologyEvents.RequestRefreshForWallReplacement(
+                removedWalls,
+                restoredWallComponent != null ? new[] { restoredWallComponent } : null);
         }
 
         public void Redo(UndoRedoManager context)
         {
-            RoomManager roomManager = context.GetRoomManager();
             List<Wall> removedWalls = CollectExistingWalls(restoredOriginalWall);
 
             DeleteWall(context, ref restoredOriginalWall);
@@ -245,11 +240,8 @@ public partial class UndoRedoManager
                 context.RegisterWallVisuals(restoredSecondSplitWall);
             }
 
-            if (roomManager != null)
-            {
-                List<Wall> addedWalls = CollectExistingWalls(restoredFirstSplitWall, restoredSecondSplitWall);
-                roomManager.RefreshRoomsForWallReplacement(removedWalls, addedWalls);
-            }
+            List<Wall> addedWalls = CollectExistingWalls(restoredFirstSplitWall, restoredSecondSplitWall);
+            RoomTopologyEvents.RequestRefreshForWallReplacement(removedWalls, addedWalls);
         }
 
         private static List<Wall> CollectExistingWalls(params GameObject[] wallObjects)
@@ -621,8 +613,8 @@ public partial class UndoRedoManager
         return new WallReference
         {
             name = wall.gameObject.name,
-            startPoint = wall.StartPoint,
-            endPoint = wall.EndPoint,
+            startPoint = wall.Data.startPoint,
+            endPoint = wall.Data.endPoint,
             startVertexId = wall.StartVertexId,
             endVertexId = wall.EndVertexId,
         };

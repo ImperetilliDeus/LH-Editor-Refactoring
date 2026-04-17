@@ -201,7 +201,7 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
-        start = ownerWall != null ? ownerWall.StartPoint : Vector3.zero;
-        end = ownerWall != null ? ownerWall.EndPoint : Vector3.zero;
+        start = ownerWall != null ? ownerWall.Data.startPoint : Vector3.zero;
+        end = ownerWall != null ? ownerWall.Data.endPoint : Vector3.zero;
     }
 }

@@ -698,7 +698,7 @@ public partial class WallSelectionManager : MonoBehaviour
                     continue;
                 }
 
-                if (ContainsPointXZ(bounds, wall.StartPoint) && ContainsPointXZ(bounds, wall.EndPoint))
+                if (ContainsPointXZ(bounds, wall.Data.startPoint) && ContainsPointXZ(bounds, wall.Data.endPoint))
                 {
                     multiSelectWallsInBox.Add(wall.gameObject);
                 }
@@ -746,12 +746,12 @@ public partial class WallSelectionManager : MonoBehaviour
                 continue;
             }
 
-            if (!ContainsPointXZ(bounds, wall.StartPoint) || !ContainsPointXZ(bounds, wall.EndPoint))
+            if (!ContainsPointXZ(bounds, wall.Data.startPoint) || !ContainsPointXZ(bounds, wall.Data.endPoint))
             {
                 return false;
             }
 
-            float length = (wall.EndPoint - wall.StartPoint).sqrMagnitude;
+            float length = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
             if (length <= bestLength)
             {
                 continue;
@@ -915,8 +915,8 @@ public partial class WallSelectionManager : MonoBehaviour
             return;
         }
 
-        dragSelectedStartPoint = selectedWallComponent.StartPoint;
-        dragSelectedEndPoint = selectedWallComponent.EndPoint;
+        dragSelectedStartPoint = selectedWallComponent.Data.startPoint;
+        dragSelectedEndPoint = selectedWallComponent.Data.endPoint;
         dragSelectedStartPoint.y = dragPlaneHeight;
         dragSelectedEndPoint.y = dragPlaneHeight;
 
@@ -959,10 +959,10 @@ public partial class WallSelectionManager : MonoBehaviour
                     bool sharesEndVertex = dragSelectedEndVertexId > 0 &&
                         (wall.StartVertexId == dragSelectedEndVertexId || wall.EndVertexId == dragSelectedEndVertexId);
                     bool sharesByProximity =
-                        WallGeometryService.IsNearXZ(wall.StartPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                        WallGeometryService.IsNearXZ(wall.StartPoint, dragSelectedEndPoint, connectedEndpointThreshold) ||
-                        WallGeometryService.IsNearXZ(wall.EndPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                        WallGeometryService.IsNearXZ(wall.EndPoint, dragSelectedEndPoint, connectedEndpointThreshold);
+                        WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
+                        WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedEndPoint, connectedEndpointThreshold) ||
+                        WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
+                        WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedEndPoint, connectedEndpointThreshold);
 
                     if (!sharesStartVertex && !sharesEndVertex && !sharesByProximity)
                     {
@@ -973,8 +973,8 @@ public partial class WallSelectionManager : MonoBehaviour
                     moveStartSnapshots[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
                     moveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
                     {
-                        start = wall.StartPoint,
-                        end = wall.EndPoint,
+                        start = wall.Data.startPoint,
+                        end = wall.Data.endPoint,
                     };
                 }
             }
@@ -990,8 +990,8 @@ public partial class WallSelectionManager : MonoBehaviour
 
                 moveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
                 {
-                    start = wall.StartPoint,
-                    end = wall.EndPoint,
+                    start = wall.Data.startPoint,
+                    end = wall.Data.endPoint,
                 };
             }
 
@@ -1017,10 +1017,10 @@ public partial class WallSelectionManager : MonoBehaviour
             bool sharesEndVertex = dragSelectedEndVertexId > 0 &&
                 (wall.StartVertexId == dragSelectedEndVertexId || wall.EndVertexId == dragSelectedEndVertexId);
             bool sharesByProximity =
-                WallGeometryService.IsNearXZ(wall.StartPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                WallGeometryService.IsNearXZ(wall.StartPoint, dragSelectedEndPoint, connectedEndpointThreshold) ||
-                WallGeometryService.IsNearXZ(wall.EndPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                WallGeometryService.IsNearXZ(wall.EndPoint, dragSelectedEndPoint, connectedEndpointThreshold);
+                WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
+                WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedEndPoint, connectedEndpointThreshold) ||
+                WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
+                WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedEndPoint, connectedEndpointThreshold);
 
             if (!sharesStartVertex && !sharesEndVertex && !sharesByProximity && wall.gameObject != selectedWall)
             {
@@ -1047,8 +1047,8 @@ public partial class WallSelectionManager : MonoBehaviour
             moveStartSnapshots[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
             moveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
             {
-                start = wall.StartPoint,
-                end = wall.EndPoint,
+                start = wall.Data.startPoint,
+                end = wall.Data.endPoint,
             };
         }
     }
@@ -1071,7 +1071,7 @@ public partial class WallSelectionManager : MonoBehaviour
             selectedWall.transform.position = selectedTargetPosition;
             SyncWallComponentEndpoints(selectedWall.transform);
             handleManager?.RefreshHandleVisuals();
-            roomManager?.RefreshAllRooms();
+            RoomTopologyEvents.RequestRefreshAll();
             MarkTopViewDirty();
             return;
         }
@@ -1115,7 +1115,7 @@ public partial class WallSelectionManager : MonoBehaviour
         }
 
         handleManager?.RefreshHandleVisuals();
-        roomManager?.RefreshAllRooms();
+        RoomTopologyEvents.RequestRefreshAll();
         MarkTopViewDirty();
     }
 
@@ -1143,14 +1143,19 @@ public partial class WallSelectionManager : MonoBehaviour
                 continue;
             }
 
-            wall.Initialize(state.start + translationDelta, state.end + translationDelta);
+            wall.CopyDataFrom(new WallData(
+                state.start + translationDelta,
+                state.end + translationDelta,
+                wall.Data.thickness,
+                wall.Data.height,
+                wall.Data.centerY));
             wall.RefreshLengthDisplay(wallLengthDisplay, false);
         }
 
         if (dragAffectedWalls.Count == 0)
         {
             handleManager?.RefreshHandleVisuals();
-            roomManager?.RefreshAllRooms();
+            RoomTopologyEvents.RequestRefreshAll();
             MarkTopViewDirty();
             return;
         }
@@ -1174,7 +1179,7 @@ public partial class WallSelectionManager : MonoBehaviour
 
         WallGeometryService.ApplyConnectedWallMove(dragAffectedWalls, moveStartEndpointSnapshots, moveContext, wallLengthDisplay);
         handleManager?.RefreshHandleVisuals();
-        roomManager?.RefreshAllRooms();
+        RoomTopologyEvents.RequestRefreshAll();
         MarkTopViewDirty();
     }
 
@@ -1457,7 +1462,11 @@ public partial class WallSelectionManager : MonoBehaviour
         }
 
         moveSnapCandidates.Clear();
-        handleManager.CollectSnapPoints(moveSnapCandidates, wallTransform.gameObject);
+        snapManager.CollectNearbyHandleSnapCandidates(
+            targetCenterPosition,
+            moveSnapCandidates,
+            wallRoot,
+            wallTransform.GetComponent<Wall>());
         if (moveSnapCandidates.Count == 0)
         {
             return;

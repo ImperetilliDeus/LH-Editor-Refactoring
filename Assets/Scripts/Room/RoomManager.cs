@@ -47,11 +47,20 @@ public class RoomManager : MonoBehaviour
     [SerializeField] private Material roomMaterial;
     [SerializeField] private Color roomColor = new Color(0.2f, 0.8f, 0.2f, 0.3f);
     [SerializeField] private float wallConnectionThreshold = 0.1f;
+    [SerializeField] private float roomFaceAreaThreshold = 0.01f;
+    [SerializeField] private float roomMatchDistanceThreshold = 0.5f;
     [SerializeField] private Vector3 roomSpawnLocalOffset = new Vector3(0f, 0.01f, 0f);
 
     private readonly Dictionary<HashSet<Wall>, Room> roomsByWalls = new Dictionary<HashSet<Wall>, Room>(new WallSetComparer());
     private readonly List<Room> allRooms = new List<Room>();
+    private readonly List<Wall> cachedWalls = new List<Wall>();
+    private readonly List<Room> cachedManualRooms = new List<Room>();
+    private readonly List<Room> cachedAutomaticRooms = new List<Room>();
+    private readonly List<Room> cachedAvailableRooms = new List<Room>();
+    private readonly List<Room> nextRooms = new List<Room>();
     private Material fallbackRoomMaterial;
+    private RoomPlanarGraph cachedGraph;
+    private bool isGraphDirty = true;
 
     public event System.Action RoomsChanged;
 
@@ -66,6 +75,21 @@ public class RoomManager : MonoBehaviour
         Instance = this;
         EnsureWallRoot();
         ValidateConfiguration();
+    }
+
+    private void OnEnable()
+    {
+        RoomTopologyEvents.RefreshAllRequested += HandleRefreshAllRequested;
+        RoomTopologyEvents.RefreshForWallReplacementRequested += HandleRefreshForWallReplacementRequested;
+        WallRegistry.RegistryChanged += MarkGraphDirty;
+        isGraphDirty = true;
+    }
+
+    private void OnDisable()
+    {
+        RoomTopologyEvents.RefreshAllRequested -= HandleRefreshAllRequested;
+        RoomTopologyEvents.RefreshForWallReplacementRequested -= HandleRefreshForWallReplacementRequested;
+        WallRegistry.RegistryChanged -= MarkGraphDirty;
     }
 
     private void Start()
@@ -115,14 +139,7 @@ public class RoomManager : MonoBehaviour
             }
         }
 
-        GameObject roomObject = new GameObject($"Room_{allRooms.Count}");
-        roomObject.transform.SetParent(roomRoot, false);
-        LayerUtility.ApplyLayer(roomObject, LayerUtility.FloorLayerName, false);
-
-        Room room = roomObject.AddComponent<Room>();
-        room.SetPlacementOffset(roomSpawnLocalOffset);
-        room.Initialize(wallSet, PolygonUtility.CalculateGeometry(vertices));
-        room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
+        Room room = CreateRoomObject(wallSet, vertices, false);
 
         allRooms.Add(room);
         roomsByWalls[wallSet] = room;
@@ -161,14 +178,7 @@ public class RoomManager : MonoBehaviour
             }
         }
 
-        GameObject roomObject = new GameObject($"Room_{allRooms.Count}");
-        roomObject.transform.SetParent(roomRoot, false);
-        LayerUtility.ApplyLayer(roomObject, LayerUtility.FloorLayerName, false);
-
-        Room room = roomObject.AddComponent<Room>();
-        room.SetPlacementOffset(roomSpawnLocalOffset);
-        room.Initialize(wallSet ?? new HashSet<Wall>(), PolygonUtility.CalculateGeometry(sanitizedPolygonVertices), sanitizedPolygonVertices);
-        room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
+        Room room = CreateRoomObject(wallSet ?? new HashSet<Wall>(), sanitizedPolygonVertices, true);
 
         allRooms.Add(room);
         RoomsChanged?.Invoke();
@@ -252,7 +262,15 @@ public class RoomManager : MonoBehaviour
 
     public void RefreshAllRooms()
     {
-        bool refreshedAnyRoom = false;
+        EnsureRoomRoot();
+        RebuildGraphIfNeeded();
+        if (cachedGraph == null)
+        {
+            return;
+        }
+
+        cachedManualRooms.Clear();
+        cachedAutomaticRooms.Clear();
         for (int i = 0; i < allRooms.Count; i++)
         {
             Room room = allRooms[i];
@@ -261,14 +279,61 @@ public class RoomManager : MonoBehaviour
                 continue;
             }
 
-            room.RefreshVisual();
-            refreshedAnyRoom = true;
+            if (room.IsManualRoom)
+            {
+                cachedManualRooms.Add(room);
+            }
+            else
+            {
+                cachedAutomaticRooms.Add(room);
+            }
         }
 
-        if (refreshedAnyRoom)
+        nextRooms.Clear();
+        nextRooms.AddRange(cachedManualRooms);
+
+        cachedAvailableRooms.Clear();
+        cachedAvailableRooms.AddRange(cachedAutomaticRooms);
+
+        for (int i = 0; i < cachedGraph.Faces.Count; i++)
         {
-            RoomsChanged?.Invoke();
+            RoomPlanarGraph.Face face = cachedGraph.Faces[i];
+            if (face == null || face.Vertices.Count < 3 || Mathf.Abs(face.SignedArea) <= roomFaceAreaThreshold)
+            {
+                continue;
+            }
+
+            Room matchedRoom = FindBestMatchingRoom(cachedAvailableRooms, face.Centroid);
+            if (matchedRoom != null)
+            {
+                matchedRoom.UpdateGeometry(face.Vertices, face.Walls, face.VirtualBoundaries);
+                cachedAvailableRooms.Remove(matchedRoom);
+                nextRooms.Add(matchedRoom);
+                continue;
+            }
+
+            Room createdRoom = CreateRoomFromFace(face);
+            if (createdRoom != null)
+            {
+                nextRooms.Add(createdRoom);
+            }
         }
+
+        for (int i = 0; i < cachedAvailableRooms.Count; i++)
+        {
+            Room obsoleteRoom = cachedAvailableRooms[i];
+            if (obsoleteRoom == null)
+            {
+                continue;
+            }
+
+            Destroy(obsoleteRoom.gameObject);
+        }
+
+        allRooms.Clear();
+        allRooms.AddRange(nextRooms);
+        RebuildRoomLookup();
+        RoomsChanged?.Invoke();
     }
 
     public void RefreshRoomsForWallReplacement(ICollection<Wall> removedWalls, IEnumerable<Wall> addedWalls)
@@ -321,6 +386,84 @@ public class RoomManager : MonoBehaviour
 
             roomsByWalls[room.WallSet] = room;
         }
+    }
+
+    private Room FindBestMatchingRoom(List<Room> availableRooms, Vector3 faceCentroid)
+    {
+        Room bestMatch = null;
+        float bestDistanceSqr = roomMatchDistanceThreshold * roomMatchDistanceThreshold;
+
+        for (int i = 0; i < availableRooms.Count; i++)
+        {
+            Room room = availableRooms[i];
+            if (room == null)
+            {
+                continue;
+            }
+
+            float distanceSqr = (room.Centroid - faceCentroid).sqrMagnitude;
+            if (distanceSqr >= bestDistanceSqr)
+            {
+                continue;
+            }
+
+            bestDistanceSqr = distanceSqr;
+            bestMatch = room;
+        }
+
+        return bestMatch;
+    }
+
+    private Room CreateRoomFromFace(RoomPlanarGraph.Face face)
+    {
+        if (face == null || face.Vertices.Count < 3)
+        {
+            return null;
+        }
+
+        Room room = CreateRoomObject(face.Walls != null ? new HashSet<Wall>(face.Walls) : new HashSet<Wall>(), face.Vertices, false);
+        room.UpdateGeometry(face.Vertices, face.Walls, face.VirtualBoundaries);
+        return room;
+    }
+
+    public void MarkGraphDirty()
+    {
+        isGraphDirty = true;
+    }
+
+    private void RebuildGraphIfNeeded()
+    {
+        if (!isGraphDirty && cachedGraph != null)
+        {
+            return;
+        }
+
+        WallRegistry.CollectWalls(cachedWalls, wallRoot);
+        cachedGraph = RoomGraphUtility.BuildPlanarGraph(new HashSet<Wall>(cachedWalls), VirtualBoundary.All);
+        isGraphDirty = false;
+    }
+
+    private Room CreateRoomObject(HashSet<Wall> wallSet, IReadOnlyList<Vector3> polygonVertices, bool keepManualVertices)
+    {
+        EnsureRoomRoot();
+
+        GameObject roomObject = new GameObject($"Room_{allRooms.Count}");
+        roomObject.transform.SetParent(roomRoot, false);
+        LayerUtility.ApplyLayer(roomObject, LayerUtility.FloorLayerName, false);
+
+        Room room = roomObject.AddComponent<Room>();
+        room.SetPlacementOffset(roomSpawnLocalOffset);
+        if (keepManualVertices)
+        {
+            room.Initialize(wallSet ?? new HashSet<Wall>(), PolygonUtility.CalculateGeometry(polygonVertices), Room.CreateSanitizedPolygonCopy(polygonVertices));
+        }
+        else
+        {
+            room.Initialize(wallSet ?? new HashSet<Wall>(), PolygonUtility.CalculateGeometry(polygonVertices));
+        }
+
+        room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
+        return room;
     }
 
     private RoomGeometry CalculateRoomGeometry(HashSet<Wall> wallSet)
@@ -383,5 +526,18 @@ public class RoomManager : MonoBehaviour
     private void ValidateConfiguration()
     {
         Debug.Assert(wallRoot != null, $"{nameof(RoomManager)} requires {nameof(wallRoot)} or a scene Walls root.", this);
+        roomFaceAreaThreshold = Mathf.Max(0.0001f, roomFaceAreaThreshold);
+        roomMatchDistanceThreshold = Mathf.Max(0.01f, roomMatchDistanceThreshold);
+    }
+
+    private void HandleRefreshAllRequested()
+    {
+        RefreshAllRooms();
+    }
+
+    private void HandleRefreshForWallReplacementRequested(ICollection<Wall> removedWalls, IEnumerable<Wall> addedWalls)
+    {
+        MarkGraphDirty();
+        RefreshRoomsForWallReplacement(removedWalls, addedWalls);
     }
 }

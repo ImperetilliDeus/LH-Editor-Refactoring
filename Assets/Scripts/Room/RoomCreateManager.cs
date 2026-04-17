@@ -625,9 +625,9 @@ public sealed partial class RoomCreateManager : MonoBehaviour
                 continue;
             }
 
-            if (RoomCreateGeometryService.ContainsPointXZ(bounds, wall.StartPoint) ||
-                RoomCreateGeometryService.ContainsPointXZ(bounds, wall.EndPoint) ||
-                RoomCreateGeometryService.SegmentIntersectsBoundsXZ(bounds, wall.StartPoint, wall.EndPoint))
+            if (RoomCreateGeometryService.ContainsPointXZ(bounds, wall.Data.startPoint) ||
+                RoomCreateGeometryService.ContainsPointXZ(bounds, wall.Data.endPoint) ||
+                RoomCreateGeometryService.SegmentIntersectsBoundsXZ(bounds, wall.Data.startPoint, wall.Data.endPoint))
             {
                 results.Add(wall);
             }

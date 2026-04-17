@@ -262,8 +262,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPoint = selectedWallComponent.StartPoint;
-        Vector3 endPoint = selectedWallComponent.EndPoint;
+        Vector3 startPoint = selectedWallComponent.Data.startPoint;
+        Vector3 endPoint = selectedWallComponent.Data.endPoint;
         Vector3 midpoint = (startPoint + endPoint) * 0.5f;
         midpoint.y = startPoint.y;
 
@@ -357,9 +357,9 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
         Wall removedWall = selectedWallComponent;
         Destroy(selectedWallComponent.gameObject);
 
-        if (roomManager != null && createdWalls.Count > 0)
+        if (createdWalls.Count > 0)
         {
-            roomManager.RefreshRoomsForWallReplacement(new[] { removedWall }, createdWalls);
+            RoomTopologyEvents.RequestRefreshForWallReplacement(new[] { removedWall }, createdWalls);
         }
 
         if (wallSelectionManager != null)
@@ -887,10 +887,10 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
                 container.SuppressOuterEndHandle,
                 container.WallMaterial);
 
-            if (roomManager != null && removedWalls.Count > 0)
+            if (removedWalls.Count > 0)
             {
                 WallHierarchyUtility.CollectWalls(container.transform, cachedWalls, true);
-                roomManager.RefreshRoomsForWallReplacement(removedWalls, cachedWalls);
+                RoomTopologyEvents.RequestRefreshForWallReplacement(removedWalls, cachedWalls);
             }
 
             MarkMarkerVisualsDirty();
@@ -949,10 +949,10 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             container.SuppressOuterEndHandle,
             container.WallMaterial);
 
-        if (roomManager != null && removedWalls.Count > 0)
+        if (removedWalls.Count > 0)
         {
             WallHierarchyUtility.CollectWalls(container.transform, cachedWalls, true);
-            roomManager.RefreshRoomsForWallReplacement(removedWalls, cachedWalls);
+            RoomTopologyEvents.RequestRefreshForWallReplacement(removedWalls, cachedWalls);
         }
 
         MarkMarkerVisualsDirty();
@@ -991,7 +991,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
                 continue;
             }
 
-            Vector3 midpoint = (wall.StartPoint + wall.EndPoint) * 0.5f;
+            Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
             float distanceAlongWall = Vector3.Dot(midpoint - container.WallStart, container.WallDirection);
             float delta = Mathf.Abs(distanceAlongWall - preferredDistance);
             if (delta >= bestDelta)
@@ -1273,8 +1273,9 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             }
 
             if (wall.name == snapshot.name &&
-                (wall.StartPoint - snapshot.startPoint).sqrMagnitude <= 0.0001f &&
-                (wall.EndPoint - snapshot.endPoint).sqrMagnitude <= 0.0001f)
+                snapshot.wallData != null &&
+                (wall.Data.startPoint - snapshot.wallData.startPoint).sqrMagnitude <= 0.0001f &&
+                (wall.Data.endPoint - snapshot.wallData.endPoint).sqrMagnitude <= 0.0001f)
             {
                 return wall;
             }
@@ -1324,10 +1325,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             handleManager.RegisterWall(restoredWall);
         }
 
-        if (roomManager != null)
-        {
-            roomManager.RefreshAllRooms();
-        }
+        RoomTopologyEvents.RequestRefreshAll();
 
         MarkMarkerVisualsDirty();
         return restoredWall;
@@ -1370,8 +1368,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             scale = new Vector3(snapshot.wallThickness, snapshot.wallHeight, Mathf.Max(length, MinimumWallSegmentLength)),
             sharedMaterial = snapshot.wallMaterial,
             topMaterial = snapshot.wallTopMaterial,
-            startPoint = snapshot.wallStart,
-            endPoint = snapshot.wallEnd,
+            wallData = new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY),
             startVertexId = snapshot.outerStartVertexId,
             endVertexId = snapshot.outerEndVertexId,
             suppressStartHandle = snapshot.suppressOuterStartHandle,
@@ -1397,12 +1394,13 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
         }
 
         Wall wall = wallObject.AddComponent<Wall>();
-        wall.Initialize(snapshot.startPoint, snapshot.endPoint);
+        wall.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
         wall.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
         wall.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
         wall.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
         wall.SetTopMaterial(snapshot.topMaterial);
         wall.SetTopFaceOffset(0.01f);
+        wall.UpdateView(MinimumWallSegmentLength);
         wall.RefreshLengthDisplay(wallLengthDisplay, false);
         return wallObject;
     }
@@ -1456,8 +1454,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
 
     private WallGeometryData CaptureGeometry(Wall wall)
     {
-        Vector3 wallStart = wall.StartPoint;
-        Vector3 wallEnd = wall.EndPoint;
+        Vector3 wallStart = wall.Data.startPoint;
+        Vector3 wallEnd = wall.Data.endPoint;
         Vector3 wallDirection = wallEnd - wallStart;
         wallDirection.y = 0f;
         float wallLength = wallDirection.magnitude;

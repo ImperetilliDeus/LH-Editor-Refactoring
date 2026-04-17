@@ -25,7 +25,35 @@ public static class WallGeometryService
 
     public static bool ApplyWallEndpoints(Wall wall, Vector3 startPoint, Vector3 endPoint, float minimumWallLength, WallLengthDisplay wallLengthDisplay, bool isPreview)
     {
-        return wall != null && wall.TryApplyCurrentProfileAndRefresh(startPoint, endPoint, minimumWallLength, wallLengthDisplay, isPreview);
+        if (wall == null)
+        {
+            return false;
+        }
+
+        WallData wallData = wall.Data;
+        wallData.startPoint = startPoint;
+        wallData.endPoint = endPoint;
+        SyncWallDataFromTransformProfile(wallData, wall.transform);
+        return ApplyWallData(wall, wallData, minimumWallLength, wallLengthDisplay, isPreview);
+    }
+
+    public static bool ApplyWallData(Wall wall, WallData wallData, float minimumWallLength, WallLengthDisplay wallLengthDisplay, bool isPreview)
+    {
+        if (wall == null || wallData == null)
+        {
+            return false;
+        }
+
+        wall.CopyDataFrom(wallData);
+        bool applied = wall.UpdateView(minimumWallLength);
+        if (!applied)
+        {
+            wall.ClearLengthDisplay(wallLengthDisplay);
+            return false;
+        }
+
+        wall.RefreshLengthDisplay(wallLengthDisplay, isPreview);
+        return true;
     }
 
     public static void SyncWallFromTransform(Transform wallTransform, float planeY)
@@ -79,8 +107,8 @@ public static class WallGeometryService
                 continue;
             }
 
-            Vector3 startPoint = wall.StartPoint;
-            Vector3 endPoint = wall.EndPoint;
+            Vector3 startPoint = wall.Data.startPoint;
+            Vector3 endPoint = wall.Data.endPoint;
 
             if (wall.StartVertexId == vertexId)
             {
@@ -119,8 +147,8 @@ public static class WallGeometryService
             {
                 endpointState = new WallEndpointState
                 {
-                    start = wall.StartPoint,
-                    end = wall.EndPoint,
+                    start = wall.Data.startPoint,
+                    end = wall.Data.endPoint,
                 };
             }
 
@@ -161,5 +189,17 @@ public static class WallGeometryService
         float dx = a.x - b.x;
         float dz = a.z - b.z;
         return dx * dx + dz * dz <= thresholdSqr;
+    }
+
+    private static void SyncWallDataFromTransformProfile(WallData wallData, Transform wallTransform)
+    {
+        if (wallData == null || wallTransform == null)
+        {
+            return;
+        }
+
+        wallData.thickness = wallTransform.localScale.x;
+        wallData.height = wallTransform.localScale.y;
+        wallData.centerY = wallTransform.position.y;
     }
 }

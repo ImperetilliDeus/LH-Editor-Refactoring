@@ -56,8 +56,8 @@ public partial class TopViewRenderManager
             }
 
             if (TryBuildScreenSegmentData(
-                    wall.StartPoint,
-                    wall.EndPoint,
+                    wall.Data.startPoint,
+                    wall.Data.endPoint,
                     wall.transform.localScale.x,
                     drawManager != null && drawManager.PreviewWall == wall.gameObject
                         ? previewWallColor
