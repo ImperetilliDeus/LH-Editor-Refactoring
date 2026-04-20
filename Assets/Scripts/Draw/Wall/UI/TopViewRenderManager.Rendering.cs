@@ -43,13 +43,13 @@ public partial class TopViewRenderManager
 
     private void RefreshWallVisuals()
     {
-        Wall[] walls = wallRoot.GetComponentsInChildren<Wall>(true);
         TopPlanSegmentBatchGraphic batchGraphic = GetOrCreateBatchGraphic(ref wallBatchGraphic, "TopPlanWallsBatch");
         cachedWallSegments.Clear();
+        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
 
-        for (int i = 0; i < walls.Length; i++)
+        for (int i = 0; i < cachedWalls.Count; i++)
         {
-            Wall wall = walls[i];
+            Wall wall = cachedWalls[i];
             if (wall == null || !wall.gameObject.activeInHierarchy)
             {
                 continue;

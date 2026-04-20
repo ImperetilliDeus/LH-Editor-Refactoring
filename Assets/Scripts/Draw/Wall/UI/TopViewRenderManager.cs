@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public partial class TopViewRenderManager : MonoBehaviour
 {
-    private const string DefaultCanvasName = "_Screen";
+    private const string DefaultCanvasName = LayerUtility.DefaultCanvasName;
     private const string DefaultContentRootName = "TopPlanContent";
     private const string LegacyContentRootName = "_TopPlanContent";
 
@@ -44,6 +44,7 @@ public partial class TopViewRenderManager : MonoBehaviour
     private readonly List<Transform> removedKeys = new List<Transform>();
     private readonly List<Vector2> cachedPolygonPoints = new List<Vector2>();
     private readonly List<GameObject> cachedSelectedWalls = new List<GameObject>();
+    private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<TopPlanPolygonBatchGraphic.PolygonData> cachedFloorPolygons = new List<TopPlanPolygonBatchGraphic.PolygonData>();
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedWallSegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedVirtualBoundarySegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
@@ -81,6 +82,7 @@ public partial class TopViewRenderManager : MonoBehaviour
         EnsureWallRoot();
         EnsureCanvas();
         BindEvents();
+        BindVisualEvents();
         CacheCameraState();
         SyncVisibilityState();
         RefreshAllVisuals();
@@ -90,6 +92,7 @@ public partial class TopViewRenderManager : MonoBehaviour
     private void OnDestroy()
     {
         UnbindEvents();
+        UnbindVisualEvents();
         ClearVisuals(openingImages);
         ClearPolygonBatchGraphic(ref floorBatchGraphic);
         ClearBatchGraphic(ref wallBatchGraphic);
@@ -369,7 +372,7 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        LayerUtility.ResolveTransformByName(ref wallRoot, "Walls", true);
+        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
     }
 
     private void CacheCameraState()
@@ -398,4 +401,3 @@ public partial class TopViewRenderManager : MonoBehaviour
                !Mathf.Approximately(topViewCamera.orthographicSize, lastCameraOrthoSize);
     }
 }
-

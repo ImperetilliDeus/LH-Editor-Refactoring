@@ -487,7 +487,7 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
+        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
         if (wallRootTransform != null)
         {
             wallRoot = wallRootTransform;

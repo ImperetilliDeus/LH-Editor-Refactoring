@@ -160,7 +160,7 @@ public partial class DrawManager
         if (previewWallComponent != null)
         {
             previewWallComponent.SetTopMaterial(previewMaterial);
-            previewWallComponent.SetTopFaceOffset(0.01f);
+            previewWallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
         }
 
         previewWall.SetActive(false);
@@ -203,7 +203,7 @@ public partial class DrawManager
 
         Wall wallComponent = wallObject.AddComponent<Wall>();
         wallComponent.SetTopMaterial(wallTopMaterial);
-        wallComponent.SetTopFaceOffset(0.01f);
+        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
 
         return wallObject;
     }

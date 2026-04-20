@@ -62,7 +62,7 @@ public class CameraManager_3D : MonoBehaviour
 
         if (gridObject == null)
         {
-            Transform gridTransform = LayerUtility.FindTransformByName("Grid", true);
+            Transform gridTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultGridName, true);
             if (gridTransform != null)
             {
                 gridObject = gridTransform.gameObject;

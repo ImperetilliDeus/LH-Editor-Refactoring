@@ -1,4 +1,5 @@
 using System.IO;
+using System.Collections.Generic;
 using LH.Schema;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,8 @@ namespace LH.Export
         [SerializeField] private string exportFilePath = "Exports/lh_scene.json";
         [SerializeField] private Vector3 startPoint = Vector3.zero;
         [SerializeField] private bool prettyPrint = true;
+
+        private readonly List<Wall> cachedWalls = new List<Wall>();
 
         private void Awake()
         {
@@ -42,9 +45,9 @@ namespace LH.Export
                 return;
             }
 
-            Wall[] walls = wallRoot != null ? wallRoot.GetComponentsInChildren<Wall>(true) : new Wall[0];
+            WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
             Room[] rooms = roomManager != null ? roomManager.GetAllRooms().ToArray() : FindObjectsByType<Room>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            LhSceneDto sceneDto = LhSceneExportBuilder.Build(startPoint, walls, rooms);
+            LhSceneDto sceneDto = LhSceneExportBuilder.Build(startPoint, cachedWalls, rooms);
 
             string directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory))
@@ -66,7 +69,7 @@ namespace LH.Export
 
             if (wallRoot == null)
             {
-                Transform existing = LayerUtility.FindTransformByName("Walls", true);
+                Transform existing = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
                 if (existing != null)
                 {
                     wallRoot = existing;

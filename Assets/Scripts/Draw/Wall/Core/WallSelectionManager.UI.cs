@@ -33,7 +33,7 @@ public partial class WallSelectionManager
             return;
         }
 
-        wallSelectionCanvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
+        wallSelectionCanvas = LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
     }
 
     private void RefreshWallSelectionUIStates()

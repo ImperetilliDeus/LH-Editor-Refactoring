@@ -23,7 +23,7 @@ public class UIDragManager : MonoBehaviour
     {
         if (targetCanvas == null)
         {
-            targetCanvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
+            targetCanvas = LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
         }
 
         RefreshReferences();

@@ -87,7 +87,6 @@ public partial class WallSelectionManager : MonoBehaviour
     private readonly List<Wall> rootWallsCache = new List<Wall>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> moveStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
-    private readonly List<TopViewRenderManager> topViewRenderManagers = new List<TopViewRenderManager>();
     private readonly HashSet<WallOpeningContainer> processedSelectionUIContainers = new HashSet<WallOpeningContainer>();
     private Mesh cachedCubeMesh;
     private Vector3 dragSelectedStartPoint;
@@ -825,25 +824,6 @@ public partial class WallSelectionManager : MonoBehaviour
         RefreshSelectionVisuals();
     }
 
-    private void RefreshSelectionVisuals()
-    {
-        RefreshWallSelectionUIStates();
-        UpdateSelectUIVisibility();
-        NotifySelectionChangedIfNeeded();
-        SelectionSetChanged?.Invoke();
-    }
-
-    private void NotifySelectionChangedIfNeeded()
-    {
-        if (lastNotifiedSelectedWall == selectedWall)
-        {
-            return;
-        }
-
-        lastNotifiedSelectedWall = selectedWall;
-        SelectionChanged?.Invoke(selectedWall);
-    }
-
     private void ClearSingleSelection()
     {
         selectedWall = null;
@@ -856,15 +836,6 @@ public partial class WallSelectionManager : MonoBehaviour
         detailSelectedWalls.Clear();
         RefreshSelectionVisuals();
         CancelMultiSelectDrag();
-    }
-
-    private void UpdateSelectUIVisibility()
-    {
-        bool visible = modeManager != null &&
-                       modeManager.IsMode(EditorMode.DetailEdit) &&
-                       (wallOpeningPlacementManager == null || !wallOpeningPlacementManager.IsOpeningDetailMenuVisible) &&
-                       (selectedWall != null || detailSelectedWalls.Count > 0);
-        SetSelectUIVisible(visible);
     }
 
     private bool TryGetMouseWorldPoint(out Vector3 worldPoint)
@@ -1188,33 +1159,6 @@ public partial class WallSelectionManager : MonoBehaviour
         WallGeometryService.SyncWallsFromTransform(wallRoot, dragPlaneHeight);
     }
 
-    private void MarkTopViewDirty()
-    {
-        if (topViewRenderManagers.Count == 0)
-        {
-            TopViewRenderManager[] managers = FindObjectsByType<TopViewRenderManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            for (int i = 0; i < managers.Length; i++)
-            {
-                if (managers[i] != null)
-                {
-                    topViewRenderManagers.Add(managers[i]);
-                }
-            }
-        }
-
-        for (int i = topViewRenderManagers.Count - 1; i >= 0; i--)
-        {
-            TopViewRenderManager manager = topViewRenderManagers[i];
-            if (manager == null)
-            {
-                topViewRenderManagers.RemoveAt(i);
-                continue;
-            }
-
-            manager.MarkDirty();
-        }
-    }
-
     private Vector3 ClampWallCenterPositionInsideBounds(Transform wallTransform, Vector3 centerPosition)
     {
         if (wallTransform == null)
@@ -1265,7 +1209,7 @@ public partial class WallSelectionManager : MonoBehaviour
             return;
         }
 
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
+        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
         if (wallRootTransform != null)
         {
             wallRoot = wallRootTransform;

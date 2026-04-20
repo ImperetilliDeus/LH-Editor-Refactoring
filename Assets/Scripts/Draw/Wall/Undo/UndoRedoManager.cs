@@ -16,6 +16,7 @@ public partial class UndoRedoManager : MonoBehaviour
 
     private readonly Stack<IUndoableAction> undoStack = new Stack<IUndoableAction>();
     private readonly Stack<IUndoableAction> redoStack = new Stack<IUndoableAction>();
+    private readonly List<Wall> cachedWalls = new List<Wall>();
     private Mesh cachedCubeMesh;
 
     private const float PositionEpsilonSqr = 0.000001f;
@@ -212,13 +213,13 @@ public partial class UndoRedoManager : MonoBehaviour
         RefreshPostUndoRedoVisuals();
     }
 
-    // Inspector button용 별칭 메서드
+    // Inspector button alias
     public void UndoFromUI()
     {
         Undo();
     }
 
-    // Inspector button용 별칭 메서드
+    // Inspector button alias
     public void RedoFromUI()
     {
         Redo();
@@ -298,7 +299,7 @@ public partial class UndoRedoManager : MonoBehaviour
         wall.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
         wall.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
         wall.SetTopMaterial(snapshot.topMaterial);
-        wall.SetTopFaceOffset(0.01f);
+        wall.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
         wall.UpdateView(0.01f);
 
         return wallObject;
@@ -368,7 +369,7 @@ public partial class UndoRedoManager : MonoBehaviour
         wallComponent.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
         wallComponent.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
         wallComponent.SetTopMaterial(snapshot.topMaterial);
-        wallComponent.SetTopFaceOffset(0.01f);
+        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
         wallObject.name = snapshot.name;
         wallComponent.UpdateView(0.01f);
         wallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
@@ -457,10 +458,10 @@ public partial class UndoRedoManager : MonoBehaviour
         }
 
         Wall fallbackMatch = null;
-        Wall[] walls = wallRoot.GetComponentsInChildren<Wall>(true);
-        for (int i = 0; i < walls.Length; i++)
+        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
+        for (int i = 0; i < cachedWalls.Count; i++)
         {
-            Wall wall = walls[i];
+            Wall wall = cachedWalls[i];
             if (wall == null || !wall.gameObject.activeInHierarchy)
             {
                 continue;
@@ -538,10 +539,10 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
+        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
         if (wallRootTransform == null && createIfMissing)
         {
-            wallRootTransform = new GameObject("Walls").transform;
+            wallRootTransform = new GameObject(LayerUtility.DefaultWallRootName).transform;
         }
 
         wallRoot = wallRootTransform;
@@ -556,19 +557,7 @@ public partial class UndoRedoManager : MonoBehaviour
 
         RoomTopologyEvents.RequestRefreshAll();
 
-        WallOpeningPlacementManager openingManager = GetWallOpeningPlacementManager();
-        if (openingManager != null)
-        {
-            openingManager.MarkMarkerVisualsDirty();
-        }
-
-        TopViewRenderManager[] topViewManagers = FindObjectsByType<TopViewRenderManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        for (int i = 0; i < topViewManagers.Length; i++)
-        {
-            if (topViewManagers[i] != null)
-            {
-                topViewManagers[i].MarkDirty();
-            }
-        }
+        EditorVisualEvents.RequestOpeningMarkerRefresh();
+        EditorVisualEvents.RequestTopViewRefresh();
     }
 }

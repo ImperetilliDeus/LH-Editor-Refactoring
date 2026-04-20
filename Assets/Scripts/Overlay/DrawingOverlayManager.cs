@@ -164,7 +164,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
 
         if (grid == null)
         {
-            Transform gridTransform = LayerUtility.FindTransformByName("Grid", true);
+            Transform gridTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultGridName, true);
             if (gridTransform != null)
             {
                 grid = gridTransform.gameObject;
@@ -178,7 +178,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
 
         if (parentCanvas == null)
         {
-            parentCanvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
+            parentCanvas = LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
         }
     }
 
