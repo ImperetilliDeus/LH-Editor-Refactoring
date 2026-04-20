@@ -5,6 +5,7 @@ public static partial class RoomGraphUtility
 {
     private const float BoundarySplitEpsilon = 0.0001f;
     private const float BoundaryVertexSnapThreshold = 0.12f;
+    private const float PointKeyPrecisionScale = 1000f;
 
     private struct BoundaryEdge
     {
@@ -540,9 +541,9 @@ public static partial class RoomGraphUtility
 
     private static string BuildPointKey(Vector3 point)
     {
-        int x = Mathf.RoundToInt(point.x * 1000f);
-        int y = Mathf.RoundToInt(point.y * 1000f);
-        int z = Mathf.RoundToInt(point.z * 1000f);
+        int x = Mathf.RoundToInt(point.x * PointKeyPrecisionScale);
+        int y = Mathf.RoundToInt(point.y * PointKeyPrecisionScale);
+        int z = Mathf.RoundToInt(point.z * PointKeyPrecisionScale);
         return $"{x}:{y}:{z}";
     }
 

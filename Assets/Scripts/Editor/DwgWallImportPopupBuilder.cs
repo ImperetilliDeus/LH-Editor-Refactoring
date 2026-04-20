@@ -23,10 +23,10 @@ internal static class DwgWallImportPopupBuilder
             legacyFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
-        Canvas canvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
+        Canvas canvas = LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
         if (canvas == null)
         {
-            GameObject canvasObject = new GameObject("_Screen", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            GameObject canvasObject = new GameObject(LayerUtility.DefaultCanvasName, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             Undo.RegisterCreatedObjectUndo(canvasObject, "Create Import Popup Canvas");
             canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;

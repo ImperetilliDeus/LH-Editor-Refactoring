@@ -50,7 +50,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
     private readonly List<GameObject> selectedWallObjects = new List<GameObject>();
     private readonly List<Wall> selectedWallComponents = new List<Wall>();
     private readonly HashSet<WallOpeningContainer> selectedOpeningContainers = new HashSet<WallOpeningContainer>();
-    private readonly List<TopViewRenderManager> topViewRenderManagers = new List<TopViewRenderManager>();
     private bool suppressInputCallback;
 
     private void Reset()
@@ -100,7 +99,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        float targetLengthUnits = targetLengthMillimeters / 100f;
+        float targetLengthUnits = MeasurementUnits.MillimetersToUnits(targetLengthMillimeters);
         if (targetLengthUnits < MinimumWallLength)
         {
             UpdateInputFieldValues(true);
@@ -145,7 +144,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
         direction.Normalize();
         bool keepsStartFixed = lengthAnchorMode == LengthAnchorMode.LeftFixed;
-        Vector3 fixedPoint = keepsStartFixed ? startPoint : currentEndPoint;
         Vector3 targetStartPoint = keepsStartFixed ? startPoint : currentEndPoint - direction * targetLengthUnits;
         Vector3 targetEndPoint = keepsStartFixed ? startPoint + direction * targetLengthUnits : currentEndPoint;
         targetStartPoint.y = startPoint.y;
@@ -265,7 +263,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        float targetHeightUnits = targetHeightMillimeters / 100f;
+        float targetHeightUnits = MeasurementUnits.MillimetersToUnits(targetHeightMillimeters);
         if (targetHeightUnits < MinimumWallLength)
         {
             UpdateInputFieldValues(true);
@@ -395,7 +393,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        float targetThicknessUnits = targetThicknessMillimeters / 100f;
+        float targetThicknessUnits = MeasurementUnits.MillimetersToUnits(targetThicknessMillimeters);
         if (targetThicknessUnits < MinimumWallLength)
         {
             UpdateInputFieldValues(true);
@@ -991,7 +989,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        LayerUtility.ResolveTransformByName(ref wallRoot, "Walls", true);
+        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
     }
 
     private void ResolveReferences()
@@ -1007,28 +1005,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private void MarkTopViewDirty()
     {
-        if (topViewRenderManagers.Count == 0)
-        {
-            TopViewRenderManager[] managers = FindObjectsByType<TopViewRenderManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            for (int i = 0; i < managers.Length; i++)
-            {
-                if (managers[i] != null)
-                {
-                    topViewRenderManagers.Add(managers[i]);
-                }
-            }
-        }
-
-        for (int i = topViewRenderManagers.Count - 1; i >= 0; i--)
-        {
-            TopViewRenderManager manager = topViewRenderManagers[i];
-            if (manager == null)
-            {
-                topViewRenderManagers.RemoveAt(i);
-                continue;
-            }
-
-            manager.MarkDirty();
-        }
+        EditorVisualEvents.RequestTopViewRefresh();
     }
 }

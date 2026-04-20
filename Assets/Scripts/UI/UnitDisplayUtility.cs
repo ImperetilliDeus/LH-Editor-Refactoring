@@ -1,11 +1,48 @@
 using System.Globalization;
 
+public static class MeasurementUnits
+{
+    public const float MillimetersPerCentimeter = 10f;
+    public const float MillimetersPerMeter = 1000f;
+    public const float MillimetersPerUnit = 100f;
+
+    public static float MillimetersToCentimeters(float millimeters)
+    {
+        return millimeters / MillimetersPerCentimeter;
+    }
+
+    public static float CentimetersToMillimeters(float centimeters)
+    {
+        return centimeters * MillimetersPerCentimeter;
+    }
+
+    public static float MillimetersToMeters(float millimeters)
+    {
+        return millimeters / MillimetersPerMeter;
+    }
+
+    public static float MetersToMillimeters(float meters)
+    {
+        return meters * MillimetersPerMeter;
+    }
+
+    public static float MillimetersToUnits(float millimeters)
+    {
+        return millimeters / MillimetersPerUnit;
+    }
+
+    public static float UnitsToMillimeters(float units)
+    {
+        return units * MillimetersPerUnit;
+    }
+}
+
 public static class UnitDisplayUtility
 {
     public static string FormatMillimetersWithConversions(float millimeters)
     {
-        float cm = millimeters / 10f;
-        float m = millimeters / 1000f;
+        float cm = MeasurementUnits.MillimetersToCentimeters(millimeters);
+        float m = MeasurementUnits.MillimetersToMeters(millimeters);
         return string.Format(
             CultureInfo.InvariantCulture,
             "{0:0.##}mm ({1:0.##}cm, {2:0.###}m)",

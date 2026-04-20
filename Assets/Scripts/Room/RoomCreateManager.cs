@@ -577,7 +577,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
         segments.Clear();
         if (wallRoot == null)
         {
-            wallRoot = LayerUtility.FindTransformByName("Walls", true);
+            wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
         }
 
         if (wallRoot == null)
@@ -608,7 +608,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
         HashSet<Wall> results = new HashSet<Wall>();
         if (wallRoot == null)
         {
-            wallRoot = LayerUtility.FindTransformByName("Walls", true);
+            wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
         }
 
         if (wallRoot == null)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -60,7 +60,7 @@ public static class DrawingOverlaySceneBootstrap
 
         Canvas canvas = manager.ParentCanvas != null
             ? manager.ParentCanvas
-            : LayerUtility.FindCanvasByNameOrFirst("_Screen");
+            : LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
 
         OverlayCalibrationPanelController panel =
             UnityEngine.Object.FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include);
@@ -113,17 +113,17 @@ public static class DrawingOverlaySceneBootstrap
         dragRect.sizeDelta = new Vector2(-32f, 56f);
         dragRect.anchoredPosition = new Vector2(0f, -12f);
 
-        TMP_Text titleText = CreateTmpText("Title", rootRect, "도면 보정 시뮬레이터", 28, FontStyles.Bold, tmpFont);
+        TMP_Text titleText = CreateTmpText("Title", rootRect, "Overlay Calibration", 28, FontStyles.Bold, tmpFont);
         SetTopLeft(titleText.rectTransform, new Vector2(28f, -20f), new Vector2(340f, 44f));
 
-        TMP_Text statusText = CreateTmpText("StatusText", rootRect, "이미지나 PDF를 불러온 뒤 기준점을 찍으세요.", 18, FontStyles.Normal, tmpFont);
+        TMP_Text statusText = CreateTmpText("StatusText", rootRect, "Pick two anchors on the drawing, then enter the real-world distance.", 18, FontStyles.Normal, tmpFont);
         statusText.color = new Color32(204, 213, 255, 255);
         SetTopLeft(statusText.rectTransform, new Vector2(28f, -62f), new Vector2(460f, 34f));
 
-        TMP_Text scaleValue = CreateMetric(rootRect, "배율 (SCALE)", "-", new Vector2(415f, -28f), new Vector2(415f, -54f), tmpFont);
-        TMP_Text rotValue = CreateMetric(rootRect, "회전 (TOTAL ROT)", "-", new Vector2(535f, -28f), new Vector2(535f, -54f), tmpFont);
-        TMP_Text offXValue = CreateMetric(rootRect, "오프셋 X", "-", new Vector2(665f, -28f), new Vector2(665f, -54f), tmpFont);
-        TMP_Text offYValue = CreateMetric(rootRect, "오프셋 Y", "-", new Vector2(665f, -92f), new Vector2(665f, -118f), tmpFont);
+        TMP_Text scaleValue = CreateMetric(rootRect, "Scale", "-", new Vector2(415f, -28f), new Vector2(415f, -54f), tmpFont);
+        TMP_Text rotValue = CreateMetric(rootRect, "Total Rot", "-", new Vector2(535f, -28f), new Vector2(535f, -54f), tmpFont);
+        TMP_Text offXValue = CreateMetric(rootRect, "Offset X", "-", new Vector2(665f, -28f), new Vector2(665f, -54f), tmpFont);
+        TMP_Text offYValue = CreateMetric(rootRect, "Offset Y", "-", new Vector2(665f, -92f), new Vector2(665f, -118f), tmpFont);
 
         GameObject previewFrame = CreateUIObject("PreviewFrame", rootRect);
         RectTransform previewFrameRect = previewFrame.GetComponent<RectTransform>();
@@ -145,21 +145,21 @@ public static class DrawingOverlaySceneBootstrap
         OverlayPreviewController previewController = previewImageObject.AddComponent<OverlayPreviewController>();
         previewController.Initialize(rawImage, previewRect, aspectRatioFitter, tmpFont);
 
-        Button pickAnchorAButton = CreateButton("PickAnchorAButton", rootRect, "기준점 1 찍기", new Color32(67, 72, 98, 255), tmpFont, out RectTransform pickAnchorARect);
+        Button pickAnchorAButton = CreateButton("PickAnchorAButton", rootRect, "Pick Anchor 1", new Color32(67, 72, 98, 255), tmpFont, out RectTransform pickAnchorARect);
         SetBottomStretchLeft(pickAnchorARect, new Vector2(28f, 122f), new Vector2(-40f, 52f));
 
-        Button pickAnchorBButton = CreateButton("PickAnchorBButton", rootRect, "기준점 2 찍기", new Color32(67, 72, 98, 255), tmpFont, out RectTransform pickAnchorBRect);
+        Button pickAnchorBButton = CreateButton("PickAnchorBButton", rootRect, "Pick Anchor 2", new Color32(67, 72, 98, 255), tmpFont, out RectTransform pickAnchorBRect);
         SetBottomStretchRight(pickAnchorBRect, new Vector2(-28f, 122f), new Vector2(-40f, 52f));
 
-        TMP_Text distanceLabel = CreateTmpText("DistanceLabel", rootRect, "실제 거리 입력 (m)", 19, FontStyles.Normal, tmpFont);
+        TMP_Text distanceLabel = CreateTmpText("DistanceLabel", rootRect, "Anchor Distance (m)", 19, FontStyles.Normal, tmpFont);
         SetBottomLeft(distanceLabel.rectTransform, new Vector2(28f, 84f), new Vector2(180f, 28f));
         InputField distanceInput = CreateInputField("DistanceInput", rootRect, "3", legacyFont, out RectTransform distanceRect);
         SetBottomLeft(distanceRect, new Vector2(170f, 62f), new Vector2(190f, 48f));
 
-        Button applyButton = CreateButton("ApplyScaleButton", rootRect, "스케일 적용", new Color32(67, 72, 98, 255), tmpFont, out RectTransform applyRect);
+        Button applyButton = CreateButton("ApplyScaleButton", rootRect, "Apply Scale", new Color32(67, 72, 98, 255), tmpFont, out RectTransform applyRect);
         SetBottomStretchRight(applyRect, new Vector2(-28f, 62f), new Vector2(-40f, 48f));
 
-        TMP_Text rotationLabel = CreateTmpText("FineRotationLabel", rootRect, "미세 회전 (deg)", 19, FontStyles.Normal, tmpFont);
+        TMP_Text rotationLabel = CreateTmpText("FineRotationLabel", rootRect, "Fine Rotation (deg)", 19, FontStyles.Normal, tmpFont);
         SetBottomLeft(rotationLabel.rectTransform, new Vector2(28f, 28f), new Vector2(180f, 28f));
         Slider rotationSlider = CreateSlider("FineRotationSlider", rootRect, out RectTransform sliderRect);
         SetBottomLeft(sliderRect, new Vector2(170f, 10f), new Vector2(210f, 40f));
@@ -167,16 +167,16 @@ public static class DrawingOverlaySceneBootstrap
         InputField rotationInput = CreateInputField("FineRotationInput", rootRect, "0.0", legacyFont, out RectTransform rotationInputRect);
         SetBottomLeft(rotationInputRect, new Vector2(400f, 8f), new Vector2(72f, 44f));
 
-        Button originButton = CreateButton("PickOriginButton", rootRect, "원점 찍기", new Color32(67, 72, 98, 255), tmpFont, out RectTransform originRect);
+        Button originButton = CreateButton("PickOriginButton", rootRect, "Pick Origin", new Color32(67, 72, 98, 255), tmpFont, out RectTransform originRect);
         SetBottomStretchRight(originRect, new Vector2(-28f, 8f), new Vector2(-40f, 44f));
 
-        Button rotationGuideButton = CreateButton("PickRotationGuideButton", rootRect, "회전 기준선", new Color32(67, 72, 98, 255), tmpFont, out RectTransform rotationGuideRect);
+        Button rotationGuideButton = CreateButton("PickRotationGuideButton", rootRect, "Pick Rotation Guide", new Color32(67, 72, 98, 255), tmpFont, out RectTransform rotationGuideRect);
         SetBottomStretchRight(rotationGuideRect, new Vector2(-28f, 58f), new Vector2(-40f, 44f));
 
-        Button resetButton = CreateButton("ResetButton", rootRect, "설정 초기화", new Color32(67, 72, 98, 255), tmpFont, out RectTransform resetRect);
+        Button resetButton = CreateButton("ResetButton", rootRect, "Reset", new Color32(67, 72, 98, 255), tmpFont, out RectTransform resetRect);
         SetBottomStretchRight(resetRect, new Vector2(-28f, -42f), new Vector2(-40f, 44f));
 
-        Button completeButton = CreateButton("CompleteButton", rootRect, "완료", new Color32(95, 132, 255, 255), tmpFont, out RectTransform completeRect);
+        Button completeButton = CreateButton("CompleteButton", rootRect, "Done", new Color32(95, 132, 255, 255), tmpFont, out RectTransform completeRect);
         SetBottomLeft(completeRect, new Vector2(28f, -42f), new Vector2(180f, 44f));
 
         OverlayCalibrationPanelController controller = root.AddComponent<OverlayCalibrationPanelController>();
@@ -215,13 +215,13 @@ public static class DrawingOverlaySceneBootstrap
 
     private static Button FindImportButton()
     {
-        Transform buttonTransform = LayerUtility.FindTransformByName("_ImportButton", true);
+        Transform buttonTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultImportButtonName, true);
         return buttonTransform != null ? buttonTransform.GetComponent<Button>() : null;
     }
 
     private static GameObject FindGridObject()
     {
-        Transform gridTransform = LayerUtility.FindTransformByName("Grid", true);
+        Transform gridTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultGridName, true);
         return gridTransform != null ? gridTransform.gameObject : null;
     }
 
@@ -498,7 +498,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
                 ImportPdf(path);
                 break;
             default:
-                overlayManager.ShowStatusOnly("지원하지 않는 파일 형식입니다.");
+                overlayManager.ShowStatusOnly("筌왖?癒곕릭筌왖 ??낅뮉 ???뵬 ?類ㅻ뻼??낅빍??");
                 break;
         }
     }
@@ -512,7 +512,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
             if (!ImageConversion.LoadImage(texture, bytes, false))
             {
                 UnityEngine.Object.Destroy(texture);
-                overlayManager.ShowStatusOnly("이미지를 읽지 못했습니다.");
+                overlayManager.ShowStatusOnly("???筌왖????? 筌륁궢六??щ빍??");
                 return;
             }
 
@@ -522,7 +522,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
         catch (Exception exception)
         {
             UnityEngine.Debug.LogException(exception, this);
-            overlayManager.ShowStatusOnly("이미지 로드 중 오류가 발생했습니다.");
+            overlayManager.ShowStatusOnly("???筌왖 嚥≪뮆諭?餓???살첒揶쎛 獄쏆뮇源??됰뮸??덈뼄.");
         }
     }
 
@@ -535,13 +535,13 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
             return;
         }
 
-        overlayManager.ShowStatusOnly($"PDF 미리보기를 만들지 못했습니다.\n{error}");
+        overlayManager.ShowStatusOnly($"PDF 沃섎챶?곮퉪?용┛??筌띾슢諭억쭪? 筌륁궢六??щ빍??\n{error}");
     }
 
     private static string ShowOpenFileDialog()
     {
 #if UNITY_EDITOR
-        return EditorUtility.OpenFilePanel("도면 파일 선택", string.Empty, "png,jpg,jpeg,pdf");
+        return EditorUtility.OpenFilePanel("Select Overlay File", string.Empty, "png,jpg,jpeg,pdf");
 #else
         if (Application.platform != RuntimePlatform.WindowsPlayer)
         {
@@ -581,7 +581,7 @@ Add-Type -AssemblyName System.Windows.Forms
 $dialog = New-Object System.Windows.Forms.OpenFileDialog
 $dialog.Filter = 'Supported Files (*.png;*.jpg;*.jpeg;*.pdf)|*.png;*.jpg;*.jpeg;*.pdf|Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|PDF Files (*.pdf)|*.pdf|All Files (*.*)|*.*'
 $dialog.Multiselect = $false
-$dialog.Title = '도면 파일 선택'
+$dialog.Title = 'Select Overlay File'
 if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
     Write-Output $dialog.FileName
@@ -599,7 +599,7 @@ internal static class PdfThumbnailLoader
 
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
         {
-            error = "PDF 파일 경로가 유효하지 않습니다.";
+            error = "PDF ???뵬 野껋럥以덂첎? ?醫륁뒞??? ??녿뮸??덈뼄.";
             return false;
         }
 
@@ -631,7 +631,7 @@ internal static class PdfThumbnailLoader
 
             if (hBitmap == IntPtr.Zero)
             {
-                error = "Windows Shell 썸네일을 가져오지 못했습니다.";
+                error = "Windows Shell ?紐껉퐬??깆뱽 揶쎛?紐꾩궎筌왖 筌륁궢六??щ빍??";
                 return false;
             }
 
@@ -813,7 +813,7 @@ internal static class NativePdfThumbnail
         error = string.Empty;
         if (GetObject(hBitmap, Marshal.SizeOf<BITMAP>(), out BITMAP bitmap) == 0)
         {
-            error = "비트맵 정보를 읽지 못했습니다.";
+            error = "??쑵?껓쭕??類ｋ궖????? 筌륁궢六??щ빍??";
             return null;
         }
 
@@ -821,7 +821,7 @@ internal static class NativePdfThumbnail
         int height = bitmap.bmHeight;
         if (width <= 0 || height <= 0)
         {
-            error = "비트맵 크기가 유효하지 않습니다.";
+            error = "??쑵?껓쭕???由겼첎? ?醫륁뒞??? ??녿뮸??덈뼄.";
             return null;
         }
 
@@ -845,7 +845,7 @@ internal static class NativePdfThumbnail
         {
             if (GetDIBits(hdc, hBitmap, 0, (uint)height, bgra, ref info, DIB_RGB_COLORS) == 0)
             {
-                error = "비트맵 픽셀을 읽지 못했습니다.";
+                error = "??쑵?껓쭕????????? 筌륁궢六??щ빍??";
                 return null;
             }
         }

@@ -251,7 +251,7 @@ public class WallLengthDisplay : MonoBehaviour
             return targetCanvas;
         }
 
-        Canvas preferredCanvas = LayerUtility.FindCanvasByNameOrFirst("_Screen");
+        Canvas preferredCanvas = LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
         if (preferredCanvas != null)
         {
             targetCanvas = preferredCanvas;
@@ -313,10 +313,11 @@ public class WallLengthDisplay : MonoBehaviour
 
     private string FormatLength(float wallLengthUnits)
     {
-        float centimeters = wallLengthUnits * 10f;
-        if (centimeters >= 100f)
+        float millimeters = MeasurementUnits.UnitsToMillimeters(wallLengthUnits);
+        float centimeters = MeasurementUnits.MillimetersToCentimeters(millimeters);
+        if (centimeters >= MeasurementUnits.MillimetersToCentimeters(MeasurementUnits.MillimetersPerMeter))
         {
-            return $"{centimeters / 100f:0.##} m";
+            return $"{MeasurementUnits.MillimetersToMeters(millimeters):0.##} m";
         }
 
         return $"{centimeters:0.#} cm";

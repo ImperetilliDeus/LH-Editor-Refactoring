@@ -5,6 +5,8 @@ using UnityEngine;
 /// </summary>
 public class Wall : MonoBehaviour
 {
+    public const float DefaultTopFaceOffset = 0.01f;
+
     private const string StartCapObjectName = "WallStartCap";
     private const string EndCapObjectName = "WallEndCap";
     private const float MinimumExtension = 0.0001f;
@@ -26,7 +28,7 @@ public class Wall : MonoBehaviour
     private MeshRenderer endCapRenderer;
     private MeshFilter startCapFilter;
     private MeshFilter endCapFilter;
-    private float topFaceWorldOffset = 0.01f;
+    private float topFaceWorldOffset = DefaultTopFaceOffset;
 
     public int StartVertexId
     {

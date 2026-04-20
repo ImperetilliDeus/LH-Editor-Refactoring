@@ -459,7 +459,7 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
             return "기준 길이";
         }
 
-        float meters = boundDocument.calibration.realDistanceMm / 1000f;
+        float meters = MeasurementUnits.MillimetersToMeters(boundDocument.calibration.realDistanceMm);
         return meters.ToString("0.###", CultureInfo.InvariantCulture) + "m";
     }
 

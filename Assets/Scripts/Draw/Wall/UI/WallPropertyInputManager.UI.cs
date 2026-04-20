@@ -36,7 +36,7 @@ public partial class WallPropertyInputManager
         }
         else if (selectedWall != null && selectedWall.TryGetComponent(out Wall selectedWallComponent))
         {
-            float lengthMillimeters = GetDisplayedLengthUnits(selectedWallComponent) * 100f;
+            float lengthMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedLengthUnits(selectedWallComponent));
             nextText = UnitDisplayUtility.FormatMillimetersWithConversions(lengthMillimeters);
         }
 
@@ -66,7 +66,7 @@ public partial class WallPropertyInputManager
         }
         else if (selectedWall != null)
         {
-            float heightMillimeters = GetDisplayedHeightUnits(selectedWall) * 100f;
+            float heightMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedHeightUnits(selectedWall));
             nextText = UnitDisplayUtility.FormatMillimetersWithConversions(heightMillimeters);
         }
 
@@ -96,7 +96,7 @@ public partial class WallPropertyInputManager
         }
         else if (selectedWall != null)
         {
-            float thicknessMillimeters = GetDisplayedThicknessUnits(selectedWall) * 100f;
+            float thicknessMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedThicknessUnits(selectedWall));
             nextText = UnitDisplayUtility.FormatMillimetersWithConversions(thicknessMillimeters);
         }
 
@@ -238,13 +238,13 @@ public partial class WallPropertyInputManager
             switch (field)
             {
                 case MultiSelectionField.Length:
-                    nextValueMillimeters = GetDisplayedLengthUnits(wall) * 100f;
+                    nextValueMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedLengthUnits(wall));
                     break;
                 case MultiSelectionField.Height:
-                    nextValueMillimeters = GetDisplayedHeightUnits(wall.gameObject) * 100f;
+                    nextValueMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedHeightUnits(wall.gameObject));
                     break;
                 case MultiSelectionField.Thickness:
-                    nextValueMillimeters = GetDisplayedThicknessUnits(wall.gameObject) * 100f;
+                    nextValueMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedThicknessUnits(wall.gameObject));
                     break;
                 default:
                     return string.Empty;

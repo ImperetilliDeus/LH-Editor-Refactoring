@@ -153,10 +153,10 @@ public partial class DrawManager : MonoBehaviour
             return;
         }
 
-        Transform wallRootTransform = LayerUtility.FindTransformByName("Walls", true);
+        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
         if (wallRootTransform == null)
         {
-            wallRootTransform = new GameObject("Walls").transform;
+            wallRootTransform = new GameObject(LayerUtility.DefaultWallRootName).transform;
         }
 
         wallRoot = wallRootTransform;

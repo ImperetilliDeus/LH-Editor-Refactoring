@@ -6,7 +6,7 @@ public class WallTopFaceVisual : MonoBehaviour
     private const float MinimumHeight = 0.0001f;
 
     [SerializeField] private Material topMaterial;
-    [SerializeField] private float worldOffset = 0.01f;
+    [SerializeField] private float worldOffset = Wall.DefaultTopFaceOffset;
 
     private static Mesh sharedTopFaceMesh;
 

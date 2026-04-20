@@ -396,7 +396,7 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
 
         if (distanceMetersInputField != null)
         {
-            distanceMetersInputField.SetTextWithoutNotify((document.calibration.realDistanceMm / 1000f).ToString("0.###", CultureInfo.InvariantCulture));
+            distanceMetersInputField.SetTextWithoutNotify(MeasurementUnits.MillimetersToMeters(document.calibration.realDistanceMm).ToString("0.###", CultureInfo.InvariantCulture));
         }
 
         if (fineRotationSlider != null)
@@ -424,7 +424,7 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
             return;
         }
 
-        float scaleMetersPerPixel = document.solved.mmPerPixel / 1000f;
+        float scaleMetersPerPixel = MeasurementUnits.MillimetersToMeters(document.solved.mmPerPixel);
         SetMetricText(scaleValueText, scaleMetersPerPixel > 0f ? scaleMetersPerPixel.ToString("0.###", CultureInfo.InvariantCulture) : "-");
         SetMetricText(rotationValueText, document.solved.totalRotationDeg.ToString("0.0", CultureInfo.InvariantCulture) + "°");
         SetMetricText(offsetXValueText, document.solved.worldOffsetXZ.x.ToString("0.##", CultureInfo.InvariantCulture));
@@ -516,6 +516,6 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
             return 0f;
         }
 
-        return Mathf.Max(0f, meters * 1000f);
+        return Mathf.Max(0f, MeasurementUnits.MetersToMillimeters(meters));
     }
 }

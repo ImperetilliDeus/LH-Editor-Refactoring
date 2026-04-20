@@ -85,15 +85,15 @@ public sealed class DrawingOverlayDocument
 
 public static class DrawingOverlayUnits
 {
-    public const float UnitToMillimeters = 100f;
+    public const float UnitToMillimeters = MeasurementUnits.MillimetersPerUnit;
 
     public static float MillimetersToUnits(float millimeters)
     {
-        return millimeters / UnitToMillimeters;
+        return MeasurementUnits.MillimetersToUnits(millimeters);
     }
 
     public static float UnitsToMillimeters(float units)
     {
-        return units * UnitToMillimeters;
+        return MeasurementUnits.UnitsToMillimeters(units);
     }
 }
