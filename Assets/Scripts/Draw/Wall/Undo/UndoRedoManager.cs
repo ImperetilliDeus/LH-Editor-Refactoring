@@ -14,8 +14,8 @@ public partial class UndoRedoManager : MonoBehaviour
     [SerializeField] private int maxUndoHistory = 50;
     [SerializeField] private int maxRedoHistory = 50;
 
-    private readonly Stack<IUndoableAction> undoStack = new Stack<IUndoableAction>();
-    private readonly Stack<IUndoableAction> redoStack = new Stack<IUndoableAction>();
+    private readonly Stack<IEditorCommand> undoStack = new Stack<IEditorCommand>();
+    private readonly Stack<IEditorCommand> redoStack = new Stack<IEditorCommand>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private Mesh cachedCubeMesh;
 
@@ -192,7 +192,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        IUndoableAction action = undoStack.Pop();
+        IEditorCommand action = undoStack.Pop();
         action.Undo(this);
         redoStack.Push(action);
         TrimStackToNewest(redoStack, maxRedoHistory);
@@ -206,7 +206,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        IUndoableAction action = redoStack.Pop();
+        IEditorCommand action = redoStack.Pop();
         action.Redo(this);
         undoStack.Push(action);
         TrimStackToNewest(undoStack, maxUndoHistory);
@@ -225,21 +225,37 @@ public partial class UndoRedoManager : MonoBehaviour
         Redo();
     }
 
-    private void PushAction(IUndoableAction action)
+    public void ExecuteCommand(IEditorCommand command, bool alreadyExecuted = false)
+    {
+        if (command == null)
+        {
+            return;
+        }
+
+        if (!alreadyExecuted)
+        {
+            command.Execute(this);
+        }
+
+        PushAction(command);
+        RefreshPostUndoRedoVisuals();
+    }
+
+    private void PushAction(IEditorCommand action)
     {
         undoStack.Push(action);
         TrimStackToNewest(undoStack, maxUndoHistory);
         redoStack.Clear();
     }
 
-    private void TrimStackToNewest(Stack<IUndoableAction> stack, int maxCount)
+    private void TrimStackToNewest(Stack<IEditorCommand> stack, int maxCount)
     {
         if (stack == null || stack.Count <= maxCount)
         {
             return;
         }
 
-        IUndoableAction[] current = stack.ToArray();
+        IEditorCommand[] current = stack.ToArray();
         stack.Clear();
 
         int keepCount = Mathf.Min(maxCount, current.Length);
@@ -322,7 +338,7 @@ public partial class UndoRedoManager : MonoBehaviour
         Destroy(cube);
     }
 
-    private void ApplyWallStateChanges(List<WallStateChangeRecord> records, bool useAfterState)
+    internal void ApplyWallStateChanges(List<WallStateChangeRecord> records, bool useAfterState)
     {
         if (records == null)
         {
@@ -433,7 +449,7 @@ public partial class UndoRedoManager : MonoBehaviour
         return wallOpeningPlacementManager;
     }
 
-    private void ApplyOpeningLayoutSnapshot(OpeningLayoutSnapshot target, OpeningLayoutSnapshot current)
+    internal void ApplyOpeningLayoutSnapshot(OpeningLayoutSnapshot target, OpeningLayoutSnapshot current)
     {
         WallOpeningPlacementManager manager = GetWallOpeningPlacementManager();
         if (manager == null)
