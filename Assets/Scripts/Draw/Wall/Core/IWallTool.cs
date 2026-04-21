@@ -2,5 +2,5 @@ internal interface IWallTool
 {
     void Enter();
     void Exit();
-    void HandleInput(WallToolInputFrame inputFrame);
+    WallToolRequest HandleInput(WallToolInputFrame inputFrame);
 }

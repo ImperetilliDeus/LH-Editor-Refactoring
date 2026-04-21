@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public sealed class RoomHandleManager : MonoBehaviour
+public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
 {
     private const string HandleCanvasName = "RoomHandleCanvas";
     private const float PolygonAreaEpsilon = 0.0001f;
@@ -16,6 +16,7 @@ public sealed class RoomHandleManager : MonoBehaviour
     [SerializeField] private HandleManager wallHandleManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private UndoRedoManager undoRedoManager;
 
     [Header("Handle UI")]
     [SerializeField] private Vector2 handleSize = new Vector2(16f, 16f);
@@ -59,6 +60,7 @@ public sealed class RoomHandleManager : MonoBehaviour
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
     private Room focusedRoom;
+    private IEditorInputProvider inputProvider;
 
     public bool IsDraggingHandle => draggingGroup != null;
     public Room FocusedRoom => focusedRoom;
@@ -72,6 +74,7 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void Awake()
     {
+        inputProvider = EditorInputManager.Instance.InputProvider;
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -83,12 +86,13 @@ public sealed class RoomHandleManager : MonoBehaviour
         BindEvents();
         CacheCameraState();
         SyncModeState();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
         ValidateConfiguration();
     }
 
     private void Update()
     {
-        if (mainCamera == null || Mouse.current == null)
+        if (mainCamera == null || inputProvider == null)
         {
             return;
         }
@@ -113,8 +117,21 @@ public sealed class RoomHandleManager : MonoBehaviour
         }
 
         CacheCameraState();
+    }
 
-        HandleDragInput();
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        if (mainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        {
+            return;
+        }
+
+        if (modeManager != null && !modeManager.IsMode(EditorMode.RoomCreate))
+        {
+            return;
+        }
+
+        HandleDragInput(inputFrame);
     }
 
     public void MarkDirty()
@@ -245,12 +262,17 @@ public sealed class RoomHandleManager : MonoBehaviour
         }
     }
 
-    private void HandleDragInput()
+    private void HandleDragInput(EditorInputFrame inputFrame)
     {
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        Vector2 mousePosition = inputFrame.PointerScreenPosition;
+        if (!inputFrame.IsPointerAvailable)
+        {
+            return;
+        }
+
         if (draggingGroup == null)
         {
-            if (!Mouse.current.leftButton.wasPressedThisFrame)
+            if (!inputFrame.LeftPressedThisFrame)
             {
                 return;
             }
@@ -264,12 +286,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             return;
         }
 
-        if (Mouse.current.leftButton.isPressed)
+        if (inputFrame.LeftPressed)
         {
             UpdateDraggingGroup();
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (inputFrame.LeftReleasedThisFrame)
         {
             EndDrag();
         }
@@ -352,6 +374,7 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void EndDrag()
     {
+        Room draggedRoom = draggingGroup != null ? draggingGroup.room : null;
         if (draggingGroup == null)
         {
             return;
@@ -368,6 +391,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             if (!RoomPolygonValidationUtility.IsValidPolygon(finalVertices, minimumRoomEdgeLength, PolygonAreaEpsilon))
             {
                 roomManager?.UpdateRoomPolygon(draggingGroup.room, dragOriginalVertices);
+                finalVertices = Room.CreateSanitizedPolygonCopy(dragOriginalVertices);
+            }
+
+            if (undoRedoManager != null && draggedRoom != null)
+            {
+                undoRedoManager.RecordRoomPolygonChanged(draggedRoom, dragOriginalVertices, finalVertices);
             }
         }
 
@@ -650,6 +679,11 @@ public sealed class RoomHandleManager : MonoBehaviour
         {
             modeManager = FindFirstObjectByType<ModeManager>();
         }
+
+        if (undoRedoManager == null)
+        {
+            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
+        }
     }
 
     private void RefreshDragPlane()
@@ -698,7 +732,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (inputProvider == null || !inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!dragPlane.Raycast(mouseRay, out float enter))
         {
             return false;
@@ -739,16 +778,16 @@ public sealed class RoomHandleManager : MonoBehaviour
         return true;
     }
 
-    private static bool IsRoomHandleGridSnapActive()
+    private bool IsRoomHandleGridSnapActive()
     {
-        return Keyboard.current != null &&
-               (Keyboard.current.leftAltKey.isPressed || Keyboard.current.rightAltKey.isPressed);
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(Key.LeftAlt) || inputProvider.IsKeyPressed(Key.RightAlt));
     }
 
-    private static bool IsRoomHandleWallSnapActive()
+    private bool IsRoomHandleWallSnapActive()
     {
-        return Keyboard.current != null &&
-               (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(Key.LeftShift) || inputProvider.IsKeyPressed(Key.RightShift));
     }
 
     private void CollectWallSegmentSnapCandidates(List<SnapManager.WallSnapSegment> segments)
@@ -887,6 +926,10 @@ public sealed class RoomHandleManager : MonoBehaviour
     private void OnDestroy()
     {
         UnbindEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
 
         for (int i = 0; i < handleGroups.Count; i++)
         {

@@ -1,10 +1,7 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
-using System.Collections.Generic;
 
-public class CameraManager_3D : MonoBehaviour
+public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
 {
     [FormerlySerializedAs("Camera")]
     [SerializeField] private Camera targetCamera;
@@ -30,6 +27,7 @@ public class CameraManager_3D : MonoBehaviour
     private Vector3 lastMouseWorldPoint;
     private float yaw;
     private float pitch;
+    private IEditorInputProvider inputProvider;
 
     private Transform CameraTransform => targetCamera != null ? targetCamera.transform : null;
 
@@ -70,6 +68,7 @@ public class CameraManager_3D : MonoBehaviour
         }
 
         RefreshDragPlane();
+        inputProvider = EditorInputManager.Instance.InputProvider;
         Transform cameraTransform = CameraTransform;
         if (cameraTransform == null)
         {
@@ -80,6 +79,7 @@ public class CameraManager_3D : MonoBehaviour
         yaw = currentEuler.y;
         pitch = NormalizePitch(currentEuler.x);
         ApplyRotation();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
     }
 
     private void OnValidate()
@@ -97,35 +97,41 @@ public class CameraManager_3D : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        if (targetCamera == null || CameraTransform == null || Mouse.current == null)
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        if (targetCamera == null || CameraTransform == null || inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
 
-        HandlePan();
-        HandleRotate();
-        HandleZoom();
+        HandlePan(inputFrame);
+        HandleRotate(inputFrame);
+        HandleZoom(inputFrame);
     }
 
-    private void HandlePan()
+    private void HandlePan(EditorInputFrame inputFrame)
     {
-        Mouse mouse = Mouse.current;
-
-        if (mouse.middleButton.wasPressedThisFrame)
+        if (inputFrame.MiddlePressedThisFrame)
         {
             isPanning = TryGetMouseWorldPoint(out lastMouseWorldPoint);
             return;
         }
 
-        if (mouse.middleButton.wasReleasedThisFrame)
+        if (inputFrame.MiddleReleasedThisFrame)
         {
             isPanning = false;
             return;
         }
 
-        if (!isPanning || !mouse.middleButton.isPressed)
+        if (!isPanning || !inputFrame.MiddlePressed)
         {
             return;
         }
@@ -144,15 +150,14 @@ public class CameraManager_3D : MonoBehaviour
         }
     }
 
-    private void HandleRotate()
+    private void HandleRotate(EditorInputFrame inputFrame)
     {
-        Mouse mouse = Mouse.current;
-        if (!mouse.rightButton.isPressed)
+        if (!inputFrame.RightPressed)
         {
             return;
         }
 
-        Vector2 lookDelta = mouse.delta.ReadValue();
+        Vector2 lookDelta = inputFrame.PointerDelta;
         if (lookDelta.sqrMagnitude <= 0f)
         {
             return;
@@ -165,14 +170,14 @@ public class CameraManager_3D : MonoBehaviour
         ApplyRotation();
     }
 
-    private void HandleZoom()
+    private void HandleZoom(EditorInputFrame inputFrame)
     {
-        if (IsPointerOverUI())
+        if (inputFrame.PointerOverUI)
         {
             return;
         }
 
-        float scrollValue = Mouse.current.scroll.ReadValue().y;
+        float scrollValue = inputFrame.ScrollDeltaY;
         if (Mathf.Approximately(scrollValue, 0f))
         {
             return;
@@ -237,7 +242,12 @@ public class CameraManager_3D : MonoBehaviour
             return false;
         }
 
-        Ray ray = targetCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return false;
@@ -268,20 +278,4 @@ public class CameraManager_3D : MonoBehaviour
         return eulerX > 180f ? eulerX - 360f : eulerX;
     }
 
-    private static bool IsPointerOverUI()
-    {
-        if (EventSystem.current == null || Mouse.current == null)
-        {
-            return false;
-        }
-
-        PointerEventData pointerData = new PointerEventData(EventSystem.current)
-        {
-            position = Mouse.current.position.ReadValue(),
-        };
-
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(pointerData, results);
-        return results.Count > 0;
-    }
 }

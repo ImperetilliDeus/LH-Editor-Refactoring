@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-public class FurniturePlacementManager : MonoBehaviour
+public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 {
     private enum PlacementState
     {
@@ -49,15 +49,19 @@ public class FurniturePlacementManager : MonoBehaviour
     private float nextQRotationTime;
     private float nextERotationTime;
     private bool isFurniturePlaceModeActive;
+    private IEditorInputProvider inputProvider;
+    private EditorInputFrame lastInputFrame;
 
     private void Awake()
     {
+        inputProvider = EditorInputManager.Instance.InputProvider;
         propertyBlock = new MaterialPropertyBlock();
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
         BindModeEvents();
         SyncModeState();
+        EditorInputManager.Instance.RegisterHandler(EditorMode.FurniturePlace, this);
         ValidateConfiguration();
     }
 
@@ -74,14 +78,23 @@ public class FurniturePlacementManager : MonoBehaviour
             return;
         }
 
-        if (targetCamera == null || Mouse.current == null)
+        if (targetCamera == null || inputProvider == null || !inputProvider.IsPointerAvailable)
+        {
+            return;
+        }
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        lastInputFrame = inputFrame;
+        if (!isFurniturePlaceModeActive || targetCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
 
-        HandleRotationInput();
-        HandlePointerInput();
-        HandleKeyboardActions();
+        HandleRotationInput(inputFrame);
+        HandlePointerInput(inputFrame);
+        HandleKeyboardActions(inputFrame);
     }
 
     public void BeginPlacement(FurnitureCatalogItem item)
@@ -97,7 +110,7 @@ public class FurniturePlacementManager : MonoBehaviour
 
         if (modeManager != null && !modeManager.IsMode(EditorMode.FurniturePlace))
         {
-            modeManager.SetFurniturePlaceMode();
+            modeManager.SetMode(EditorMode.FurniturePlace);
         }
 
         activeItem = item;
@@ -121,7 +134,7 @@ public class FurniturePlacementManager : MonoBehaviour
         }
     }
 
-    private void HandlePointerInput()
+    private void HandlePointerInput(EditorInputFrame inputFrame)
     {
         if (!TryGetPlacementPoint(out Vector3 placementPoint, out _))
         {
@@ -133,7 +146,7 @@ public class FurniturePlacementManager : MonoBehaviour
             ApplyPreviewTransform(placementPoint, false);
         }
 
-        if (!Mouse.current.leftButton.wasPressedThisFrame || IsPointerOverUI())
+        if (!inputFrame.LeftPressedThisFrame || inputFrame.PointerOverUI)
         {
             return;
         }
@@ -151,57 +164,57 @@ public class FurniturePlacementManager : MonoBehaviour
         }
     }
 
-    private void HandleRotationInput()
+    private void HandleRotationInput(EditorInputFrame inputFrame)
     {
-        if (state == PlacementState.Idle || Keyboard.current == null)
+        if (state == PlacementState.Idle || inputProvider == null)
         {
             return;
         }
 
-        if (Keyboard.current.qKey.wasPressedThisFrame)
+        if (inputFrame.RotateNegativePressedThisFrame)
         {
             RotateByStep(-rotationStepDegrees);
             nextQRotationTime = Time.unscaledTime + rotationRepeatDelay;
         }
-        else if (Keyboard.current.qKey.isPressed && Time.unscaledTime >= nextQRotationTime)
+        else if (inputFrame.RotateNegativePressed && Time.unscaledTime >= nextQRotationTime)
         {
             RotateByStep(-rotationStepDegrees);
             nextQRotationTime = Time.unscaledTime + rotationRepeatInterval;
         }
-        else if (!Keyboard.current.qKey.isPressed)
+        else if (!inputFrame.RotateNegativePressed)
         {
             nextQRotationTime = 0f;
         }
 
-        if (Keyboard.current.eKey.wasPressedThisFrame)
+        if (inputFrame.RotatePositivePressedThisFrame)
         {
             RotateByStep(rotationStepDegrees);
             nextERotationTime = Time.unscaledTime + rotationRepeatDelay;
         }
-        else if (Keyboard.current.eKey.isPressed && Time.unscaledTime >= nextERotationTime)
+        else if (inputFrame.RotatePositivePressed && Time.unscaledTime >= nextERotationTime)
         {
             RotateByStep(rotationStepDegrees);
             nextERotationTime = Time.unscaledTime + rotationRepeatInterval;
         }
-        else if (!Keyboard.current.eKey.isPressed)
+        else if (!inputFrame.RotatePositivePressed)
         {
             nextERotationTime = 0f;
         }
     }
 
-    private void HandleKeyboardActions()
+    private void HandleKeyboardActions(EditorInputFrame inputFrame)
     {
-        if (Keyboard.current == null)
+        if (inputProvider == null)
         {
             return;
         }
 
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (inputFrame.EscapePressedThisFrame)
         {
             CancelCurrentPlacement(false);
         }
 
-        if (Keyboard.current.deleteKey.wasPressedThisFrame && state == PlacementState.PlacedSelected && activeInstance != null)
+        if (inputFrame.DeletePressedThisFrame && state == PlacementState.PlacedSelected && activeInstance != null)
         {
             FurnitureInstance target = activeInstance;
             ClearSelectionState();
@@ -390,7 +403,12 @@ public class FurniturePlacementManager : MonoBehaviour
     private bool TryPickFurniture(out FurnitureInstance pickedInstance)
     {
         pickedInstance = null;
-        Ray ray = targetCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (!TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue, furnitureSelectionMask.value, QueryTriggerInteraction.Ignore))
         {
             return false;
@@ -439,7 +457,12 @@ public class FurniturePlacementManager : MonoBehaviour
         point = Vector3.zero;
         room = null;
 
-        Ray ray = targetCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (!TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
         RaycastHit[] hits = Physics.RaycastAll(ray, float.MaxValue, placementSurfaceMask.value, QueryTriggerInteraction.Ignore);
         if (hits != null && hits.Length > 0)
         {
@@ -682,9 +705,21 @@ public class FurniturePlacementManager : MonoBehaviour
         Debug.Log(message, activeInstance);
     }
 
-    private bool IsPointerOverUI()
+    private bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition)
     {
-        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        if (lastInputFrame.IsPointerAvailable)
+        {
+            pointerScreenPosition = lastInputFrame.PointerScreenPosition;
+            return true;
+        }
+
+        if (inputProvider != null && inputProvider.TryGetPointerScreenPosition(out pointerScreenPosition))
+        {
+            return true;
+        }
+
+        pointerScreenPosition = Vector2.zero;
+        return false;
     }
 
     private void ResolveReferences()
@@ -747,6 +782,10 @@ public class FurniturePlacementManager : MonoBehaviour
     private void OnDestroy()
     {
         UnbindModeEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterHandler(EditorMode.FurniturePlace, this);
+        }
     }
 
     private void EnsureFurnitureRoot()

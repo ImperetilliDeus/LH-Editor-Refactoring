@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
-public partial class WallSelectionManager : MonoBehaviour
+public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandler
 {
     private enum SelectionModifierKey
     {
@@ -51,6 +51,7 @@ public partial class WallSelectionManager : MonoBehaviour
     [SerializeField] private GameObject selectUIObject;
     [SerializeField] private Button deleteSelectionButton;
 
+    private IEditorInputProvider inputProvider;
     private Plane dragPlane;
     private float dragPlaneHeight;
     private bool hasDragPlane;
@@ -101,6 +102,7 @@ public partial class WallSelectionManager : MonoBehaviour
     private UndoRedoManager.OpeningLayoutSnapshot moveStartOpeningLayoutSnapshot;
     private bool hasMoveStartOpeningLayoutSnapshot;
     private bool rootWallsCacheDirty = true;
+    private EditorInputFrame lastInputFrame;
 
     public bool IsDraggingWall => isDraggingWall;
     public GameObject SelectedWall => selectedWall;
@@ -170,14 +172,14 @@ public partial class WallSelectionManager : MonoBehaviour
 
     public bool IsPointerBlockedByNonWallUI(GameObject allowedWallUIObject = null)
     {
-        if (EventSystem.current == null)
+        if (EventSystem.current == null || inputProvider == null || !inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
         {
             return false;
         }
 
         PointerEventData eventData = new PointerEventData(EventSystem.current)
         {
-            position = EditorPointerInput.GetPointerScreenPositionOrDefault(),
+            position = pointerScreenPosition,
         };
 
         uiRaycastResults.Clear();
@@ -241,6 +243,7 @@ public partial class WallSelectionManager : MonoBehaviour
             mainCamera = Camera.main;
         }
 
+        inputProvider = EditorInputManager.Instance.InputProvider;
         ResolveReferences();
 
         EnsureWallRoot();
@@ -251,6 +254,7 @@ public partial class WallSelectionManager : MonoBehaviour
         EnsureSelectionCanvas();
         BindHandleEvents();
         BindUIEvents();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
     }
 
     private void OnValidate()
@@ -264,14 +268,26 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private void Update()
     {
-        if (!EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
-        {
-            return;
-        }
-
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
+        if (currentMode == EditorMode.Default || currentMode == EditorMode.DetailEdit)
+        {
+            RefreshWallSelectionUIPositions();
+        }
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        lastInputFrame = inputFrame;
+        EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
+        EditorPointerFrame pointerFrame = PointerInputFrameUtility.BuildPointerFrame(inputFrame);
+
         if (currentMode == EditorMode.DetailEdit)
         {
+            if (!pointerFrame.IsAvailable)
+            {
+                return;
+            }
+
             UpdateDetailEditMode(pointerFrame);
             return;
         }
@@ -289,7 +305,26 @@ public partial class WallSelectionManager : MonoBehaviour
             return;
         }
 
-        RefreshWallSelectionUIPositions();
+        HandleDefaultModeInput(pointerFrame);
+    }
+
+    public bool TryConsumeIdleLeftPress()
+    {
+        EditorPointerFrame pointerFrame = PointerInputFrameUtility.BuildPointerFrame(lastInputFrame);
+        if (!pointerFrame.IsAvailable)
+        {
+            return false;
+        }
+
+        return TryConsumeIdleLeftPress(pointerFrame);
+    }
+
+    private void HandleDefaultModeInput(EditorPointerFrame pointerFrame)
+    {
+        if (!pointerFrame.IsAvailable)
+        {
+            return;
+        }
 
         if (selectedWall != null && pointerFrame.RightPressedThisFrame)
         {
@@ -306,7 +341,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             ClearSingleSelection();
             ResetDragState();
-
             return;
         }
 
@@ -316,7 +350,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
-
             return;
         }
 
@@ -324,7 +357,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
-
             return;
         }
 
@@ -332,7 +364,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
-
             return;
         }
 
@@ -380,19 +411,8 @@ public partial class WallSelectionManager : MonoBehaviour
         Vector3 translationDelta = targetWallPosition - selectedWallStartPosition;
         translationDelta.y = 0f;
 
-        // Keep endpoint data in sync during drag so Room/Handle systems see consistent geometry.
         SyncAllWallComponentEndpoints();
         ApplyConnectedWallDrag(translationDelta, targetWallPosition);
-    }
-
-    public bool TryConsumeIdleLeftPress()
-    {
-        if (!EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
-        {
-            return false;
-        }
-
-        return TryConsumeIdleLeftPress(pointerFrame);
     }
 
     internal bool TryConsumeIdleLeftPress(EditorPointerFrame pointerFrame)
@@ -520,24 +540,12 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private bool IsPointerOverUI(Vector2 pointerScreenPosition)
     {
-        if (EventSystem.current == null)
+        if (EventSystem.current == null || inputProvider == null)
         {
             return false;
         }
 
-        if (EditorPointerInput.TryIsPointerOverUI(EventSystem.current))
-        {
-            return true;
-        }
-
-        PointerEventData eventData = new PointerEventData(EventSystem.current)
-        {
-            position = pointerScreenPosition,
-        };
-
-        uiRaycastResults.Clear();
-        EventSystem.current.RaycastAll(eventData, uiRaycastResults);
-        return uiRaycastResults.Count > 0;
+        return inputProvider.IsPointerOverUI(EventSystem.current, uiRaycastResults);
     }
 
     private void UpdateDetailEditMode(EditorPointerFrame pointerFrame)
@@ -790,24 +798,25 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private bool IsSelectionModifierPressed()
     {
-        if (Keyboard.current == null)
-        {
-            return false;
-        }
-
         switch (multiSelectModifierKey)
         {
             case SelectionModifierKey.None:
                 return false;
             case SelectionModifierKey.Ctrl:
-                return Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+                return IsAnyKeyPressed(Key.LeftCtrl, Key.RightCtrl);
             case SelectionModifierKey.Shift:
-                return Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+                return IsAnyKeyPressed(Key.LeftShift, Key.RightShift);
             case SelectionModifierKey.Alt:
-                return Keyboard.current.leftAltKey.isPressed || Keyboard.current.rightAltKey.isPressed;
+                return IsAnyKeyPressed(Key.LeftAlt, Key.RightAlt);
             default:
                 return false;
         }
+    }
+
+    private bool IsAnyKeyPressed(Key firstKey, Key secondKey)
+    {
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(firstKey) || inputProvider.IsKeyPressed(secondKey));
     }
 
     private void SelectWall(GameObject wall, bool preserveOpeningSelection)
@@ -1586,6 +1595,11 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
+
         UnbindHandleEvents();
         UnbindUIEvents();
         ClearAllSelectionState();

@@ -20,8 +20,6 @@ public partial class UndoRedoManager : MonoBehaviour
     private Mesh cachedCubeMesh;
 
     private const float PositionEpsilonSqr = 0.000001f;
-    private const float ScaleEpsilonSqr = 0.000001f;
-    private const float RotationEpsilonDot = 0.999999f;
 
     private void OnValidate()
     {
@@ -141,6 +139,23 @@ public partial class UndoRedoManager : MonoBehaviour
         }
 
         PushAction(new RoomCreateAction(room));
+    }
+
+    public void RecordRoomPolygonChanged(Room room, IReadOnlyList<Vector3> beforeVertices, IReadOnlyList<Vector3> afterVertices)
+    {
+        if (room == null)
+        {
+            return;
+        }
+
+        RoomPolygonSnapshot before = RoomPolygonSnapshot.Capture(room, beforeVertices);
+        RoomPolygonSnapshot after = RoomPolygonSnapshot.Capture(room, afterVertices);
+        if (!RoomPolygonSnapshot.HasMeaningfulDelta(before, after))
+        {
+            return;
+        }
+
+        PushAction(new RoomPolygonChangeAction(before, after));
     }
 
     public void RecordWallSplit(GameObject originalWall, GameObject firstSplitWall, GameObject secondSplitWall)
@@ -290,34 +305,28 @@ public partial class UndoRedoManager : MonoBehaviour
     private GameObject CreateWallFromSnapshot(WallStateSnapshot snapshot)
     {
         EnsureWallRoot(true);
-
         EnsureCachedResources();
-        GameObject wallObject = new GameObject(snapshot.name, typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider));
-        wallObject.transform.SetParent(wallRoot, true);
-        wallObject.transform.SetPositionAndRotation(snapshot.position, snapshot.rotation);
-        wallObject.transform.localScale = snapshot.scale;
-
-        MeshFilter filter = wallObject.GetComponent<MeshFilter>();
-        if (filter != null)
+        GameObject wallObject = WallObjectFactory.CreateWallObject(
+            snapshot.name,
+            wallRoot,
+            cachedCubeMesh,
+            snapshot.visualState);
+        if (!WallObjectFactory.ConfigureWall(
+                wallObject,
+                snapshot.wallData,
+                snapshot.startVertexId,
+                snapshot.endVertexId,
+                snapshot.suppressStartHandle,
+                snapshot.suppressEndHandle,
+                snapshot.startSplitPoint,
+                snapshot.endSplitPoint,
+                0.01f,
+                wallLengthDisplay,
+                false))
         {
-            filter.sharedMesh = cachedCubeMesh;
+            Destroy(wallObject);
+            return null;
         }
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null && snapshot.sharedMaterial != null)
-        {
-            renderer.sharedMaterial = snapshot.sharedMaterial;
-        }
-
-        Wall wall = wallObject.AddComponent<Wall>();
-        wall.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
-        wall.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
-        wall.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
-        wall.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
-        wall.SetTopMaterial(snapshot.topMaterial);
-        wall.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-        wall.UpdateView(0.01f);
-
         return wallObject;
     }
 
@@ -365,13 +374,10 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        wallObject.transform.SetPositionAndRotation(snapshot.position, snapshot.rotation);
-        wallObject.transform.localScale = snapshot.scale;
-
         MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null)
+        if (renderer != null && snapshot.visualState.wallMaterial != null)
         {
-            renderer.sharedMaterial = snapshot.sharedMaterial;
+            renderer.sharedMaterial = snapshot.visualState.wallMaterial;
         }
 
         Wall wallComponent = wallObject.GetComponent<Wall>();
@@ -380,15 +386,21 @@ public partial class UndoRedoManager : MonoBehaviour
             wallComponent = wallObject.AddComponent<Wall>();
         }
 
-        wallComponent.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
-        wallComponent.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
-        wallComponent.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
-        wallComponent.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
-        wallComponent.SetTopMaterial(snapshot.topMaterial);
-        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
+        wallComponent.SetTopMaterial(snapshot.visualState.topMaterial);
+        wallComponent.SetTopFaceOffset(snapshot.visualState.topFaceOffset);
         wallObject.name = snapshot.name;
-        wallComponent.UpdateView(0.01f);
-        wallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
+        WallObjectFactory.ConfigureWall(
+            wallObject,
+            snapshot.wallData,
+            snapshot.startVertexId,
+            snapshot.endVertexId,
+            snapshot.suppressStartHandle,
+            snapshot.suppressEndHandle,
+            snapshot.startSplitPoint,
+            snapshot.endSplitPoint,
+            0.01f,
+            wallLengthDisplay,
+            false);
     }
 
     private void RegisterWallVisuals(GameObject wallObject)
@@ -463,6 +475,22 @@ public partial class UndoRedoManager : MonoBehaviour
         {
             handleManager.RefreshRegisteredWalls();
         }
+    }
+
+    internal void ApplyRoomPolygonSnapshot(RoomPolygonSnapshot snapshot)
+    {
+        if (snapshot.room == null || snapshot.vertices == null || snapshot.vertices.Count < 3)
+        {
+            return;
+        }
+
+        RoomManager manager = GetRoomManager();
+        if (manager == null)
+        {
+            return;
+        }
+
+        manager.UpdateRoomPolygon(snapshot.room, snapshot.vertices);
     }
 
     private Wall FindWall(WallReference wallReference)

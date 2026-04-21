@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
-public sealed partial class RoomCreateManager : MonoBehaviour
+public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputHandler
 {
     [Header("References")]
     [SerializeField] private Camera mainCamera;
@@ -51,6 +50,8 @@ public sealed partial class RoomCreateManager : MonoBehaviour
     private Room selectedRoom;
     private Room pendingSelectedRoom;
     private bool isRoomCreateModeActive;
+    private IEditorInputProvider inputProvider;
+    private EditorInputFrame lastInputFrame;
 
     private void Reset()
     {
@@ -60,6 +61,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void Awake()
     {
+        inputProvider = EditorInputManager.Instance.InputProvider;
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -70,6 +72,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
         EnsurePreviewObjects();
         BindModeEvents();
         SyncModeState();
+        EditorInputManager.Instance.RegisterHandler(EditorMode.RoomCreate, this);
         ValidateConfiguration();
     }
 
@@ -155,13 +158,13 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void UpdateSelectedRoomDrag()
     {
-        if (Mouse.current == null)
+        if (inputProvider == null || !inputProvider.IsPointerAvailable)
         {
             CancelSelectedRoomDrag();
             return;
         }
 
-        if (!Mouse.current.leftButton.isPressed)
+        if (!inputProvider.IsPointerButtonPressed(PointerButton.Left))
         {
             EndSelectedRoomDrag();
             return;
@@ -193,6 +196,17 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void EndSelectedRoomDrag()
     {
+        if (undoRedoManager != null &&
+            selectedRoom != null &&
+            selectedRoom.ManualBoundaryVertices != null &&
+            selectedRoom.ManualBoundaryVertices.Count >= 3)
+        {
+            undoRedoManager.RecordRoomPolygonChanged(
+                selectedRoom,
+                cachedDraggedRoomVertices,
+                selectedRoom.ManualBoundaryVertices);
+        }
+
         isDraggingSelectedRoom = false;
         cachedDraggedRoomVertices.Clear();
         roomHandleManager?.MarkDirty();
@@ -528,7 +542,12 @@ public sealed partial class RoomCreateManager : MonoBehaviour
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (!TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!drawingPlane.Raycast(mouseRay, out float enter))
         {
             return false;
@@ -763,31 +782,30 @@ public sealed partial class RoomCreateManager : MonoBehaviour
         return bestRoom;
     }
 
-    private bool IsPointerOverUI()
+    private bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition)
     {
-        if (EventSystem.current == null)
+        if (lastInputFrame.IsPointerAvailable)
         {
-            return false;
+            pointerScreenPosition = lastInputFrame.PointerScreenPosition;
+            return true;
         }
 
-        if (Mouse.current != null && EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId))
+        if (inputProvider != null && inputProvider.TryGetPointerScreenPosition(out pointerScreenPosition))
         {
             return true;
         }
 
-        PointerEventData eventData = new PointerEventData(EventSystem.current)
-        {
-            position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero,
-        };
-
-        uiRaycastResults.Clear();
-        EventSystem.current.RaycastAll(eventData, uiRaycastResults);
-        return uiRaycastResults.Count > 0;
+        pointerScreenPosition = Vector2.zero;
+        return false;
     }
 
     private void OnDestroy()
     {
         UnbindModeEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterHandler(EditorMode.RoomCreate, this);
+        }
 
         for (int i = 0; i < previewBoundaries.Count; i++)
         {

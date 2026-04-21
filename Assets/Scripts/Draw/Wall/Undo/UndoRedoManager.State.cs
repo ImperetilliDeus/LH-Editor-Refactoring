@@ -1,17 +1,49 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public partial class UndoRedoManager
 {
+    public struct RoomPolygonSnapshot
+    {
+        public Room room;
+        public List<Vector3> vertices;
+
+        public static RoomPolygonSnapshot Capture(Room room, IReadOnlyList<Vector3> sourceVertices)
+        {
+            return new RoomPolygonSnapshot
+            {
+                room = room,
+                vertices = sourceVertices != null ? Room.CreateSanitizedPolygonCopy(sourceVertices) : new List<Vector3>(),
+            };
+        }
+
+        public static bool HasMeaningfulDelta(RoomPolygonSnapshot before, RoomPolygonSnapshot after)
+        {
+            int beforeCount = before.vertices != null ? before.vertices.Count : 0;
+            int afterCount = after.vertices != null ? after.vertices.Count : 0;
+            if (beforeCount != afterCount)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < beforeCount; i++)
+            {
+                if ((before.vertices[i] - after.vertices[i]).sqrMagnitude > PositionEpsilonSqr)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     public struct WallStateSnapshot
     {
         public GameObject wallObject;
         public WallData wallData;
-        public Vector3 position;
-        public Quaternion rotation;
-        public Vector3 scale;
         public string name;
-        public Material sharedMaterial;
-        public Material topMaterial;
+        public WallVisualState visualState;
         public int startVertexId;
         public int endVertexId;
         public bool suppressStartHandle;
@@ -26,19 +58,13 @@ public partial class UndoRedoManager
                 return default;
             }
 
-            Transform wallTransform = wallObject.transform;
             Wall wallComponent = wallObject.GetComponent<Wall>();
-            MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
 
             return new WallStateSnapshot
             {
                 wallObject = wallObject,
-                position = wallTransform.position,
-                rotation = wallTransform.rotation,
-                scale = wallTransform.localScale,
                 name = wallObject.name,
-                sharedMaterial = renderer != null ? renderer.sharedMaterial : null,
-                topMaterial = wallComponent != null ? wallComponent.GetTopMaterial() : null,
+                visualState = WallVisualState.Capture(wallObject),
                 wallData = wallComponent != null ? wallComponent.Data.Clone() : null,
                 startVertexId = wallComponent != null ? wallComponent.StartVertexId : 0,
                 endVertexId = wallComponent != null ? wallComponent.EndVertexId : 0,
@@ -52,29 +78,29 @@ public partial class UndoRedoManager
         public static WallStateSnapshot Capture(GameObject wallObject, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             WallStateSnapshot snapshot = Capture(wallObject);
-            snapshot.position = position;
-            snapshot.rotation = rotation;
-            snapshot.scale = scale;
-
             if (wallObject != null)
             {
                 Wall wallComponent = wallObject.GetComponent<Wall>();
                 if (wallComponent != null)
                 {
-                    Transform wallTransform = wallObject.transform;
-                    Vector3 originalPosition = wallTransform.position;
-                    Quaternion originalRotation = wallTransform.rotation;
-                    Vector3 originalScale = wallTransform.localScale;
-                    WallData originalWallData = wallComponent.Data.Clone();
+                    float planeY = wallComponent.Data.startPoint.y;
+                    float halfLength = scale.z * 0.5f;
+                    Vector3 direction = rotation * Vector3.forward;
 
-                    wallTransform.SetPositionAndRotation(position, rotation);
-                    wallTransform.localScale = scale;
-                    wallComponent.SyncEndpointsFromTransform(wallComponent.Data.startPoint.y);
-                    snapshot.wallData = wallComponent.Data.Clone();
+                    Vector3 start = position - direction * halfLength;
+                    Vector3 end = position + direction * halfLength;
+                    start.y = planeY;
+                    end.y = planeY;
 
-                    wallTransform.SetPositionAndRotation(originalPosition, originalRotation);
-                    wallTransform.localScale = originalScale;
-                    wallComponent.CopyDataFrom(originalWallData);
+                    snapshot.wallData = new WallData
+                    {
+                        id = wallComponent.Data.id,
+                        startPoint = start,
+                        endPoint = end,
+                        thickness = scale.x,
+                        height = scale.y,
+                        centerY = position.y,
+                    };
                 }
             }
 
@@ -83,8 +109,6 @@ public partial class UndoRedoManager
 
         public static bool HasMeaningfulDelta(WallStateSnapshot before, WallStateSnapshot after)
         {
-            bool moved = (after.position - before.position).sqrMagnitude > PositionEpsilonSqr;
-            bool scaled = (after.scale - before.scale).sqrMagnitude > ScaleEpsilonSqr;
             bool endpointsChanged =
                 !AreWallDataEquivalent(before.wallData, after.wallData) ||
                 after.startVertexId != before.startVertexId ||
@@ -93,9 +117,7 @@ public partial class UndoRedoManager
                 after.suppressEndHandle != before.suppressEndHandle ||
                 after.startSplitPoint != before.startSplitPoint ||
                 after.endSplitPoint != before.endSplitPoint;
-            float rotationDot = Mathf.Abs(Quaternion.Dot(before.rotation, after.rotation));
-            bool rotated = rotationDot < RotationEpsilonDot;
-            return moved || scaled || rotated || endpointsChanged;
+            return endpointsChanged;
         }
 
         private static bool AreWallDataEquivalent(WallData left, WallData right)
@@ -175,8 +197,7 @@ public partial class UndoRedoManager
         public float wallThickness;
         public float wallHeight;
         public float centerY;
-        public Material wallMaterial;
-        public Material wallTopMaterial;
+        public WallVisualState visualState;
         public int outerStartVertexId;
         public int outerEndVertexId;
         public bool suppressOuterStartHandle;
@@ -201,7 +222,9 @@ public partial class UndoRedoManager
                 Mathf.Abs(before.wallThickness - after.wallThickness) > 0.0001f ||
                 Mathf.Abs(before.wallHeight - after.wallHeight) > 0.0001f ||
                 Mathf.Abs(before.centerY - after.centerY) > 0.0001f ||
-                before.wallTopMaterial != after.wallTopMaterial ||
+                before.visualState.wallMaterial != after.visualState.wallMaterial ||
+                before.visualState.topMaterial != after.visualState.topMaterial ||
+                Mathf.Abs(before.visualState.topFaceOffset - after.visualState.topFaceOffset) > 0.0001f ||
                 before.outerStartVertexId != after.outerStartVertexId ||
                 before.outerEndVertexId != after.outerEndVertexId ||
                 before.suppressOuterStartHandle != after.suppressOuterStartHandle ||

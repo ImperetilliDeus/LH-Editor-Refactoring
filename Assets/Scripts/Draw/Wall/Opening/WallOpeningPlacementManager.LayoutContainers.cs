@@ -140,8 +140,7 @@ public partial class WallOpeningPlacementManager
             wallThickness = container != null ? container.WallThickness : 0.1f,
             wallHeight = container != null ? container.WallHeight : 1f,
             centerY = container != null ? container.CenterY : 0.5f,
-            wallMaterial = container != null ? container.WallMaterial : null,
-            wallTopMaterial = container != null ? container.WallTopMaterial : null,
+            visualState = container != null ? container.VisualState : default,
             outerStartVertexId = container != null ? container.OuterStartVertexId : 0,
             outerEndVertexId = container != null ? container.OuterEndVertexId : 0,
             suppressOuterStartHandle = container != null && container.SuppressOuterStartHandle,
@@ -151,22 +150,10 @@ public partial class WallOpeningPlacementManager
 
     private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(UndoRedoManager.OpeningLayoutSnapshot snapshot)
     {
-        Vector3 center = (snapshot.wallStart + snapshot.wallEnd) * 0.5f;
-        Vector3 direction = snapshot.wallEnd - snapshot.wallStart;
-        direction.y = 0f;
-        float length = direction.magnitude;
-        Quaternion rotation = length > MinimumWallSegmentLength
-            ? Quaternion.LookRotation(direction / length, Vector3.up)
-            : Quaternion.identity;
-
         return new UndoRedoManager.WallStateSnapshot
         {
             name = snapshot.layoutName,
-            position = new Vector3(center.x, snapshot.centerY, center.z),
-            rotation = rotation,
-            scale = new Vector3(snapshot.wallThickness, snapshot.wallHeight, Mathf.Max(length, MinimumWallSegmentLength)),
-            sharedMaterial = snapshot.wallMaterial,
-            topMaterial = snapshot.wallTopMaterial,
+            visualState = snapshot.visualState,
             wallData = new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY),
             startVertexId = snapshot.outerStartVertexId,
             endVertexId = snapshot.outerEndVertexId,
@@ -182,25 +169,27 @@ public partial class WallOpeningPlacementManager
             return null;
         }
 
-        GameObject wallObject = CreateCubeObject(snapshot.name, wallRoot, true);
-        wallObject.transform.SetPositionAndRotation(snapshot.position, snapshot.rotation);
-        wallObject.transform.localScale = snapshot.scale;
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null)
+        GameObject wallObject = WallObjectFactory.CreateWallObject(
+            snapshot.name,
+            wallRoot,
+            cachedCubeMesh,
+            snapshot.visualState);
+        if (!WallObjectFactory.ConfigureWall(
+                wallObject,
+                snapshot.wallData,
+                snapshot.startVertexId,
+                snapshot.endVertexId,
+                snapshot.suppressStartHandle,
+                snapshot.suppressEndHandle,
+                snapshot.startSplitPoint,
+                snapshot.endSplitPoint,
+                MinimumWallSegmentLength,
+                wallLengthDisplay,
+                false))
         {
-            renderer.sharedMaterial = snapshot.sharedMaterial;
+            Destroy(wallObject);
+            return null;
         }
-
-        Wall wall = wallObject.AddComponent<Wall>();
-        wall.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
-        wall.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
-        wall.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
-        wall.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
-        wall.SetTopMaterial(snapshot.topMaterial);
-        wall.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-        wall.UpdateView(MinimumWallSegmentLength);
-        wall.RefreshLengthDisplay(wallLengthDisplay, false);
         return wallObject;
     }
 
@@ -232,8 +221,7 @@ public partial class WallOpeningPlacementManager
             geometry.wallThickness,
             geometry.wallHeight,
             geometry.centerY,
-            geometry.wallMaterial,
-            geometry.wallTopMaterial,
+            geometry.visualState,
             geometry.outerStartVertexId,
             geometry.outerEndVertexId,
             selectedWall.SuppressStartHandle,
@@ -263,7 +251,6 @@ public partial class WallOpeningPlacementManager
             wallDirection /= wallLength;
         }
 
-        MeshRenderer wallRenderer = wall.GetComponent<MeshRenderer>();
         float wallHeight = wall.transform.localScale.y;
         return new WallGeometryData
         {
@@ -276,8 +263,7 @@ public partial class WallOpeningPlacementManager
             centerY = wall.transform.position.y,
             outerStartVertexId = wall.StartVertexId,
             outerEndVertexId = wall.EndVertexId,
-            wallMaterial = wallRenderer != null ? wallRenderer.sharedMaterial : null,
-            wallTopMaterial = wall.GetTopMaterial(),
+            visualState = WallVisualState.Capture(wall.gameObject),
         };
     }
 
@@ -293,7 +279,7 @@ public partial class WallOpeningPlacementManager
         int endVertexId,
         bool suppressStartHandle,
         bool suppressEndHandle,
-        Material wallMaterial)
+        WallVisualState visualState)
     {
         Vector3 direction = endPoint - startPoint;
         direction.y = 0f;
@@ -302,25 +288,20 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        GameObject wallObject = CreateCubeObject(segmentName, parent, true);
-        wallObject.name = segmentName;
-        LayerUtility.ApplyLayer(wallObject, LayerUtility.WallLayerName, false);
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null && wallMaterial != null)
-        {
-            renderer.sharedMaterial = wallMaterial;
-        }
-
-        Wall wallComponent = wallObject.AddComponent<Wall>();
-        wallComponent.SetTopMaterial(parent.TryGetComponent(out WallOpeningContainer container) ? container.WallTopMaterial : null);
-        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-        bool applied = wallComponent.TryApplyGeometryAndRefresh(
-            startPoint,
-            endPoint,
-            thickness,
-            height,
-            centerY,
+        GameObject wallObject = WallObjectFactory.CreateWallObject(
+            segmentName,
+            parent,
+            cachedCubeMesh,
+            visualState);
+        bool applied = WallObjectFactory.ConfigureWall(
+            wallObject,
+            new WallData(startPoint, endPoint, thickness, height, centerY),
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            false,
+            false,
             MinimumWallSegmentLength,
             wallLengthDisplay,
             false);
@@ -330,9 +311,6 @@ public partial class WallOpeningPlacementManager
             Destroy(wallObject);
             return;
         }
-
-        wallComponent.SetVertexIds(startVertexId, endVertexId);
-        wallComponent.SetHandleSuppressed(suppressStartHandle, suppressEndHandle);
 
         if (handleManager != null)
         {

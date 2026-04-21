@@ -9,8 +9,7 @@ public class WallOpeningContainer : MonoBehaviour
     [SerializeField] private float centerY;
     [SerializeField] private float wallBottomY;
     [SerializeField] private float wallTopY;
-    [SerializeField] private Material wallMaterial;
-    [SerializeField] private Material wallTopMaterial;
+    [SerializeField] private WallVisualState visualState;
     [SerializeField] private int outerStartVertexId;
     [SerializeField] private int outerEndVertexId;
     [SerializeField] private bool suppressOuterStartHandle;
@@ -24,8 +23,9 @@ public class WallOpeningContainer : MonoBehaviour
     public float WallBottomY => wallBottomY;
     public float WallTopY => wallTopY;
     public float WallPlaneY => wallStart.y;
-    public Material WallMaterial => wallMaterial;
-    public Material WallTopMaterial => wallTopMaterial;
+    public Material WallMaterial => visualState.wallMaterial;
+    public Material WallTopMaterial => visualState.topMaterial;
+    public WallVisualState VisualState => visualState;
     public bool SuppressOuterStartHandle => suppressOuterStartHandle;
     public bool SuppressOuterEndHandle => suppressOuterEndHandle;
 
@@ -58,8 +58,7 @@ public class WallOpeningContainer : MonoBehaviour
         float thickness,
         float height,
         float center,
-        Material material,
-        Material topMaterial,
+        WallVisualState state,
         int startVertexId,
         int endVertexId,
         bool suppressStartHandle,
@@ -72,8 +71,7 @@ public class WallOpeningContainer : MonoBehaviour
         centerY = center;
         wallBottomY = center - height * 0.5f;
         wallTopY = wallBottomY + height;
-        wallMaterial = material;
-        wallTopMaterial = topMaterial;
+        visualState = state;
         outerStartVertexId = startVertexId;
         outerEndVertexId = endVertexId;
         suppressOuterStartHandle = suppressStartHandle;

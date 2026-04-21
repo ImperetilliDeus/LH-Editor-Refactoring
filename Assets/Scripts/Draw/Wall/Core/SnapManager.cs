@@ -39,11 +39,13 @@ public class SnapManager : MonoBehaviour
 
     private readonly List<Wall> spatialHashCandidates = new List<Wall>();
     private readonly HashSet<int> nearbyHandleVertexIds = new HashSet<int>();
+    private IEditorInputProvider inputProvider;
     private WallSpatialHash wallSpatialHash;
     private bool wallSpatialHashDirty = true;
 
     private void Awake()
     {
+        inputProvider = EditorInputManager.Instance.InputProvider;
         EnsureSpatialHash();
     }
 
@@ -560,24 +562,25 @@ public class SnapManager : MonoBehaviour
 
     private bool IsModifierPressed(SnapModifierKey modifierKey)
     {
-        if (Keyboard.current == null)
-        {
-            return false;
-        }
-
         switch (modifierKey)
         {
             case SnapModifierKey.None:
                 return false;
             case SnapModifierKey.Shift:
-                return Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+                return IsAnyKeyPressed(Key.LeftShift, Key.RightShift);
             case SnapModifierKey.Ctrl:
-                return Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+                return IsAnyKeyPressed(Key.LeftCtrl, Key.RightCtrl);
             case SnapModifierKey.Alt:
-                return Keyboard.current.leftAltKey.isPressed || Keyboard.current.rightAltKey.isPressed;
+                return IsAnyKeyPressed(Key.LeftAlt, Key.RightAlt);
             default:
                 return false;
         }
+    }
+
+    private bool IsAnyKeyPressed(Key firstKey, Key secondKey)
+    {
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(firstKey) || inputProvider.IsKeyPressed(secondKey));
     }
 
     private void EnsureSpatialHash()

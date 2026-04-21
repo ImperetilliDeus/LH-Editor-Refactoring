@@ -200,6 +200,11 @@ public partial class HandleManager
     private void OnDestroy()
     {
         UnbindModeEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
+
         previewSnappedGroup = null;
 
         for (int i = 0; i < vertexGroups.Count; i++)

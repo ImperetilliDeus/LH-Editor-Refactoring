@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-public partial class HandleManager : MonoBehaviour
+public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 {
     private const string HandleCanvasName = "HandleCanvas";
 
@@ -87,6 +87,7 @@ public partial class HandleManager : MonoBehaviour
     private readonly List<int> removedWallEntryKeys = new List<int>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> dragStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
 
+    private IEditorInputProvider inputProvider;
     private int nextVertexId = 1;
     private Sprite circularHandleSprite;
     private bool handleLayoutDirty = true;
@@ -111,6 +112,7 @@ public partial class HandleManager : MonoBehaviour
             mainCamera = Camera.main;
         }
 
+        inputProvider = EditorInputManager.Instance.InputProvider;
         ResolveReferences();
 
         EnsureCanvas();
@@ -120,6 +122,7 @@ public partial class HandleManager : MonoBehaviour
         CacheCameraState();
         BindModeEvents();
         SyncModeState();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
         ValidateConfiguration();
     }
 
@@ -135,7 +138,7 @@ public partial class HandleManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isDefaultModeActive || mainCamera == null || !EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
+        if (!isDefaultModeActive || mainCamera == null)
         {
             return;
         }
@@ -166,7 +169,16 @@ public partial class HandleManager : MonoBehaviour
         }
 
         CacheCameraState();
-        HandleDraggingInput(pointerFrame);
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        if (!isDefaultModeActive || mainCamera == null || !inputFrame.IsPointerAvailable)
+        {
+            return;
+        }
+
+        HandleDraggingInput(PointerInputFrameUtility.BuildPointerFrame(inputFrame));
     }
 
     public void RegisterWall(GameObject wallObject)
@@ -636,4 +648,5 @@ public partial class HandleManager : MonoBehaviour
         Debug.Assert(mainCamera != null, $"{nameof(HandleManager)} requires {nameof(mainCamera)}.", this);
         Debug.Assert(modeManager != null, $"{nameof(HandleManager)} requires {nameof(modeManager)}.", this);
     }
+
 }

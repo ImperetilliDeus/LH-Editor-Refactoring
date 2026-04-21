@@ -199,6 +199,33 @@ public partial class UndoRedoManager
         }
     }
 
+    private class RoomPolygonChangeAction : IEditorCommand
+    {
+        private readonly RoomPolygonSnapshot before;
+        private readonly RoomPolygonSnapshot after;
+
+        public RoomPolygonChangeAction(RoomPolygonSnapshot before, RoomPolygonSnapshot after)
+        {
+            this.before = before;
+            this.after = after;
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
+        }
+
+        public void Undo(UndoRedoManager context)
+        {
+            context.ApplyRoomPolygonSnapshot(before);
+        }
+
+        public void Redo(UndoRedoManager context)
+        {
+            context.ApplyRoomPolygonSnapshot(after);
+        }
+    }
+
     private class WallSplitAction : IEditorCommand
     {
         private readonly WallStateSnapshot originalSnapshot;
