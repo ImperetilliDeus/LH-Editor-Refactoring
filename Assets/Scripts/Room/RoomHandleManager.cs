@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public sealed class RoomHandleManager : MonoBehaviour
+public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
 {
     private const string HandleCanvasName = "RoomHandleCanvas";
     private const float PolygonAreaEpsilon = 0.0001f;
@@ -74,7 +74,7 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void Awake()
     {
-        inputProvider = new UnityEditorInputProvider();
+        inputProvider = EditorInputManager.Instance.InputProvider;
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -86,12 +86,13 @@ public sealed class RoomHandleManager : MonoBehaviour
         BindEvents();
         CacheCameraState();
         SyncModeState();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
         ValidateConfiguration();
     }
 
     private void Update()
     {
-        if (mainCamera == null || inputProvider == null || !inputProvider.IsPointerAvailable)
+        if (mainCamera == null || inputProvider == null)
         {
             return;
         }
@@ -116,8 +117,21 @@ public sealed class RoomHandleManager : MonoBehaviour
         }
 
         CacheCameraState();
+    }
 
-        HandleDragInput();
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        if (mainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        {
+            return;
+        }
+
+        if (modeManager != null && !modeManager.IsMode(EditorMode.RoomCreate))
+        {
+            return;
+        }
+
+        HandleDragInput(inputFrame);
     }
 
     public void MarkDirty()
@@ -248,16 +262,17 @@ public sealed class RoomHandleManager : MonoBehaviour
         }
     }
 
-    private void HandleDragInput()
+    private void HandleDragInput(EditorInputFrame inputFrame)
     {
-        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 mousePosition))
+        Vector2 mousePosition = inputFrame.PointerScreenPosition;
+        if (!inputFrame.IsPointerAvailable)
         {
             return;
         }
 
         if (draggingGroup == null)
         {
-            if (!inputProvider.WasPointerButtonPressedThisFrame(PointerButton.Left))
+            if (!inputFrame.LeftPressedThisFrame)
             {
                 return;
             }
@@ -271,12 +286,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             return;
         }
 
-        if (inputProvider.IsPointerButtonPressed(PointerButton.Left))
+        if (inputFrame.LeftPressed)
         {
             UpdateDraggingGroup();
         }
 
-        if (inputProvider.WasPointerButtonReleasedThisFrame(PointerButton.Left))
+        if (inputFrame.LeftReleasedThisFrame)
         {
             EndDrag();
         }
@@ -911,6 +926,10 @@ public sealed class RoomHandleManager : MonoBehaviour
     private void OnDestroy()
     {
         UnbindEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
 
         for (int i = 0; i < handleGroups.Count; i++)
         {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public sealed partial class RoomCreateManager : MonoBehaviour
+public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputHandler
 {
     [Header("References")]
     [SerializeField] private Camera mainCamera;
@@ -51,6 +51,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
     private Room pendingSelectedRoom;
     private bool isRoomCreateModeActive;
     private IEditorInputProvider inputProvider;
+    private EditorInputFrame lastInputFrame;
 
     private void Reset()
     {
@@ -60,7 +61,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void Awake()
     {
-        inputProvider = new UnityEditorInputProvider();
+        inputProvider = EditorInputManager.Instance.InputProvider;
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -71,6 +72,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
         EnsurePreviewObjects();
         BindModeEvents();
         SyncModeState();
+        EditorInputManager.Instance.RegisterHandler(EditorMode.RoomCreate, this);
         ValidateConfiguration();
     }
 
@@ -540,7 +542,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
             return false;
         }
 
-        if (inputProvider == null || !inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        if (!TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
         {
             return false;
         }
@@ -780,14 +782,30 @@ public sealed partial class RoomCreateManager : MonoBehaviour
         return bestRoom;
     }
 
-    private bool IsPointerOverUI()
+    private bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition)
     {
-        return inputProvider != null && inputProvider.IsPointerOverUI(EventSystem.current, uiRaycastResults);
+        if (lastInputFrame.IsPointerAvailable)
+        {
+            pointerScreenPosition = lastInputFrame.PointerScreenPosition;
+            return true;
+        }
+
+        if (inputProvider != null && inputProvider.TryGetPointerScreenPosition(out pointerScreenPosition))
+        {
+            return true;
+        }
+
+        pointerScreenPosition = Vector2.zero;
+        return false;
     }
 
     private void OnDestroy()
     {
         UnbindModeEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterHandler(EditorMode.RoomCreate, this);
+        }
 
         for (int i = 0; i < previewBoundaries.Count; i++)
         {

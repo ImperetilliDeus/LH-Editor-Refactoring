@@ -2,9 +2,10 @@ using UnityEngine;
 
 public sealed partial class RoomCreateManager
 {
-    private void Update()
+    public void HandleEditorInput(EditorInputFrame inputFrame)
     {
-        if (mainCamera == null || inputProvider == null || !inputProvider.IsPointerAvailable || !isRoomCreateModeActive)
+        lastInputFrame = inputFrame;
+        if (mainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable || !isRoomCreateModeActive)
         {
             return;
         }
@@ -19,13 +20,14 @@ public sealed partial class RoomCreateManager
             return;
         }
 
-        bool isPointerOverUI = IsPointerOverUI();
-        bool hasPointerPosition = inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition);
+        bool isPointerOverUI = inputFrame.PointerOverUI;
+        bool hasPointerPosition = inputFrame.IsPointerAvailable;
+        Vector2 pointerScreenPosition = inputFrame.PointerScreenPosition;
         bool isPointerOverRoomHandle = hasPointerPosition &&
                                        roomHandleManager != null &&
                                        roomHandleManager.IsPointerOverHandle(pointerScreenPosition);
 
-        if (inputProvider.WasPointerButtonPressedThisFrame(PointerButton.Right))
+        if (inputFrame.RightPressedThisFrame)
         {
             CancelCurrentInteraction();
             ClearSelectedRoom();
@@ -42,13 +44,13 @@ public sealed partial class RoomCreateManager
         {
             if (pendingRoomSelection)
             {
-                HandlePendingRoomSelection();
+                HandlePendingRoomSelection(inputFrame);
                 return;
             }
 
             if (!isPointerOverUI &&
                 !isPointerOverRoomHandle &&
-                inputProvider.WasPointerButtonPressedThisFrame(PointerButton.Left) &&
+                inputFrame.LeftPressedThisFrame &&
                 TryGetMouseWorldPoint(out Vector3 startPoint))
             {
                 pendingSelectedRoom = PickRoomAtWorldPoint(startPoint);
@@ -66,12 +68,12 @@ public sealed partial class RoomCreateManager
             return;
         }
 
-        if (inputProvider.IsPointerButtonPressed(PointerButton.Left))
+        if (inputFrame.LeftPressed)
         {
             UpdatePreviewWhileDragging();
         }
 
-        if (inputProvider.WasPointerButtonReleasedThisFrame(PointerButton.Left))
+        if (inputFrame.LeftReleasedThisFrame)
         {
             CommitDraggedRoom();
         }
@@ -88,15 +90,15 @@ public sealed partial class RoomCreateManager
         UpdatePreviewFromRectangle(dragStartPoint, currentPoint);
     }
 
-    private void HandlePendingRoomSelection()
+    private void HandlePendingRoomSelection(EditorInputFrame inputFrame)
     {
-        if (inputProvider == null || !inputProvider.IsPointerAvailable)
+        if (!inputFrame.IsPointerAvailable && (inputProvider == null || !inputProvider.IsPointerAvailable))
         {
             ClearPendingRoomSelection();
             return;
         }
 
-        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 mousePosition))
+        if (!TryGetPointerScreenPosition(out Vector2 mousePosition))
         {
             ClearPendingRoomSelection();
             return;
@@ -105,14 +107,14 @@ public sealed partial class RoomCreateManager
         float thresholdSqr = clickToSelectThresholdPixels * clickToSelectThresholdPixels;
         float movedSqr = (mousePosition - pendingSelectionStartMousePosition).sqrMagnitude;
 
-        if (inputProvider.WasPointerButtonReleasedThisFrame(PointerButton.Left))
+        if (inputFrame.LeftReleasedThisFrame)
         {
             FocusRoomForEditing(pendingSelectedRoom);
             ClearPendingRoomSelection();
             return;
         }
 
-        if (!inputProvider.IsPointerButtonPressed(PointerButton.Left))
+        if (!inputFrame.LeftPressed)
         {
             ClearPendingRoomSelection();
             return;

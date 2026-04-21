@@ -43,8 +43,7 @@ public partial class UndoRedoManager
         public GameObject wallObject;
         public WallData wallData;
         public string name;
-        public Material sharedMaterial;
-        public Material topMaterial;
+        public WallVisualState visualState;
         public int startVertexId;
         public int endVertexId;
         public bool suppressStartHandle;
@@ -59,16 +58,13 @@ public partial class UndoRedoManager
                 return default;
             }
 
-            Transform wallTransform = wallObject.transform;
             Wall wallComponent = wallObject.GetComponent<Wall>();
-            MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
 
             return new WallStateSnapshot
             {
                 wallObject = wallObject,
                 name = wallObject.name,
-                sharedMaterial = renderer != null ? renderer.sharedMaterial : null,
-                topMaterial = wallComponent != null ? wallComponent.GetTopMaterial() : null,
+                visualState = WallVisualState.Capture(wallObject),
                 wallData = wallComponent != null ? wallComponent.Data.Clone() : null,
                 startVertexId = wallComponent != null ? wallComponent.StartVertexId : 0,
                 endVertexId = wallComponent != null ? wallComponent.EndVertexId : 0,
@@ -201,8 +197,7 @@ public partial class UndoRedoManager
         public float wallThickness;
         public float wallHeight;
         public float centerY;
-        public Material wallMaterial;
-        public Material wallTopMaterial;
+        public WallVisualState visualState;
         public int outerStartVertexId;
         public int outerEndVertexId;
         public bool suppressOuterStartHandle;
@@ -227,7 +222,9 @@ public partial class UndoRedoManager
                 Mathf.Abs(before.wallThickness - after.wallThickness) > 0.0001f ||
                 Mathf.Abs(before.wallHeight - after.wallHeight) > 0.0001f ||
                 Mathf.Abs(before.centerY - after.centerY) > 0.0001f ||
-                before.wallTopMaterial != after.wallTopMaterial ||
+                before.visualState.wallMaterial != after.visualState.wallMaterial ||
+                before.visualState.topMaterial != after.visualState.topMaterial ||
+                Mathf.Abs(before.visualState.topFaceOffset - after.visualState.topFaceOffset) > 0.0001f ||
                 before.outerStartVertexId != after.outerStartVertexId ||
                 before.outerEndVertexId != after.outerEndVertexId ||
                 before.suppressOuterStartHandle != after.suppressOuterStartHandle ||

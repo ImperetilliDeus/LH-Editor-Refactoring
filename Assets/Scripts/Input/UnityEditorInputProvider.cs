@@ -20,6 +20,23 @@ public sealed class UnityEditorInputProvider : IEditorInputProvider
         return true;
     }
 
+    public bool TryGetPointerDelta(out Vector2 pointerDelta)
+    {
+        pointerDelta = Vector2.zero;
+        if (Mouse.current == null)
+        {
+            return false;
+        }
+
+        pointerDelta = Mouse.current.delta.ReadValue();
+        return true;
+    }
+
+    public float GetScrollDeltaY()
+    {
+        return Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
+    }
+
     public bool IsPointerOverUI(EventSystem eventSystem, List<RaycastResult> raycastResults = null)
     {
         if (eventSystem == null)

@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
 
-public partial class WallOpeningPlacementManager : MonoBehaviour
+public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInputHandler
 {
     public enum MarkerPlacementMode
     {
@@ -28,8 +27,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
         public float centerY;
         public int outerStartVertexId;
         public int outerEndVertexId;
-        public Material wallMaterial;
-        public Material wallTopMaterial;
+        public WallVisualState visualState;
     }
 
     [System.Serializable]
@@ -171,6 +169,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
         SetOpeningDetailMenuVisible(false);
         RefreshOpeningDetailInputs(true);
         CacheCameraState();
+        EditorInputManager.Instance.RegisterHandler(EditorMode.DetailEdit, this);
     }
 
     private void OnValidate()
@@ -190,6 +189,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
     {
         UnbindButtons();
         UnbindVisualEvents();
+        EditorInputManager.Instance.UnregisterHandler(EditorMode.DetailEdit, this);
 
         if (cachedDoorMaterial != null)
         {
@@ -220,17 +220,22 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             return;
         }
 
-        if (selectedOpening != null &&
-            Mouse.current != null &&
-            Mouse.current.rightButton.wasPressedThisFrame)
-        {
-            ClearOpeningSelection();
-            return;
-        }
-
         if (!isDraggingMarker && selectedOpening != null && !IsCurrentDetailMenuActive())
         {
             SetOpeningDetailMenuVisible(true);
+        }
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        if (modeManager != null && !modeManager.IsMode(EditorMode.DetailEdit))
+        {
+            return;
+        }
+
+        if (selectedOpening != null && inputFrame.RightPressedThisFrame)
+        {
+            ClearOpeningSelection();
         }
     }
 
@@ -266,9 +271,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
 
         EnsureWallRoot();
 
-        MeshRenderer selectedRenderer = selectedWallComponent.GetComponent<MeshRenderer>();
-        Material wallMaterial = selectedRenderer != null ? selectedRenderer.sharedMaterial : null;
-        Material topMaterial = selectedWallComponent.GetTopMaterial();
+        WallVisualState visualState = WallVisualState.Capture(selectedWallComponent.gameObject);
         float thickness = selectedWallComponent.transform.localScale.x;
         float height = selectedWallComponent.transform.localScale.y;
         float centerY = selectedWallComponent.transform.position.y;
@@ -286,8 +289,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             false,
             selectedWallComponent.IsStartSplitPoint,
             true,
-            wallMaterial,
-            topMaterial);
+            visualState);
 
         if (firstWall == null)
         {
@@ -307,8 +309,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             selectedWallComponent.SuppressEndHandle,
             true,
             selectedWallComponent.IsEndSplitPoint,
-            wallMaterial,
-            topMaterial);
+            visualState);
 
         if (secondWall == null)
         {
@@ -464,7 +465,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
                 container.OuterEndVertexId,
                 container.SuppressOuterStartHandle,
                 container.SuppressOuterEndHandle,
-                container.WallMaterial);
+                container.VisualState);
 
             if (removedWalls.Count > 0)
             {
@@ -506,7 +507,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
                 0,
                 currentDistance > 0.001f || container.SuppressOuterStartHandle,
                 true,
-                container.WallMaterial);
+                container.VisualState);
 
             UpdateOpeningVisual(container, opening, i);
             currentDistance = openingEndDistance;
@@ -526,7 +527,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             container.OuterEndVertexId,
             true,
             container.SuppressOuterEndHandle,
-            container.WallMaterial);
+            container.VisualState);
 
         if (removedWalls.Count > 0)
         {
@@ -677,8 +678,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        Material wallMaterial,
-        Material topMaterial)
+        WallVisualState visualState)
     {
         Vector3 direction = endPoint - startPoint;
         direction.y = 0f;
@@ -691,8 +691,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             segmentName,
             wallRoot,
             cachedCubeMesh,
-            wallMaterial,
-            topMaterial);
+            visualState);
         bool applied = WallObjectFactory.ConfigureWall(
             wallObject,
             new WallData(startPoint, endPoint, thickness, height, centerY),

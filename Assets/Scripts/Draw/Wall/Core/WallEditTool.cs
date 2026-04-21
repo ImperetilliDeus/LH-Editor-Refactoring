@@ -1,8 +1,8 @@
-internal sealed class WallIdleTool : IWallTool
+internal sealed class WallEditTool : IWallTool
 {
     private readonly IWallToolContext context;
 
-    public WallIdleTool(IWallToolContext context)
+    public WallEditTool(IWallToolContext context)
     {
         this.context = context;
     }
@@ -24,12 +24,17 @@ internal sealed class WallIdleTool : IWallTool
             return WallToolRequest.None;
         }
 
+        if (inputFrame.DeletePressedThisFrame)
+        {
+            return WallToolRequest.ActivateDelete;
+        }
+
         if (inputFrame.PointerOverUI || !inputFrame.LeftPressedThisFrame)
         {
             return WallToolRequest.None;
         }
 
-        if (context.TryConsumeIdleSelectionPress())
+        if (context.TryConsumeEditSelectionPress())
         {
             return WallToolRequest.None;
         }

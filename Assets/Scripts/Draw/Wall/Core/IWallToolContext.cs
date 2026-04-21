@@ -2,7 +2,8 @@ internal interface IWallToolContext
 {
     bool IsHandleInputLocked();
     void ClearPreviewSnappedHandle();
-    bool TryConsumeIdleSelectionPress();
+    bool TryConsumeEditSelectionPress();
+    void DeleteCurrentSelection();
     bool TryPrepareWallCreationStart();
     void SetWallCreationModeActive(bool value);
     bool IsPreviewWallEnabled();

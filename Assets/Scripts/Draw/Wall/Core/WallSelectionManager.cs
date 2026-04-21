@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
-public partial class WallSelectionManager : MonoBehaviour
+public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandler
 {
     private enum SelectionModifierKey
     {
@@ -102,6 +102,7 @@ public partial class WallSelectionManager : MonoBehaviour
     private UndoRedoManager.OpeningLayoutSnapshot moveStartOpeningLayoutSnapshot;
     private bool hasMoveStartOpeningLayoutSnapshot;
     private bool rootWallsCacheDirty = true;
+    private EditorInputFrame lastInputFrame;
 
     public bool IsDraggingWall => isDraggingWall;
     public GameObject SelectedWall => selectedWall;
@@ -242,7 +243,7 @@ public partial class WallSelectionManager : MonoBehaviour
             mainCamera = Camera.main;
         }
 
-        inputProvider = new UnityEditorInputProvider();
+        inputProvider = EditorInputManager.Instance.InputProvider;
         ResolveReferences();
 
         EnsureWallRoot();
@@ -253,6 +254,7 @@ public partial class WallSelectionManager : MonoBehaviour
         EnsureSelectionCanvas();
         BindHandleEvents();
         BindUIEvents();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
     }
 
     private void OnValidate()
@@ -266,14 +268,26 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private void Update()
     {
-        if (!TryGetPointerFrame(out EditorPointerFrame pointerFrame))
-        {
-            return;
-        }
-
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
+        if (currentMode == EditorMode.Default || currentMode == EditorMode.DetailEdit)
+        {
+            RefreshWallSelectionUIPositions();
+        }
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        lastInputFrame = inputFrame;
+        EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
+        EditorPointerFrame pointerFrame = PointerInputFrameUtility.BuildPointerFrame(inputFrame);
+
         if (currentMode == EditorMode.DetailEdit)
         {
+            if (!pointerFrame.IsAvailable)
+            {
+                return;
+            }
+
             UpdateDetailEditMode(pointerFrame);
             return;
         }
@@ -291,7 +305,26 @@ public partial class WallSelectionManager : MonoBehaviour
             return;
         }
 
-        RefreshWallSelectionUIPositions();
+        HandleDefaultModeInput(pointerFrame);
+    }
+
+    public bool TryConsumeIdleLeftPress()
+    {
+        EditorPointerFrame pointerFrame = PointerInputFrameUtility.BuildPointerFrame(lastInputFrame);
+        if (!pointerFrame.IsAvailable)
+        {
+            return false;
+        }
+
+        return TryConsumeIdleLeftPress(pointerFrame);
+    }
+
+    private void HandleDefaultModeInput(EditorPointerFrame pointerFrame)
+    {
+        if (!pointerFrame.IsAvailable)
+        {
+            return;
+        }
 
         if (selectedWall != null && pointerFrame.RightPressedThisFrame)
         {
@@ -308,7 +341,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             ClearSingleSelection();
             ResetDragState();
-
             return;
         }
 
@@ -318,7 +350,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
-
             return;
         }
 
@@ -326,7 +357,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
-
             return;
         }
 
@@ -334,7 +364,6 @@ public partial class WallSelectionManager : MonoBehaviour
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
-
             return;
         }
 
@@ -382,19 +411,8 @@ public partial class WallSelectionManager : MonoBehaviour
         Vector3 translationDelta = targetWallPosition - selectedWallStartPosition;
         translationDelta.y = 0f;
 
-        // Keep endpoint data in sync during drag so Room/Handle systems see consistent geometry.
         SyncAllWallComponentEndpoints();
         ApplyConnectedWallDrag(translationDelta, targetWallPosition);
-    }
-
-    public bool TryConsumeIdleLeftPress()
-    {
-        if (!TryGetPointerFrame(out EditorPointerFrame pointerFrame))
-        {
-            return false;
-        }
-
-        return TryConsumeIdleLeftPress(pointerFrame);
     }
 
     internal bool TryConsumeIdleLeftPress(EditorPointerFrame pointerFrame)
@@ -1230,11 +1248,6 @@ public partial class WallSelectionManager : MonoBehaviour
         LayerUtility.ResolveObject(ref roomManager);
     }
 
-    private bool TryGetPointerFrame(out EditorPointerFrame pointerFrame)
-    {
-        return PointerInputFrameUtility.TryBuildPointerFrame(inputProvider, out pointerFrame);
-    }
-
     private void RefreshDragPlane()
     {
         hasDragPlane = false;
@@ -1582,6 +1595,11 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
+
         UnbindHandleEvents();
         UnbindUIEvents();
         ClearAllSelectionState();

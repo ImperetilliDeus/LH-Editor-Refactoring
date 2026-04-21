@@ -310,8 +310,7 @@ public partial class UndoRedoManager : MonoBehaviour
             snapshot.name,
             wallRoot,
             cachedCubeMesh,
-            snapshot.sharedMaterial,
-            snapshot.topMaterial);
+            snapshot.visualState);
         if (!WallObjectFactory.ConfigureWall(
                 wallObject,
                 snapshot.wallData,
@@ -376,9 +375,9 @@ public partial class UndoRedoManager : MonoBehaviour
         }
 
         MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null)
+        if (renderer != null && snapshot.visualState.wallMaterial != null)
         {
-            renderer.sharedMaterial = snapshot.sharedMaterial;
+            renderer.sharedMaterial = snapshot.visualState.wallMaterial;
         }
 
         Wall wallComponent = wallObject.GetComponent<Wall>();
@@ -387,8 +386,8 @@ public partial class UndoRedoManager : MonoBehaviour
             wallComponent = wallObject.AddComponent<Wall>();
         }
 
-        wallComponent.SetTopMaterial(snapshot.topMaterial);
-        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
+        wallComponent.SetTopMaterial(snapshot.visualState.topMaterial);
+        wallComponent.SetTopFaceOffset(snapshot.visualState.topFaceOffset);
         wallObject.name = snapshot.name;
         WallObjectFactory.ConfigureWall(
             wallObject,

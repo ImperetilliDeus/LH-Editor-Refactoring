@@ -10,6 +10,7 @@ internal readonly struct WallToolInputFrame
         bool leftReleasedThisFrame,
         bool leftPressed,
         bool rightPressedThisFrame,
+        bool deletePressedThisFrame,
         bool pointerOverUI)
     {
         IsAvailable = true;
@@ -18,6 +19,7 @@ internal readonly struct WallToolInputFrame
         LeftReleasedThisFrame = leftReleasedThisFrame;
         LeftPressed = leftPressed;
         RightPressedThisFrame = rightPressedThisFrame;
+        DeletePressedThisFrame = deletePressedThisFrame;
         PointerOverUI = pointerOverUI;
     }
 
@@ -29,6 +31,7 @@ internal readonly struct WallToolInputFrame
         LeftReleasedThisFrame = false;
         LeftPressed = false;
         RightPressedThisFrame = false;
+        DeletePressedThisFrame = false;
         PointerOverUI = false;
     }
 
@@ -38,5 +41,6 @@ internal readonly struct WallToolInputFrame
     public bool LeftReleasedThisFrame { get; }
     public bool LeftPressed { get; }
     public bool RightPressedThisFrame { get; }
+    public bool DeletePressedThisFrame { get; }
     public bool PointerOverUI { get; }
 }

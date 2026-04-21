@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-public class FurniturePlacementManager : MonoBehaviour
+public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 {
     private enum PlacementState
     {
@@ -50,16 +50,18 @@ public class FurniturePlacementManager : MonoBehaviour
     private float nextERotationTime;
     private bool isFurniturePlaceModeActive;
     private IEditorInputProvider inputProvider;
+    private EditorInputFrame lastInputFrame;
 
     private void Awake()
     {
-        inputProvider = new UnityEditorInputProvider();
+        inputProvider = EditorInputManager.Instance.InputProvider;
         propertyBlock = new MaterialPropertyBlock();
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
         BindModeEvents();
         SyncModeState();
+        EditorInputManager.Instance.RegisterHandler(EditorMode.FurniturePlace, this);
         ValidateConfiguration();
     }
 
@@ -80,10 +82,19 @@ public class FurniturePlacementManager : MonoBehaviour
         {
             return;
         }
+    }
 
-        HandleRotationInput();
-        HandlePointerInput();
-        HandleKeyboardActions();
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        lastInputFrame = inputFrame;
+        if (!isFurniturePlaceModeActive || targetCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        {
+            return;
+        }
+
+        HandleRotationInput(inputFrame);
+        HandlePointerInput(inputFrame);
+        HandleKeyboardActions(inputFrame);
     }
 
     public void BeginPlacement(FurnitureCatalogItem item)
@@ -123,7 +134,7 @@ public class FurniturePlacementManager : MonoBehaviour
         }
     }
 
-    private void HandlePointerInput()
+    private void HandlePointerInput(EditorInputFrame inputFrame)
     {
         if (!TryGetPlacementPoint(out Vector3 placementPoint, out _))
         {
@@ -135,7 +146,7 @@ public class FurniturePlacementManager : MonoBehaviour
             ApplyPreviewTransform(placementPoint, false);
         }
 
-        if (!inputProvider.WasPointerButtonPressedThisFrame(PointerButton.Left) || IsPointerOverUI())
+        if (!inputFrame.LeftPressedThisFrame || inputFrame.PointerOverUI)
         {
             return;
         }
@@ -153,57 +164,57 @@ public class FurniturePlacementManager : MonoBehaviour
         }
     }
 
-    private void HandleRotationInput()
+    private void HandleRotationInput(EditorInputFrame inputFrame)
     {
         if (state == PlacementState.Idle || inputProvider == null)
         {
             return;
         }
 
-        if (inputProvider.WasKeyPressedThisFrame(Key.Q))
+        if (inputFrame.RotateNegativePressedThisFrame)
         {
             RotateByStep(-rotationStepDegrees);
             nextQRotationTime = Time.unscaledTime + rotationRepeatDelay;
         }
-        else if (inputProvider.IsKeyPressed(Key.Q) && Time.unscaledTime >= nextQRotationTime)
+        else if (inputFrame.RotateNegativePressed && Time.unscaledTime >= nextQRotationTime)
         {
             RotateByStep(-rotationStepDegrees);
             nextQRotationTime = Time.unscaledTime + rotationRepeatInterval;
         }
-        else if (!inputProvider.IsKeyPressed(Key.Q))
+        else if (!inputFrame.RotateNegativePressed)
         {
             nextQRotationTime = 0f;
         }
 
-        if (inputProvider.WasKeyPressedThisFrame(Key.E))
+        if (inputFrame.RotatePositivePressedThisFrame)
         {
             RotateByStep(rotationStepDegrees);
             nextERotationTime = Time.unscaledTime + rotationRepeatDelay;
         }
-        else if (inputProvider.IsKeyPressed(Key.E) && Time.unscaledTime >= nextERotationTime)
+        else if (inputFrame.RotatePositivePressed && Time.unscaledTime >= nextERotationTime)
         {
             RotateByStep(rotationStepDegrees);
             nextERotationTime = Time.unscaledTime + rotationRepeatInterval;
         }
-        else if (!inputProvider.IsKeyPressed(Key.E))
+        else if (!inputFrame.RotatePositivePressed)
         {
             nextERotationTime = 0f;
         }
     }
 
-    private void HandleKeyboardActions()
+    private void HandleKeyboardActions(EditorInputFrame inputFrame)
     {
         if (inputProvider == null)
         {
             return;
         }
 
-        if (inputProvider.WasKeyPressedThisFrame(Key.Escape))
+        if (inputFrame.EscapePressedThisFrame)
         {
             CancelCurrentPlacement(false);
         }
 
-        if (inputProvider.WasKeyPressedThisFrame(Key.Delete) && state == PlacementState.PlacedSelected && activeInstance != null)
+        if (inputFrame.DeletePressedThisFrame && state == PlacementState.PlacedSelected && activeInstance != null)
         {
             FurnitureInstance target = activeInstance;
             ClearSelectionState();
@@ -392,7 +403,7 @@ public class FurniturePlacementManager : MonoBehaviour
     private bool TryPickFurniture(out FurnitureInstance pickedInstance)
     {
         pickedInstance = null;
-        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        if (!TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
         {
             return false;
         }
@@ -446,7 +457,7 @@ public class FurniturePlacementManager : MonoBehaviour
         point = Vector3.zero;
         room = null;
 
-        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        if (!TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
         {
             return false;
         }
@@ -694,9 +705,21 @@ public class FurniturePlacementManager : MonoBehaviour
         Debug.Log(message, activeInstance);
     }
 
-    private bool IsPointerOverUI()
+    private bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition)
     {
-        return inputProvider != null && inputProvider.IsPointerOverUI(EventSystem.current);
+        if (lastInputFrame.IsPointerAvailable)
+        {
+            pointerScreenPosition = lastInputFrame.PointerScreenPosition;
+            return true;
+        }
+
+        if (inputProvider != null && inputProvider.TryGetPointerScreenPosition(out pointerScreenPosition))
+        {
+            return true;
+        }
+
+        pointerScreenPosition = Vector2.zero;
+        return false;
     }
 
     private void ResolveReferences()
@@ -759,6 +782,10 @@ public class FurniturePlacementManager : MonoBehaviour
     private void OnDestroy()
     {
         UnbindModeEvents();
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterHandler(EditorMode.FurniturePlace, this);
+        }
     }
 
     private void EnsureFurnitureRoot()

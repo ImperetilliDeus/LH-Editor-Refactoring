@@ -31,7 +31,7 @@ internal sealed class WallDrawTool : IWallTool
 
         if (inputFrame.RightPressedThisFrame)
         {
-            return WallToolRequest.ActivateIdle;
+            return WallToolRequest.ActivateEdit;
         }
 
         context.UpdatePreviewWallState();

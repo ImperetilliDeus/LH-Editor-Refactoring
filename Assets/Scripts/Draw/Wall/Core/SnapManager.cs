@@ -45,7 +45,7 @@ public class SnapManager : MonoBehaviour
 
     private void Awake()
     {
-        inputProvider = new UnityEditorInputProvider();
+        inputProvider = EditorInputManager.Instance.InputProvider;
         EnsureSpatialHash();
     }
 

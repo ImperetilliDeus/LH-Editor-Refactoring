@@ -3,8 +3,9 @@ using UnityEngine;
 internal sealed class WallToolController
 {
     private readonly IWallToolContext context;
-    private readonly IWallTool idleTool;
+    private readonly IWallTool editTool;
     private readonly IWallTool drawTool;
+    private readonly IWallTool deleteTool;
     private readonly float doubleClickThreshold;
 
     private IWallTool activeTool;
@@ -15,9 +16,10 @@ internal sealed class WallToolController
         this.context = context;
         this.doubleClickThreshold = Mathf.Max(0.05f, doubleClickThreshold);
 
-        idleTool = new WallIdleTool(context);
+        editTool = new WallEditTool(context);
         drawTool = new WallDrawTool(context);
-        SetActiveTool(idleTool);
+        deleteTool = new WallDeleteTool(context);
+        SetActiveTool(editTool);
     }
 
     public void HandleInput(WallToolInputFrame inputFrame)
@@ -30,18 +32,21 @@ internal sealed class WallToolController
         WallToolRequest request = activeTool.HandleInput(inputFrame);
         switch (request)
         {
-            case WallToolRequest.ActivateIdle:
-                SetActiveTool(idleTool);
+            case WallToolRequest.ActivateEdit:
+                SetActiveTool(editTool);
                 break;
             case WallToolRequest.ActivateDraw:
                 TryActivateDrawTool();
                 break;
+            case WallToolRequest.ActivateDelete:
+                ActivateDeleteTool();
+                break;
         }
     }
 
-    public void ActivateIdleTool()
+    public void ActivateEditTool()
     {
-        SetActiveTool(idleTool);
+        SetActiveTool(editTool);
     }
 
     private void TryActivateDrawTool()
@@ -68,5 +73,11 @@ internal sealed class WallToolController
         activeTool?.Exit();
         activeTool = nextTool;
         activeTool.Enter();
+    }
+
+    private void ActivateDeleteTool()
+    {
+        SetActiveTool(deleteTool);
+        SetActiveTool(editTool);
     }
 }

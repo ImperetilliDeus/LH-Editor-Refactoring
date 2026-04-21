@@ -1,9 +1,5 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
-using System.Collections.Generic;
-
-public class CameraManager : MonoBehaviour
+public class CameraManager : MonoBehaviour, IEditorModeInputHandler
 {
     [SerializeField] private Camera MainCamera;
     [SerializeField] private GameObject Grid;
@@ -18,6 +14,7 @@ public class CameraManager : MonoBehaviour
     private bool hasGridBounds;
     private bool isPanning;
     private Vector3 lastMouseWorldPoint;
+    private IEditorInputProvider inputProvider;
 
     private void Reset()
     {
@@ -37,9 +34,11 @@ public class CameraManager : MonoBehaviour
             return;
         }
 
+        inputProvider = EditorInputManager.Instance.InputProvider;
         RefreshGridBounds();
         ClampZoom();
         ClampCameraPosition();
+        EditorInputManager.Instance.RegisterGlobalHandler(this);
     }
 
     private void OnValidate()
@@ -50,36 +49,42 @@ public class CameraManager : MonoBehaviour
         maxZoomSize = Mathf.Max(minZoomSize, maxZoomSize);
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        if (MainCamera == null || Mouse.current == null)
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterGlobalHandler(this);
+        }
+    }
+
+    public void HandleEditorInput(EditorInputFrame inputFrame)
+    {
+        if (MainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
 
-        HandleZoom();
-        HandlePan();
+        HandleZoom(inputFrame);
+        HandlePan(inputFrame);
         ClampZoom();
         ClampCameraPosition();
     }
 
-    private void HandlePan()
+    private void HandlePan(EditorInputFrame inputFrame)
     {
-        Mouse mouse = Mouse.current;
-
-        if (mouse.middleButton.wasPressedThisFrame)
+        if (inputFrame.MiddlePressedThisFrame)
         {
             isPanning = TryGetMouseWorldPoint(out lastMouseWorldPoint);
             return;
         }
 
-        if (mouse.middleButton.wasReleasedThisFrame)
+        if (inputFrame.MiddleReleasedThisFrame)
         {
             isPanning = false;
             return;
         }
 
-        if (!isPanning || !mouse.middleButton.isPressed)
+        if (!isPanning || !inputFrame.MiddlePressed)
         {
             return;
         }
@@ -101,42 +106,25 @@ public class CameraManager : MonoBehaviour
         }
     }
 
-    private void HandleZoom()
+    private void HandleZoom(EditorInputFrame inputFrame)
     {
         if (!MainCamera.orthographic)
         {
             return;
         }
 
-        if (IsPointerOverUI())
+        if (inputFrame.PointerOverUI)
         {
             return;
         }
 
-        float scrollInput = Mouse.current.scroll.ReadValue().y;
+        float scrollInput = inputFrame.ScrollDeltaY;
         if (Mathf.Approximately(scrollInput, 0f))
         {
             return;
         }
 
         MainCamera.orthographicSize -= scrollInput * zoomSpeed * Time.unscaledDeltaTime;
-    }
-
-    private static bool IsPointerOverUI()
-    {
-        if (EventSystem.current == null || Mouse.current == null)
-        {
-            return false;
-        }
-
-        PointerEventData pointerData = new PointerEventData(EventSystem.current)
-        {
-            position = Mouse.current.position.ReadValue(),
-        };
-
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(pointerData, results);
-        return results.Count > 0;
     }
 
     private void RefreshGridBounds()
@@ -176,7 +164,11 @@ public class CameraManager : MonoBehaviour
             return false;
         }
 
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 mousePosition))
+        {
+            return false;
+        }
+
         Ray mouseRay = MainCamera.ScreenPointToRay(mousePosition);
         if (!gridPlane.Raycast(mouseRay, out float enter))
         {

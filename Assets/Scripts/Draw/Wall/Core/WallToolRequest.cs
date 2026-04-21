@@ -1,6 +1,7 @@
 internal enum WallToolRequest
 {
     None,
-    ActivateIdle,
+    ActivateEdit,
     ActivateDraw,
+    ActivateDelete,
 }

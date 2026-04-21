@@ -1,5 +1,17 @@
 internal static class PointerInputFrameUtility
 {
+    public static EditorPointerFrame BuildPointerFrame(EditorInputFrame inputFrame)
+    {
+        return inputFrame.IsPointerAvailable
+            ? new EditorPointerFrame(
+                inputFrame.PointerScreenPosition,
+                inputFrame.LeftPressedThisFrame,
+                inputFrame.LeftReleasedThisFrame,
+                inputFrame.LeftPressed,
+                inputFrame.RightPressedThisFrame)
+            : EditorPointerFrame.Unavailable;
+    }
+
     public static bool TryBuildPointerFrame(IEditorInputProvider inputProvider, out EditorPointerFrame pointerFrame)
     {
         pointerFrame = EditorPointerFrame.Unavailable;
@@ -39,6 +51,8 @@ internal static class PointerInputFrameUtility
             pointerFrame.LeftReleasedThisFrame,
             pointerFrame.LeftPressed,
             pointerFrame.RightPressedThisFrame,
+            inputProvider.WasKeyPressedThisFrame(UnityEngine.InputSystem.Key.Delete) ||
+            inputProvider.WasKeyPressedThisFrame(UnityEngine.InputSystem.Key.Backspace),
             pointerOverUI);
         return true;
     }

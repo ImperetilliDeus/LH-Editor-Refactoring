@@ -8,6 +8,7 @@
 UserSettings/
 MemoryCaptures/
 Recordings/
+_library_backups/
 
 # Addressables / asset import artifacts
 Assets/AddressableAssetsData/*/*.bin*

@@ -140,8 +140,7 @@ public partial class WallOpeningPlacementManager
             wallThickness = container != null ? container.WallThickness : 0.1f,
             wallHeight = container != null ? container.WallHeight : 1f,
             centerY = container != null ? container.CenterY : 0.5f,
-            wallMaterial = container != null ? container.WallMaterial : null,
-            wallTopMaterial = container != null ? container.WallTopMaterial : null,
+            visualState = container != null ? container.VisualState : default,
             outerStartVertexId = container != null ? container.OuterStartVertexId : 0,
             outerEndVertexId = container != null ? container.OuterEndVertexId : 0,
             suppressOuterStartHandle = container != null && container.SuppressOuterStartHandle,
@@ -151,22 +150,10 @@ public partial class WallOpeningPlacementManager
 
     private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(UndoRedoManager.OpeningLayoutSnapshot snapshot)
     {
-        Vector3 center = (snapshot.wallStart + snapshot.wallEnd) * 0.5f;
-        Vector3 direction = snapshot.wallEnd - snapshot.wallStart;
-        direction.y = 0f;
-        float length = direction.magnitude;
-        Quaternion rotation = length > MinimumWallSegmentLength
-            ? Quaternion.LookRotation(direction / length, Vector3.up)
-            : Quaternion.identity;
-
         return new UndoRedoManager.WallStateSnapshot
         {
             name = snapshot.layoutName,
-            position = new Vector3(center.x, snapshot.centerY, center.z),
-            rotation = rotation,
-            scale = new Vector3(snapshot.wallThickness, snapshot.wallHeight, Mathf.Max(length, MinimumWallSegmentLength)),
-            sharedMaterial = snapshot.wallMaterial,
-            topMaterial = snapshot.wallTopMaterial,
+            visualState = snapshot.visualState,
             wallData = new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY),
             startVertexId = snapshot.outerStartVertexId,
             endVertexId = snapshot.outerEndVertexId,
@@ -186,8 +173,7 @@ public partial class WallOpeningPlacementManager
             snapshot.name,
             wallRoot,
             cachedCubeMesh,
-            snapshot.sharedMaterial,
-            snapshot.topMaterial);
+            snapshot.visualState);
         if (!WallObjectFactory.ConfigureWall(
                 wallObject,
                 snapshot.wallData,
@@ -235,8 +221,7 @@ public partial class WallOpeningPlacementManager
             geometry.wallThickness,
             geometry.wallHeight,
             geometry.centerY,
-            geometry.wallMaterial,
-            geometry.wallTopMaterial,
+            geometry.visualState,
             geometry.outerStartVertexId,
             geometry.outerEndVertexId,
             selectedWall.SuppressStartHandle,
@@ -266,7 +251,6 @@ public partial class WallOpeningPlacementManager
             wallDirection /= wallLength;
         }
 
-        MeshRenderer wallRenderer = wall.GetComponent<MeshRenderer>();
         float wallHeight = wall.transform.localScale.y;
         return new WallGeometryData
         {
@@ -279,8 +263,7 @@ public partial class WallOpeningPlacementManager
             centerY = wall.transform.position.y,
             outerStartVertexId = wall.StartVertexId,
             outerEndVertexId = wall.EndVertexId,
-            wallMaterial = wallRenderer != null ? wallRenderer.sharedMaterial : null,
-            wallTopMaterial = wall.GetTopMaterial(),
+            visualState = WallVisualState.Capture(wall.gameObject),
         };
     }
 
@@ -296,7 +279,7 @@ public partial class WallOpeningPlacementManager
         int endVertexId,
         bool suppressStartHandle,
         bool suppressEndHandle,
-        Material wallMaterial)
+        WallVisualState visualState)
     {
         Vector3 direction = endPoint - startPoint;
         direction.y = 0f;
@@ -305,13 +288,11 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        Material topMaterial = parent.TryGetComponent(out WallOpeningContainer container) ? container.WallTopMaterial : null;
         GameObject wallObject = WallObjectFactory.CreateWallObject(
             segmentName,
             parent,
             cachedCubeMesh,
-            wallMaterial,
-            topMaterial);
+            visualState);
         bool applied = WallObjectFactory.ConfigureWall(
             wallObject,
             new WallData(startPoint, endPoint, thickness, height, centerY),

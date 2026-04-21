@@ -7,6 +7,8 @@ public interface IEditorInputProvider
 {
     bool IsPointerAvailable { get; }
     bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition);
+    bool TryGetPointerDelta(out Vector2 pointerDelta);
+    float GetScrollDeltaY();
     bool IsPointerOverUI(EventSystem eventSystem, List<RaycastResult> raycastResults = null);
     bool WasPointerButtonPressedThisFrame(PointerButton button);
     bool WasPointerButtonReleasedThisFrame(PointerButton button);

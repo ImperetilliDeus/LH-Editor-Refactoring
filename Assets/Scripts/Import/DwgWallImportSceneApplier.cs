@@ -150,8 +150,12 @@ public static class DwgWallImportSceneApplier
             "DWG_Wall",
             context.WallRoot,
             context.WallMesh,
-            context.WallMaterial,
-            context.TopMaterial);
+            new WallVisualState
+            {
+                wallMaterial = context.WallMaterial,
+                topMaterial = context.TopMaterial,
+                topFaceOffset = Wall.DefaultTopFaceOffset,
+            });
 
         DwgImportedWallOwnership ownership = wallObject.AddComponent<DwgImportedWallOwnership>();
         ownership.SetImporterId(context.ImporterId);

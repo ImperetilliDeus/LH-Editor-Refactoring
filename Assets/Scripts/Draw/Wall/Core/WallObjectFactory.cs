@@ -6,9 +6,7 @@ public static class WallObjectFactory
         string name,
         Transform parent,
         Mesh mesh,
-        Material wallMaterial,
-        Material topMaterial,
-        float topFaceOffset = Wall.DefaultTopFaceOffset)
+        WallVisualState visualState)
     {
         GameObject wallObject = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider));
         if (parent != null)
@@ -25,9 +23,9 @@ public static class WallObjectFactory
         }
 
         MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null && wallMaterial != null)
+        if (renderer != null && visualState.wallMaterial != null)
         {
-            renderer.sharedMaterial = wallMaterial;
+            renderer.sharedMaterial = visualState.wallMaterial;
         }
 
         Wall wall = wallObject.GetComponent<Wall>();
@@ -36,8 +34,8 @@ public static class WallObjectFactory
             wall = wallObject.AddComponent<Wall>();
         }
 
-        wall.SetTopMaterial(topMaterial);
-        wall.SetTopFaceOffset(topFaceOffset);
+        wall.SetTopMaterial(visualState.topMaterial);
+        wall.SetTopFaceOffset(visualState.topFaceOffset);
         return wallObject;
     }
 
