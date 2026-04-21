@@ -145,6 +145,12 @@ public partial class UndoRedoManager
         public WallStateSnapshot after;
     }
 
+    public struct OpeningLayoutChangeRecord
+    {
+        public OpeningLayoutSnapshot before;
+        public OpeningLayoutSnapshot after;
+    }
+
     public struct OpeningStateSnapshot
     {
         public WallOpeningPlacementManager.OpeningPlacementType type;

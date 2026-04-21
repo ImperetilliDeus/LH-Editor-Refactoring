@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 public partial class DrawManager : MonoBehaviour
@@ -49,9 +48,9 @@ public partial class DrawManager : MonoBehaviour
     private readonly List<SnapManager.WallSnapSegment> wallSegmentSnapCandidates = new List<SnapManager.WallSnapSegment>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
-    private IDrawManagerEditorState currentEditorState;
-    private DrawManagerIdleState idleEditorState;
-    private DrawManagerWallCreationState wallCreationEditorState;
+    private IWallTool activeTool;
+    private WallIdleTool idleTool;
+    private WallDrawTool drawTool;
     private bool isDefaultModeActive = true;
 
     public bool IsWallCreationMode => isWallCreationMode;
@@ -77,7 +76,7 @@ public partial class DrawManager : MonoBehaviour
         EnsureCachedResources();
         previewMaterial = CreateWallMaterial(previewColor, true);
         wallMaterial = CreateWallMaterial(wallColor, false);
-        InitializeEditorStates();
+        InitializeTools();
         BindModeEvents();
         SyncModeState();
         ValidateConfiguration();
@@ -100,12 +99,12 @@ public partial class DrawManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isDefaultModeActive || mainCamera == null || Mouse.current == null)
+        if (!isDefaultModeActive || mainCamera == null)
         {
             return;
         }
 
-        currentEditorState?.Tick();
+        activeTool?.HandleInput(BuildToolInputFrame());
     }
 
     private void BindModeEvents()
@@ -139,7 +138,7 @@ public partial class DrawManager : MonoBehaviour
         bool shouldBeActive = mode == EditorMode.Default;
         if (!shouldBeActive && isWallCreationMode)
         {
-            TransitionToState(idleEditorState);
+            ActivateIdleTool();
         }
 
         isDefaultModeActive = shouldBeActive;
@@ -210,7 +209,12 @@ public partial class DrawManager : MonoBehaviour
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (!EditorPointerInput.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!drawingPlane.Raycast(mouseRay, out float enter))
         {
             if (isWallCreationMode && handleManager != null)
@@ -278,21 +282,21 @@ public partial class DrawManager : MonoBehaviour
         return true;
     }
 
-    private bool IsPointerOverUI()
+    private bool IsPointerOverUI(Vector2 pointerScreenPosition)
     {
         if (EventSystem.current == null)
         {
             return false;
         }
 
-        if (Mouse.current != null && EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId))
+        if (EditorPointerInput.TryIsPointerOverUI(EventSystem.current))
         {
             return true;
         }
 
         PointerEventData eventData = new PointerEventData(EventSystem.current)
         {
-            position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero,
+            position = pointerScreenPosition,
         };
 
         uiRaycastResults.Clear();
@@ -363,41 +367,42 @@ public partial class DrawManager : MonoBehaviour
             wall => wall != null && wall.transform == previewTransform);
     }
 
-    private void InitializeEditorStates()
+    private void InitializeTools()
     {
-        idleEditorState = new DrawManagerIdleState(this);
-        wallCreationEditorState = new DrawManagerWallCreationState(this);
-        TransitionToState(idleEditorState);
+        idleTool = new WallIdleTool(this);
+        drawTool = new WallDrawTool(this);
+        SetActiveTool(idleTool);
     }
 
-    private void TransitionToState(IDrawManagerEditorState nextState)
+    private void SetActiveTool(IWallTool nextTool)
     {
-        if (nextState == null || ReferenceEquals(currentEditorState, nextState))
+        if (nextTool == null || ReferenceEquals(activeTool, nextTool))
         {
             return;
         }
 
-        currentEditorState?.Exit();
-        currentEditorState = nextState;
-        currentEditorState.Enter();
+        activeTool?.Exit();
+        activeTool = nextTool;
+        activeTool.Enter();
     }
 
-    internal void TransitionToIdleState()
+    private WallToolInputFrame BuildToolInputFrame()
     {
-        TransitionToState(idleEditorState);
+        if (!EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
+        {
+            return WallToolInputFrame.Unavailable;
+        }
+
+        return new WallToolInputFrame(
+            pointerFrame.ScreenPosition,
+            pointerFrame.LeftPressedThisFrame,
+            pointerFrame.LeftReleasedThisFrame,
+            pointerFrame.LeftPressed,
+            pointerFrame.RightPressedThisFrame,
+            IsPointerOverUI(pointerFrame.ScreenPosition));
     }
 
-    internal bool IsHandleInputLockedState()
-    {
-        return handleManager != null && handleManager.IsDraggingHandle;
-    }
-
-    internal bool IsPointerOverUIState()
-    {
-        return IsPointerOverUI();
-    }
-
-    internal bool TryStartWallCreationModeState()
+    private bool TryEnterWallDrawTool()
     {
         float currentTime = Time.unscaledTime;
         bool isDoubleClick = lastLeftClickTime >= 0f && currentTime - lastLeftClickTime <= doubleClickThreshold;
@@ -409,8 +414,30 @@ public partial class DrawManager : MonoBehaviour
         }
 
         currentSegmentStart = startPoint;
-        TransitionToState(wallCreationEditorState);
+        SetActiveTool(drawTool);
         return true;
+    }
+
+    internal void ActivateIdleTool()
+    {
+        SetActiveTool(idleTool);
+    }
+
+    internal bool IsHandleInputLocked()
+    {
+        return handleManager != null && handleManager.IsDraggingHandle;
+    }
+
+    internal HandleManager HandleManagerRef => handleManager;
+
+    internal bool TryConsumeIdleSelectionPress()
+    {
+        return wallSelectionManager != null && wallSelectionManager.TryConsumeIdleLeftPress();
+    }
+
+    internal bool TryActivateDrawTool()
+    {
+        return TryEnterWallDrawTool();
     }
 
     internal void SetWallCreationModeActive(bool value)
@@ -441,105 +468,5 @@ public partial class DrawManager : MonoBehaviour
     internal void ExitWallCreationModeState()
     {
         ExitWallCreationMode();
-    }
-
-    internal HandleManager HandleManagerRef => handleManager;
-    internal WallSelectionManager WallSelectionManagerRef => wallSelectionManager;
-
-}
-
-internal interface IDrawManagerEditorState
-{
-    void Enter();
-    void Exit();
-    void Tick();
-}
-
-internal sealed class DrawManagerIdleState : IDrawManagerEditorState
-{
-    private readonly DrawManager owner;
-
-    public DrawManagerIdleState(DrawManager owner)
-    {
-        this.owner = owner;
-    }
-
-    public void Enter()
-    {
-        owner.SetWallCreationModeActive(false);
-        if (owner.HandleManagerRef != null)
-        {
-            owner.HandleManagerRef.ClearPreviewSnappedHandle();
-        }
-    }
-
-    public void Exit()
-    {
-    }
-
-    public void Tick()
-    {
-        if (owner.IsHandleInputLockedState())
-        {
-            return;
-        }
-
-        if (owner.IsPointerOverUIState() || !Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            return;
-        }
-
-        if (owner.WallSelectionManagerRef != null && owner.WallSelectionManagerRef.TryConsumeIdleLeftPress())
-        {
-            return;
-        }
-
-        owner.TryStartWallCreationModeState();
-    }
-}
-
-internal sealed class DrawManagerWallCreationState : IDrawManagerEditorState
-{
-    private readonly DrawManager owner;
-
-    public DrawManagerWallCreationState(DrawManager owner)
-    {
-        this.owner = owner;
-    }
-
-    public void Enter()
-    {
-        owner.SetWallCreationModeActive(true);
-        if (owner.IsPreviewWallEnabled())
-        {
-            owner.EnsurePreviewWallState();
-            owner.UpdatePreviewWallState();
-        }
-    }
-
-    public void Exit()
-    {
-        owner.ExitWallCreationModeState();
-    }
-
-    public void Tick()
-    {
-        if (owner.IsHandleInputLockedState())
-        {
-            return;
-        }
-
-        bool isPointerOverUI = owner.IsPointerOverUIState();
-        if (Mouse.current.rightButton.wasPressedThisFrame)
-        {
-            owner.TransitionToIdleState();
-            return;
-        }
-
-        owner.UpdatePreviewWallState();
-        if (!isPointerOverUI && Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            owner.CommitCurrentSegmentState();
-        }
     }
 }

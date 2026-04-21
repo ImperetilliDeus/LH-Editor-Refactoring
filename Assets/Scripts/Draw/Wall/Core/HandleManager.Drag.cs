@@ -1,25 +1,29 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public partial class HandleManager
 {
-    private void HandleDraggingInput()
+    private void HandleDraggingInput(EditorPointerFrame pointerFrame)
     {
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        if (!pointerFrame.IsAvailable)
+        {
+            return;
+        }
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        Vector2 mousePosition = pointerFrame.ScreenPosition;
+
+        if (pointerFrame.LeftPressedThisFrame)
         {
             TryBeginPendingDrag(mousePosition);
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (pointerFrame.LeftReleasedThisFrame)
         {
             EndHandleDrag();
             return;
         }
 
-        if (pendingGroup != null && draggingGroup == null && Mouse.current.leftButton.isPressed)
+        if (pendingGroup != null && draggingGroup == null && pointerFrame.LeftPressed)
         {
             float thresholdSqr = clickAllowanceSensitivityPixels * clickAllowanceSensitivityPixels;
             float movedSqr = (mousePosition - pendingStartMousePosition).sqrMagnitude;
@@ -34,13 +38,13 @@ public partial class HandleManager
             return;
         }
 
-        if (!Mouse.current.leftButton.isPressed)
+        if (!pointerFrame.LeftPressed)
         {
             EndHandleDrag();
             return;
         }
 
-        if (!TryGetMouseWorldPoint(out Vector3 dragPoint))
+        if (!TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 dragPoint))
         {
             return;
         }
@@ -140,34 +144,13 @@ public partial class HandleManager
 
         draggingGroup = TryMergeDraggedGroupToNearby(draggingGroup);
 
-        if (undoRedoManager != null)
+        int draggedVertexId = draggingGroup.vertexId;
+        BuildVertexDragStateChangeRecords();
+        if (undoRedoManager != null && dragStateChangeRecords.Count > 0)
         {
-            dragStateChangeRecords.Clear();
-
-            foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in dragStartStates)
-            {
-                GameObject wallObject = pair.Key;
-                if (wallObject == null)
-                {
-                    continue;
-                }
-
-                UndoRedoManager.WallStateSnapshot before = pair.Value;
-                UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-
-                if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
-                {
-                    continue;
-                }
-
-                dragStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = before,
-                    after = after,
-                });
-            }
-
-            undoRedoManager.RecordMoveVertexGroup(draggingGroup.vertexId, dragStateChangeRecords);
+            undoRedoManager.ExecuteCommand(
+                new VertexGroupMoveCommand(draggedVertexId, dragStateChangeRecords),
+                alreadyExecuted: true);
         }
 
         SetGroupColor(draggingGroup, GetBaseColor(draggingGroup));
@@ -179,6 +162,34 @@ public partial class HandleManager
         RoomTopologyEvents.RequestRefreshAll();
         EditorVisualEvents.RequestTopViewRefresh();
         handlePositionsDirty = true;
+    }
+
+    private void BuildVertexDragStateChangeRecords()
+    {
+        dragStateChangeRecords.Clear();
+
+        foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in dragStartStates)
+        {
+            GameObject wallObject = pair.Key;
+            if (wallObject == null)
+            {
+                continue;
+            }
+
+            UndoRedoManager.WallStateSnapshot before = pair.Value;
+            UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
+
+            if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
+            {
+                continue;
+            }
+
+            dragStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
+            {
+                before = before,
+                after = after,
+            });
+        }
     }
 
     private void ApplyVertexDrag(VertexGroup group, Vector3 newPoint)

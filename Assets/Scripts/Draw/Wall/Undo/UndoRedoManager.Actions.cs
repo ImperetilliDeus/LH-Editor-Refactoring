@@ -3,13 +3,7 @@ using UnityEngine;
 
 public partial class UndoRedoManager
 {
-    private interface IUndoableAction
-    {
-        void Undo(UndoRedoManager context);
-        void Redo(UndoRedoManager context);
-    }
-
-    private class WallCreateAction : IUndoableAction
+    private class WallCreateAction : IEditorCommand
     {
         private GameObject wallObject;
         private readonly WallStateSnapshot snapshot;
@@ -18,6 +12,11 @@ public partial class UndoRedoManager
         {
             wallObject = createdWall;
             snapshot = WallStateSnapshot.Capture(createdWall);
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
         }
 
         public void Undo(UndoRedoManager context)
@@ -44,7 +43,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class MoveVertexGroupAction : IUndoableAction
+    private class MoveVertexGroupAction : IEditorCommand
     {
         private readonly int vertexId;
         private readonly List<WallStateChangeRecord> records;
@@ -55,6 +54,11 @@ public partial class UndoRedoManager
             this.records = records;
         }
 
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
+        }
+
         public void Undo(UndoRedoManager context)
         {
             context.ApplyWallStateChanges(records, false);
@@ -66,7 +70,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class MoveConnectedWallsAction : IUndoableAction
+    private class MoveConnectedWallsAction : IEditorCommand
     {
         private readonly List<WallStateChangeRecord> records;
 
@@ -75,6 +79,11 @@ public partial class UndoRedoManager
             this.records = records;
         }
 
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
+        }
+
         public void Undo(UndoRedoManager context)
         {
             context.ApplyWallStateChanges(records, false);
@@ -86,7 +95,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class RoomCreateAction : IUndoableAction
+    private class RoomCreateAction : IEditorCommand
     {
         private Room room;
         private readonly List<WallReference> wallReferences;
@@ -120,6 +129,11 @@ public partial class UndoRedoManager
                     manualVertices.Add(vertex);
                 }
             }
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
         }
 
         public void Undo(UndoRedoManager context)
@@ -185,7 +199,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class WallSplitAction : IUndoableAction
+    private class WallSplitAction : IEditorCommand
     {
         private readonly WallStateSnapshot originalSnapshot;
         private readonly WallStateSnapshot firstSplitSnapshot;
@@ -201,6 +215,11 @@ public partial class UndoRedoManager
             secondSplitSnapshot = WallStateSnapshot.Capture(secondSplitWall);
             restoredFirstSplitWall = firstSplitWall;
             restoredSecondSplitWall = secondSplitWall;
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
         }
 
         public void Undo(UndoRedoManager context)
@@ -283,7 +302,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class RoomReplaceAction : IUndoableAction
+    private class RoomReplaceAction : IEditorCommand
     {
         private struct RoomSnapshot
         {
@@ -304,6 +323,11 @@ public partial class UndoRedoManager
             createdSnapshots = CaptureRoomSnapshots(createdRooms);
             deletedRuntimeRooms = deletedRooms != null ? new List<Room>(deletedRooms) : new List<Room>();
             createdRuntimeRooms = createdRooms != null ? new List<Room>(createdRooms) : new List<Room>();
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
         }
 
         public void Undo(UndoRedoManager context)
@@ -441,7 +465,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class OpeningLayoutChangeAction : IUndoableAction
+    private class OpeningLayoutChangeAction : IEditorCommand
     {
         private readonly OpeningLayoutSnapshot before;
         private readonly OpeningLayoutSnapshot after;
@@ -450,6 +474,11 @@ public partial class UndoRedoManager
         {
             this.before = before;
             this.after = after;
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
         }
 
         public void Undo(UndoRedoManager context)
@@ -463,7 +492,7 @@ public partial class UndoRedoManager
         }
     }
 
-    private class DeleteLayoutsAction : IUndoableAction
+    private class DeleteLayoutsAction : IEditorCommand
     {
         private struct RoomSnapshot
         {
@@ -520,6 +549,11 @@ public partial class UndoRedoManager
 
                 deletedRooms.Add(snapshot);
             }
+        }
+
+        public void Execute(UndoRedoManager context)
+        {
+            Redo(context);
         }
 
         public void Undo(UndoRedoManager context)

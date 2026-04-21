@@ -86,6 +86,7 @@ public partial class WallSelectionManager : MonoBehaviour
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Wall> rootWallsCache = new List<Wall>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> moveStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
+    private readonly List<UndoRedoManager.OpeningLayoutChangeRecord> moveOpeningChangeRecords = new List<UndoRedoManager.OpeningLayoutChangeRecord>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
     private readonly HashSet<WallOpeningContainer> processedSelectionUIContainers = new HashSet<WallOpeningContainer>();
     private Mesh cachedCubeMesh;
@@ -176,7 +177,7 @@ public partial class WallSelectionManager : MonoBehaviour
 
         PointerEventData eventData = new PointerEventData(EventSystem.current)
         {
-            position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero,
+            position = EditorPointerInput.GetPointerScreenPositionOrDefault(),
         };
 
         uiRaycastResults.Clear();
@@ -263,7 +264,7 @@ public partial class WallSelectionManager : MonoBehaviour
 
     private void Update()
     {
-        if (Mouse.current == null)
+        if (!EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
         {
             return;
         }
@@ -271,7 +272,7 @@ public partial class WallSelectionManager : MonoBehaviour
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
         if (currentMode == EditorMode.DetailEdit)
         {
-            UpdateDetailEditMode();
+            UpdateDetailEditMode(pointerFrame);
             return;
         }
 
@@ -290,7 +291,7 @@ public partial class WallSelectionManager : MonoBehaviour
 
         RefreshWallSelectionUIPositions();
 
-        if (selectedWall != null && Mouse.current.rightButton.wasPressedThisFrame)
+        if (selectedWall != null && pointerFrame.RightPressedThisFrame)
         {
             if (drawManager == null || !drawManager.IsWallCreationMode)
             {
@@ -311,7 +312,7 @@ public partial class WallSelectionManager : MonoBehaviour
 
         SetSelectUIVisible(false);
 
-        if (pendingWallDrag && !Mouse.current.leftButton.isPressed)
+        if (pendingWallDrag && !pointerFrame.LeftPressed)
         {
             FinalizeMoveIfNeeded();
             ResetDragState();
@@ -337,7 +338,7 @@ public partial class WallSelectionManager : MonoBehaviour
 
         if (pendingWallDrag && !isDraggingWall)
         {
-            Vector2 currentMouse = Mouse.current.position.ReadValue();
+            Vector2 currentMouse = pointerFrame.ScreenPosition;
             float movedSqr = (currentMouse - pendingStartMousePosition).sqrMagnitude;
             float thresholdSqr = dragStartThresholdPixels * dragStartThresholdPixels;
             if (movedSqr >= thresholdSqr)
@@ -355,7 +356,7 @@ public partial class WallSelectionManager : MonoBehaviour
             return;
         }
 
-        if (!TryGetMouseWorldPoint(out Vector3 currentPoint))
+        if (!TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 currentPoint))
         {
             return;
         }
@@ -386,7 +387,17 @@ public partial class WallSelectionManager : MonoBehaviour
 
     public bool TryConsumeIdleLeftPress()
     {
-        if (mainCamera == null || Mouse.current == null)
+        if (!EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
+        {
+            return false;
+        }
+
+        return TryConsumeIdleLeftPress(pointerFrame);
+    }
+
+    internal bool TryConsumeIdleLeftPress(EditorPointerFrame pointerFrame)
+    {
+        if (mainCamera == null || !pointerFrame.IsAvailable)
         {
             return false;
         }
@@ -396,7 +407,7 @@ public partial class WallSelectionManager : MonoBehaviour
             return false;
         }
 
-        if (IsPointerOverUI())
+        if (IsPointerOverUI(pointerFrame.ScreenPosition))
         {
             return false;
         }
@@ -411,13 +422,13 @@ public partial class WallSelectionManager : MonoBehaviour
             return false;
         }
 
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        Vector2 mousePosition = pointerFrame.ScreenPosition;
         if (handleManager != null && handleManager.IsPointerOverHandle(mousePosition))
         {
             return false;
         }
 
-        if (!TryGetWallFromMouseRay(out GameObject hitWall))
+        if (!TryGetWallFromMouseRay(pointerFrame.ScreenPosition, out GameObject hitWall))
         {
             return false;
         }
@@ -427,7 +438,7 @@ public partial class WallSelectionManager : MonoBehaviour
         ResetDragState();
         SetSelectUIVisible(false);
 
-        if (TryGetMouseWorldPoint(out Vector3 worldPoint))
+        if (TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 worldPoint))
         {
             pendingWallDrag = true;
             pendingStartMousePosition = mousePosition;
@@ -438,11 +449,11 @@ public partial class WallSelectionManager : MonoBehaviour
         return true;
     }
 
-    private bool TryGetWallFromMouseRay(out GameObject wall)
+    private bool TryGetWallFromMouseRay(Vector2 pointerScreenPosition, out GameObject wall)
     {
         wall = null;
 
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray = mainCamera.ScreenPointToRay(pointerScreenPosition);
         int wallMask = LayerUtility.GetMaskOrDefault(LayerUtility.WallLayerName);
         if (!Physics.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity, wallMask))
         {
@@ -507,21 +518,21 @@ public partial class WallSelectionManager : MonoBehaviour
         return null;
     }
 
-    private bool IsPointerOverUI()
+    private bool IsPointerOverUI(Vector2 pointerScreenPosition)
     {
         if (EventSystem.current == null)
         {
             return false;
         }
 
-        if (Mouse.current != null && EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId))
+        if (EditorPointerInput.TryIsPointerOverUI(EventSystem.current))
         {
             return true;
         }
 
         PointerEventData eventData = new PointerEventData(EventSystem.current)
         {
-            position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero,
+            position = pointerScreenPosition,
         };
 
         uiRaycastResults.Clear();
@@ -529,61 +540,61 @@ public partial class WallSelectionManager : MonoBehaviour
         return uiRaycastResults.Count > 0;
     }
 
-    private void UpdateDetailEditMode()
+    private void UpdateDetailEditMode(EditorPointerFrame pointerFrame)
     {
         FinalizeMoveIfNeeded();
         ResetDragState();
         RefreshWallSelectionUIPositions();
 
-        if (Mouse.current.rightButton.wasPressedThisFrame)
+        if (pointerFrame.RightPressedThisFrame)
         {
             ClearAllSelectionState();
             return;
         }
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (pointerFrame.LeftPressedThisFrame)
         {
-            TryBeginDetailSelection();
+            TryBeginDetailSelection(pointerFrame);
         }
 
-        if (pendingMultiSelectDrag && Mouse.current.leftButton.isPressed)
+        if (pendingMultiSelectDrag && pointerFrame.LeftPressed)
         {
-            Vector2 currentMouse = Mouse.current.position.ReadValue();
+            Vector2 currentMouse = pointerFrame.ScreenPosition;
             float movedSqr = (currentMouse - multiSelectStartMousePosition).sqrMagnitude;
             if (movedSqr >= multiSelectDragThresholdPixels * multiSelectDragThresholdPixels)
             {
                 pendingMultiSelectDrag = false;
                 isMultiSelecting = true;
-                UpdateMultiSelectDrag();
+                UpdateMultiSelectDrag(pointerFrame);
             }
         }
 
-        if (isMultiSelecting && Mouse.current.leftButton.isPressed)
+        if (isMultiSelecting && pointerFrame.LeftPressed)
         {
-            UpdateMultiSelectDrag();
+            UpdateMultiSelectDrag(pointerFrame);
         }
 
-        if ((pendingMultiSelectDrag || isMultiSelecting) && Mouse.current.leftButton.wasReleasedThisFrame)
+        if ((pendingMultiSelectDrag || isMultiSelecting) && pointerFrame.LeftReleasedThisFrame)
         {
             FinishMultiSelectDrag();
         }
     }
 
-    private void TryBeginDetailSelection()
+    private void TryBeginDetailSelection(EditorPointerFrame pointerFrame)
     {
-        if (IsPointerOverUI())
+        if (IsPointerOverUI(pointerFrame.ScreenPosition))
         {
             return;
         }
 
         bool isModifierPressed = IsSelectionModifierPressed();
-        if (TryGetWallFromMouseRay(out GameObject hitWall))
+        if (TryGetWallFromMouseRay(pointerFrame.ScreenPosition, out GameObject hitWall))
         {
             HandleDetailWallClick(hitWall, isModifierPressed);
             return;
         }
 
-        if (!TryGetMouseWorldPoint(out Vector3 worldPoint))
+        if (!TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 worldPoint))
         {
             return;
         }
@@ -591,7 +602,7 @@ public partial class WallSelectionManager : MonoBehaviour
         addToSelectionOnDragStart = isModifierPressed;
         pendingMultiSelectDrag = true;
         isMultiSelecting = false;
-        multiSelectStartMousePosition = Mouse.current.position.ReadValue();
+        multiSelectStartMousePosition = pointerFrame.ScreenPosition;
         multiSelectStartWorldPoint = worldPoint;
         ShowMultiSelectBox();
         UpdateMultiSelectBox(multiSelectStartWorldPoint, multiSelectStartWorldPoint);
@@ -627,9 +638,9 @@ public partial class WallSelectionManager : MonoBehaviour
         RefreshSelectionVisuals();
     }
 
-    private void UpdateMultiSelectDrag()
+    private void UpdateMultiSelectDrag(EditorPointerFrame pointerFrame)
     {
-        if (!TryGetMouseWorldPoint(out Vector3 currentWorldPoint))
+        if (!TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 currentWorldPoint))
         {
             return;
         }
@@ -838,7 +849,7 @@ public partial class WallSelectionManager : MonoBehaviour
         CancelMultiSelectDrag();
     }
 
-    private bool TryGetMouseWorldPoint(out Vector3 worldPoint)
+    private bool TryGetMouseWorldPoint(Vector2 pointerScreenPosition, out Vector3 worldPoint)
     {
         worldPoint = Vector3.zero;
         if (!hasDragPlane || mainCamera == null)
@@ -846,7 +857,7 @@ public partial class WallSelectionManager : MonoBehaviour
             return false;
         }
 
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return false;
@@ -1466,71 +1477,65 @@ public partial class WallSelectionManager : MonoBehaviour
             return;
         }
 
-        if (selectedOpeningContainer != null)
+        BuildMoveOpeningChangeRecords();
+        BuildMoveWallStateChangeRecords();
+
+        if (moveStateChangeRecords.Count > 0 || moveOpeningChangeRecords.Count > 0)
         {
-            if (hasMoveStartOpeningLayoutSnapshot && wallOpeningPlacementManager != null)
-            {
-                UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(selectedOpeningContainer);
-                undoRedoManager.RecordOpeningLayoutChange(moveStartOpeningLayoutSnapshot, afterSnapshot);
-            }
+            undoRedoManager.ExecuteCommand(
+                new WallSelectionMoveCommand(moveStateChangeRecords, moveOpeningChangeRecords),
+                alreadyExecuted: true);
+        }
+    }
 
-            foreach (KeyValuePair<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> pair in moveStartConnectedOpeningSnapshots)
-            {
-                if (pair.Key == null || wallOpeningPlacementManager == null)
-                {
-                    continue;
-                }
-
-                UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(pair.Key);
-                undoRedoManager.RecordOpeningLayoutChange(pair.Value, afterSnapshot);
-            }
-
-            if (moveStartSnapshots.Count > 0)
-            {
-                moveStateChangeRecords.Clear();
-                foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in moveStartSnapshots)
-                {
-                    GameObject wallObject = pair.Key;
-                    if (wallObject == null)
-                    {
-                        continue;
-                    }
-
-                    UndoRedoManager.WallStateSnapshot startSnapshot = pair.Value;
-                    UndoRedoManager.WallStateSnapshot endSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-                    if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(startSnapshot, endSnapshot))
-                    {
-                        continue;
-                    }
-
-                    moveStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
-                    {
-                        before = startSnapshot,
-                        after = endSnapshot,
-                    });
-                }
-
-                undoRedoManager.RecordMoveConnectedWalls(moveStateChangeRecords);
-            }
-
+    private void BuildMoveOpeningChangeRecords()
+    {
+        moveOpeningChangeRecords.Clear();
+        if (wallOpeningPlacementManager == null)
+        {
             return;
+        }
+
+        if (selectedOpeningContainer != null && hasMoveStartOpeningLayoutSnapshot)
+        {
+            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(selectedOpeningContainer);
+            if (UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(moveStartOpeningLayoutSnapshot, afterSnapshot))
+            {
+                moveOpeningChangeRecords.Add(new UndoRedoManager.OpeningLayoutChangeRecord
+                {
+                    before = moveStartOpeningLayoutSnapshot,
+                    after = afterSnapshot,
+                });
+            }
         }
 
         foreach (KeyValuePair<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> pair in moveStartConnectedOpeningSnapshots)
         {
-            if (pair.Key == null || wallOpeningPlacementManager == null)
+            if (pair.Key == null)
             {
                 continue;
             }
 
             UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(pair.Key);
-            undoRedoManager.RecordOpeningLayoutChange(pair.Value, afterSnapshot);
+            if (!UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(pair.Value, afterSnapshot))
+            {
+                continue;
+            }
+
+            moveOpeningChangeRecords.Add(new UndoRedoManager.OpeningLayoutChangeRecord
+            {
+                before = pair.Value,
+                after = afterSnapshot,
+            });
         }
+    }
+
+    private void BuildMoveWallStateChangeRecords()
+    {
+        moveStateChangeRecords.Clear();
 
         if (moveStartSnapshots.Count > 0)
         {
-            moveStateChangeRecords.Clear();
-
             foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in moveStartSnapshots)
             {
                 GameObject wallObject = pair.Key;
@@ -1541,7 +1546,6 @@ public partial class WallSelectionManager : MonoBehaviour
 
                 UndoRedoManager.WallStateSnapshot startSnapshot = pair.Value;
                 UndoRedoManager.WallStateSnapshot endSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-
                 if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(startSnapshot, endSnapshot))
                 {
                     continue;
@@ -1553,8 +1557,6 @@ public partial class WallSelectionManager : MonoBehaviour
                     after = endSnapshot,
                 });
             }
-
-            undoRedoManager.RecordMoveConnectedWalls(moveStateChangeRecords);
 
             return;
         }
@@ -1570,13 +1572,16 @@ public partial class WallSelectionManager : MonoBehaviour
             moveStartWallRotation,
             moveStartWallScale);
         UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
-        moveStateChangeRecords.Clear();
+        if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
+        {
+            return;
+        }
+
         moveStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
         {
             before = before,
             after = after,
         });
-        undoRedoManager.RecordMoveConnectedWalls(moveStateChangeRecords);
     }
 
     private void OnDestroy()

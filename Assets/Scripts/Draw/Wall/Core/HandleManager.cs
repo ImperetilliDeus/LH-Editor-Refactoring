@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -136,7 +135,7 @@ public partial class HandleManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isDefaultModeActive || mainCamera == null || Mouse.current == null)
+        if (!isDefaultModeActive || mainCamera == null || !EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
         {
             return;
         }
@@ -167,7 +166,7 @@ public partial class HandleManager : MonoBehaviour
         }
 
         CacheCameraState();
-        HandleDraggingInput();
+        HandleDraggingInput(pointerFrame);
     }
 
     public void RegisterWall(GameObject wallObject)
@@ -393,7 +392,7 @@ public partial class HandleManager : MonoBehaviour
         return IsSplitPointGroup(group) ? activeSplitPointHandleColor : snappedHandleColor;
     }
 
-    private bool TryGetMouseWorldPoint(out Vector3 worldPoint)
+    private bool TryGetMouseWorldPoint(Vector2 pointerScreenPosition, out Vector3 worldPoint)
     {
         worldPoint = Vector3.zero;
         if (!hasDragPlane)
@@ -401,7 +400,7 @@ public partial class HandleManager : MonoBehaviour
             return false;
         }
 
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return false;
