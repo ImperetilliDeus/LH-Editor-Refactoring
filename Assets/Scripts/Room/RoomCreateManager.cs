@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 public sealed partial class RoomCreateManager : MonoBehaviour
 {
@@ -51,6 +50,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
     private Room selectedRoom;
     private Room pendingSelectedRoom;
     private bool isRoomCreateModeActive;
+    private IEditorInputProvider inputProvider;
 
     private void Reset()
     {
@@ -60,6 +60,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void Awake()
     {
+        inputProvider = new UnityEditorInputProvider();
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -155,13 +156,13 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void UpdateSelectedRoomDrag()
     {
-        if (Mouse.current == null)
+        if (inputProvider == null || !inputProvider.IsPointerAvailable)
         {
             CancelSelectedRoomDrag();
             return;
         }
 
-        if (!Mouse.current.leftButton.isPressed)
+        if (!inputProvider.IsPointerButtonPressed(PointerButton.Left))
         {
             EndSelectedRoomDrag();
             return;
@@ -193,6 +194,17 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private void EndSelectedRoomDrag()
     {
+        if (undoRedoManager != null &&
+            selectedRoom != null &&
+            selectedRoom.ManualBoundaryVertices != null &&
+            selectedRoom.ManualBoundaryVertices.Count >= 3)
+        {
+            undoRedoManager.RecordRoomPolygonChanged(
+                selectedRoom,
+                cachedDraggedRoomVertices,
+                selectedRoom.ManualBoundaryVertices);
+        }
+
         isDraggingSelectedRoom = false;
         cachedDraggedRoomVertices.Clear();
         roomHandleManager?.MarkDirty();
@@ -528,7 +540,12 @@ public sealed partial class RoomCreateManager : MonoBehaviour
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (inputProvider == null || !inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!drawingPlane.Raycast(mouseRay, out float enter))
         {
             return false;
@@ -765,24 +782,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour
 
     private bool IsPointerOverUI()
     {
-        if (EventSystem.current == null)
-        {
-            return false;
-        }
-
-        if (Mouse.current != null && EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId))
-        {
-            return true;
-        }
-
-        PointerEventData eventData = new PointerEventData(EventSystem.current)
-        {
-            position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero,
-        };
-
-        uiRaycastResults.Clear();
-        EventSystem.current.RaycastAll(eventData, uiRaycastResults);
-        return uiRaycastResults.Count > 0;
+        return inputProvider != null && inputProvider.IsPointerOverUI(EventSystem.current, uiRaycastResults);
     }
 
     private void OnDestroy()

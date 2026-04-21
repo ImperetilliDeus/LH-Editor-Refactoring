@@ -2320,6 +2320,7 @@ GameObject:
   - component: {fileID: 374521896}
   - component: {fileID: 374521895}
   - component: {fileID: 374521894}
+  - component: {fileID: 374521897}
   m_Layer: 5
   m_Name: _Button_Room
   m_TagString: Untagged
@@ -2428,6 +2429,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &374521897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374521892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b838827ee5d549a0a9fc02d93b55787d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modeManager: {fileID: 1793356131}
+  targetMode: 1
+  targetButton: {fileID: 374521896}
 --- !u!1 &385752760
 GameObject:
   m_ObjectHideFlags: 0
@@ -3023,6 +3039,7 @@ GameObject:
   - component: {fileID: 439858707}
   - component: {fileID: 439858706}
   - component: {fileID: 439858705}
+  - component: {fileID: 439858708}
   m_Layer: 5
   m_Name: _Button_EditDetail
   m_TagString: Untagged
@@ -3131,6 +3148,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &439858708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 439858703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b838827ee5d549a0a9fc02d93b55787d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modeManager: {fileID: 1793356131}
+  targetMode: 3
+  targetButton: {fileID: 439858707}
 --- !u!1 &443950664
 GameObject:
   m_ObjectHideFlags: 0
@@ -6881,6 +6913,7 @@ GameObject:
   - component: {fileID: 1153890466}
   - component: {fileID: 1153890465}
   - component: {fileID: 1153890464}
+  - component: {fileID: 1153890467}
   m_Layer: 5
   m_Name: _Button_Default
   m_TagString: Untagged
@@ -6989,6 +7022,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1153890467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1153890462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b838827ee5d549a0a9fc02d93b55787d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modeManager: {fileID: 1793356131}
+  targetMode: 0
+  targetButton: {fileID: 1153890466}
 --- !u!1 &1168753619
 GameObject:
   m_ObjectHideFlags: 0
@@ -9946,12 +9994,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dce2016cfb30fe44fbb7df29891e2589, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultModeButton: {fileID: 1153890466}
-  roomCreateModeButton: {fileID: 374521896}
-  furniturePlaceModeButton: {fileID: 1819113106}
-  detailEditModeButton: {fileID: 439858707}
-  doorInsertModeButton: {fileID: 0}
-  windowInsertModeButton: {fileID: 0}
   initialMode: 0
 --- !u!1 &1796782196
 GameObject:
@@ -10146,6 +10188,7 @@ GameObject:
   - component: {fileID: 1819113106}
   - component: {fileID: 1819113105}
   - component: {fileID: 1819113104}
+  - component: {fileID: 1819113107}
   m_Layer: 5
   m_Name: _Button_EditFurnish
   m_TagString: Untagged
@@ -10254,6 +10297,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1819113107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1819113102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b838827ee5d549a0a9fc02d93b55787d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modeManager: {fileID: 1793356131}
+  targetMode: 9
+  targetButton: {fileID: 1819113106}
 --- !u!1 &1823670698
 GameObject:
   m_ObjectHideFlags: 0

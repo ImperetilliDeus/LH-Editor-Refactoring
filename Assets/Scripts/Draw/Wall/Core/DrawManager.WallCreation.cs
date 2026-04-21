@@ -184,28 +184,7 @@ public partial class DrawManager
     {
         EnsureWallRoot();
         EnsureCachedResources();
-
-        GameObject wallObject = new GameObject("Wall", typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider));
-        wallObject.transform.SetParent(wallRoot, true);
-        LayerUtility.ApplyLayer(wallObject, LayerUtility.WallLayerName, false);
-
-        MeshFilter filter = wallObject.GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = cachedCubeMesh;
-        }
-
-        MeshRenderer wallRenderer = wallObject.GetComponent<MeshRenderer>();
-        if (wallRenderer != null && wallMaterial != null)
-        {
-            wallRenderer.sharedMaterial = wallMaterial;
-        }
-
-        Wall wallComponent = wallObject.AddComponent<Wall>();
-        wallComponent.SetTopMaterial(wallTopMaterial);
-        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-
-        return wallObject;
+        return WallObjectFactory.CreateWallObject("Wall", wallRoot, cachedCubeMesh, wallMaterial, wallTopMaterial);
     }
 
     private void EnsureCachedResources()

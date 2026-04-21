@@ -7,11 +7,6 @@ public class Wall : MonoBehaviour
 {
     public const float DefaultTopFaceOffset = 0.01f;
 
-    private const string StartCapObjectName = "WallStartCap";
-    private const string EndCapObjectName = "WallEndCap";
-    private const float MinimumExtension = 0.0001f;
-    private const float ParallelThreshold = 0.0001f;
-
     [SerializeField] private WallData data = new WallData();
     private int startVertexId;
     private int endVertexId;
@@ -19,16 +14,7 @@ public class Wall : MonoBehaviour
     private bool suppressEndHandle;
     private bool startSplitPoint;
     private bool endSplitPoint;
-    private static Mesh sharedCubeMesh;
     private static readonly System.Collections.Generic.List<Wall> connectedWalls = new System.Collections.Generic.List<Wall>();
-
-    private Transform startCapTransform;
-    private Transform endCapTransform;
-    private MeshRenderer startCapRenderer;
-    private MeshRenderer endCapRenderer;
-    private MeshFilter startCapFilter;
-    private MeshFilter endCapFilter;
-    private float topFaceWorldOffset = DefaultTopFaceOffset;
 
     public int StartVertexId
     {
@@ -130,27 +116,18 @@ public class Wall : MonoBehaviour
 
     public bool TryApplyGeometry(Vector3 start, Vector3 end, float thickness, float height, float centerY, float minimumLength)
     {
-        if (!TryGetFlatGeometry(start, end, minimumLength, out Vector3 flatDirection, out float length))
-        {
-            return false;
-        }
-
-        Vector3 midpoint = (start + end) * 0.5f;
-        midpoint.y = centerY;
-
-        transform.SetPositionAndRotation(
-            midpoint,
-            Quaternion.LookRotation(flatDirection.normalized, Vector3.up));
-        transform.localScale = new Vector3(thickness, height, length);
-
         WallData wallData = EnsureData();
         wallData.startPoint = start;
         wallData.endPoint = end;
         wallData.thickness = thickness;
         wallData.height = height;
         wallData.centerY = centerY;
-        RefreshTopFaceVisual();
-        RefreshEndCapVisuals();
+
+        if (!GetVisual(true).TryApplyWallData(wallData, minimumLength))
+        {
+            return false;
+        }
+
         WallRegistry.NotifyWallChanged(this);
         return true;
     }
@@ -218,30 +195,18 @@ public class Wall : MonoBehaviour
     public bool UpdateView(float minimumLength)
     {
         WallData wallData = EnsureData();
-        return TryApplyGeometry(
-            wallData.startPoint,
-            wallData.endPoint,
-            wallData.thickness,
-            wallData.height,
-            wallData.centerY,
-            minimumLength);
-    }
-
-    public bool TryGetSnapSegment(float planeY, float minimumLength, out SnapManager.WallSnapSegment segment)
-    {
-        segment = default;
-        GetEndpointsFromTransform(planeY, out Vector3 start, out Vector3 end);
-        if (!TryGetFlatGeometry(start, end, minimumLength, out _, out _))
+        if (!GetVisual(true).TryApplyWallData(wallData, minimumLength))
         {
             return false;
         }
 
-        segment = new SnapManager.WallSnapSegment
-        {
-            start = start,
-            end = end,
-        };
+        WallRegistry.NotifyWallChanged(this);
         return true;
+    }
+
+    public bool TryGetSnapSegment(float planeY, float minimumLength, out SnapManager.WallSnapSegment segment)
+    {
+        return WallTopologyService.TryGetSnapSegment(transform, planeY, minimumLength, out segment);
     }
 
     public void RefreshLengthDisplay(WallLengthDisplay wallLengthDisplay, bool isPreview)
@@ -271,105 +236,37 @@ public class Wall : MonoBehaviour
 
     public void GetEndpointsForCenterPosition(Vector3 centerPosition, float planeY, out Vector3 start, out Vector3 end)
     {
-        float halfLength = transform.localScale.z * 0.5f;
-        Vector3 direction = transform.forward;
-
-        start = centerPosition - direction * halfLength;
-        end = centerPosition + direction * halfLength;
-        start.y = planeY;
-        end.y = planeY;
+        WallTopologyService.GetEndpointsForCenterPosition(transform, centerPosition, planeY, out start, out end);
     }
 
     public Material GetTopMaterial()
     {
-        WallTopFaceVisual topFaceVisual = GetComponent<WallTopFaceVisual>();
-        return topFaceVisual != null ? topFaceVisual.TopMaterial : null;
+        WallVisual visual = GetVisual(false);
+        return visual != null ? visual.GetTopMaterial() : null;
     }
 
     public void SetTopMaterial(Material material)
     {
-        WallTopFaceVisual topFaceVisual = GetComponent<WallTopFaceVisual>();
-        if (topFaceVisual == null)
-        {
-            topFaceVisual = gameObject.AddComponent<WallTopFaceVisual>();
-        }
-
-        topFaceVisual.SetTopMaterial(material);
-        RefreshEndCapVisuals();
+        GetVisual(true).SetTopMaterial(material);
     }
 
     public void SetTopFaceOffset(float offset)
     {
-        topFaceWorldOffset = Mathf.Max(0f, offset);
-        WallTopFaceVisual topFaceVisual = GetComponent<WallTopFaceVisual>();
-        if (topFaceVisual == null)
-        {
-            topFaceVisual = gameObject.AddComponent<WallTopFaceVisual>();
-        }
-
-        topFaceVisual.SetWorldOffset(topFaceWorldOffset);
-        RefreshEndCapVisuals();
+        GetVisual(true).SetTopFaceOffset(offset);
     }
 
     public void RefreshTopFaceVisual()
     {
-        WallTopFaceVisual topFaceVisual = GetComponent<WallTopFaceVisual>();
-        if (topFaceVisual != null)
+        WallVisual visual = GetVisual(false);
+        if (visual != null)
         {
-            topFaceVisual.Refresh();
+            visual.RefreshTopFaceVisual();
         }
     }
 
     public void RefreshEndCapVisuals()
     {
-        MeshRenderer sourceRenderer = GetComponent<MeshRenderer>();
-        Material sharedMaterial = sourceRenderer != null ? sourceRenderer.sharedMaterial : null;
-        bool visible = sharedMaterial != null;
-
-        EnsureEndCap(ref startCapTransform, ref startCapFilter, ref startCapRenderer, StartCapObjectName);
-        EnsureEndCap(ref endCapTransform, ref endCapFilter, ref endCapRenderer, EndCapObjectName);
-
-        if (startCapRenderer != null)
-        {
-            startCapRenderer.sharedMaterial = sharedMaterial;
-            startCapRenderer.gameObject.SetActive(visible && !suppressStartHandle);
-        }
-
-        if (endCapRenderer != null)
-        {
-            endCapRenderer.sharedMaterial = sharedMaterial;
-            endCapRenderer.gameObject.SetActive(visible && !suppressEndHandle);
-        }
-
-        float length = Mathf.Max(0.0001f, transform.localScale.z);
-        float startExtension = suppressStartHandle ? 0f : CalculateEndpointExtension(true);
-        float endExtension = suppressEndHandle ? 0f : CalculateEndpointExtension(false);
-
-        ApplyCapVisual(
-            startCapTransform,
-            startCapRenderer,
-            startExtension,
-            length,
-            -0.5f,
-            visible && !suppressStartHandle,
-            true);
-
-        ApplyCapVisual(
-            endCapTransform,
-            endCapRenderer,
-            endExtension,
-            length,
-            0.5f,
-            visible && !suppressEndHandle,
-            false);
-    }
-
-    private static bool TryGetFlatGeometry(Vector3 start, Vector3 end, float minimumLength, out Vector3 flatDirection, out float length)
-    {
-        flatDirection = end - start;
-        flatDirection.y = 0f;
-        length = flatDirection.magnitude;
-        return length >= minimumLength;
+        GetVisual(true).RefreshEndCapVisuals();
     }
 
     private void OnDrawGizmosSelected()
@@ -402,267 +299,11 @@ public class Wall : MonoBehaviour
         WallRegistry.Unregister(this);
     }
 
-    private float CalculateEndpointExtension(bool isStartEndpoint)
+    internal float CalculateEndpointExtension(bool isStartEndpoint)
     {
         int vertexId = isStartEndpoint ? startVertexId : endVertexId;
-        Vector2 currentOutwardDirection = GetEndpointOutwardDirection2D(isStartEndpoint);
-        if (vertexId <= 0 || currentOutwardDirection.sqrMagnitude <= 0.000001f)
-        {
-            return transform.localScale.x * 0.5f;
-        }
-
-        float extension = transform.localScale.x * 0.5f;
         WallRegistry.CollectWalls(connectedWalls, transform.parent);
-        for (int i = 0; i < connectedWalls.Count; i++)
-        {
-            Wall other = connectedWalls[i];
-            if (other == null || other == this || !other.ContainsVertexId(vertexId))
-            {
-                continue;
-            }
-
-            extension = Mathf.Max(extension, CalculateJoinExtensionWith(other, vertexId, currentOutwardDirection));
-        }
-
-        return extension;
-    }
-
-    private float CalculateJoinExtensionWith(Wall other, int sharedVertexId, Vector2 currentOutwardDirection)
-    {
-        if (!TryGetVertexWorldPoint(sharedVertexId, out Vector3 sharedPoint3))
-        {
-            return transform.localScale.x * 0.5f;
-        }
-
-        if (!TryGetOutwardDirectionForVertex(this, sharedVertexId, out Vector2 thisOutward) ||
-            !TryGetOutwardDirectionForVertex(other, sharedVertexId, out Vector2 otherOutward))
-        {
-            return other.transform.localScale.x * 0.5f;
-        }
-
-        Vector2 sharedPoint = new Vector2(sharedPoint3.x, sharedPoint3.z);
-        Vector2 thisNormal = new Vector2(-thisOutward.y, thisOutward.x);
-        Vector2 otherNormal = new Vector2(-otherOutward.y, otherOutward.x);
-
-        float fallbackExtension = other.transform.localScale.x * 0.5f;
-        float bestExtension = fallbackExtension;
-
-        for (int currentSign = -1; currentSign <= 1; currentSign += 2)
-        {
-            Vector2 currentSideOrigin = sharedPoint + thisNormal * (currentSign * transform.localScale.x * 0.5f);
-            for (int otherSign = -1; otherSign <= 1; otherSign += 2)
-            {
-                Vector2 otherSideOrigin = sharedPoint + otherNormal * (otherSign * other.transform.localScale.x * 0.5f);
-                if (!TryIntersectRays(currentSideOrigin, thisOutward, otherSideOrigin, otherOutward, out float currentDistance, out float otherDistance))
-                {
-                    continue;
-                }
-
-                if (currentDistance < 0f || otherDistance < 0f)
-                {
-                    continue;
-                }
-
-                bestExtension = Mathf.Max(bestExtension, currentDistance);
-            }
-        }
-
-        return bestExtension;
-    }
-
-    private Vector2 GetEndpointOutwardDirection2D(bool isStartEndpoint)
-    {
-        Vector3 direction = Data.GetDirection();
-        Vector2 forward = new Vector2(direction.x, direction.z);
-        if (forward.sqrMagnitude <= 0.000001f)
-        {
-            return Vector2.zero;
-        }
-
-        return isStartEndpoint ? -forward.normalized : forward.normalized;
-    }
-
-    private bool TryGetVertexWorldPoint(int vertexId, out Vector3 point)
-    {
-        if (startVertexId == vertexId)
-        {
-            point = Data.startPoint;
-            return true;
-        }
-
-        if (endVertexId == vertexId)
-        {
-            point = Data.endPoint;
-            return true;
-        }
-
-        point = Vector3.zero;
-        return false;
-    }
-
-    private static bool TryGetOutwardDirectionForVertex(Wall wall, int vertexId, out Vector2 outwardDirection)
-    {
-        outwardDirection = Vector2.zero;
-        if (wall == null)
-        {
-            return false;
-        }
-
-        Vector3 direction3 = wall.Data.GetDirection();
-        Vector2 direction = new Vector2(direction3.x, direction3.z);
-        if (direction.sqrMagnitude <= 0.000001f)
-        {
-            return false;
-        }
-
-        direction.Normalize();
-        if (wall.StartVertexId == vertexId)
-        {
-            outwardDirection = direction;
-            return true;
-        }
-
-        if (wall.EndVertexId == vertexId)
-        {
-            outwardDirection = -direction;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool TryIntersectRays(
-        Vector2 firstOrigin,
-        Vector2 firstDirection,
-        Vector2 secondOrigin,
-        Vector2 secondDirection,
-        out float firstDistance,
-        out float secondDistance)
-    {
-        firstDistance = 0f;
-        secondDistance = 0f;
-
-        float cross = Cross(firstDirection, secondDirection);
-        if (Mathf.Abs(cross) <= ParallelThreshold)
-        {
-            return false;
-        }
-
-        Vector2 delta = secondOrigin - firstOrigin;
-        firstDistance = Cross(delta, secondDirection) / cross;
-        secondDistance = Cross(delta, firstDirection) / cross;
-        return true;
-    }
-
-    private void ApplyCapVisual(
-        Transform capTransform,
-        MeshRenderer capRenderer,
-        float extension,
-        float wallLength,
-        float localZ,
-        bool shouldBeVisible,
-        bool isStartCap)
-    {
-        if (capTransform == null)
-        {
-            return;
-        }
-
-        bool hasExtension = extension > MinimumExtension;
-        if (capRenderer != null)
-        {
-            capRenderer.gameObject.SetActive(shouldBeVisible && hasExtension);
-        }
-
-        if (!shouldBeVisible || !hasExtension)
-        {
-            return;
-        }
-
-        float capDepthRatio = (extension * 2f) / wallLength;
-        capTransform.localPosition = new Vector3(0f, 0f, localZ);
-        capTransform.localRotation = Quaternion.identity;
-        capTransform.localScale = new Vector3(1f, 1f, capDepthRatio);
-
-        WallTopFaceVisual capTopVisual = capTransform.GetComponent<WallTopFaceVisual>();
-        if (capTopVisual == null)
-        {
-            capTopVisual = capTransform.gameObject.AddComponent<WallTopFaceVisual>();
-        }
-
-        capTopVisual.SetTopMaterial(GetTopMaterial());
-        capTopVisual.SetWorldOffset(topFaceWorldOffset);
-    }
-
-    private static float Cross(Vector2 left, Vector2 right)
-    {
-        return left.x * right.y - left.y * right.x;
-    }
-
-    private void EnsureEndCap(
-        ref Transform capTransform,
-        ref MeshFilter meshFilter,
-        ref MeshRenderer meshRenderer,
-        string objectName)
-    {
-        if (capTransform == null)
-        {
-            Transform existing = transform.Find(objectName);
-            capTransform = existing != null ? existing : new GameObject(objectName).transform;
-            capTransform.SetParent(transform, false);
-            capTransform.gameObject.layer = gameObject.layer;
-        }
-
-        if (meshFilter == null)
-        {
-            meshFilter = capTransform.GetComponent<MeshFilter>();
-            if (meshFilter == null)
-            {
-                meshFilter = capTransform.gameObject.AddComponent<MeshFilter>();
-            }
-        }
-
-        if (meshRenderer == null)
-        {
-            meshRenderer = capTransform.GetComponent<MeshRenderer>();
-            if (meshRenderer == null)
-            {
-                meshRenderer = capTransform.gameObject.AddComponent<MeshRenderer>();
-            }
-        }
-
-        meshFilter.sharedMesh = GetSharedCubeMesh();
-        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-        meshRenderer.receiveShadows = true;
-        meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.BlendProbes;
-        meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.BlendProbes;
-        meshRenderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.Object;
-    }
-
-    private static Mesh GetSharedCubeMesh()
-    {
-        if (sharedCubeMesh != null)
-        {
-            return sharedCubeMesh;
-        }
-
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        MeshFilter meshFilter = cube.GetComponent<MeshFilter>();
-        if (meshFilter != null)
-        {
-            sharedCubeMesh = meshFilter.sharedMesh;
-        }
-
-        if (Application.isPlaying)
-        {
-            Destroy(cube);
-        }
-        else
-        {
-            DestroyImmediate(cube);
-        }
-
-        return sharedCubeMesh;
+        return WallTopologyService.CalculateEndpointExtension(this, vertexId, isStartEndpoint, connectedWalls);
     }
 
     private WallData EnsureData()
@@ -682,5 +323,16 @@ public class Wall : MonoBehaviour
         {
             data.id = System.Guid.NewGuid().ToString("N");
         }
+    }
+
+    private WallVisual GetVisual(bool createIfMissing)
+    {
+        WallVisual visual = GetComponent<WallVisual>();
+        if (visual == null && createIfMissing)
+        {
+            visual = gameObject.AddComponent<WallVisual>();
+        }
+
+        return visual;
     }
 }

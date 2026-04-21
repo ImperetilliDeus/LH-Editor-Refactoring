@@ -1,39 +1,39 @@
 internal sealed class WallIdleTool : IWallTool
 {
-    private readonly DrawManager owner;
+    private readonly IWallToolContext context;
 
-    public WallIdleTool(DrawManager owner)
+    public WallIdleTool(IWallToolContext context)
     {
-        this.owner = owner;
+        this.context = context;
     }
 
     public void Enter()
     {
-        owner.SetWallCreationModeActive(false);
-        owner.HandleManagerRef?.ClearPreviewSnappedHandle();
+        context.SetWallCreationModeActive(false);
+        context.ClearPreviewSnappedHandle();
     }
 
     public void Exit()
     {
     }
 
-    public void HandleInput(WallToolInputFrame inputFrame)
+    public WallToolRequest HandleInput(WallToolInputFrame inputFrame)
     {
-        if (!inputFrame.IsAvailable || owner.IsHandleInputLocked())
+        if (!inputFrame.IsAvailable || context.IsHandleInputLocked())
         {
-            return;
+            return WallToolRequest.None;
         }
 
         if (inputFrame.PointerOverUI || !inputFrame.LeftPressedThisFrame)
         {
-            return;
+            return WallToolRequest.None;
         }
 
-        if (owner.TryConsumeIdleSelectionPress())
+        if (context.TryConsumeIdleSelectionPress())
         {
-            return;
+            return WallToolRequest.None;
         }
 
-        owner.TryActivateDrawTool();
+        return WallToolRequest.ActivateDraw;
     }
 }

@@ -16,6 +16,7 @@ public sealed class RoomHandleManager : MonoBehaviour
     [SerializeField] private HandleManager wallHandleManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private UndoRedoManager undoRedoManager;
 
     [Header("Handle UI")]
     [SerializeField] private Vector2 handleSize = new Vector2(16f, 16f);
@@ -59,6 +60,7 @@ public sealed class RoomHandleManager : MonoBehaviour
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
     private Room focusedRoom;
+    private IEditorInputProvider inputProvider;
 
     public bool IsDraggingHandle => draggingGroup != null;
     public Room FocusedRoom => focusedRoom;
@@ -72,6 +74,7 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void Awake()
     {
+        inputProvider = new UnityEditorInputProvider();
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
@@ -88,7 +91,7 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void Update()
     {
-        if (mainCamera == null || Mouse.current == null)
+        if (mainCamera == null || inputProvider == null || !inputProvider.IsPointerAvailable)
         {
             return;
         }
@@ -247,10 +250,14 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void HandleDragInput()
     {
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        if (!inputProvider.TryGetPointerScreenPosition(out Vector2 mousePosition))
+        {
+            return;
+        }
+
         if (draggingGroup == null)
         {
-            if (!Mouse.current.leftButton.wasPressedThisFrame)
+            if (!inputProvider.WasPointerButtonPressedThisFrame(PointerButton.Left))
             {
                 return;
             }
@@ -264,12 +271,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             return;
         }
 
-        if (Mouse.current.leftButton.isPressed)
+        if (inputProvider.IsPointerButtonPressed(PointerButton.Left))
         {
             UpdateDraggingGroup();
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (inputProvider.WasPointerButtonReleasedThisFrame(PointerButton.Left))
         {
             EndDrag();
         }
@@ -352,6 +359,7 @@ public sealed class RoomHandleManager : MonoBehaviour
 
     private void EndDrag()
     {
+        Room draggedRoom = draggingGroup != null ? draggingGroup.room : null;
         if (draggingGroup == null)
         {
             return;
@@ -368,6 +376,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             if (!RoomPolygonValidationUtility.IsValidPolygon(finalVertices, minimumRoomEdgeLength, PolygonAreaEpsilon))
             {
                 roomManager?.UpdateRoomPolygon(draggingGroup.room, dragOriginalVertices);
+                finalVertices = Room.CreateSanitizedPolygonCopy(dragOriginalVertices);
+            }
+
+            if (undoRedoManager != null && draggedRoom != null)
+            {
+                undoRedoManager.RecordRoomPolygonChanged(draggedRoom, dragOriginalVertices, finalVertices);
             }
         }
 
@@ -650,6 +664,11 @@ public sealed class RoomHandleManager : MonoBehaviour
         {
             modeManager = FindFirstObjectByType<ModeManager>();
         }
+
+        if (undoRedoManager == null)
+        {
+            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
+        }
     }
 
     private void RefreshDragPlane()
@@ -698,7 +717,12 @@ public sealed class RoomHandleManager : MonoBehaviour
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (inputProvider == null || !inputProvider.TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
         if (!dragPlane.Raycast(mouseRay, out float enter))
         {
             return false;
@@ -739,16 +763,16 @@ public sealed class RoomHandleManager : MonoBehaviour
         return true;
     }
 
-    private static bool IsRoomHandleGridSnapActive()
+    private bool IsRoomHandleGridSnapActive()
     {
-        return Keyboard.current != null &&
-               (Keyboard.current.leftAltKey.isPressed || Keyboard.current.rightAltKey.isPressed);
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(Key.LeftAlt) || inputProvider.IsKeyPressed(Key.RightAlt));
     }
 
-    private static bool IsRoomHandleWallSnapActive()
+    private bool IsRoomHandleWallSnapActive()
     {
-        return Keyboard.current != null &&
-               (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(Key.LeftShift) || inputProvider.IsKeyPressed(Key.RightShift));
     }
 
     private void CollectWallSegmentSnapCandidates(List<SnapManager.WallSnapSegment> segments)

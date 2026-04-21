@@ -182,25 +182,28 @@ public partial class WallOpeningPlacementManager
             return null;
         }
 
-        GameObject wallObject = CreateCubeObject(snapshot.name, wallRoot, true);
-        wallObject.transform.SetPositionAndRotation(snapshot.position, snapshot.rotation);
-        wallObject.transform.localScale = snapshot.scale;
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null)
+        GameObject wallObject = WallObjectFactory.CreateWallObject(
+            snapshot.name,
+            wallRoot,
+            cachedCubeMesh,
+            snapshot.sharedMaterial,
+            snapshot.topMaterial);
+        if (!WallObjectFactory.ConfigureWall(
+                wallObject,
+                snapshot.wallData,
+                snapshot.startVertexId,
+                snapshot.endVertexId,
+                snapshot.suppressStartHandle,
+                snapshot.suppressEndHandle,
+                snapshot.startSplitPoint,
+                snapshot.endSplitPoint,
+                MinimumWallSegmentLength,
+                wallLengthDisplay,
+                false))
         {
-            renderer.sharedMaterial = snapshot.sharedMaterial;
+            Destroy(wallObject);
+            return null;
         }
-
-        Wall wall = wallObject.AddComponent<Wall>();
-        wall.Initialize(snapshot.wallData != null ? snapshot.wallData.Clone() : new WallData());
-        wall.SetVertexIds(snapshot.startVertexId, snapshot.endVertexId);
-        wall.SetHandleSuppressed(snapshot.suppressStartHandle, snapshot.suppressEndHandle);
-        wall.SetSplitPointFlags(snapshot.startSplitPoint, snapshot.endSplitPoint);
-        wall.SetTopMaterial(snapshot.topMaterial);
-        wall.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-        wall.UpdateView(MinimumWallSegmentLength);
-        wall.RefreshLengthDisplay(wallLengthDisplay, false);
         return wallObject;
     }
 
@@ -302,25 +305,22 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        GameObject wallObject = CreateCubeObject(segmentName, parent, true);
-        wallObject.name = segmentName;
-        LayerUtility.ApplyLayer(wallObject, LayerUtility.WallLayerName, false);
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null && wallMaterial != null)
-        {
-            renderer.sharedMaterial = wallMaterial;
-        }
-
-        Wall wallComponent = wallObject.AddComponent<Wall>();
-        wallComponent.SetTopMaterial(parent.TryGetComponent(out WallOpeningContainer container) ? container.WallTopMaterial : null);
-        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-        bool applied = wallComponent.TryApplyGeometryAndRefresh(
-            startPoint,
-            endPoint,
-            thickness,
-            height,
-            centerY,
+        Material topMaterial = parent.TryGetComponent(out WallOpeningContainer container) ? container.WallTopMaterial : null;
+        GameObject wallObject = WallObjectFactory.CreateWallObject(
+            segmentName,
+            parent,
+            cachedCubeMesh,
+            wallMaterial,
+            topMaterial);
+        bool applied = WallObjectFactory.ConfigureWall(
+            wallObject,
+            new WallData(startPoint, endPoint, thickness, height, centerY),
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            false,
+            false,
             MinimumWallSegmentLength,
             wallLengthDisplay,
             false);
@@ -330,9 +330,6 @@ public partial class WallOpeningPlacementManager
             Destroy(wallObject);
             return;
         }
-
-        wallComponent.SetVertexIds(startVertexId, endVertexId);
-        wallComponent.SetHandleSuppressed(suppressStartHandle, suppressEndHandle);
 
         if (handleManager != null)
         {

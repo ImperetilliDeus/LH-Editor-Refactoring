@@ -146,25 +146,12 @@ public static class DwgWallImportSceneApplier
 
     private static bool TryCreateWall(CadWallSegment segment, DwgWallImportSceneApplyContext context, out GameObject wallObject)
     {
-        wallObject = new GameObject("DWG_Wall", typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider));
-        wallObject.transform.SetParent(context.WallRoot, true);
-        LayerUtility.ApplyLayer(wallObject, LayerUtility.WallLayerName, false);
-
-        MeshFilter filter = wallObject.GetComponent<MeshFilter>();
-        if (filter != null)
-        {
-            filter.sharedMesh = context.WallMesh;
-        }
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null && context.WallMaterial != null)
-        {
-            renderer.sharedMaterial = context.WallMaterial;
-        }
-
-        Wall wall = wallObject.AddComponent<Wall>();
-        wall.SetTopMaterial(context.TopMaterial);
-        wall.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
+        wallObject = WallObjectFactory.CreateWallObject(
+            "DWG_Wall",
+            context.WallRoot,
+            context.WallMesh,
+            context.WallMaterial,
+            context.TopMaterial);
 
         DwgImportedWallOwnership ownership = wallObject.AddComponent<DwgImportedWallOwnership>();
         ownership.SetImporterId(context.ImporterId);
@@ -172,12 +159,15 @@ public static class DwgWallImportSceneApplier
         wallObject.name = $"{segment.SourceType}_{segment.LayerName}";
 
         float centerY = context.DrawingPlaneY + context.WallHeight * 0.5f + context.WallSurfaceOffset;
-        if (!wall.TryApplyGeometryAndRefresh(
-                segment.Start,
-                segment.End,
-                context.WallThickness,
-                context.WallHeight,
-                centerY,
+        if (!WallObjectFactory.ConfigureWall(
+                wallObject,
+                new WallData(segment.Start, segment.End, context.WallThickness, context.WallHeight, centerY),
+                0,
+                0,
+                false,
+                false,
+                false,
+                false,
                 context.MinimumWallLength,
                 context.WallLengthDisplay,
                 false))

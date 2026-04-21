@@ -687,25 +687,21 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             return null;
         }
 
-        GameObject wallObject = CreateCubeObject(segmentName, wallRoot, true);
-        wallObject.name = segmentName;
-        LayerUtility.ApplyLayer(wallObject, LayerUtility.WallLayerName, false);
-
-        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-        if (renderer != null && wallMaterial != null)
-        {
-            renderer.sharedMaterial = wallMaterial;
-        }
-
-        Wall wallComponent = wallObject.AddComponent<Wall>();
-        wallComponent.SetTopMaterial(topMaterial);
-        wallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
-        bool applied = wallComponent.TryApplyGeometryAndRefresh(
-            startPoint,
-            endPoint,
-            thickness,
-            height,
-            centerY,
+        GameObject wallObject = WallObjectFactory.CreateWallObject(
+            segmentName,
+            wallRoot,
+            cachedCubeMesh,
+            wallMaterial,
+            topMaterial);
+        bool applied = WallObjectFactory.ConfigureWall(
+            wallObject,
+            new WallData(startPoint, endPoint, thickness, height, centerY),
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            startSplitPoint,
+            endSplitPoint,
             MinimumWallSegmentLength,
             wallLengthDisplay,
             false);
@@ -715,10 +711,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour
             Destroy(wallObject);
             return null;
         }
-
-        wallComponent.SetVertexIds(startVertexId, endVertexId);
-        wallComponent.SetHandleSuppressed(suppressStartHandle, suppressEndHandle);
-        wallComponent.SetSplitPointFlags(startSplitPoint, endSplitPoint);
         handleManager?.RegisterWall(wallObject);
         return wallObject;
     }

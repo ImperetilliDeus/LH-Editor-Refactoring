@@ -1,44 +1,45 @@
 internal sealed class WallDrawTool : IWallTool
 {
-    private readonly DrawManager owner;
+    private readonly IWallToolContext context;
 
-    public WallDrawTool(DrawManager owner)
+    public WallDrawTool(IWallToolContext context)
     {
-        this.owner = owner;
+        this.context = context;
     }
 
     public void Enter()
     {
-        owner.SetWallCreationModeActive(true);
-        if (owner.IsPreviewWallEnabled())
+        context.SetWallCreationModeActive(true);
+        if (context.IsPreviewWallEnabled())
         {
-            owner.EnsurePreviewWallState();
-            owner.UpdatePreviewWallState();
+            context.EnsurePreviewWallState();
+            context.UpdatePreviewWallState();
         }
     }
 
     public void Exit()
     {
-        owner.ExitWallCreationModeState();
+        context.ExitWallCreationModeState();
     }
 
-    public void HandleInput(WallToolInputFrame inputFrame)
+    public WallToolRequest HandleInput(WallToolInputFrame inputFrame)
     {
-        if (!inputFrame.IsAvailable || owner.IsHandleInputLocked())
+        if (!inputFrame.IsAvailable || context.IsHandleInputLocked())
         {
-            return;
+            return WallToolRequest.None;
         }
 
         if (inputFrame.RightPressedThisFrame)
         {
-            owner.ActivateIdleTool();
-            return;
+            return WallToolRequest.ActivateIdle;
         }
 
-        owner.UpdatePreviewWallState();
+        context.UpdatePreviewWallState();
         if (!inputFrame.PointerOverUI && inputFrame.LeftPressedThisFrame)
         {
-            owner.CommitCurrentSegmentState();
+            context.CommitCurrentSegmentState();
         }
+
+        return WallToolRequest.None;
     }
 }

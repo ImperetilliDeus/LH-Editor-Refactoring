@@ -126,7 +126,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
     {
         if (modeManager != null && modeManager.CurrentMode == EditorMode.DrawingOverlayCalibrate)
         {
-            modeManager.SetDefaultMode();
+            modeManager.SetMode(EditorMode.Default);
         }
 
         if (calibrationPanel != null)

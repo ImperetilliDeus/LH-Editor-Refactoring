@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public enum EditorMode
@@ -15,10 +17,12 @@ public enum EditorMode
 
 public class ModeManager : MonoBehaviour
 {
-    private const string DefaultModeButtonName = "_Button_Default";
-    private const string DefaultRoomCreateButtonName = "_Button_Room";
-    private const string DefaultFurnitureButtonName = "_Button_EditFurnish";
-    private const string DefaultDetailEditButtonName = "_Button_EditDetail";
+    private sealed class RegisteredModeButton
+    {
+        public Button button;
+        public EditorMode mode;
+        public UnityAction action;
+    }
 
     private const int LegacyRoomCreateModeA = 2;
     private const int LegacyRoomCreateModeB = 4;
@@ -27,20 +31,14 @@ public class ModeManager : MonoBehaviour
 
     public static ModeManager Instance { get; private set; }
 
-    [Header("UI Buttons")]
-    [SerializeField] private Button defaultModeButton;
-    [SerializeField] private Button roomCreateModeButton;
-    [SerializeField] private Button furniturePlaceModeButton;
-    [SerializeField] private Button detailEditModeButton;
-    [SerializeField] private Button doorInsertModeButton;
-    [SerializeField] private Button windowInsertModeButton;
-
     [Header("State")]
     [SerializeField] private EditorMode initialMode = EditorMode.Default;
 
     public EditorMode CurrentMode { get; private set; }
 
     public event Action<EditorMode> ModeChanged;
+
+    private readonly List<RegisteredModeButton> registeredButtons = new List<RegisteredModeButton>();
 
     private void Awake()
     {
@@ -51,9 +49,7 @@ public class ModeManager : MonoBehaviour
         }
 
         Instance = this;
-        ResolveButtons();
         CurrentMode = NormalizeLegacyMode(initialMode);
-        BindButtons();
         RefreshButtonState();
     }
 
@@ -86,152 +82,92 @@ public class ModeManager : MonoBehaviour
         ModeChanged?.Invoke(CurrentMode);
     }
 
-    public void SetDefaultMode()
+    public void RegisterModeButton(Button button, EditorMode mode)
     {
-        SetMode(EditorMode.Default);
-    }
-
-    public void SetRoomCreateMode()
-    {
-        SetMode(EditorMode.RoomCreate);
-    }
-
-    public void SetDetailEditMode()
-    {
-        SetMode(EditorMode.DetailEdit);
-    }
-
-    public void SetFurniturePlaceMode()
-    {
-        SetMode(EditorMode.FurniturePlace);
-    }
-
-    public void SetDoorInsertMode()
-    {
-        SetMode(EditorMode.DoorInsert);
-    }
-
-    public void SetWindowInsertMode()
-    {
-        SetMode(EditorMode.WindowInsert);
-    }
-
-    private void BindButtons()
-    {
-        if (defaultModeButton != null)
+        if (button == null)
         {
-            defaultModeButton.onClick.AddListener(SetDefaultMode);
+            return;
         }
 
-        if (roomCreateModeButton != null)
+        for (int i = 0; i < registeredButtons.Count; i++)
         {
-            roomCreateModeButton.onClick.AddListener(SetRoomCreateMode);
+            RegisteredModeButton existing = registeredButtons[i];
+            if (existing.button != button)
+            {
+                continue;
+            }
+
+            if (existing.mode == mode)
+            {
+                RefreshButtonState();
+                return;
+            }
+
+            button.onClick.RemoveListener(existing.action);
+            registeredButtons.RemoveAt(i);
+            break;
         }
 
-        if (furniturePlaceModeButton != null)
+        EditorMode targetMode = mode;
+        UnityAction action = () => SetMode(targetMode);
+        button.onClick.AddListener(action);
+        registeredButtons.Add(new RegisteredModeButton
         {
-            furniturePlaceModeButton.onClick.AddListener(SetFurniturePlaceMode);
-        }
+            button = button,
+            mode = mode,
+            action = action,
+        });
 
-        if (detailEditModeButton != null)
-        {
-            detailEditModeButton.onClick.AddListener(SetDetailEditMode);
-        }
-
-        if (doorInsertModeButton != null)
-        {
-            doorInsertModeButton.onClick.AddListener(SetDoorInsertMode);
-        }
-
-        if (windowInsertModeButton != null)
-        {
-            windowInsertModeButton.onClick.AddListener(SetWindowInsertMode);
-        }
+        RefreshButtonState();
     }
 
-    private void ResolveButtons()
+    public void UnregisterModeButton(Button button)
     {
-        defaultModeButton = ResolveButton(defaultModeButton, DefaultModeButtonName);
-        roomCreateModeButton = ResolveButton(roomCreateModeButton, DefaultRoomCreateButtonName);
-        furniturePlaceModeButton = ResolveButton(furniturePlaceModeButton, DefaultFurnitureButtonName);
-        detailEditModeButton = ResolveButton(detailEditModeButton, DefaultDetailEditButtonName);
-    }
-
-    private static Button ResolveButton(Button currentButton, string objectName)
-    {
-        if (currentButton != null || string.IsNullOrWhiteSpace(objectName))
+        if (button == null)
         {
-            return currentButton;
+            return;
         }
 
-        Transform target = LayerUtility.FindTransformByName(objectName, true);
-        return target != null ? target.GetComponent<Button>() : null;
+        for (int i = registeredButtons.Count - 1; i >= 0; i--)
+        {
+            RegisteredModeButton registeredButton = registeredButtons[i];
+            if (registeredButton.button != button)
+            {
+                continue;
+            }
+
+            button.onClick.RemoveListener(registeredButton.action);
+            registeredButtons.RemoveAt(i);
+        }
     }
 
     private void UnbindButtons()
     {
-        if (defaultModeButton != null)
+        for (int i = 0; i < registeredButtons.Count; i++)
         {
-            defaultModeButton.onClick.RemoveListener(SetDefaultMode);
+            RegisteredModeButton registeredButton = registeredButtons[i];
+            if (registeredButton.button == null)
+            {
+                continue;
+            }
+
+            registeredButton.button.onClick.RemoveListener(registeredButton.action);
         }
 
-        if (roomCreateModeButton != null)
-        {
-            roomCreateModeButton.onClick.RemoveListener(SetRoomCreateMode);
-        }
-
-        if (furniturePlaceModeButton != null)
-        {
-            furniturePlaceModeButton.onClick.RemoveListener(SetFurniturePlaceMode);
-        }
-
-        if (detailEditModeButton != null)
-        {
-            detailEditModeButton.onClick.RemoveListener(SetDetailEditMode);
-        }
-
-        if (doorInsertModeButton != null)
-        {
-            doorInsertModeButton.onClick.RemoveListener(SetDoorInsertMode);
-        }
-
-        if (windowInsertModeButton != null)
-        {
-            windowInsertModeButton.onClick.RemoveListener(SetWindowInsertMode);
-        }
+        registeredButtons.Clear();
     }
 
     private void RefreshButtonState()
     {
-        if (defaultModeButton != null)
+        for (int i = 0; i < registeredButtons.Count; i++)
         {
-            defaultModeButton.interactable = CurrentMode != EditorMode.Default;
-        }
+            RegisteredModeButton registeredButton = registeredButtons[i];
+            if (registeredButton.button == null)
+            {
+                continue;
+            }
 
-        bool isRoomCreateMode = CurrentMode == EditorMode.RoomCreate;
-        if (roomCreateModeButton != null)
-        {
-            roomCreateModeButton.interactable = !isRoomCreateMode;
-        }
-
-        if (furniturePlaceModeButton != null)
-        {
-            furniturePlaceModeButton.interactable = CurrentMode != EditorMode.FurniturePlace;
-        }
-
-        if (detailEditModeButton != null)
-        {
-            detailEditModeButton.interactable = CurrentMode != EditorMode.DetailEdit;
-        }
-
-        if (doorInsertModeButton != null)
-        {
-            doorInsertModeButton.interactable = CurrentMode != EditorMode.DoorInsert;
-        }
-
-        if (windowInsertModeButton != null)
-        {
-            windowInsertModeButton.interactable = CurrentMode != EditorMode.WindowInsert;
+            registeredButton.button.interactable = CurrentMode != registeredButton.mode;
         }
     }
 

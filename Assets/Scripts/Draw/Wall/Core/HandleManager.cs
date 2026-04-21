@@ -87,6 +87,7 @@ public partial class HandleManager : MonoBehaviour
     private readonly List<int> removedWallEntryKeys = new List<int>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> dragStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
 
+    private IEditorInputProvider inputProvider;
     private int nextVertexId = 1;
     private Sprite circularHandleSprite;
     private bool handleLayoutDirty = true;
@@ -111,6 +112,7 @@ public partial class HandleManager : MonoBehaviour
             mainCamera = Camera.main;
         }
 
+        inputProvider = new UnityEditorInputProvider();
         ResolveReferences();
 
         EnsureCanvas();
@@ -135,7 +137,7 @@ public partial class HandleManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isDefaultModeActive || mainCamera == null || !EditorPointerInput.TryGetCurrentFrame(out EditorPointerFrame pointerFrame))
+        if (!isDefaultModeActive || mainCamera == null || !TryGetPointerFrame(out EditorPointerFrame pointerFrame))
         {
             return;
         }
@@ -167,6 +169,11 @@ public partial class HandleManager : MonoBehaviour
 
         CacheCameraState();
         HandleDraggingInput(pointerFrame);
+    }
+
+    private bool TryGetPointerFrame(out EditorPointerFrame pointerFrame)
+    {
+        return PointerInputFrameUtility.TryBuildPointerFrame(inputProvider, out pointerFrame);
     }
 
     public void RegisterWall(GameObject wallObject)
