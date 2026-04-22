@@ -109,13 +109,15 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private readonly List<Wall> pendingRoomRefreshRemovedWalls = new List<Wall>();
     private readonly HashSet<WallOpeningMarkerUI> markerUIs = new HashSet<WallOpeningMarkerUI>();
     private readonly List<WallOpeningMarkerUI> removedMarkerUIs = new List<WallOpeningMarkerUI>();
+    private readonly WallOpeningPresentationController presentationController = new WallOpeningPresentationController();
+    private readonly WallOpeningMarkerDragState markerDragState = new WallOpeningMarkerDragState();
+    private readonly WallOpeningMarkerDragController markerDragController = new WallOpeningMarkerDragController();
+    private readonly WallOpeningLayoutRebuildController layoutRebuildController = new WallOpeningLayoutRebuildController();
+    private readonly WallOpeningGeometryFactory geometryFactory = new WallOpeningGeometryFactory();
     private Mesh cachedCubeMesh;
     private Material cachedDoorMaterial;
     private Material cachedWindowMaterial;
-    private UndoRedoManager.OpeningLayoutSnapshot openingDragStartSnapshot;
-    private bool hasOpeningDragStartSnapshot;
-    private bool isDraggingMarker;
-    private WallOpening selectedOpening;
+    private readonly WallOpeningSelectionState selectionState = new WallOpeningSelectionState();
     private bool markerVisualsDirty = true;
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
@@ -127,11 +129,15 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private int lastMarkerGeometryHash;
 
     public float MinimumSideWallUnits => MillimetersToUnits(minimumSideWallMillimeters);
-    public WallOpening SelectedOpening => selectedOpening;
+    public WallOpening SelectedOpening => selectionState.SelectedOpening;
     public bool IsOpeningDetailMenuVisible =>
         (doorUIController != null && doorUIController.IsMenuVisible) ||
         (windowUIController != null && windowUIController.IsMenuVisible);
-    public event System.Action<WallOpening> OpeningSelectionChanged;
+    public event System.Action<WallOpening> OpeningSelectionChanged
+    {
+        add => selectionState.SelectionChanged += value;
+        remove => selectionState.SelectionChanged -= value;
+    }
 
     private void Reset()
     {
@@ -215,12 +221,12 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         if (modeManager != null && !modeManager.IsMode(EditorMode.DetailEdit))
         {
-            selectedOpening = null;
+            selectionState.ClearSelectedOpening();
             SetOpeningDetailMenuVisible(false);
             return;
         }
 
-        if (!isDraggingMarker && selectedOpening != null && !IsCurrentDetailMenuActive())
+        if (!markerDragState.IsDraggingMarker && SelectedOpening != null && !IsCurrentDetailMenuActive())
         {
             SetOpeningDetailMenuVisible(true);
         }
@@ -233,7 +239,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return;
         }
 
-        if (selectedOpening != null && inputFrame.RightPressedThisFrame)
+        if (SelectedOpening != null && inputFrame.RightPressedThisFrame)
         {
             ClearOpeningSelection();
         }
@@ -424,118 +430,18 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     private void RebuildContainer(WallOpeningContainer container)
     {
-        if (container == null)
-        {
-            return;
-        }
-
-        List<Wall> removedWalls = new List<Wall>();
-        if (pendingRoomRefreshRemovedWalls.Count > 0)
-        {
-            removedWalls.AddRange(pendingRoomRefreshRemovedWalls);
-            pendingRoomRefreshRemovedWalls.Clear();
-        }
-
-        WallHierarchyUtility.CollectWalls(container.transform, cachedWalls, true);
-        for (int i = 0; i < cachedWalls.Count; i++)
-        {
-            Wall wall = cachedWalls[i];
-            if (wall != null)
-            {
-                removedWalls.Add(wall);
-            }
-        }
-
-        CollectOpenings(container, cachedOpenings);
-        cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
-
-        ClearGeneratedContainerVisuals(container, cachedWalls);
-
-        if (cachedOpenings.Count == 0)
-        {
-            CreateWallSegment(
-                container.transform,
-                $"{container.name}_Segment_Full",
-                container.WallStart,
-                container.WallEnd,
-                container.WallThickness,
-                container.WallHeight,
-                container.CenterY,
-                container.OuterStartVertexId,
-                container.OuterEndVertexId,
-                container.SuppressOuterStartHandle,
-                container.SuppressOuterEndHandle,
-                container.VisualState);
-
-            if (removedWalls.Count > 0)
-            {
-                WallHierarchyUtility.CollectWalls(container.transform, cachedWalls, true);
-                RoomTopologyEvents.RequestRefreshForWallReplacement(removedWalls, cachedWalls);
-            }
-
-            MarkMarkerVisualsDirty();
-            return;
-        }
-
-        Vector3 startPoint = container.WallStart;
-        Vector3 direction = container.WallDirection;
-        float currentDistance = 0f;
-
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            float halfWidth = opening.Width * 0.5f;
-            float openingStartDistance = opening.CenterDistance - halfWidth;
-            float openingEndDistance = opening.CenterDistance + halfWidth;
-
-            Vector3 segmentStart = startPoint + direction * currentDistance;
-            Vector3 segmentEnd = startPoint + direction * openingStartDistance;
-            CreateWallSegment(
-                container.transform,
-                $"{container.name}_Segment_{i * 2}",
-                segmentStart,
-                segmentEnd,
-                container.WallThickness,
-                container.WallHeight,
-                container.CenterY,
-                currentDistance <= 0.001f ? container.OuterStartVertexId : 0,
-                0,
-                currentDistance > 0.001f || container.SuppressOuterStartHandle,
-                true,
-                container.VisualState);
-
-            UpdateOpeningVisual(container, opening, i);
-            currentDistance = openingEndDistance;
-        }
-
-        Vector3 lastSegmentStart = startPoint + direction * currentDistance;
-        Vector3 lastSegmentEnd = container.WallEnd;
-        CreateWallSegment(
-            container.transform,
-            $"{container.name}_Segment_End",
-            lastSegmentStart,
-            lastSegmentEnd,
-            container.WallThickness,
-            container.WallHeight,
-            container.CenterY,
-            0,
-            container.OuterEndVertexId,
-            true,
-            container.SuppressOuterEndHandle,
-            container.VisualState);
-
-        if (removedWalls.Count > 0)
-        {
-            WallHierarchyUtility.CollectWalls(container.transform, cachedWalls, true);
-            RoomTopologyEvents.RequestRefreshForWallReplacement(removedWalls, cachedWalls);
-        }
-
-        MarkMarkerVisualsDirty();
+        layoutRebuildController.RebuildContainer(
+            container,
+            pendingRoomRefreshRemovedWalls,
+            cachedWalls,
+            cachedOpenings,
+            CollectOpenings,
+            ClearGeneratedContainerVisuals,
+            CreateWallSegment,
+            UpdateOpeningVisual,
+            (targetTransform, result, includeInactive) => WallHierarchyUtility.CollectWalls(targetTransform, result, includeInactive),
+            RoomTopologyEvents.RequestRefreshForWallReplacement,
+            MarkMarkerVisualsDirty);
     }
 
     private void RefreshSelectedWallForContainer(WallOpeningContainer container, float preferredDistance)
@@ -680,38 +586,26 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         bool endSplitPoint,
         WallVisualState visualState)
     {
-        Vector3 direction = endPoint - startPoint;
-        direction.y = 0f;
-        if (direction.magnitude < MinimumWallSegmentLength)
-        {
-            return null;
-        }
-
-        GameObject wallObject = WallObjectFactory.CreateWallObject(
-            segmentName,
+        return geometryFactory.CreateStandaloneWallSegment(
             wallRoot,
             cachedCubeMesh,
-            visualState);
-        bool applied = WallObjectFactory.ConfigureWall(
-            wallObject,
-            new WallData(startPoint, endPoint, thickness, height, centerY),
+            wallLengthDisplay,
+            handleManager,
+            Destroy,
+            segmentName,
+            startPoint,
+            endPoint,
+            thickness,
+            height,
+            centerY,
             startVertexId,
             endVertexId,
             suppressStartHandle,
             suppressEndHandle,
             startSplitPoint,
             endSplitPoint,
-            MinimumWallSegmentLength,
-            wallLengthDisplay,
-            false);
-
-        if (!applied)
-        {
-            Destroy(wallObject);
-            return null;
-        }
-        handleManager?.RegisterWall(wallObject);
-        return wallObject;
+            visualState,
+            MinimumWallSegmentLength);
     }
 
     private void CreateFillerSegment(
@@ -722,165 +616,19 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         float segmentHeight,
         float segmentBottomY)
     {
-        if (segmentHeight <= 0.01f)
-        {
-            return;
-        }
-
-        Vector3 openingCenter = container.WallStart + container.WallDirection * opening.CenterDistance;
-        GameObject filler = CreateCubeObject(fillerName, parent, false);
-        filler.name = fillerName;
-        LayerUtility.ApplyLayer(filler, LayerUtility.WallLayerName, false);
-        filler.transform.position = new Vector3(
-            openingCenter.x,
-            segmentBottomY + segmentHeight * 0.5f,
-            openingCenter.z);
-        filler.transform.rotation = Quaternion.LookRotation(container.WallDirection, Vector3.up);
-        filler.transform.localScale = new Vector3(container.WallThickness, segmentHeight, opening.Width);
-
-        MeshRenderer renderer = filler.GetComponent<MeshRenderer>();
-        if (renderer != null && container.WallMaterial != null)
-        {
-            renderer.sharedMaterial = container.WallMaterial;
-        }
-
-        WallTopFaceVisual topFaceVisual = filler.GetComponent<WallTopFaceVisual>();
-        if (topFaceVisual == null)
-        {
-            topFaceVisual = filler.AddComponent<WallTopFaceVisual>();
-        }
-
-        topFaceVisual.SetTopMaterial(container.WallTopMaterial);
-        topFaceVisual.SetWorldOffset(0.01f);
+        geometryFactory.CreateFillerSegment(
+            parent,
+            GetCubeMesh(),
+            fillerName,
+            container,
+            opening,
+            segmentHeight,
+            segmentBottomY);
     }
 
     private GameObject CreateCubeObject(string objectName, Transform parent, bool withCollider)
     {
-        GameObject cubeObject = new GameObject(objectName, typeof(MeshFilter), typeof(MeshRenderer));
-        cubeObject.transform.SetParent(parent, true);
-
-        MeshFilter meshFilter = cubeObject.GetComponent<MeshFilter>();
-        if (meshFilter != null)
-        {
-            meshFilter.sharedMesh = GetCubeMesh();
-        }
-
-        if (withCollider)
-        {
-            cubeObject.AddComponent<BoxCollider>();
-        }
-
-        return cubeObject;
-    }
-
-    public GameObject GetMarkerPrefab(WallOpening opening)
-    {
-        if (opening == null)
-        {
-            return null;
-        }
-
-        MarkerVariantDefinition variant = GetMarkerVariantDefinition(opening);
-        if (opening.Type == OpeningPlacementType.Door)
-        {
-            return variant != null && variant.MarkerPrefab != null ? variant.MarkerPrefab : doorMarkerPrefab;
-        }
-
-        return variant != null && variant.MarkerPrefab != null ? variant.MarkerPrefab : windowMarkerPrefab;
-    }
-
-    public Vector2 GetMarkerScaleMultiplier(WallOpening opening)
-    {
-        if (opening == null)
-        {
-            return Vector2.one;
-        }
-
-        MarkerVariantDefinition variant = GetMarkerVariantDefinition(opening);
-        if (variant != null)
-        {
-            return variant.ScaleMultiplier;
-        }
-
-        return opening.Type == OpeningPlacementType.Door
-            ? doorMarkerScaleMultiplier
-            : windowMarkerScaleMultiplier;
-    }
-
-    public MarkerPlacementMode GetMarkerPlacementMode(WallOpening opening)
-    {
-        if (opening == null)
-        {
-            return MarkerPlacementMode.OffsetFromOpening;
-        }
-
-        MarkerVariantDefinition variant = GetMarkerVariantDefinition(opening);
-        if (variant != null)
-        {
-            return variant.PlacementMode;
-        }
-
-        return opening.Type == OpeningPlacementType.Door
-            ? doorMarkerPlacementMode
-            : windowMarkerPlacementMode;
-    }
-
-    private MarkerVariantDefinition GetMarkerVariantDefinition(WallOpening opening)
-    {
-        if (opening == null)
-        {
-            return null;
-        }
-
-        if (opening.Type == OpeningPlacementType.Door)
-        {
-            return FindMarkerVariant(doorMarkerVariants, opening.DoorTypeKey);
-        }
-
-        return FindMarkerVariant(windowMarkerVariants, opening.WindowTypeKey);
-    }
-
-    private static T FindMarkerVariant<T>(List<T> variants, string typeKey) where T : MarkerVariantDefinition
-    {
-        if (variants == null || string.IsNullOrWhiteSpace(typeKey))
-        {
-            return null;
-        }
-
-        for (int i = 0; i < variants.Count; i++)
-        {
-            T variant = variants[i];
-            if (variant == null || string.IsNullOrWhiteSpace(variant.TypeName))
-            {
-                continue;
-            }
-
-            if (string.Equals(variant.TypeName, typeKey, System.StringComparison.Ordinal))
-            {
-                return variant;
-            }
-        }
-
-        return null;
-    }
-
-    private static void ValidateMarkerVariants<T>(List<T> variants) where T : MarkerVariantDefinition
-    {
-        if (variants == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < variants.Count; i++)
-        {
-            T variant = variants[i];
-            if (variant == null)
-            {
-                continue;
-            }
-
-            variant.ClampValues();
-        }
+        return geometryFactory.CreateCubeObject(GetCubeMesh(), objectName, parent, withCollider);
     }
 
     private void EnsureWallRoot()
@@ -910,12 +658,12 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     public float GetSelectedOpeningBottomOffsetMillimeters(float fallbackValue, OpeningPlacementType requiredType)
     {
-        if (selectedOpening == null || selectedOpening.Type != requiredType || selectedOpening.Container == null)
+        if (SelectedOpening == null || SelectedOpening.Type != requiredType || SelectedOpening.Container == null)
         {
             return fallbackValue;
         }
 
-        return UnitsToMillimeters(selectedOpening.BottomY - selectedOpening.Container.WallBottomY);
+        return UnitsToMillimeters(SelectedOpening.BottomY - SelectedOpening.Container.WallBottomY);
     }
 
 }

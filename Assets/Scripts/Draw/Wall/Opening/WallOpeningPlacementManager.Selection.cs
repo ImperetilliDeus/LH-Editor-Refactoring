@@ -15,7 +15,7 @@ public partial class WallOpeningPlacementManager
 
     public void SelectOpening(WallOpening opening)
     {
-        if (selectedOpening == opening)
+        if (SelectedOpening == opening)
         {
             SetOpeningDetailMenuVisible(opening != null);
             RefreshOpeningDetailInputs(true);
@@ -23,16 +23,15 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        selectedOpening = opening;
+        selectionState.SetSelectedOpening(opening);
         SetOpeningDetailMenuVisible(opening != null);
         RefreshOpeningDetailInputs(true);
         MarkMarkerVisualsDirty();
-        OpeningSelectionChanged?.Invoke(selectedOpening);
     }
 
     public void ClearOpeningSelection()
     {
-        if (selectedOpening == null)
+        if (SelectedOpening == null)
         {
             SetOpeningDetailMenuVisible(false);
             RefreshOpeningDetailInputs(true);
@@ -40,21 +39,20 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        selectedOpening = null;
+        selectionState.ClearSelectedOpening();
         SetOpeningDetailMenuVisible(false);
         RefreshOpeningDetailInputs(true);
         MarkMarkerVisualsDirty();
-        OpeningSelectionChanged?.Invoke(null);
     }
 
     public void DeleteSelectedOpening()
     {
-        if (!CanEditOpenings() || selectedOpening == null)
+        if (!CanEditOpenings() || SelectedOpening == null)
         {
             return;
         }
 
-        WallOpening openingToDelete = selectedOpening;
+        WallOpening openingToDelete = SelectedOpening;
         WallOpeningContainer container = openingToDelete.Container;
         if (container == null)
         {
@@ -122,12 +120,13 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        selectedOpening = opening;
-        isDraggingMarker = true;
-        SetOpeningDetailMenuVisible(true);
-        RefreshOpeningDetailInputs(true);
-        openingDragStartSnapshot = CaptureLayoutSnapshot(opening.Container);
-        hasOpeningDragStartSnapshot = true;
+        selectionState.SetSelectedOpening(opening);
+        markerDragController.BeginDrag(
+            opening,
+            markerDragState,
+            SetOpeningDetailMenuVisible,
+            RefreshOpeningDetailInputs,
+            CaptureLayoutSnapshot);
     }
 
     public void DragMarker(WallOpening opening, Vector2 screenPosition)
@@ -137,45 +136,22 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        WallOpeningContainer container = opening.Container;
-        if (container == null || mainCamera == null)
-        {
-            return;
-        }
-
-        Plane dragPlane = new Plane(Vector3.up, new Vector3(0f, container.WallPlaneY, 0f));
-        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
-        if (!dragPlane.Raycast(ray, out float enter))
-        {
-            return;
-        }
-
-        Vector3 point = ray.GetPoint(enter);
-        Vector3 direction = container.WallDirection;
-        float projectedDistance = Vector3.Dot(point - container.WallStart, direction);
-        float clampedDistance = ClampOpeningCenterDistance(container, opening, projectedDistance);
-        opening.SetCenterDistance(clampedDistance);
-        RebuildContainer(container);
+        markerDragController.Drag(
+            opening,
+            screenPosition,
+            mainCamera,
+            (container, targetOpening, projectedDistance) => ClampOpeningCenterDistance(container, targetOpening, projectedDistance),
+            RebuildContainer);
     }
 
     public void EndMarkerDrag(WallOpening opening)
     {
-        if (opening == null)
-        {
-            isDraggingMarker = false;
-            return;
-        }
-
-        isDraggingMarker = false;
-        RebuildContainer(opening.Container);
-        RefreshSelectedWallForContainer(opening.Container, opening.CenterDistance);
-
-        if (hasOpeningDragStartSnapshot && undoRedoManager != null)
-        {
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = CaptureLayoutSnapshot(opening.Container);
-            undoRedoManager.RecordOpeningLayoutChange(openingDragStartSnapshot, afterSnapshot);
-        }
-
-        hasOpeningDragStartSnapshot = false;
+        markerDragController.EndDrag(
+            opening,
+            markerDragState,
+            undoRedoManager,
+            RebuildContainer,
+            RefreshSelectedWallForContainer,
+            CaptureLayoutSnapshot);
     }
 }

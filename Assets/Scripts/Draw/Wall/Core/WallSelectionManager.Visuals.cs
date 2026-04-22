@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public partial class WallSelectionManager
 {
     private void RefreshSelectionVisuals()
@@ -10,13 +12,12 @@ public partial class WallSelectionManager
 
     private void NotifySelectionChangedIfNeeded()
     {
-        if (lastNotifiedSelectedWall == selectedWall)
+        if (!selectionState.TryGetSelectionChanged(out GameObject currentSelection))
         {
             return;
         }
 
-        lastNotifiedSelectedWall = selectedWall;
-        SelectionChanged?.Invoke(selectedWall);
+        SelectionChanged?.Invoke(currentSelection);
     }
 
     private void UpdateSelectUIVisibility()
@@ -24,7 +25,7 @@ public partial class WallSelectionManager
         bool visible = modeManager != null &&
                        modeManager.IsMode(EditorMode.DetailEdit) &&
                        (wallOpeningPlacementManager == null || !wallOpeningPlacementManager.IsOpeningDetailMenuVisible) &&
-                       (selectedWall != null || detailSelectedWalls.Count > 0);
+                       selectionState.SelectedWallCount > 0;
         SetSelectUIVisible(visible);
     }
 

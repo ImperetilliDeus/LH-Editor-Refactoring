@@ -114,16 +114,16 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        if (selectedOpening == null || selectedOpening.Container == null || selectedOpening.Type != requiredType)
+        if (SelectedOpening == null || SelectedOpening.Container == null || SelectedOpening.Type != requiredType)
         {
             updateDefaultValue?.Invoke(millimeters);
             RefreshOpeningDetailInputs(true);
             return;
         }
 
-        float clampedMillimeters = Mathf.Min(millimeters, UnitsToMillimeters(selectedOpening.Container.WallThickness));
+        float clampedMillimeters = Mathf.Min(millimeters, UnitsToMillimeters(SelectedOpening.Container.WallThickness));
         updateDefaultValue?.Invoke(clampedMillimeters);
-        selectedOpening.SetDepth(MillimetersToUnits(clampedMillimeters));
+        SelectedOpening.SetDepth(MillimetersToUnits(clampedMillimeters));
         RebuildSelectedOpeningWithUndo();
     }
 
@@ -139,47 +139,47 @@ public partial class WallOpeningPlacementManager
 
     public void ApplySelectedDoorTypeFromDropdown(int optionIndex)
     {
-        if (selectedOpening == null || selectedOpening.Type != OpeningPlacementType.Door)
+        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Door)
         {
             return;
         }
 
         string nextTypeKey = GetDoorTypeKeyForOption(optionIndex);
-        selectedOpening.SetDoorTypeKey(nextTypeKey);
+        SelectedOpening.SetDoorTypeKey(nextTypeKey);
         RebuildSelectedOpeningWithUndo();
     }
 
     public void ApplySelectedDoorSwingDirection(bool opensRight)
     {
-        if (selectedOpening == null || selectedOpening.Type != OpeningPlacementType.Door)
+        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Door)
         {
             return;
         }
 
-        selectedOpening.SetDoorOpensRight(opensRight);
+        SelectedOpening.SetDoorOpensRight(opensRight);
         RebuildSelectedOpeningWithUndo();
     }
 
     public void ApplySelectedDoorVerticalFlip(bool verticalFlip)
     {
-        if (selectedOpening == null || selectedOpening.Type != OpeningPlacementType.Door)
+        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Door)
         {
             return;
         }
 
-        selectedOpening.SetDoorVerticalFlip(verticalFlip);
+        SelectedOpening.SetDoorVerticalFlip(verticalFlip);
         RebuildSelectedOpeningWithUndo();
     }
 
     public void ApplySelectedWindowTypeFromDropdown(int optionIndex)
     {
-        if (selectedOpening == null || selectedOpening.Type != OpeningPlacementType.Window)
+        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Window)
         {
             return;
         }
 
         string nextTypeKey = GetWindowTypeKeyForOption(optionIndex);
-        selectedOpening.SetWindowTypeKey(nextTypeKey);
+        SelectedOpening.SetWindowTypeKey(nextTypeKey);
         RebuildSelectedOpeningWithUndo();
     }
 
@@ -197,13 +197,13 @@ public partial class WallOpeningPlacementManager
 
         updateDefaultValue?.Invoke(millimeters);
 
-        if (selectedOpening == null || (requiredType.HasValue && selectedOpening.Type != requiredType.Value))
+        if (SelectedOpening == null || (requiredType.HasValue && SelectedOpening.Type != requiredType.Value))
         {
             RefreshOpeningDetailInputs(true);
             return;
         }
 
-        WallOpeningContainer container = selectedOpening.Container;
+        WallOpeningContainer container = SelectedOpening.Container;
         if (container == null || applyToOpening == null)
         {
             RefreshOpeningDetailInputs(true);
@@ -211,7 +211,7 @@ public partial class WallOpeningPlacementManager
         }
 
         float units = MillimetersToUnits(millimeters);
-        if (!applyToOpening(selectedOpening, container, units))
+        if (!applyToOpening(SelectedOpening, container, units))
         {
             RefreshOpeningDetailInputs(true);
             return;
@@ -237,13 +237,13 @@ public partial class WallOpeningPlacementManager
             defaultWindowBottomOffsetMillimeters = millimeters;
         }
 
-        if (selectedOpening == null || selectedOpening.Type != requiredType)
+        if (SelectedOpening == null || SelectedOpening.Type != requiredType)
         {
             RefreshOpeningDetailInputs(true);
             return;
         }
 
-        WallOpeningContainer container = selectedOpening.Container;
+        WallOpeningContainer container = SelectedOpening.Container;
         if (container == null)
         {
             RefreshOpeningDetailInputs(true);
@@ -251,27 +251,27 @@ public partial class WallOpeningPlacementManager
         }
 
         float bottomY = container.WallBottomY + MillimetersToUnits(millimeters);
-        bottomY = ClampOpeningBottomY(container, selectedOpening, bottomY);
-        selectedOpening.SetBottomY(bottomY);
-        float clampedHeight = ClampOpeningHeight(container, selectedOpening, selectedOpening.Height, bottomY);
-        selectedOpening.SetHeight(clampedHeight);
+        bottomY = ClampOpeningBottomY(container, SelectedOpening, bottomY);
+        SelectedOpening.SetBottomY(bottomY);
+        float clampedHeight = ClampOpeningHeight(container, SelectedOpening, SelectedOpening.Height, bottomY);
+        SelectedOpening.SetHeight(clampedHeight);
         RebuildSelectedOpeningWithUndo();
     }
 
     private void RebuildSelectedOpeningWithUndo()
     {
-        if (selectedOpening == null || selectedOpening.Container == null)
+        if (SelectedOpening == null || SelectedOpening.Container == null)
         {
             RefreshOpeningDetailInputs(true);
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(selectedOpening.Container);
-        RebuildContainer(selectedOpening.Container);
-        RefreshSelectedWallForContainer(selectedOpening.Container, selectedOpening.CenterDistance);
+        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(SelectedOpening.Container);
+        RebuildContainer(SelectedOpening.Container);
+        RefreshSelectedWallForContainer(SelectedOpening.Container, SelectedOpening.CenterDistance);
         if (undoRedoManager != null)
         {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, CaptureLayoutSnapshot(selectedOpening.Container));
+            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, CaptureLayoutSnapshot(SelectedOpening.Container));
         }
 
         RefreshOpeningDetailInputs(true);
@@ -279,15 +279,14 @@ public partial class WallOpeningPlacementManager
 
     private void RefreshOpeningDetailInputs(bool force)
     {
-        doorUIController?.Refresh(
-            selectedOpening,
+        presentationController.RefreshOpeningDetailInputs(
+            doorUIController,
+            windowUIController,
+            SelectedOpening,
             defaultDoorWidthMillimeters,
             defaultDoorHeightMillimeters,
             defaultDoorDepthMillimeters,
             defaultDoorBottomOffsetMillimeters,
-            force);
-        windowUIController?.Refresh(
-            selectedOpening,
             defaultWindowWidthMillimeters,
             defaultWindowHeightMillimeters,
             defaultWindowDepthMillimeters,
@@ -333,32 +332,21 @@ public partial class WallOpeningPlacementManager
 
     private void SetOpeningDetailMenuVisible(bool visible)
     {
-        if (selectedOpening == null)
-        {
-            doorUIController?.SetVisible(false);
-            windowUIController?.SetVisible(false);
-            return;
-        }
-
-        bool showDoorMenu = visible && selectedOpening.Type == OpeningPlacementType.Door;
-        bool showWindowMenu = visible && selectedOpening.Type == OpeningPlacementType.Window;
-        doorUIController?.SetVisible(showDoorMenu);
-        windowUIController?.SetVisible(showWindowMenu);
+        presentationController.SetOpeningDetailMenuVisible(
+            doorUIController,
+            windowUIController,
+            SelectedOpening,
+            OpeningPlacementType.Door,
+            visible);
     }
 
     private bool IsCurrentDetailMenuActive()
     {
-        if (selectedOpening == null)
-        {
-            return false;
-        }
-
-        if (selectedOpening.Type == OpeningPlacementType.Door)
-        {
-            return doorUIController == null || doorUIController.IsMenuVisible;
-        }
-
-        return windowUIController == null || windowUIController.IsMenuVisible;
+        return presentationController.IsCurrentDetailMenuActive(
+            doorUIController,
+            windowUIController,
+            SelectedOpening,
+            OpeningPlacementType.Door);
     }
 
     public int GetDoorTypeOptionIndex(string doorTypeKey)
