@@ -43,33 +43,6 @@ public partial class UndoRedoManager
         }
     }
 
-    private class MoveVertexGroupAction : IEditorCommand
-    {
-        private readonly int vertexId;
-        private readonly List<WallStateChangeRecord> records;
-
-        public MoveVertexGroupAction(int vertexId, List<WallStateChangeRecord> records)
-        {
-            this.vertexId = vertexId;
-            this.records = records;
-        }
-
-        public void Execute(UndoRedoManager context)
-        {
-            Redo(context);
-        }
-
-        public void Undo(UndoRedoManager context)
-        {
-            context.ApplyWallStateChanges(records, false);
-        }
-
-        public void Redo(UndoRedoManager context)
-        {
-            context.ApplyWallStateChanges(records, true);
-        }
-    }
-
     private class MoveConnectedWallsAction : IEditorCommand
     {
         private readonly List<WallStateChangeRecord> records;

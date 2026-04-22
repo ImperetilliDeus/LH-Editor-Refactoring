@@ -5,115 +5,36 @@ public partial class WallSelectionManager
 {
     private void PrepareSelectUI()
     {
-        if (selectUIObject == null)
-        {
-            return;
-        }
-
-        selectUIObject.SetActive(false);
+        presentationController.PrepareSelectUI(selectUIObject);
     }
 
     private void SetSelectUIVisible(bool visible)
     {
-        if (selectUIObject == null)
-        {
-            return;
-        }
-
-        if (selectUIObject.activeSelf != visible)
-        {
-            selectUIObject.SetActive(visible);
-        }
+        presentationController.SetSelectUIVisible(selectUIObject, visible);
     }
 
     private void EnsureSelectionCanvas()
     {
-        if (wallSelectionCanvas != null)
-        {
-            return;
-        }
-
-        wallSelectionCanvas = LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
+        wallSelectionCanvas = presentationController.EnsureSelectionCanvas(wallSelectionCanvas);
     }
 
     private void RefreshWallSelectionUIStates()
     {
-        if (wallRoot == null)
-        {
-            return;
-        }
-
-        processedSelectionUIContainers.Clear();
-        List<Wall> walls = GetRootWalls();
-        for (int i = 0; i < walls.Count; i++)
-        {
-            Wall wall = walls[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            WallSelectionUIProxy proxy = wall.GetComponent<WallSelectionUIProxy>();
-            if (!ShouldDisplaySelectionProxy(wall))
-            {
-                if (proxy != null)
-                {
-                    proxy.DestroyUI();
-                    Destroy(proxy);
-                }
-
-                continue;
-            }
-
-            if (proxy == null)
-            {
-                proxy = wall.gameObject.AddComponent<WallSelectionUIProxy>();
-            }
-
-            proxy.Initialize(this);
-
-            proxy.SetSelected(IsWallOrContainerSelected(wall));
-        }
+        presentationController.RefreshWallSelectionUIStates(
+            wallRoot,
+            GetRootWalls(),
+            ShouldDisplaySelectionProxy,
+            IsWallOrContainerSelected,
+            this);
     }
 
     private void RefreshWallSelectionUIPositions()
     {
-        if (wallRoot == null)
-        {
-            return;
-        }
-
-        processedSelectionUIContainers.Clear();
-        List<Wall> walls = GetRootWalls();
-        for (int i = 0; i < walls.Count; i++)
-        {
-            Wall wall = walls[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            WallSelectionUIProxy proxy = wall.GetComponent<WallSelectionUIProxy>();
-            if (!ShouldDisplaySelectionProxy(wall))
-            {
-                if (proxy != null)
-                {
-                    proxy.DestroyUI();
-                    Destroy(proxy);
-                }
-
-                continue;
-            }
-
-            if (proxy == null)
-            {
-                proxy = wall.gameObject.AddComponent<WallSelectionUIProxy>();
-            }
-
-            proxy.Initialize(this);
-
-            proxy.RefreshVisual();
-        }
+        presentationController.RefreshWallSelectionUIPositions(
+            wallRoot,
+            GetRootWalls(),
+            ShouldDisplaySelectionProxy,
+            this);
     }
 
     private bool ShouldDisplaySelectionProxy(Wall wall)
@@ -171,7 +92,7 @@ public partial class WallSelectionManager
             return false;
         }
 
-        if (wall.gameObject == selectedWall || detailSelectedWalls.Contains(wall.gameObject))
+        if (selectionState.IsSelected(wall.gameObject))
         {
             return true;
         }
@@ -182,12 +103,12 @@ public partial class WallSelectionManager
             return false;
         }
 
-        if (selectedWall != null && selectedWall.transform.IsChildOf(container.transform))
+        if (selectionState.SelectedWall != null && selectionState.SelectedWall.transform.IsChildOf(container.transform))
         {
             return true;
         }
 
-        foreach (GameObject detailWall in detailSelectedWalls)
+        foreach (GameObject detailWall in selectionState.DetailSelectedWalls)
         {
             if (detailWall != null && detailWall.transform.IsChildOf(container.transform))
             {

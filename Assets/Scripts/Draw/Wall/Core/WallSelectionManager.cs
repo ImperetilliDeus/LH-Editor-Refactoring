@@ -58,17 +58,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private Bounds gridBounds;
     private bool hasGridBounds;
 
-    private GameObject selectedWall;
-    private readonly HashSet<GameObject> detailSelectedWalls = new HashSet<GameObject>();
+    private readonly WallSelectionState selectionState = new WallSelectionState();
     private readonly HashSet<GameObject> multiSelectWallsInBox = new HashSet<GameObject>();
     private GameObject multiSelectBoxObject;
     private BoxCollider multiSelectBoxCollider;
     private Material multiSelectBoxMaterial;
-    private bool pendingMultiSelectDrag;
-    private bool isMultiSelecting;
-    private bool addToSelectionOnDragStart;
-    private Vector2 multiSelectStartMousePosition;
-    private Vector3 multiSelectStartWorldPoint;
 
     private bool pendingWallDrag;
     private bool isDraggingWall;
@@ -79,33 +73,22 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private Quaternion moveStartWallRotation;
     private Vector3 moveStartWallScale;
     private readonly List<Vector3> moveSnapCandidates = new List<Vector3>();
-    private readonly Dictionary<GameObject, UndoRedoManager.WallStateSnapshot> moveStartSnapshots = new Dictionary<GameObject, UndoRedoManager.WallStateSnapshot>();
-    private readonly Dictionary<GameObject, WallGeometryService.WallEndpointState> moveStartEndpointSnapshots = new Dictionary<GameObject, WallGeometryService.WallEndpointState>();
-    private readonly List<Wall> dragAffectedWalls = new List<Wall>();
-    private readonly List<WallOpeningContainer> dragAffectedOpeningContainers = new List<WallOpeningContainer>();
-    private readonly Dictionary<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> moveStartConnectedOpeningSnapshots = new Dictionary<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Wall> rootWallsCache = new List<Wall>();
-    private readonly List<UndoRedoManager.WallStateChangeRecord> moveStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
-    private readonly List<UndoRedoManager.OpeningLayoutChangeRecord> moveOpeningChangeRecords = new List<UndoRedoManager.OpeningLayoutChangeRecord>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
     private readonly HashSet<WallOpeningContainer> processedSelectionUIContainers = new HashSet<WallOpeningContainer>();
+    private readonly WallSelectionPresentationController presentationController = new WallSelectionPresentationController();
+    private readonly WallSelectionDragController dragController = new WallSelectionDragController();
+    private readonly WallSelectionDragState dragState = new WallSelectionDragState();
+    private readonly WallSelectionInputController inputController = new WallSelectionInputController();
+    private readonly WallSelectionInputState inputState = new WallSelectionInputState();
+    private readonly WallSelectionUndoRecorder undoRecorder = new WallSelectionUndoRecorder();
     private Mesh cachedCubeMesh;
-    private Vector3 dragSelectedStartPoint;
-    private Vector3 dragSelectedEndPoint;
-    private int dragSelectedStartVertexId;
-    private int dragSelectedEndVertexId;
-    private WallOpeningContainer selectedOpeningContainer;
-    private Vector3 moveStartContainerPosition;
-    private Vector3 moveStartContainerWallStart;
-    private Vector3 moveStartContainerWallEnd;
-    private UndoRedoManager.OpeningLayoutSnapshot moveStartOpeningLayoutSnapshot;
-    private bool hasMoveStartOpeningLayoutSnapshot;
     private bool rootWallsCacheDirty = true;
     private EditorInputFrame lastInputFrame;
 
     public bool IsDraggingWall => isDraggingWall;
-    public GameObject SelectedWall => selectedWall;
+    public GameObject SelectedWall => selectionState.SelectedWall;
     public Canvas WallSelectionCanvas => wallSelectionCanvas;
     public Camera SelectionCamera => mainCamera;
     public Color WallUINormalColor => wallUINormalColor;
@@ -114,13 +97,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     public bool IsWallUIInteractionEnabled => modeManager != null &&
                                               modeManager.IsMode(EditorMode.DetailEdit) &&
                                               (wallOpeningPlacementManager == null || !wallOpeningPlacementManager.IsOpeningDetailMenuVisible);
-    public int SelectedWallCount => (selectedWall != null ? 1 : 0) + detailSelectedWalls.Count;
+    public int SelectedWallCount => selectionState.SelectedWallCount;
     public bool HasMultiWallSelection => SelectedWallCount > 1;
 
     public event Action<GameObject> SelectionChanged;
     public event Action SelectionSetChanged;
-
-    private GameObject lastNotifiedSelectedWall;
 
     public void SetSelectedWall(GameObject wall)
     {
@@ -134,24 +115,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     public void GetSelectedWalls(List<GameObject> result)
     {
-        if (result == null)
-        {
-            return;
-        }
-
-        result.Clear();
-        if (selectedWall != null)
-        {
-            result.Add(selectedWall);
-        }
-
-        foreach (GameObject wall in detailSelectedWalls)
-        {
-            if (wall != null && wall != selectedWall)
-            {
-                result.Add(wall);
-            }
-        }
+        selectionState.GetSelectedWalls(result);
     }
 
     public void HandleWallUIClick(GameObject wallObject)
@@ -222,7 +186,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        if (selectedWall == null && detailSelectedWalls.Count == 0)
+        if (selectionState.SelectedWallCount == 0)
         {
             return;
         }
@@ -292,7 +256,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        if (detailSelectedWalls.Count > 0)
+        if (selectionState.DetailSelectedWalls.Count > 0)
         {
             ClearAllSelectionState();
         }
@@ -321,152 +285,80 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void HandleDefaultModeInput(EditorPointerFrame pointerFrame)
     {
-        if (!pointerFrame.IsAvailable)
-        {
-            return;
-        }
-
-        if (selectedWall != null && pointerFrame.RightPressedThisFrame)
-        {
-            if (drawManager == null || !drawManager.IsWallCreationMode)
+        inputController.HandleDefaultModeInput(
+            pointerFrame,
+            selectionState.SelectedWall,
+            drawManager != null && drawManager.IsWallCreationMode,
+            handleManager != null && handleManager.IsDraggingHandle,
+            pendingWallDrag,
+            isDraggingWall,
+            dragStartThresholdPixels,
+            pendingStartMousePosition,
+            dragStartPoint,
+            selectedWallStartPosition,
+            snapDraggedWallToGrid,
+            screenPosition =>
             {
-                FinalizeMoveIfNeeded();
-                ClearSingleSelection();
-                ResetDragState();
-                return;
-            }
-        }
-
-        if (selectedWall == null)
-        {
-            ClearSingleSelection();
-            ResetDragState();
-            return;
-        }
-
-        SetSelectUIVisible(false);
-
-        if (pendingWallDrag && !pointerFrame.LeftPressed)
-        {
-            FinalizeMoveIfNeeded();
-            ResetDragState();
-            return;
-        }
-
-        if (drawManager != null && drawManager.IsWallCreationMode)
-        {
-            FinalizeMoveIfNeeded();
-            ResetDragState();
-            return;
-        }
-
-        if (handleManager != null && handleManager.IsDraggingHandle)
-        {
-            FinalizeMoveIfNeeded();
-            ResetDragState();
-            return;
-        }
-
-        if (pendingWallDrag && !isDraggingWall)
-        {
-            Vector2 currentMouse = pointerFrame.ScreenPosition;
-            float movedSqr = (currentMouse - pendingStartMousePosition).sqrMagnitude;
-            float thresholdSqr = dragStartThresholdPixels * dragStartThresholdPixels;
-            if (movedSqr >= thresholdSqr)
+                bool success = TryGetMouseWorldPoint(screenPosition, out Vector3 point);
+                return (success, point);
+            },
+            targetPosition => snapManager != null ? snapManager.GetSnappedPoint(targetPosition, targetPosition) : targetPosition,
+            targetPosition =>
             {
-                moveStartWallPosition = selectedWall.transform.position;
-                moveStartWallRotation = selectedWall.transform.rotation;
-                moveStartWallScale = selectedWall.transform.localScale;
-                PrepareConnectedWallDrag();
-                isDraggingWall = true;
-            }
-        }
+                if (selectionState.SelectedWall == null)
+                {
+                    return targetPosition;
+                }
 
-        if (!isDraggingWall)
-        {
-            return;
-        }
-
-        if (!TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 currentPoint))
-        {
-            return;
-        }
-
-        Vector3 delta = currentPoint - dragStartPoint;
-        Vector3 targetPosition = selectedWallStartPosition + new Vector3(delta.x, 0f, delta.z);
-
-        if (snapDraggedWallToGrid && snapManager != null)
-        {
-            targetPosition = snapManager.GetSnappedPoint(targetPosition, targetPosition);
-        }
-
-        TryApplyHandleSnapToMovedWall(selectedWall.transform, ref targetPosition);
-
-        if (hasGridBounds)
-        {
-            targetPosition = ClampWallCenterPositionInsideBounds(selectedWall.transform, targetPosition);
-        }
-
-        Vector3 targetWallPosition = new Vector3(targetPosition.x, selectedWallStartPosition.y, targetPosition.z);
-        Vector3 translationDelta = targetWallPosition - selectedWallStartPosition;
-        translationDelta.y = 0f;
-
-        SyncAllWallComponentEndpoints();
-        ApplyConnectedWallDrag(translationDelta, targetWallPosition);
+                TryApplyHandleSnapToMovedWall(selectionState.SelectedWall.transform, ref targetPosition);
+                return hasGridBounds
+                    ? ClampWallCenterPositionInsideBounds(selectionState.SelectedWall.transform, targetPosition)
+                    : targetPosition;
+            },
+            FinalizeMoveIfNeeded,
+            ClearSingleSelection,
+            ResetDragState,
+            SetSelectUIVisible,
+            () =>
+            {
+                moveStartWallPosition = selectionState.SelectedWall.transform.position;
+                moveStartWallRotation = selectionState.SelectedWall.transform.rotation;
+                moveStartWallScale = selectionState.SelectedWall.transform.localScale;
+            },
+            PrepareConnectedWallDrag,
+            ApplyConnectedWallDrag,
+            () => isDraggingWall = true);
     }
 
     internal bool TryConsumeIdleLeftPress(EditorPointerFrame pointerFrame)
     {
-        if (mainCamera == null || !pointerFrame.IsAvailable)
-        {
-            return false;
-        }
-
-        if (modeManager != null && !modeManager.IsMode(EditorMode.Default))
-        {
-            return false;
-        }
-
-        if (IsPointerOverUI(pointerFrame.ScreenPosition))
-        {
-            return false;
-        }
-
-        if (drawManager != null && drawManager.IsWallCreationMode)
-        {
-            return false;
-        }
-
-        if (handleManager != null && handleManager.IsDraggingHandle)
-        {
-            return false;
-        }
-
-        Vector2 mousePosition = pointerFrame.ScreenPosition;
-        if (handleManager != null && handleManager.IsPointerOverHandle(mousePosition))
-        {
-            return false;
-        }
-
-        if (!TryGetWallFromMouseRay(pointerFrame.ScreenPosition, out GameObject hitWall))
-        {
-            return false;
-        }
-
-            SelectWall(hitWall, false);
-
-        ResetDragState();
-        SetSelectUIVisible(false);
-
-        if (TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 worldPoint))
-        {
-            pendingWallDrag = true;
-            pendingStartMousePosition = mousePosition;
-            dragStartPoint = worldPoint;
-            selectedWallStartPosition = selectedWall.transform.position;
-        }
-
-        return true;
+        return inputController.TryConsumeIdleLeftPress(
+            pointerFrame,
+            modeManager == null || modeManager.IsMode(EditorMode.Default),
+            mainCamera == null || IsPointerOverUI(pointerFrame.ScreenPosition),
+            drawManager != null && drawManager.IsWallCreationMode,
+            handleManager != null && handleManager.IsDraggingHandle,
+            handleManager != null && handleManager.IsPointerOverHandle(pointerFrame.ScreenPosition),
+            screenPosition =>
+            {
+                bool success = TryGetWallFromMouseRay(screenPosition, out GameObject wall);
+                return (success, wall);
+            },
+            screenPosition =>
+            {
+                bool success = TryGetMouseWorldPoint(screenPosition, out Vector3 point);
+                return (success, point);
+            },
+            wall => SelectWall(wall, false),
+            ResetDragState,
+            SetSelectUIVisible,
+            (mousePosition, worldPoint) =>
+            {
+                pendingWallDrag = true;
+                pendingStartMousePosition = mousePosition;
+                dragStartPoint = worldPoint;
+                selectedWallStartPosition = selectionState.SelectedWall.transform.position;
+            });
     }
 
     private bool TryGetWallFromMouseRay(Vector2 pointerScreenPosition, out GameObject wall)
@@ -550,42 +442,17 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void UpdateDetailEditMode(EditorPointerFrame pointerFrame)
     {
-        FinalizeMoveIfNeeded();
-        ResetDragState();
-        RefreshWallSelectionUIPositions();
-
-        if (pointerFrame.RightPressedThisFrame)
-        {
-            ClearAllSelectionState();
-            return;
-        }
-
-        if (pointerFrame.LeftPressedThisFrame)
-        {
-            TryBeginDetailSelection(pointerFrame);
-        }
-
-        if (pendingMultiSelectDrag && pointerFrame.LeftPressed)
-        {
-            Vector2 currentMouse = pointerFrame.ScreenPosition;
-            float movedSqr = (currentMouse - multiSelectStartMousePosition).sqrMagnitude;
-            if (movedSqr >= multiSelectDragThresholdPixels * multiSelectDragThresholdPixels)
-            {
-                pendingMultiSelectDrag = false;
-                isMultiSelecting = true;
-                UpdateMultiSelectDrag(pointerFrame);
-            }
-        }
-
-        if (isMultiSelecting && pointerFrame.LeftPressed)
-        {
-            UpdateMultiSelectDrag(pointerFrame);
-        }
-
-        if ((pendingMultiSelectDrag || isMultiSelecting) && pointerFrame.LeftReleasedThisFrame)
-        {
-            FinishMultiSelectDrag();
-        }
+        inputController.UpdateDetailEditMode(
+            pointerFrame,
+            inputState,
+            multiSelectDragThresholdPixels,
+            FinalizeMoveIfNeeded,
+            ResetDragState,
+            RefreshWallSelectionUIPositions,
+            ClearAllSelectionState,
+            TryBeginDetailSelection,
+            UpdateMultiSelectDrag,
+            FinishMultiSelectDrag);
     }
 
     private void TryBeginDetailSelection(EditorPointerFrame pointerFrame)
@@ -607,13 +474,13 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        addToSelectionOnDragStart = isModifierPressed;
-        pendingMultiSelectDrag = true;
-        isMultiSelecting = false;
-        multiSelectStartMousePosition = pointerFrame.ScreenPosition;
-        multiSelectStartWorldPoint = worldPoint;
-        ShowMultiSelectBox();
-        UpdateMultiSelectBox(multiSelectStartWorldPoint, multiSelectStartWorldPoint);
+        inputController.BeginDetailSelectionBox(
+            inputState,
+            pointerFrame,
+            isModifierPressed,
+            worldPoint,
+            ShowMultiSelectBox,
+            UpdateMultiSelectBox);
     }
 
     private void HandleDetailWallClick(GameObject wallObject, bool isModifierPressed)
@@ -622,61 +489,44 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
         if (!isModifierPressed)
         {
-            detailSelectedWalls.Clear();
+            selectionState.ClearDetailSelection();
             SelectWall(wallObject, false);
             return;
         }
 
-        if (wallObject == selectedWall)
+        if (wallObject == selectionState.SelectedWall)
         {
-            selectedWall = null;
+            selectionState.ClearPrimarySelection();
             RefreshSelectionVisuals();
             return;
         }
 
-        if (detailSelectedWalls.Contains(wallObject))
-        {
-            detailSelectedWalls.Remove(wallObject);
-        }
-        else
-        {
-            detailSelectedWalls.Add(wallObject);
-        }
-
+        selectionState.ToggleDetailSelection(wallObject);
         RefreshSelectionVisuals();
     }
 
     private void UpdateMultiSelectDrag(EditorPointerFrame pointerFrame)
     {
-        if (!TryGetMouseWorldPoint(pointerFrame.ScreenPosition, out Vector3 currentWorldPoint))
-        {
-            return;
-        }
-
-        UpdateMultiSelectBox(multiSelectStartWorldPoint, currentWorldPoint);
-        UpdateWallsFromMultiSelectBox(addToSelectionOnDragStart);
+        inputController.UpdateMultiSelectDrag(
+            inputState,
+            pointerFrame,
+            screenPosition =>
+            {
+                bool success = TryGetMouseWorldPoint(screenPosition, out Vector3 worldPoint);
+                return (success, worldPoint);
+            },
+            UpdateMultiSelectBox,
+            UpdateWallsFromMultiSelectBox);
     }
 
     private void FinishMultiSelectDrag()
     {
-        bool hadDrag = isMultiSelecting;
-        pendingMultiSelectDrag = false;
-        isMultiSelecting = false;
-        HideMultiSelectBox();
-
-        if (!hadDrag)
-        {
-            return;
-        }
-
-        UpdateSelectUIVisibility();
+        inputController.FinishMultiSelectDrag(inputState, HideMultiSelectBox, UpdateSelectUIVisibility);
     }
 
     private void CancelMultiSelectDrag()
     {
-        pendingMultiSelectDrag = false;
-        isMultiSelecting = false;
-        HideMultiSelectBox();
+        inputController.CancelMultiSelectDrag(inputState, HideMultiSelectBox);
     }
 
     private void UpdateWallsFromMultiSelectBox(bool additive)
@@ -725,21 +575,10 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
         if (!additive)
         {
-            detailSelectedWalls.Clear();
-            selectedWall = null;
+            selectionState.ClearAll();
         }
 
-        foreach (GameObject wallObject in multiSelectWallsInBox)
-        {
-            if (selectedWall == null)
-            {
-                selectedWall = wallObject;
-            }
-            else if (wallObject != selectedWall)
-            {
-                detailSelectedWalls.Add(wallObject);
-            }
-        }
+        selectionState.ApplyMultiSelection(multiSelectWallsInBox, additive);
 
         RefreshSelectionVisuals();
     }
@@ -833,27 +672,26 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             wallOpeningPlacementManager.ClearOpeningSelection();
         }
 
-        if (wall == selectedWall)
+        if (wall == selectionState.SelectedWall)
         {
             UpdateSelectUIVisibility();
             return;
         }
 
-        detailSelectedWalls.Clear();
-        selectedWall = wall;
+        selectionState.ClearDetailSelection();
+        selectionState.SelectedWall = wall;
         RefreshSelectionVisuals();
     }
 
     private void ClearSingleSelection()
     {
-        selectedWall = null;
+        selectionState.ClearPrimarySelection();
         RefreshSelectionVisuals();
     }
 
     private void ClearAllSelectionState()
     {
-        selectedWall = null;
-        detailSelectedWalls.Clear();
+        selectionState.ClearAll();
         RefreshSelectionVisuals();
         CancelMultiSelectDrag();
     }
@@ -884,294 +722,34 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void PrepareConnectedWallDrag()
     {
-        moveStartSnapshots.Clear();
-        moveStartEndpointSnapshots.Clear();
-        dragAffectedWalls.Clear();
-        dragAffectedOpeningContainers.Clear();
-        moveStartConnectedOpeningSnapshots.Clear();
-        selectedOpeningContainer = null;
-        hasMoveStartOpeningLayoutSnapshot = false;
-
-        // Ensure all Wall endpoints reflect the latest transforms before connectivity checks.
-        SyncAllWallComponentEndpoints();
-
-        if (selectedWall == null)
-        {
-            return;
-        }
-
-        Wall selectedWallComponent = selectedWall.GetComponent<Wall>();
-        if (selectedWallComponent == null)
-        {
-            return;
-        }
-
-        dragSelectedStartPoint = selectedWallComponent.Data.startPoint;
-        dragSelectedEndPoint = selectedWallComponent.Data.endPoint;
-        dragSelectedStartPoint.y = dragPlaneHeight;
-        dragSelectedEndPoint.y = dragPlaneHeight;
-
-        dragSelectedStartVertexId = selectedWallComponent.StartVertexId;
-        dragSelectedEndVertexId = selectedWallComponent.EndVertexId;
-
-        WallOpeningContainer openingContainer = selectedWallComponent.GetComponentInParent<WallOpeningContainer>();
-        if (openingContainer != null)
-        {
-            selectedOpeningContainer = openingContainer;
-            moveStartContainerPosition = openingContainer.transform.position;
-            moveStartContainerWallStart = openingContainer.WallStart;
-            moveStartContainerWallEnd = openingContainer.WallEnd;
-            dragSelectedStartPoint = openingContainer.WallStart;
-            dragSelectedEndPoint = openingContainer.WallEnd;
-            dragSelectedStartPoint.y = dragPlaneHeight;
-            dragSelectedEndPoint.y = dragPlaneHeight;
-            dragSelectedStartVertexId = openingContainer.OuterStartVertexId;
-            dragSelectedEndVertexId = openingContainer.OuterEndVertexId;
-
-            if (wallOpeningPlacementManager != null)
-            {
-                moveStartOpeningLayoutSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(openingContainer);
-                hasMoveStartOpeningLayoutSnapshot = true;
-            }
-
-            if (wallRoot != null)
-            {
-                List<Wall> walls = GetRootWalls();
-                for (int i = 0; i < walls.Count; i++)
-                {
-                    Wall wall = walls[i];
-                    if (wall == null || wall.GetComponentInParent<WallOpeningContainer>() == openingContainer)
-                    {
-                        continue;
-                    }
-
-                    bool sharesStartVertex = dragSelectedStartVertexId > 0 &&
-                        (wall.StartVertexId == dragSelectedStartVertexId || wall.EndVertexId == dragSelectedStartVertexId);
-                    bool sharesEndVertex = dragSelectedEndVertexId > 0 &&
-                        (wall.StartVertexId == dragSelectedEndVertexId || wall.EndVertexId == dragSelectedEndVertexId);
-                    bool sharesByProximity =
-                        WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                        WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedEndPoint, connectedEndpointThreshold) ||
-                        WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                        WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedEndPoint, connectedEndpointThreshold);
-
-                    if (!sharesStartVertex && !sharesEndVertex && !sharesByProximity)
-                    {
-                        continue;
-                    }
-
-                    dragAffectedWalls.Add(wall);
-                    moveStartSnapshots[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
-                    moveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
-                    {
-                        start = wall.Data.startPoint,
-                        end = wall.Data.endPoint,
-                    };
-                }
-            }
-
-            WallHierarchyUtility.CollectWalls(openingContainer.transform, cachedWalls, true);
-            for (int i = 0; i < cachedWalls.Count; i++)
-            {
-                Wall wall = cachedWalls[i];
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                moveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
-                {
-                    start = wall.Data.startPoint,
-                    end = wall.Data.endPoint,
-                };
-            }
-
-            return;
-        }
-
-        if (wallRoot == null)
-        {
-            return;
-        }
-
-        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls);
-        for (int i = 0; i < cachedWalls.Count; i++)
-        {
-            Wall wall = cachedWalls[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            bool sharesStartVertex = dragSelectedStartVertexId > 0 &&
-                (wall.StartVertexId == dragSelectedStartVertexId || wall.EndVertexId == dragSelectedStartVertexId);
-            bool sharesEndVertex = dragSelectedEndVertexId > 0 &&
-                (wall.StartVertexId == dragSelectedEndVertexId || wall.EndVertexId == dragSelectedEndVertexId);
-            bool sharesByProximity =
-                WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                WallGeometryService.IsNearXZ(wall.Data.startPoint, dragSelectedEndPoint, connectedEndpointThreshold) ||
-                WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedStartPoint, connectedEndpointThreshold) ||
-                WallGeometryService.IsNearXZ(wall.Data.endPoint, dragSelectedEndPoint, connectedEndpointThreshold);
-
-            if (!sharesStartVertex && !sharesEndVertex && !sharesByProximity && wall.gameObject != selectedWall)
-            {
-                continue;
-            }
-
-            WallOpeningContainer connectedContainer = wall.GetComponentInParent<WallOpeningContainer>();
-            if (connectedContainer != null)
-            {
-                if (!dragAffectedOpeningContainers.Contains(connectedContainer))
-                {
-                    dragAffectedOpeningContainers.Add(connectedContainer);
-                    if (wallOpeningPlacementManager != null)
-                    {
-                        moveStartConnectedOpeningSnapshots[connectedContainer] =
-                            wallOpeningPlacementManager.CaptureLayoutSnapshot(connectedContainer);
-                    }
-                }
-
-                continue;
-            }
-
-            dragAffectedWalls.Add(wall);
-            moveStartSnapshots[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
-            moveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
-            {
-                start = wall.Data.startPoint,
-                end = wall.Data.endPoint,
-            };
-        }
+        dragController.PrepareDrag(
+            dragState,
+            selectionState.SelectedWall,
+            dragPlaneHeight,
+            connectedEndpointThreshold,
+            wallRoot,
+            GetRootWalls(),
+            cachedWalls,
+            wallOpeningPlacementManager,
+            SyncAllWallComponentEndpoints);
     }
 
     private void ApplyConnectedWallDrag(Vector3 translationDelta, Vector3 selectedTargetPosition)
     {
-        if (selectedWall == null)
-        {
-            return;
-        }
-
-        if (selectedOpeningContainer != null)
-        {
-            ApplyOpeningContainerDrag(translationDelta);
-            return;
-        }
-
-        if (dragAffectedWalls.Count == 0)
-        {
-            selectedWall.transform.position = selectedTargetPosition;
-            SyncWallComponentEndpoints(selectedWall.transform);
-            handleManager?.RefreshHandleVisuals();
-            RoomTopologyEvents.RequestRefreshAll();
-            MarkTopViewDirty();
-            return;
-        }
-
-        Vector3 movedStartPoint = dragSelectedStartPoint + translationDelta;
-        Vector3 movedEndPoint = dragSelectedEndPoint + translationDelta;
-        movedStartPoint.y = dragPlaneHeight;
-        movedEndPoint.y = dragPlaneHeight;
-
-        WallGeometryService.ConnectedWallMoveContext moveContext = new WallGeometryService.ConnectedWallMoveContext
-        {
-            selectedStartPoint = dragSelectedStartPoint,
-            selectedEndPoint = dragSelectedEndPoint,
-            movedStartPoint = movedStartPoint,
-            movedEndPoint = movedEndPoint,
-            selectedStartVertexId = dragSelectedStartVertexId,
-            selectedEndVertexId = dragSelectedEndVertexId,
-            endpointThreshold = connectedEndpointThreshold,
-            minimumWallLength = MinimumWallLength,
-        };
-
-        WallGeometryService.ApplyConnectedWallMove(dragAffectedWalls, moveStartEndpointSnapshots, moveContext, wallLengthDisplay);
-
-        if (wallOpeningPlacementManager != null)
-        {
-            for (int i = 0; i < dragAffectedOpeningContainers.Count; i++)
-            {
-                WallOpeningContainer container = dragAffectedOpeningContainers[i];
-                if (container == null ||
-                    !moveStartConnectedOpeningSnapshots.TryGetValue(container, out UndoRedoManager.OpeningLayoutSnapshot snapshot))
-                {
-                    continue;
-                }
-
-                Vector3 nextStart = WallGeometryService.ResolveDraggedEndpoint(container.OuterStartVertexId, snapshot.wallStart, moveContext);
-                Vector3 nextEnd = WallGeometryService.ResolveDraggedEndpoint(container.OuterEndVertexId, snapshot.wallEnd, moveContext);
-                nextStart.y = dragPlaneHeight;
-                nextEnd.y = dragPlaneHeight;
-                wallOpeningPlacementManager.ApplyContainerSpanFromExternalDrag(container, nextStart, nextEnd, snapshot);
-            }
-        }
-
-        handleManager?.RefreshHandleVisuals();
-        RoomTopologyEvents.RequestRefreshAll();
-        MarkTopViewDirty();
-    }
-
-    private void ApplyOpeningContainerDrag(Vector3 translationDelta)
-    {
-        if (selectedOpeningContainer == null)
-        {
-            return;
-        }
-
-        selectedOpeningContainer.transform.position = moveStartContainerPosition + translationDelta;
-        selectedOpeningContainer.SetWallSpan(moveStartContainerWallStart + translationDelta, moveStartContainerWallEnd + translationDelta);
-
-        WallHierarchyUtility.CollectWalls(selectedOpeningContainer.transform, cachedWalls, true);
-        for (int i = 0; i < cachedWalls.Count; i++)
-        {
-            Wall wall = cachedWalls[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            if (!moveStartEndpointSnapshots.TryGetValue(wall.gameObject, out WallGeometryService.WallEndpointState state))
-            {
-                continue;
-            }
-
-            wall.CopyDataFrom(new WallData(
-                state.start + translationDelta,
-                state.end + translationDelta,
-                wall.Data.thickness,
-                wall.Data.height,
-                wall.Data.centerY));
-            wall.RefreshLengthDisplay(wallLengthDisplay, false);
-        }
-
-        if (dragAffectedWalls.Count == 0)
-        {
-            handleManager?.RefreshHandleVisuals();
-            RoomTopologyEvents.RequestRefreshAll();
-            MarkTopViewDirty();
-            return;
-        }
-
-        Vector3 movedStartPoint = dragSelectedStartPoint + translationDelta;
-        Vector3 movedEndPoint = dragSelectedEndPoint + translationDelta;
-        movedStartPoint.y = dragPlaneHeight;
-        movedEndPoint.y = dragPlaneHeight;
-
-        WallGeometryService.ConnectedWallMoveContext moveContext = new WallGeometryService.ConnectedWallMoveContext
-        {
-            selectedStartPoint = dragSelectedStartPoint,
-            selectedEndPoint = dragSelectedEndPoint,
-            movedStartPoint = movedStartPoint,
-            movedEndPoint = movedEndPoint,
-            selectedStartVertexId = dragSelectedStartVertexId,
-            selectedEndVertexId = dragSelectedEndVertexId,
-            endpointThreshold = connectedEndpointThreshold,
-            minimumWallLength = MinimumWallLength,
-        };
-
-        WallGeometryService.ApplyConnectedWallMove(dragAffectedWalls, moveStartEndpointSnapshots, moveContext, wallLengthDisplay);
-        handleManager?.RefreshHandleVisuals();
-        RoomTopologyEvents.RequestRefreshAll();
-        MarkTopViewDirty();
+        dragController.ApplyDrag(
+            dragState,
+            selectionState.SelectedWall,
+            translationDelta,
+            selectedTargetPosition,
+            dragPlaneHeight,
+            connectedEndpointThreshold,
+            MinimumWallLength,
+            wallLengthDisplay,
+            handleManager,
+            wallOpeningPlacementManager,
+            cachedWalls,
+            SyncWallComponentEndpoints,
+            MarkTopViewDirty);
     }
 
     private void SyncAllWallComponentEndpoints()
@@ -1407,15 +985,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     {
         pendingWallDrag = false;
         isDraggingWall = false;
-        moveStartSnapshots.Clear();
-        moveStartEndpointSnapshots.Clear();
-        dragAffectedWalls.Clear();
-        dragAffectedOpeningContainers.Clear();
-        moveStartConnectedOpeningSnapshots.Clear();
-        dragSelectedStartVertexId = 0;
-        dragSelectedEndVertexId = 0;
-        selectedOpeningContainer = null;
-        hasMoveStartOpeningLayoutSnapshot = false;
+        dragState.Reset();
     }
 
     private void TryApplyHandleSnapToMovedWall(Transform wallTransform, ref Vector3 targetCenterPosition)
@@ -1481,116 +1051,15 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void FinalizeMoveIfNeeded()
     {
-        if (!isDraggingWall || undoRedoManager == null)
-        {
-            return;
-        }
-
-        BuildMoveOpeningChangeRecords();
-        BuildMoveWallStateChangeRecords();
-
-        if (moveStateChangeRecords.Count > 0 || moveOpeningChangeRecords.Count > 0)
-        {
-            undoRedoManager.ExecuteCommand(
-                new WallSelectionMoveCommand(moveStateChangeRecords, moveOpeningChangeRecords),
-                alreadyExecuted: true);
-        }
-    }
-
-    private void BuildMoveOpeningChangeRecords()
-    {
-        moveOpeningChangeRecords.Clear();
-        if (wallOpeningPlacementManager == null)
-        {
-            return;
-        }
-
-        if (selectedOpeningContainer != null && hasMoveStartOpeningLayoutSnapshot)
-        {
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(selectedOpeningContainer);
-            if (UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(moveStartOpeningLayoutSnapshot, afterSnapshot))
-            {
-                moveOpeningChangeRecords.Add(new UndoRedoManager.OpeningLayoutChangeRecord
-                {
-                    before = moveStartOpeningLayoutSnapshot,
-                    after = afterSnapshot,
-                });
-            }
-        }
-
-        foreach (KeyValuePair<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> pair in moveStartConnectedOpeningSnapshots)
-        {
-            if (pair.Key == null)
-            {
-                continue;
-            }
-
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(pair.Key);
-            if (!UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(pair.Value, afterSnapshot))
-            {
-                continue;
-            }
-
-            moveOpeningChangeRecords.Add(new UndoRedoManager.OpeningLayoutChangeRecord
-            {
-                before = pair.Value,
-                after = afterSnapshot,
-            });
-        }
-    }
-
-    private void BuildMoveWallStateChangeRecords()
-    {
-        moveStateChangeRecords.Clear();
-
-        if (moveStartSnapshots.Count > 0)
-        {
-            foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in moveStartSnapshots)
-            {
-                GameObject wallObject = pair.Key;
-                if (wallObject == null)
-                {
-                    continue;
-                }
-
-                UndoRedoManager.WallStateSnapshot startSnapshot = pair.Value;
-                UndoRedoManager.WallStateSnapshot endSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-                if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(startSnapshot, endSnapshot))
-                {
-                    continue;
-                }
-
-                moveStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = startSnapshot,
-                    after = endSnapshot,
-                });
-            }
-
-            return;
-        }
-
-        if (selectedWall == null)
-        {
-            return;
-        }
-
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(
-            selectedWall,
+        undoRecorder.FinalizeMove(
+            isDraggingWall,
+            undoRedoManager,
+            dragState,
+            wallOpeningPlacementManager,
+            selectionState.SelectedWall,
             moveStartWallPosition,
             moveStartWallRotation,
             moveStartWallScale);
-        UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
-        if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
-        {
-            return;
-        }
-
-        moveStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
-        {
-            before = before,
-            after = after,
-        });
     }
 
     private void OnDestroy()

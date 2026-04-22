@@ -47,9 +47,11 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private readonly List<Wall> resizeAffectedWalls = new List<Wall>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> resizeStateRecords = new List<UndoRedoManager.WallStateChangeRecord>();
-    private readonly List<GameObject> selectedWallObjects = new List<GameObject>();
     private readonly List<Wall> selectedWallComponents = new List<Wall>();
     private readonly HashSet<WallOpeningContainer> selectedOpeningContainers = new HashSet<WallOpeningContainer>();
+    private readonly WallPropertyPresentationController presentationController = new WallPropertyPresentationController();
+    private readonly WallPropertySelectionService selectionService = new WallPropertySelectionService();
+    private readonly WallPropertyMutationService mutationService = new WallPropertyMutationService();
     private bool suppressInputCallback;
 
     private void Reset()
@@ -131,88 +133,15 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        Vector3 startPoint = selectedWallComponent.Data.startPoint;
-        Vector3 currentEndPoint = selectedWallComponent.Data.endPoint;
-        Vector3 direction = currentEndPoint - startPoint;
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude <= 0.000001f)
-        {
-            UpdateInputFieldValues(true);
-            return;
-        }
-
-        direction.Normalize();
-        bool keepsStartFixed = lengthAnchorMode == LengthAnchorMode.LeftFixed;
-        Vector3 targetStartPoint = keepsStartFixed ? startPoint : currentEndPoint - direction * targetLengthUnits;
-        Vector3 targetEndPoint = keepsStartFixed ? startPoint + direction * targetLengthUnits : currentEndPoint;
-        targetStartPoint.y = startPoint.y;
-        targetEndPoint.y = startPoint.y;
-
-        List<UndoRedoManager.WallStateChangeRecord> records = new List<UndoRedoManager.WallStateChangeRecord>();
-        int movedVertexId = keepsStartFixed ? selectedWallComponent.EndVertexId : selectedWallComponent.StartVertexId;
-        Vector3 movedPoint = keepsStartFixed ? targetEndPoint : targetStartPoint;
-
-        if (movedVertexId > 0)
-        {
-            CollectWallsSharingVertex(movedVertexId, resizeAffectedWalls);
-
-            for (int i = 0; i < resizeAffectedWalls.Count; i++)
-            {
-                Wall wall = resizeAffectedWalls[i];
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                records.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
-                });
-            }
-
-            WallGeometryService.ApplyVertexMove(
-                resizeAffectedWalls,
-                movedVertexId,
-                movedPoint,
-                startPoint.y,
-                MinimumWallLength,
-                wallLengthDisplay);
-
-            for (int i = records.Count - 1; i >= 0; i--)
-            {
-                UndoRedoManager.WallStateChangeRecord record = records[i];
-                if (record.before.wallObject == null)
-                {
-                    records.RemoveAt(i);
-                    continue;
-                }
-
-                record.after = UndoRedoManager.WallStateSnapshot.Capture(record.before.wallObject);
-                records[i] = record;
-            }
-        }
-        else
-        {
-            UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
-            bool applied = selectedWallComponent.TryApplyCurrentProfileAndRefresh(
-                targetStartPoint,
-                targetEndPoint,
-                MinimumWallLength,
-                wallLengthDisplay,
-                false);
-
-            if (applied)
-            {
-                records.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = before,
-                    after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall),
-                });
-            }
-        }
-
-        RecordAndRefresh(records);
+        mutationService.ApplyWallLength(
+            selectedWallComponent,
+            targetLengthUnits,
+            lengthAnchorMode == LengthAnchorMode.LeftFixed,
+            MinimumWallLength,
+            wallLengthDisplay,
+            resizeAffectedWalls,
+            CollectWallsSharingVertex,
+            RecordAndRefresh);
     }
 
     public void ApplySelectedWallLengthFromCurrentInput()
@@ -332,29 +261,12 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
-        Transform wallTransform = selectedWall.transform;
-        Vector3 scale = wallTransform.localScale;
-        float bottomY = wallTransform.position.y - scale.y * 0.5f;
-
-        scale.y = targetHeightUnits;
-        wallTransform.localScale = scale;
-
-        Vector3 position = wallTransform.position;
-        position.y = bottomY + targetHeightUnits * 0.5f;
-        wallTransform.position = position;
-
-        selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.Data.startPoint.y);
-        selectedWallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
-
-        RecordAndRefresh(new List<UndoRedoManager.WallStateChangeRecord>
-        {
-            new UndoRedoManager.WallStateChangeRecord
-            {
-                before = before,
-                after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall),
-            }
-        });
+        mutationService.ApplyWallHeight(
+            selectedWall,
+            selectedWallComponent,
+            targetHeightUnits,
+            wallLengthDisplay,
+            RecordAndRefresh);
     }
 
     public void ApplySelectedWallHeightFromCurrentInput()
@@ -456,22 +368,12 @@ public partial class WallPropertyInputManager : MonoBehaviour
             return;
         }
 
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
-        Vector3 scale = selectedWall.transform.localScale;
-        scale.x = targetThicknessUnits;
-        selectedWall.transform.localScale = scale;
-
-        selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.Data.startPoint.y);
-        selectedWallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
-
-        RecordAndRefresh(new List<UndoRedoManager.WallStateChangeRecord>
-        {
-            new UndoRedoManager.WallStateChangeRecord
-            {
-                before = before,
-                after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall),
-            }
-        });
+        mutationService.ApplyWallThickness(
+            selectedWall,
+            selectedWallComponent,
+            targetThicknessUnits,
+            wallLengthDisplay,
+            RecordAndRefresh);
     }
 
     public void ApplySelectedWallThicknessFromCurrentInput()
@@ -486,26 +388,14 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private void RecordAndRefresh(List<UndoRedoManager.WallStateChangeRecord> records)
     {
-        GameObject selectedWall = GetSelectedWall();
-        if (records != null && records.Count > 0 && undoRedoManager != null)
-        {
-            undoRedoManager.RecordMoveConnectedWalls(records);
-        }
-
-        if (handleManager != null)
-        {
-            handleManager.RefreshRegisteredWalls();
-        }
-
-        RoomTopologyEvents.RequestRefreshAll();
-
-        MarkTopViewDirty();
-        UpdateInputFieldValues(true);
-
-        if (selectedWall != null && wallSelectionManager != null)
-        {
-            wallSelectionManager.SetSelectedWall(selectedWall);
-        }
+        mutationService.RecordAndRefresh(
+            records,
+            GetSelectedWall(),
+            undoRedoManager,
+            handleManager,
+            wallSelectionManager,
+            MarkTopViewDirty,
+            UpdateInputFieldValues);
     }
 
     private bool TryParseMillimeterInput(string inputText, out float millimeters)
@@ -551,67 +441,24 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private GameObject GetSelectedWall()
     {
-        if (wallSelectionManager == null)
-        {
-            return null;
-        }
-
-        if (wallSelectionManager.SelectedWall != null)
-        {
-            return wallSelectionManager.SelectedWall;
-        }
-
-        wallSelectionManager.GetSelectedWalls(selectedWallObjects);
-        for (int i = 0; i < selectedWallObjects.Count; i++)
-        {
-            if (selectedWallObjects[i] != null)
-            {
-                return selectedWallObjects[i];
-            }
-        }
-
-        return null;
+        return selectionService.GetSelectedWall(wallSelectionManager);
     }
 
     private void GetSelectedWallComponents(List<Wall> result)
     {
-        if (result == null)
-        {
-            return;
-        }
-
-        result.Clear();
-        if (wallSelectionManager == null)
-        {
-            return;
-        }
-
-        wallSelectionManager.GetSelectedWalls(selectedWallObjects);
-        for (int i = 0; i < selectedWallObjects.Count; i++)
-        {
-            GameObject wallObject = selectedWallObjects[i];
-            if (wallObject == null || !wallObject.TryGetComponent(out Wall wall))
-            {
-                continue;
-            }
-
-            result.Add(wall);
-        }
+        selectionService.GetSelectedWallComponents(wallSelectionManager, result);
     }
 
     private bool IsFieldEnabledForCurrentSelection(MultiSelectionField field)
     {
-        if (wallSelectionManager == null || !wallSelectionManager.HasMultiWallSelection)
-        {
-            return true;
-        }
-
-        return !disabledFieldsForMultiSelection.Contains(field);
+        return selectionService.IsFieldEnabledForCurrentSelection(
+            wallSelectionManager,
+            disabledFieldsForMultiSelection.Contains(field));
     }
 
     private bool IsMultiSelectionActive()
     {
-        return wallSelectionManager != null && wallSelectionManager.HasMultiWallSelection;
+        return selectionService.IsMultiSelectionActive(wallSelectionManager);
     }
 
     private float GetDisplayedLengthUnits(Wall wall)
@@ -649,342 +496,83 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private bool TryApplyContainerLengthFromSelectedWall(Wall selectedWallComponent, float targetLengthUnits)
     {
-        if (selectedWallComponent == null || wallOpeningPlacementManager == null)
-        {
-            return false;
-        }
-
-        WallOpeningContainer container = selectedWallComponent.GetComponentInParent<WallOpeningContainer>();
-        if (container == null)
-        {
-            return false;
-        }
-
-        bool keepsStartFixed = lengthAnchorMode == LengthAnchorMode.LeftFixed;
-
-        Vector3 direction = container.WallDirection;
-        Vector3 oldStart = container.WallStart;
-        Vector3 oldEnd = container.WallEnd;
-        Vector3 newStart = oldStart;
-        Vector3 newEnd = oldEnd;
-        float openingShift = 0f;
-
-        if (keepsStartFixed)
-        {
-            newEnd = oldStart + direction * targetLengthUnits;
-        }
-        else
-        {
-            newStart = oldEnd - direction * targetLengthUnits;
-            openingShift = Vector3.Dot(oldStart - newStart, direction);
-        }
-
-        WallOpening[] openings = container.GetComponentsInChildren<WallOpening>(true);
-        float minimumSideWallUnits = wallOpeningPlacementManager.MinimumSideWallUnits;
-        for (int i = 0; i < openings.Length; i++)
-        {
-            WallOpening opening = openings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            float nextCenterDistance = opening.CenterDistance + openingShift;
-            float halfWidth = opening.Width * 0.5f;
-            if (nextCenterDistance - halfWidth < minimumSideWallUnits ||
-                nextCenterDistance + halfWidth > targetLengthUnits - minimumSideWallUnits)
-            {
-                UpdateInputFieldValues(true);
-                return true;
-            }
-        }
-
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-        resizeStateRecords.Clear();
-
-        int movedVertexId = keepsStartFixed ? container.OuterEndVertexId : container.OuterStartVertexId;
-        Vector3 movedPoint = keepsStartFixed ? newEnd : newStart;
-        CollectWallsSharingVertex(movedVertexId, resizeAffectedWalls);
-        for (int i = resizeAffectedWalls.Count - 1; i >= 0; i--)
-        {
-            Wall wall = resizeAffectedWalls[i];
-            if (wall == null)
-            {
-                resizeAffectedWalls.RemoveAt(i);
-                continue;
-            }
-
-            if (wall.GetComponentInParent<WallOpeningContainer>() == container)
-            {
-                resizeAffectedWalls.RemoveAt(i);
-                continue;
-            }
-
-            resizeStateRecords.Add(new UndoRedoManager.WallStateChangeRecord
-            {
-                before = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
-            });
-        }
-
-        container.SetWallSpan(newStart, newEnd);
-
-        for (int i = 0; i < openings.Length; i++)
-        {
-            WallOpening opening = openings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            opening.SetCenterDistance(opening.CenterDistance + openingShift);
-        }
-
-        wallOpeningPlacementManager.RebuildOpeningContainer(container);
-        wallOpeningPlacementManager.SelectPreferredWallForContainer(container, targetLengthUnits * 0.5f);
-        if (resizeAffectedWalls.Count > 0)
-        {
-            WallGeometryService.ApplyVertexMove(
-                resizeAffectedWalls,
-                movedVertexId,
-                movedPoint,
-                movedPoint.y,
-                MinimumWallLength,
-                wallLengthDisplay);
-        }
-
-        if (undoRedoManager != null)
-        {
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, afterSnapshot);
-
-            for (int i = 0; i < resizeStateRecords.Count; i++)
-            {
-                UndoRedoManager.WallStateChangeRecord record = resizeStateRecords[i];
-                if (record.before.wallObject == null)
-                {
-                    continue;
-                }
-
-                record.after = UndoRedoManager.WallStateSnapshot.Capture(record.before.wallObject);
-                resizeStateRecords[i] = record;
-            }
-
-            undoRedoManager.RecordMoveConnectedWalls(resizeStateRecords);
-        }
-
-        if (handleManager != null)
-        {
-            handleManager.RefreshRegisteredWalls();
-        }
-
-        RoomTopologyEvents.RequestRefreshAll();
-
-        MarkTopViewDirty();
-        UpdateInputFieldValues(true);
-
-        return true;
+        return mutationService.TryApplyContainerLengthFromSelectedWall(
+            selectedWallComponent,
+            targetLengthUnits,
+            lengthAnchorMode == LengthAnchorMode.LeftFixed,
+            MinimumWallLength,
+            wallLengthDisplay,
+            wallOpeningPlacementManager,
+            undoRedoManager,
+            handleManager,
+            MarkTopViewDirty,
+            UpdateInputFieldValues,
+            resizeAffectedWalls,
+            resizeStateRecords,
+            CollectWallsSharingVertex);
     }
 
     private void ApplyWallLengthToWall(Wall selectedWallComponent, float targetLengthUnits, List<UndoRedoManager.WallStateChangeRecord> records)
     {
-        if (selectedWallComponent == null || records == null)
-        {
-            return;
-        }
-
-        Vector3 startPoint = selectedWallComponent.Data.startPoint;
-        Vector3 currentEndPoint = selectedWallComponent.Data.endPoint;
-        Vector3 direction = currentEndPoint - startPoint;
-        direction.y = 0f;
-        if (direction.sqrMagnitude <= 0.000001f)
-        {
-            return;
-        }
-
-        direction.Normalize();
-        bool keepsStartFixed = lengthAnchorMode == LengthAnchorMode.LeftFixed;
-        Vector3 targetStartPoint = keepsStartFixed ? startPoint : currentEndPoint - direction * targetLengthUnits;
-        Vector3 targetEndPoint = keepsStartFixed ? startPoint + direction * targetLengthUnits : currentEndPoint;
-        targetStartPoint.y = startPoint.y;
-        targetEndPoint.y = startPoint.y;
-
-        GameObject wallObject = selectedWallComponent.gameObject;
-        int movedVertexId = keepsStartFixed ? selectedWallComponent.EndVertexId : selectedWallComponent.StartVertexId;
-        Vector3 movedPoint = keepsStartFixed ? targetEndPoint : targetStartPoint;
-
-        if (movedVertexId > 0)
-        {
-            List<UndoRedoManager.WallStateChangeRecord> localRecords = new List<UndoRedoManager.WallStateChangeRecord>();
-            CollectWallsSharingVertex(movedVertexId, resizeAffectedWalls);
-            for (int i = 0; i < resizeAffectedWalls.Count; i++)
-            {
-                Wall wall = resizeAffectedWalls[i];
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                localRecords.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
-                });
-            }
-
-            WallGeometryService.ApplyVertexMove(
-                resizeAffectedWalls,
-                movedVertexId,
-                movedPoint,
-                startPoint.y,
-                MinimumWallLength,
-                wallLengthDisplay);
-
-            for (int i = 0; i < localRecords.Count; i++)
-            {
-                UndoRedoManager.WallStateChangeRecord record = localRecords[i];
-                if (record.before.wallObject == null)
-                {
-                    continue;
-                }
-
-                record.after = UndoRedoManager.WallStateSnapshot.Capture(record.before.wallObject);
-                localRecords[i] = record;
-            }
-
-            records.AddRange(localRecords);
-            return;
-        }
-
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-        bool applied = selectedWallComponent.TryApplyCurrentProfileAndRefresh(
-            targetStartPoint,
-            targetEndPoint,
+        mutationService.AppendWallLengthChangeRecords(
+            records,
+            selectedWallComponent,
+            targetLengthUnits,
+            lengthAnchorMode == LengthAnchorMode.LeftFixed,
             MinimumWallLength,
             wallLengthDisplay,
-            false);
-        if (!applied)
-        {
-            return;
-        }
-
-        records.Add(new UndoRedoManager.WallStateChangeRecord
-        {
-            before = before,
-            after = UndoRedoManager.WallStateSnapshot.Capture(wallObject),
-        });
+            resizeAffectedWalls,
+            CollectWallsSharingVertex);
     }
 
     private bool TryApplyContainerHeightFromSelectedWall(Wall selectedWallComponent, float targetHeightUnits)
     {
-        if (selectedWallComponent == null || wallOpeningPlacementManager == null)
-        {
-            return false;
-        }
-
-        WallOpeningContainer container = selectedWallComponent.GetComponentInParent<WallOpeningContainer>();
-        if (container == null)
-        {
-            return false;
-        }
-
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-        container.SetWallHeightKeepingBottom(targetHeightUnits);
-        wallOpeningPlacementManager.RebuildOpeningContainer(container);
-        wallOpeningPlacementManager.SelectPreferredWallForContainer(container, container.WallLength * 0.5f);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
-        }
-
-        if (handleManager != null)
-        {
-            handleManager.RefreshRegisteredWalls();
-        }
-
-        MarkTopViewDirty();
-        UpdateInputFieldValues(true);
-
-        return true;
+        return mutationService.TryApplyContainerHeightFromSelectedWall(
+            selectedWallComponent,
+            targetHeightUnits,
+            wallOpeningPlacementManager,
+            undoRedoManager,
+            handleManager,
+            MarkTopViewDirty,
+            UpdateInputFieldValues);
     }
 
     private void ApplyContainerHeightForMultiSelection(WallOpeningContainer container, float targetHeightUnits)
     {
-        if (container == null || wallOpeningPlacementManager == null)
-        {
-            return;
-        }
-
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-        container.SetWallHeightKeepingBottom(targetHeightUnits);
-        wallOpeningPlacementManager.RebuildOpeningContainer(container);
-        wallOpeningPlacementManager.SelectPreferredWallForContainer(container, container.WallLength * 0.5f);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
-        }
-
-        RoomTopologyEvents.RequestRefreshAll();
-
-        MarkTopViewDirty();
+        mutationService.ApplyContainerHeight(
+            container,
+            targetHeightUnits,
+            wallOpeningPlacementManager,
+            undoRedoManager,
+            null,
+            MarkTopViewDirty,
+            UpdateInputFieldValues,
+            false);
     }
 
     private bool TryApplyContainerThicknessFromSelectedWall(Wall selectedWallComponent, float targetThicknessUnits)
     {
-        if (selectedWallComponent == null || wallOpeningPlacementManager == null)
-        {
-            return false;
-        }
-
-        WallOpeningContainer container = selectedWallComponent.GetComponentInParent<WallOpeningContainer>();
-        if (container == null)
-        {
-            return false;
-        }
-
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-        container.SetWallThickness(targetThicknessUnits);
-        wallOpeningPlacementManager.RebuildOpeningContainer(container);
-        wallOpeningPlacementManager.SelectPreferredWallForContainer(container, container.WallLength * 0.5f);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
-        }
-
-        if (handleManager != null)
-        {
-            handleManager.RefreshRegisteredWalls();
-        }
-
-        RoomTopologyEvents.RequestRefreshAll();
-
-        MarkTopViewDirty();
-        UpdateInputFieldValues(true);
-
-        return true;
+        return mutationService.TryApplyContainerThicknessFromSelectedWall(
+            selectedWallComponent,
+            targetThicknessUnits,
+            wallOpeningPlacementManager,
+            undoRedoManager,
+            handleManager,
+            MarkTopViewDirty,
+            UpdateInputFieldValues);
     }
 
     private void ApplyContainerThicknessForMultiSelection(WallOpeningContainer container, float targetThicknessUnits)
     {
-        if (container == null || wallOpeningPlacementManager == null)
-        {
-            return;
-        }
-
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-        container.SetWallThickness(targetThicknessUnits);
-        wallOpeningPlacementManager.RebuildOpeningContainer(container);
-        wallOpeningPlacementManager.SelectPreferredWallForContainer(container, container.WallLength * 0.5f);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
-        }
-
-        RoomTopologyEvents.RequestRefreshAll();
-
-        MarkTopViewDirty();
+        mutationService.ApplyContainerThickness(
+            container,
+            targetThicknessUnits,
+            wallOpeningPlacementManager,
+            undoRedoManager,
+            null,
+            MarkTopViewDirty,
+            UpdateInputFieldValues,
+            false);
     }
 
     private void EnsureWallRoot()

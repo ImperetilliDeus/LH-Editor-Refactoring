@@ -6,11 +6,13 @@ public partial class WallPropertyInputManager
 {
     private void UpdateInputFieldValues(bool force = false)
     {
-        UpdateAnchorButtonState();
-        UpdateLengthInputFieldValue(force);
-        UpdateHeightInputFieldValue(force);
-        UpdateThicknessInputFieldValue(force);
-        UpdateAddOpeningsTarget();
+        presentationController.UpdateInputFieldValues(
+            UpdateAnchorButtonState,
+            UpdateLengthInputFieldValue,
+            UpdateHeightInputFieldValue,
+            UpdateThicknessInputFieldValue,
+            UpdateAddOpeningsTarget,
+            force);
     }
 
     private void UpdateLengthInputFieldValue(bool force = false)
@@ -22,7 +24,7 @@ public partial class WallPropertyInputManager
 
         GameObject selectedWall = GetSelectedWall();
         bool interactable = selectedWall != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.Length);
-        SetInputFieldInteractableSafely(wallLengthInputField, interactable);
+        presentationController.SetInputFieldInteractableSafely(wallLengthInputField, interactable);
 
         if (!force && wallLengthInputField.isFocused)
         {
@@ -52,7 +54,7 @@ public partial class WallPropertyInputManager
 
         GameObject selectedWall = GetSelectedWall();
         bool interactable = selectedWall != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.Height);
-        SetInputFieldInteractableSafely(wallHeightInputField, interactable);
+        presentationController.SetInputFieldInteractableSafely(wallHeightInputField, interactable);
 
         if (!force && wallHeightInputField.isFocused)
         {
@@ -82,7 +84,7 @@ public partial class WallPropertyInputManager
 
         GameObject selectedWall = GetSelectedWall();
         bool interactable = selectedWall != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.Thickness);
-        SetInputFieldInteractableSafely(wallThicknessInputField, interactable);
+        presentationController.SetInputFieldInteractableSafely(wallThicknessInputField, interactable);
 
         if (!force && wallThicknessInputField.isFocused)
         {
@@ -113,22 +115,6 @@ public partial class WallPropertyInputManager
         suppressInputCallback = true;
         inputField.SetTextWithoutNotify(text);
         suppressInputCallback = false;
-    }
-
-    private void SetInputFieldInteractableSafely(InputField inputField, bool interactable)
-    {
-        if (inputField == null || inputField.interactable == interactable)
-        {
-            return;
-        }
-
-        GameObject selectedObject = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-        if (selectedObject == inputField.gameObject)
-        {
-            return;
-        }
-
-        inputField.interactable = interactable;
     }
 
     private void BindAnchorButtons()
@@ -269,15 +255,7 @@ public partial class WallPropertyInputManager
 
     private void UpdateAddOpeningsTarget()
     {
-        if (addOpeningsTarget == null)
-        {
-            return;
-        }
-
         bool shouldBeActive = GetSelectedWall() != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.AddOpenings);
-        if (addOpeningsTarget.activeSelf != shouldBeActive)
-        {
-            addOpeningsTarget.SetActive(shouldBeActive);
-        }
+        presentationController.UpdateAddOpeningsTarget(addOpeningsTarget, shouldBeActive);
     }
 }

@@ -4,7 +4,7 @@ internal sealed class VertexGroupMoveCommand : IEditorCommand
 {
     private readonly List<UndoRedoManager.WallStateChangeRecord> wallChanges;
 
-    public VertexGroupMoveCommand(int vertexId, List<UndoRedoManager.WallStateChangeRecord> wallChanges)
+    public VertexGroupMoveCommand(List<UndoRedoManager.WallStateChangeRecord> wallChanges)
     {
         this.wallChanges = wallChanges != null
             ? new List<UndoRedoManager.WallStateChangeRecord>(wallChanges)

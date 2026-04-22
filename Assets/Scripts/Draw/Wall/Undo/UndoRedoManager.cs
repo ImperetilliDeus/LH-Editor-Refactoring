@@ -46,23 +46,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new WallCreateAction(wallObject));
-    }
-
-    public void RecordMoveVertexGroup(int vertexId, List<WallStateChangeRecord> records)
-    {
-        if (records == null || records.Count == 0)
-        {
-            return;
-        }
-
-        List<WallStateChangeRecord> meaningful = FilterMeaningfulStateChanges(records);
-        if (meaningful.Count == 0)
-        {
-            return;
-        }
-
-        PushAction(new MoveVertexGroupAction(vertexId, meaningful));
+        RecordCommand(new WallCreateAction(wallObject));
     }
 
     public void RecordMoveConnectedWalls(List<WallStateChangeRecord> records)
@@ -78,7 +62,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new MoveConnectedWallsAction(meaningful));
+        RecordCommand(new MoveConnectedWallsAction(meaningful));
     }
 
     public void RecordWallTransformChange(
@@ -138,7 +122,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new RoomCreateAction(room));
+        RecordCommand(new RoomCreateAction(room));
     }
 
     public void RecordRoomPolygonChanged(Room room, IReadOnlyList<Vector3> beforeVertices, IReadOnlyList<Vector3> afterVertices)
@@ -155,7 +139,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new RoomPolygonChangeAction(before, after));
+        RecordCommand(new RoomPolygonChangeAction(before, after));
     }
 
     public void RecordWallSplit(GameObject originalWall, GameObject firstSplitWall, GameObject secondSplitWall)
@@ -165,7 +149,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new WallSplitAction(originalWall, firstSplitWall, secondSplitWall));
+        RecordCommand(new WallSplitAction(originalWall, firstSplitWall, secondSplitWall));
     }
 
     public void RecordRoomsReplaced(List<Room> deletedRooms, List<Room> createdRooms)
@@ -177,7 +161,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new RoomReplaceAction(deletedRooms, createdRooms));
+        RecordCommand(new RoomReplaceAction(deletedRooms, createdRooms));
     }
 
     public void RecordOpeningLayoutChange(OpeningLayoutSnapshot before, OpeningLayoutSnapshot after)
@@ -187,7 +171,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new OpeningLayoutChangeAction(before, after));
+        RecordCommand(new OpeningLayoutChangeAction(before, after));
     }
 
     public void RecordDeletedLayouts(List<OpeningLayoutSnapshot> layouts, List<Room> affectedRooms)
@@ -197,7 +181,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        PushAction(new DeleteLayoutsAction(layouts, affectedRooms));
+        RecordCommand(new DeleteLayoutsAction(layouts, affectedRooms));
     }
 
     public void Undo()
@@ -254,6 +238,11 @@ public partial class UndoRedoManager : MonoBehaviour
 
         PushAction(command);
         RefreshPostUndoRedoVisuals();
+    }
+
+    private void RecordCommand(IEditorCommand command)
+    {
+        ExecuteCommand(command, true);
     }
 
     private void PushAction(IEditorCommand action)

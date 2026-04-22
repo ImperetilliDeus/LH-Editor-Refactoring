@@ -27,12 +27,6 @@ public static class LayerUtility
         return TryGetLayer(layerName, out int layer) && target.layer == layer;
     }
 
-    public static int GetLayerOrDefault(string layerName, int fallbackLayer = 0)
-    {
-        int layer = LayerMask.NameToLayer(layerName);
-        return layer >= 0 ? layer : fallbackLayer;
-    }
-
     public static bool TryGetLayer(string layerName, out int layer)
     {
         layer = LayerMask.NameToLayer(layerName);

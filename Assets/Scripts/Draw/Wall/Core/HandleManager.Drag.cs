@@ -149,7 +149,7 @@ public partial class HandleManager
         if (undoRedoManager != null && dragStateChangeRecords.Count > 0)
         {
             undoRedoManager.ExecuteCommand(
-                new VertexGroupMoveCommand(draggedVertexId, dragStateChangeRecords),
+                new VertexGroupMoveCommand(dragStateChangeRecords),
                 alreadyExecuted: true);
         }
 
