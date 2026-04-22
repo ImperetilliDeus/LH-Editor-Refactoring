@@ -453,14 +453,11 @@ public class RoomManager : MonoBehaviour
 
         Room room = roomObject.AddComponent<Room>();
         room.SetPlacementOffset(roomSpawnLocalOffset);
-        if (keepManualVertices)
-        {
-            room.Initialize(wallSet ?? new HashSet<Wall>(), PolygonUtility.CalculateGeometry(polygonVertices), Room.CreateSanitizedPolygonCopy(polygonVertices));
-        }
-        else
-        {
-            room.Initialize(wallSet ?? new HashSet<Wall>(), PolygonUtility.CalculateGeometry(polygonVertices));
-        }
+        room.Initialize(
+            wallSet ?? new HashSet<Wall>(),
+            PolygonUtility.CalculateGeometry(polygonVertices),
+            Room.CreateSanitizedPolygonCopy(polygonVertices),
+            keepManualVertices);
 
         room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
         return room;
