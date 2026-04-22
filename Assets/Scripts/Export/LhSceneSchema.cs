@@ -189,5 +189,46 @@ namespace LH.Schema
 
             return dto;
         }
+
+        public static LhMeshDto CreateMeshFromPolygon(IReadOnlyList<Vector3> worldVertices, Vector3 center)
+        {
+            LhMeshDto dto = new LhMeshDto
+            {
+                vertices = new List<LhVector3Dto>(),
+                triangles = new List<int>(),
+                normals = new List<LhVector3Dto>(),
+                uvs = new List<LhVector2Dto>(),
+            };
+
+            if (worldVertices == null || worldVertices.Count < 3)
+            {
+                return dto;
+            }
+
+            List<Vector3> localVertices = new List<Vector3>(worldVertices.Count);
+            for (int i = 0; i < worldVertices.Count; i++)
+            {
+                Vector3 localVertex = worldVertices[i] - center;
+                localVertices.Add(localVertex);
+                dto.vertices.Add(LhVector3Dto.FromVector3(localVertex));
+                dto.normals.Add(LhVector3Dto.FromVector3(Vector3.up));
+                dto.uvs.Add(LhVector2Dto.FromVector2(new Vector2(localVertex.x, localVertex.z)));
+            }
+
+            List<int> triangles = new List<int>();
+            List<int> polygonIndices = new List<int>();
+            if (!PolygonUtility.TryTriangulatePolygon(localVertices, triangles, polygonIndices))
+            {
+                for (int i = 1; i < localVertices.Count - 1; i++)
+                {
+                    triangles.Add(0);
+                    triangles.Add(i);
+                    triangles.Add(i + 1);
+                }
+            }
+
+            dto.triangles.AddRange(triangles);
+            return dto;
+        }
     }
 }

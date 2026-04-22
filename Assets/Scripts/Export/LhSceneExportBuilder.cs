@@ -7,10 +7,13 @@ namespace LH.Export
     public static class LhSceneExportBuilder
     {
         private const int CurrentSchemaVersion = 1;
+        private const float FloorWorldY = 0.1f;
 
         private sealed class BuildContext
         {
             public readonly Dictionary<Transform, int> wallIdsByRoot = new Dictionary<Transform, int>();
+            public readonly Dictionary<string, int> wallIdsByDataId = new Dictionary<string, int>();
+            public readonly Dictionary<string, WallData> wallDataById = new Dictionary<string, WallData>();
             public int nextWallId = 1;
         }
 
@@ -53,6 +56,7 @@ namespace LH.Export
 
                 int wallId = context.nextWallId++;
                 context.wallIdsByRoot[root] = wallId;
+                RegisterWallDataIds(root, wallId, context);
                 results.Add(BuildWall(root, wallId));
             }
 
@@ -169,17 +173,22 @@ namespace LH.Export
 
         private static LhRoomDto BuildRoom(Room room, BuildContext context)
         {
-            Transform floor = room.transform.Find("Floor");
-            Transform ceil = room.transform.Find("Ceiling");
+            RoomData roomData = room.Data;
+            Vector3 roomCenter = roomData.Geometry.Center;
+            Vector3 roomPosition = roomCenter + roomData.PlacementOffset;
 
             return new LhRoomDto
             {
                 name = room.name,
-                code = room.RoomCode ?? string.Empty,
-                transform = LhDtoFactory.CreateTransform(room.transform, false),
-                walls = BuildRoomWallReferences(room, context),
-                floor = BuildSurface(floor, room.FloorTextureCode),
-                ceil = BuildSurface(ceil, room.CeilingTextureCode),
+                code = roomData.RoomCode ?? string.Empty,
+                transform = CreateTransform(roomPosition, Vector3.zero, Vector3.one),
+                walls = BuildRoomWallReferences(roomData, room.WallSet, context),
+                floor = BuildSurface(roomData, roomPosition, FloorWorldY, roomData.FloorTextureCode),
+                ceil = BuildSurface(
+                    roomData,
+                    roomPosition,
+                    GetCeilingWorldY(roomData, context),
+                    roomData.CeilingTextureCode),
                 furnish = BuildFurniture(room),
             };
         }
@@ -220,16 +229,35 @@ namespace LH.Export
             return results;
         }
 
-        private static List<int> BuildRoomWallReferences(Room room, BuildContext context)
+        private static List<int> BuildRoomWallReferences(RoomData roomData, IEnumerable<Wall> walls, BuildContext context)
         {
             List<int> results = new List<int>();
-            if (room == null || room.WallSet == null)
+            if (roomData == null)
             {
                 return results;
             }
 
             HashSet<int> addedIds = new HashSet<int>();
-            foreach (Wall wall in room.WallSet)
+            IReadOnlyList<string> wallIds = roomData.WallIds;
+            for (int i = 0; i < wallIds.Count; i++)
+            {
+                string wallIdKey = wallIds[i];
+                if (string.IsNullOrWhiteSpace(wallIdKey) ||
+                    !context.wallIdsByDataId.TryGetValue(wallIdKey, out int wallId) ||
+                    !addedIds.Add(wallId))
+                {
+                    continue;
+                }
+
+                results.Add(wallId);
+            }
+
+            if (results.Count > 0 || walls == null)
+            {
+                return results;
+            }
+
+            foreach (Wall wall in walls)
             {
                 if (wall == null)
                 {
@@ -248,32 +276,22 @@ namespace LH.Export
             return results;
         }
 
-        private static LhSurfaceDto BuildSurface(Transform surfaceTransform, string explicitTextureCode)
+        private static LhSurfaceDto BuildSurface(RoomData roomData, Vector3 roomPosition, float worldY, string explicitTextureCode)
         {
-            MeshFilter meshFilter = surfaceTransform != null ? surfaceTransform.GetComponent<MeshFilter>() : null;
-            MeshRenderer meshRenderer = surfaceTransform != null ? surfaceTransform.GetComponent<MeshRenderer>() : null;
-            Mesh mesh = meshFilter != null ? meshFilter.sharedMesh : null;
-            string textureCode = string.IsNullOrWhiteSpace(explicitTextureCode)
-                ? ResolveMaterialCode(meshRenderer)
-                : explicitTextureCode;
+            IReadOnlyList<Vector3> boundaryVertices = roomData != null ? roomData.BoundaryVertices : null;
+            RoomGeometry geometry = roomData != null ? roomData.Geometry : default;
+            string textureCode = explicitTextureCode ?? string.Empty;
 
             return new LhSurfaceDto
             {
-                transform = LhDtoFactory.CreateTransform(surfaceTransform, true),
-                meshType = mesh != null ? 1 : 0,
-                mesh = LhDtoFactory.CreateMesh(mesh),
+                transform = CreateTransform(
+                    new Vector3(0f, worldY - roomPosition.y, 0f),
+                    Vector3.zero,
+                    Vector3.one),
+                meshType = boundaryVertices != null && boundaryVertices.Count >= 3 ? 1 : 0,
+                mesh = LhDtoFactory.CreateMeshFromPolygon(boundaryVertices, geometry.Center),
                 texture = textureCode,
             };
-        }
-
-        private static string ResolveMaterialCode(Renderer renderer)
-        {
-            if (renderer == null || renderer.sharedMaterial == null)
-            {
-                return string.Empty;
-            }
-
-            return renderer.sharedMaterial.name.Replace(" (Instance)", string.Empty);
         }
 
         private static WallOpening FindOpeningForSegment(Wall segmentWall, WallOpeningContainer container)
@@ -344,6 +362,81 @@ namespace LH.Export
 
             WallOpeningContainer container = wallTransform.GetComponentInParent<WallOpeningContainer>();
             return container != null ? container.transform : wallTransform;
+        }
+
+        private static void RegisterWallDataIds(Transform root, int wallId, BuildContext context)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            Wall rootWall = root.GetComponent<Wall>();
+            if (rootWall != null)
+            {
+                RegisterWallDataId(rootWall.Data, wallId, context);
+                return;
+            }
+
+            Wall[] childWalls = root.GetComponentsInChildren<Wall>(true);
+            for (int i = 0; i < childWalls.Length; i++)
+            {
+                Wall childWall = childWalls[i];
+                if (childWall == null || childWall.transform.parent != root)
+                {
+                    continue;
+                }
+
+                RegisterWallDataId(childWall.Data, wallId, context);
+            }
+        }
+
+        private static void RegisterWallDataId(WallData wallData, int wallId, BuildContext context)
+        {
+            if (wallData == null || string.IsNullOrWhiteSpace(wallData.id))
+            {
+                return;
+            }
+
+            context.wallIdsByDataId[wallData.id] = wallId;
+            context.wallDataById[wallData.id] = wallData;
+        }
+
+        private static float GetCeilingWorldY(RoomData roomData, BuildContext context)
+        {
+            float bestY = roomData != null ? roomData.Geometry.Center.y : 0f;
+            if (roomData == null)
+            {
+                return bestY;
+            }
+
+            IReadOnlyList<string> wallIds = roomData.WallIds;
+            for (int i = 0; i < wallIds.Count; i++)
+            {
+                string wallId = wallIds[i];
+                if (string.IsNullOrWhiteSpace(wallId) || !context.wallDataById.TryGetValue(wallId, out WallData wallData))
+                {
+                    continue;
+                }
+
+                float wallTopY = wallData.centerY + wallData.height * 0.5f;
+                if (wallTopY > bestY)
+                {
+                    bestY = wallTopY;
+                }
+            }
+
+            return bestY;
+        }
+
+        private static LhTransformDto CreateTransform(Vector3 position, Vector3 angle, Vector3 scale)
+        {
+            return new LhTransformDto
+            {
+                position = LhVector3Dto.FromVector3(position),
+                angle = LhVector3Dto.FromVector3(angle),
+                scale = LhVector3Dto.FromVector3(scale),
+            };
         }
     }
 }

@@ -117,17 +117,13 @@ public class Wall : MonoBehaviour
     public bool TryApplyGeometry(Vector3 start, Vector3 end, float thickness, float height, float centerY, float minimumLength)
     {
         WallData wallData = EnsureData();
-        wallData.startPoint = start;
-        wallData.endPoint = end;
-        wallData.thickness = thickness;
-        wallData.height = height;
-        wallData.centerY = centerY;
-
-        if (!GetVisual(true).TryApplyWallData(wallData, minimumLength))
+        if (!IsGeometryValid(start, end, minimumLength))
         {
             return false;
         }
 
+        wallData.SetGeometry(start, end, thickness, height, centerY);
+        GetVisualizer(true).RefreshFromData(minimumLength);
         WallRegistry.NotifyWallChanged(this);
         return true;
     }
@@ -183,23 +179,24 @@ public class Wall : MonoBehaviour
     public void SyncEndpointsFromTransform(float planeY)
     {
         GetEndpointsFromTransform(planeY, out Vector3 start, out Vector3 end);
-        WallData wallData = EnsureData();
-        wallData.startPoint = start;
-        wallData.endPoint = end;
-        wallData.thickness = transform.localScale.x;
-        wallData.height = transform.localScale.y;
-        wallData.centerY = transform.position.y;
+        EnsureData().SetGeometry(
+            start,
+            end,
+            transform.localScale.x,
+            transform.localScale.y,
+            transform.position.y);
         WallRegistry.NotifyWallChanged(this);
     }
 
     public bool UpdateView(float minimumLength)
     {
         WallData wallData = EnsureData();
-        if (!GetVisual(true).TryApplyWallData(wallData, minimumLength))
+        if (!wallData.MeetsMinimumLength(minimumLength))
         {
             return false;
         }
 
+        GetVisualizer(true).RefreshFromData(minimumLength);
         WallRegistry.NotifyWallChanged(this);
         return true;
     }
@@ -241,32 +238,32 @@ public class Wall : MonoBehaviour
 
     public Material GetTopMaterial()
     {
-        WallVisual visual = GetVisual(false);
-        return visual != null ? visual.GetTopMaterial() : null;
+        WallVisualizer visualizer = GetVisualizer(false);
+        return visualizer != null ? visualizer.GetTopMaterial() : null;
     }
 
     public void SetTopMaterial(Material material)
     {
-        GetVisual(true).SetTopMaterial(material);
+        GetVisualizer(true).SetTopMaterial(material);
     }
 
     public void SetTopFaceOffset(float offset)
     {
-        GetVisual(true).SetTopFaceOffset(offset);
+        GetVisualizer(true).SetTopFaceOffset(offset);
     }
 
     public void RefreshTopFaceVisual()
     {
-        WallVisual visual = GetVisual(false);
-        if (visual != null)
+        WallVisualizer visualizer = GetVisualizer(false);
+        if (visualizer != null)
         {
-            visual.RefreshTopFaceVisual();
+            visualizer.RefreshTopFaceVisual();
         }
     }
 
     public void RefreshEndCapVisuals()
     {
-        GetVisual(true).RefreshEndCapVisuals();
+        GetVisualizer(true).RefreshEndCapVisuals();
     }
 
     private void OnDrawGizmosSelected()
@@ -325,14 +322,21 @@ public class Wall : MonoBehaviour
         }
     }
 
-    private WallVisual GetVisual(bool createIfMissing)
+    private WallVisualizer GetVisualizer(bool createIfMissing)
     {
-        WallVisual visual = GetComponent<WallVisual>();
-        if (visual == null && createIfMissing)
+        WallVisualizer visualizer = GetComponent<WallVisualizer>();
+        if (visualizer == null && createIfMissing)
         {
-            visual = gameObject.AddComponent<WallVisual>();
+            visualizer = gameObject.AddComponent<WallVisualizer>();
         }
 
-        return visual;
+        return visualizer;
+    }
+
+    private static bool IsGeometryValid(Vector3 start, Vector3 end, float minimumLength)
+    {
+        Vector3 flatDirection = end - start;
+        flatDirection.y = 0f;
+        return flatDirection.magnitude >= minimumLength;
     }
 }
