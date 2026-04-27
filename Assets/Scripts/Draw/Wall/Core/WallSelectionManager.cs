@@ -85,6 +85,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private readonly WallSelectionUndoRecorder undoRecorder = new WallSelectionUndoRecorder();
     private Mesh cachedCubeMesh;
     private bool rootWallsCacheDirty = true;
+    private bool isShuttingDown;
     private EditorInputFrame lastInputFrame;
 
     public bool IsDraggingWall => isDraggingWall;
@@ -232,6 +233,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void Update()
     {
+        if (isShuttingDown)
+        {
+            return;
+        }
+
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
         if (currentMode == EditorMode.Default || currentMode == EditorMode.DetailEdit)
         {
@@ -1064,6 +1070,8 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void OnDestroy()
     {
+        isShuttingDown = true;
+
         if (EditorInputManager.HasInstance)
         {
             EditorInputManager.Instance.UnregisterGlobalHandler(this);

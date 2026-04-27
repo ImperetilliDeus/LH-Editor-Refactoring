@@ -195,7 +195,10 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         UnbindButtons();
         UnbindVisualEvents();
-        EditorInputManager.Instance.UnregisterHandler(EditorMode.DetailEdit, this);
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterHandler(EditorMode.DetailEdit, this);
+        }
 
         if (cachedDoorMaterial != null)
         {

@@ -18,14 +18,18 @@ namespace LH.Schema
     {
         public string name;
         public int id;
-        public LhTransformDto transform;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
         public List<LhWallSegmentDto> segments;
     }
 
     [Serializable]
     public struct LhWallSegmentDto
     {
-        public LhTransformDto transform;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
         public bool hasInterior;
         public LhDoorDto door;
         public LhWindowDto window;
@@ -34,9 +38,14 @@ namespace LH.Schema
     [Serializable]
     public struct LhRoomDto
     {
+        public string id;
         public string name;
         public string code;
-        public LhTransformDto transform;
+        public string roomTypeKey;
+        public string nativeCode;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
         public List<int> walls;
         public LhSurfaceDto floor;
         public LhSurfaceDto ceil;
@@ -46,7 +55,9 @@ namespace LH.Schema
     [Serializable]
     public struct LhSurfaceDto
     {
-        public LhTransformDto transform;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
         public int meshType;
         public LhMeshDto mesh;
         public string texture;
@@ -57,7 +68,9 @@ namespace LH.Schema
     {
         public bool isExist;
         public string code;
-        public LhTransformDto transform;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
     }
 
     [Serializable]
@@ -65,7 +78,9 @@ namespace LH.Schema
     {
         public bool isExist;
         public string code;
-        public LhTransformDto transform;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
     }
 
     [Serializable]
@@ -73,15 +88,19 @@ namespace LH.Schema
     {
         public string name;
         public string code;
-        public LhTransformDto transform;
-    }
-
-    [Serializable]
-    public struct LhTransformDto
-    {
+        public string nativeCode;
         public LhVector3Dto position;
         public LhVector3Dto angle;
         public LhVector3Dto scale;
+        public List<LhFurnitureDefectDto> defects;
+    }
+
+    [Serializable]
+    public struct LhFurnitureDefectDto
+    {
+        public string mntnCd;
+        public string locCd;
+        public string mtrlCd;
     }
 
     [Serializable]
@@ -129,23 +148,28 @@ namespace LH.Schema
 
     public static class LhDtoFactory
     {
-        public static LhTransformDto CreateTransform(Transform transform, bool localSpace = false)
+        public static void FillTransform(Transform transform, out LhVector3Dto positionDto, out LhVector3Dto angleDto, out LhVector3Dto scaleDto, bool localSpace = false)
         {
             if (transform == null)
             {
-                return default;
+                positionDto = default;
+                angleDto = default;
+                scaleDto = default;
+                return;
             }
 
             Vector3 position = localSpace ? transform.localPosition : transform.position;
             Vector3 eulerAngles = localSpace ? transform.localEulerAngles : transform.eulerAngles;
             Vector3 scale = localSpace ? transform.localScale : transform.lossyScale;
 
-            return new LhTransformDto
-            {
-                position = LhVector3Dto.FromVector3(position),
-                angle = LhVector3Dto.FromVector3(eulerAngles),
-                scale = LhVector3Dto.FromVector3(scale),
-            };
+            FillTransform(position, eulerAngles, scale, out positionDto, out angleDto, out scaleDto);
+        }
+
+        public static void FillTransform(Vector3 position, Vector3 angle, Vector3 scale, out LhVector3Dto positionDto, out LhVector3Dto angleDto, out LhVector3Dto scaleDto)
+        {
+            positionDto = LhVector3Dto.FromVector3(position);
+            angleDto = LhVector3Dto.FromVector3(angle);
+            scaleDto = LhVector3Dto.FromVector3(scale);
         }
 
         public static LhMeshDto CreateMesh(Mesh mesh)

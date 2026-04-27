@@ -5,6 +5,9 @@ using UnityEngine;
 public class FurnitureInstance : MonoBehaviour
 {
     [SerializeField] private string catalogCode = string.Empty;
+    [SerializeField] private string exportCode = string.Empty;
+    [SerializeField] private string nativeCode = string.Empty;
+    [SerializeField] private List<FurnitureDefectCatalogEntry> exportDefects = new List<FurnitureDefectCatalogEntry>();
     [SerializeField] private bool isPlaced;
     [SerializeField] private Room currentRoom;
     [SerializeField] private Vector3 boundsSize = Vector3.one;
@@ -14,6 +17,9 @@ public class FurnitureInstance : MonoBehaviour
     private readonly List<Renderer> cachedRenderers = new List<Renderer>();
 
     public string CatalogCode => catalogCode;
+    public string ExportCode => string.IsNullOrWhiteSpace(exportCode) ? catalogCode : exportCode;
+    public string NativeCode => nativeCode;
+    public IReadOnlyList<FurnitureDefectCatalogEntry> ExportDefects => exportDefects;
     public bool IsPlaced => isPlaced;
     public Room CurrentRoom => currentRoom;
     public Vector3 BoundsSize => boundsSize;
@@ -28,9 +34,30 @@ public class FurnitureInstance : MonoBehaviour
         }
 
         catalogCode = item.code ?? string.Empty;
+        exportCode = string.IsNullOrWhiteSpace(item.exportCode) ? catalogCode : item.exportCode;
+        nativeCode = item.nativeCode ?? string.Empty;
         boundsSize = item.boundsSize;
         placementOffset = item.placementOffset;
         defaultEulerAngles = item.defaultEulerAngles;
+        exportDefects.Clear();
+        if (item.defects != null)
+        {
+            for (int i = 0; i < item.defects.Count; i++)
+            {
+                FurnitureDefectCatalogEntry entry = item.defects[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                exportDefects.Add(new FurnitureDefectCatalogEntry
+                {
+                    mntnCd = entry.mntnCd ?? string.Empty,
+                    locCd = entry.locCd ?? string.Empty,
+                    mtrlCd = entry.mtrlCd ?? string.Empty,
+                });
+            }
+        }
     }
 
     public void SetPlaced(bool value)

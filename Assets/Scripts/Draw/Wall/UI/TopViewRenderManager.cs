@@ -19,6 +19,7 @@ public partial class TopViewRenderManager : MonoBehaviour
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
+    [SerializeField] private RoomWallAuthoringPanelController roomWallAuthoringPanelController;
     [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private ModeManager modeManager;
 
@@ -30,6 +31,8 @@ public partial class TopViewRenderManager : MonoBehaviour
     [SerializeField] private Color selectedFloorColor = new Color(0.28f, 0.6f, 1f, 0.35f);
     [SerializeField] private Color wallColor = new Color(0.12f, 0.12f, 0.12f, 0.92f);
     [SerializeField] private Color selectedWallColor = new Color(1f, 0.64f, 0.12f, 1f);
+    [SerializeField] private Color authoringHoveredWallColor = new Color(0.44f, 1f, 0.78f, 1f);
+    [SerializeField] private Color authoringSelectedWallColor = new Color(1f, 0.84f, 0.22f, 1f);
     [SerializeField] private Color previewWallColor = new Color(0.2f, 0.8f, 1f, 0.45f);
     [SerializeField] private Color doorColor = new Color(0.58f, 0.30f, 0.12f, 0.95f);
     [SerializeField] private Color selectedDoorColor = new Color(1f, 0.68f, 0.22f, 1f);
@@ -148,6 +151,11 @@ public partial class TopViewRenderManager : MonoBehaviour
             roomAuthoringPanelManager.SelectedRoomChanged += HandleSelectedRoomChanged;
         }
 
+        if (roomWallAuthoringPanelController != null)
+        {
+            roomWallAuthoringPanelController.HighlightStateChanged += MarkDirty;
+        }
+
         if (roomHandleManager != null)
         {
             roomHandleManager.FocusedRoomChanged += HandleFocusedRoomChanged;
@@ -187,6 +195,11 @@ public partial class TopViewRenderManager : MonoBehaviour
         if (roomAuthoringPanelManager != null)
         {
             roomAuthoringPanelManager.SelectedRoomChanged -= HandleSelectedRoomChanged;
+        }
+
+        if (roomWallAuthoringPanelController != null)
+        {
+            roomWallAuthoringPanelController.HighlightStateChanged -= MarkDirty;
         }
 
         if (roomHandleManager != null)
@@ -276,6 +289,11 @@ public partial class TopViewRenderManager : MonoBehaviour
         if (roomAuthoringPanelManager == null)
         {
             roomAuthoringPanelManager = FindFirstObjectByType<RoomAuthoringPanelManager>();
+        }
+
+        if (roomWallAuthoringPanelController == null)
+        {
+            roomWallAuthoringPanelController = FindFirstObjectByType<RoomWallAuthoringPanelController>();
         }
 
         if (roomHandleManager == null)

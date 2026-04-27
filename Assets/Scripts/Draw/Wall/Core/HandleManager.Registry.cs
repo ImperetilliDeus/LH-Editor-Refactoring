@@ -368,14 +368,35 @@ public partial class HandleManager
             }
         }
 
-        if (!IsSplitPointGroup(group) && TryBuildSplitChainFromEndpoint(group.vertexId, splitChainWalls, splitChainVertexIds, splitChainPoints))
+        if (!IsSplitPointGroup(group))
         {
-            for (int i = 0; i < splitChainWalls.Count; i++)
+            for (int i = 0; i < group.endpoints.Count; i++)
             {
-                Wall chainWall = splitChainWalls[i];
-                if (chainWall != null)
+                EndpointRef endpointRef = group.endpoints[i];
+                Wall connectedWall = endpointRef?.entry?.wallComponent;
+                if (connectedWall == null || !connectedWall.ContainsVertexId(group.vertexId))
                 {
-                    wallObjects.Add(chainWall.gameObject);
+                    continue;
+                }
+
+                int oppositeVertexId = connectedWall.GetOppositeVertexId(group.vertexId);
+                if (oppositeVertexId <= 0 || !connectedWall.IsSplitPointVertex(oppositeVertexId))
+                {
+                    continue;
+                }
+
+                if (!TryBuildSplitChainFromWall(group.vertexId, connectedWall, splitChainWalls, splitChainVertexIds, splitChainPoints))
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < splitChainWalls.Count; j++)
+                {
+                    Wall chainWall = splitChainWalls[j];
+                    if (chainWall != null)
+                    {
+                        wallObjects.Add(chainWall.gameObject);
+                    }
                 }
             }
         }

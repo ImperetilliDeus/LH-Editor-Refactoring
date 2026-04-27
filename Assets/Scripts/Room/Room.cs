@@ -11,11 +11,16 @@ public class Room : MonoBehaviour
     public RoomGeometry Geometry => Data.Geometry;
     public Vector3 Centroid => Data.Geometry.Center;
     public bool IsManualRoom => Data.IsManualRoom;
+    public bool ManualWallSelectionEnabled => Data.ManualWallSelectionEnabled;
     public string RoomName => Data.RoomName;
     public string RoomTypeKey => Data.RoomTypeKey;
     public string RoomCode => Data.RoomCode;
+    public string RoomNativeCode => Data.RoomNativeCode;
     public string FloorTextureCode => Data.FloorTextureCode;
     public string CeilingTextureCode => Data.CeilingTextureCode;
+    public IReadOnlyList<string> AutomaticWallIds => Data.WallIds;
+    public IReadOnlyList<string> ManualWallIds => Data.ManualWallIds;
+    public IReadOnlyList<string> EffectiveWallIds => Data.EffectiveWallIds;
 
     [SerializeField] private RoomData data = new RoomData();
 
@@ -106,6 +111,11 @@ public class Room : MonoBehaviour
         EnsureData().RoomCode = value;
     }
 
+    public void SetRoomNativeCode(string value)
+    {
+        EnsureData().RoomNativeCode = value;
+    }
+
     public void SetFloorTextureCode(string value)
     {
         EnsureData().FloorTextureCode = value;
@@ -114,6 +124,16 @@ public class Room : MonoBehaviour
     public void SetCeilingTextureCode(string value)
     {
         EnsureData().CeilingTextureCode = value;
+    }
+
+    public void SetManualWallIds(IEnumerable<string> ids)
+    {
+        EnsureData().SetManualWallIds(ids);
+    }
+
+    public void ClearManualWallSelection()
+    {
+        EnsureData().ClearManualWallSelection();
     }
 
     public bool ReplaceWallReferences(ICollection<Wall> removedWalls, IEnumerable<Wall> addedWalls)

@@ -315,12 +315,15 @@ public class FurnitureCatalogBuilder : EditorWindow
         pendingItems.Add(new FurnitureCatalogItem
         {
             code = Path.GetFileNameWithoutExtension(currentPreviewAssetPath),
+            exportCode = Path.GetFileNameWithoutExtension(currentPreviewAssetPath),
+            nativeCode = string.Empty,
             displayName = currentPreviewPrefab.name,
             prefab = currentPreviewPrefab,
             thumbnail = thumbnailAsset,
             placementOffset = Vector3.zero,
             defaultEulerAngles = Vector3.zero,
             boundsSize = EstimateBounds(currentPreviewPrefab),
+            defects = new List<FurnitureDefectCatalogEntry>(),
         });
 
         currentPreviewPrefab = null;
@@ -340,12 +343,15 @@ public class FurnitureCatalogBuilder : EditorWindow
         {
             SerializedProperty itemProperty = itemsProperty.GetArrayElementAtIndex(i);
             itemProperty.FindPropertyRelative("code").stringValue = pendingItems[i].code;
+            itemProperty.FindPropertyRelative("exportCode").stringValue = pendingItems[i].exportCode;
+            itemProperty.FindPropertyRelative("nativeCode").stringValue = pendingItems[i].nativeCode;
             itemProperty.FindPropertyRelative("displayName").stringValue = pendingItems[i].displayName;
             itemProperty.FindPropertyRelative("prefab").objectReferenceValue = pendingItems[i].prefab;
             itemProperty.FindPropertyRelative("thumbnail").objectReferenceValue = pendingItems[i].thumbnail;
             itemProperty.FindPropertyRelative("placementOffset").vector3Value = pendingItems[i].placementOffset;
             itemProperty.FindPropertyRelative("defaultEulerAngles").vector3Value = pendingItems[i].defaultEulerAngles;
             itemProperty.FindPropertyRelative("boundsSize").vector3Value = pendingItems[i].boundsSize;
+            itemProperty.FindPropertyRelative("defects").arraySize = 0;
         }
 
         serializedCatalog.ApplyModifiedPropertiesWithoutUndo();

@@ -29,9 +29,7 @@ internal sealed class WallSelectionPresentationController
 
     public Canvas EnsureSelectionCanvas(Canvas currentCanvas)
     {
-        return currentCanvas != null
-            ? currentCanvas
-            : LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
+        return currentCanvas;
     }
 
     public void RefreshWallSelectionUIStates(

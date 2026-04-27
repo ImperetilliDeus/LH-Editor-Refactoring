@@ -184,7 +184,7 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         }
 
         float zoomDelta = scrollValue * zoomSpeed * Time.unscaledDeltaTime;
-        Vector3 pivot = GetZoomPivot();
+        Vector3 pivot = GetZoomPivot(inputFrame.PointerScreenPosition);
         Vector3 toCamera = CameraTransform.position - pivot;
         float currentDistance = toCamera.magnitude;
         if (currentDistance <= 0.0001f)
@@ -247,7 +247,11 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
+        if (!TryCreateScreenRay(pointerScreenPosition, out Ray ray))
+        {
+            return false;
+        }
+
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return false;
@@ -257,25 +261,53 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         return true;
     }
 
-    private Vector3 GetZoomPivot()
+    private Vector3 GetZoomPivot(Vector2 pointerScreenPosition)
     {
         if (!hasDragPlane)
         {
             return CameraTransform.position + CameraTransform.forward * minDistance;
         }
 
-        Ray centerRay = targetCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (dragPlane.Raycast(centerRay, out float enter))
+        if (TryCreateScreenRay(pointerScreenPosition, out Ray pointerRay) &&
+            dragPlane.Raycast(pointerRay, out float pointerEnter))
         {
-            return centerRay.GetPoint(enter);
+            return pointerRay.GetPoint(pointerEnter);
         }
 
-        return CameraTransform.position + CameraTransform.forward * minDistance;
+        Rect pixelRect = targetCamera.pixelRect;
+        Vector2 screenCenter = pixelRect.center;
+        if (TryCreateScreenRay(screenCenter, out Ray centerRay) &&
+            dragPlane.Raycast(centerRay, out float centerEnter))
+        {
+            return centerRay.GetPoint(centerEnter);
+        }
+
+        return CameraTransform.position + CameraTransform.forward * Mathf.Max(minDistance, 1f);
     }
 
     private float NormalizePitch(float eulerX)
     {
         return eulerX > 180f ? eulerX - 360f : eulerX;
+    }
+
+    private bool TryCreateScreenRay(Vector2 screenPosition, out Ray ray)
+    {
+        ray = default;
+        if (targetCamera == null || !targetCamera.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        Rect pixelRect = targetCamera.pixelRect;
+        if (pixelRect.width <= 0f || pixelRect.height <= 0f)
+        {
+            return false;
+        }
+
+        float clampedX = Mathf.Clamp(screenPosition.x, pixelRect.xMin, pixelRect.xMax);
+        float clampedY = Mathf.Clamp(screenPosition.y, pixelRect.yMin, pixelRect.yMax);
+        ray = targetCamera.ScreenPointToRay(new Vector2(clampedX, clampedY));
+        return true;
     }
 
 }

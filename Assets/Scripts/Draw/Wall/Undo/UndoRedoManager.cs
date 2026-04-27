@@ -46,7 +46,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        RecordCommand(new WallCreateAction(wallObject));
+        RecordCommand(new WallCreateCommand(wallObject));
     }
 
     public void RecordMoveConnectedWalls(List<WallStateChangeRecord> records)
@@ -62,7 +62,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        RecordCommand(new MoveConnectedWallsAction(meaningful));
+        RecordCommand(new MoveConnectedWallsCommand(meaningful));
     }
 
     public void RecordWallTransformChange(
@@ -149,7 +149,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        RecordCommand(new WallSplitAction(originalWall, firstSplitWall, secondSplitWall));
+        RecordCommand(new WallSplitCommand(originalWall, firstSplitWall, secondSplitWall));
     }
 
     public void RecordRoomsReplaced(List<Room> deletedRooms, List<Room> createdRooms)
@@ -171,7 +171,7 @@ public partial class UndoRedoManager : MonoBehaviour
             return;
         }
 
-        RecordCommand(new OpeningLayoutChangeAction(before, after));
+        RecordCommand(new OpeningLayoutChangeCommand(before, after));
     }
 
     public void RecordDeletedLayouts(List<OpeningLayoutSnapshot> layouts, List<Room> affectedRooms)
@@ -291,7 +291,7 @@ public partial class UndoRedoManager : MonoBehaviour
         return meaningful;
     }
 
-    private GameObject CreateWallFromSnapshot(WallStateSnapshot snapshot)
+    internal GameObject CreateWallFromSnapshot(WallStateSnapshot snapshot)
     {
         EnsureWallRoot(true);
         EnsureCachedResources();
@@ -392,7 +392,7 @@ public partial class UndoRedoManager : MonoBehaviour
             false);
     }
 
-    private void RegisterWallVisuals(GameObject wallObject)
+    internal void RegisterWallVisuals(GameObject wallObject)
     {
         if (wallObject == null)
         {
@@ -411,7 +411,7 @@ public partial class UndoRedoManager : MonoBehaviour
         }
     }
 
-    private void UnregisterWallVisuals(GameObject wallObject)
+    internal void UnregisterWallVisuals(GameObject wallObject)
     {
         if (wallObject == null)
         {

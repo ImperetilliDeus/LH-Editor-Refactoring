@@ -28,7 +28,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private Color activeHandleColor = new Color(1f, 0.65f, 0.12f, 1f);
     [SerializeField] private Color activeSplitPointHandleColor = new Color(1f, 0.86f, 0.2f, 1f);
     [SerializeField] private Color snappedHandleColor = new Color(0.28f, 1f, 0.28f, 1f);
-    [SerializeField] private int handleCanvasSortingOrder = 200;
 
     [Header("Drag")]
     [SerializeField] private float minimumWallLength = 0.01f;
@@ -92,6 +91,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private Sprite circularHandleSprite;
     private bool handleLayoutDirty = true;
     private bool handlePositionsDirty = true;
+    private bool suppressWallRenaming;
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
@@ -133,7 +133,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         minimumWallLength = Mathf.Max(0.01f, minimumWallLength);
         clickAllowanceSensitivityPixels = Mathf.Max(0f, clickAllowanceSensitivityPixels);
         endpointMergeThreshold = Mathf.Max(0.01f, endpointMergeThreshold);
-        handleCanvasSortingOrder = Mathf.Max(short.MinValue, Mathf.Min(short.MaxValue, handleCanvasSortingOrder));
     }
 
     private void Update()
@@ -211,6 +210,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         wallEntries[key] = entry;
         AddEntryToVertexGroup(entry, true);
         AddEntryToVertexGroup(entry, false);
+        NormalizeWallNames();
         MarkHandleLayoutDirty();
         WallHierarchyChanged?.Invoke();
     }
@@ -241,6 +241,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 
         RemoveEntryFromAllGroups(entry);
         wallEntries.Remove(key);
+        NormalizeWallNames();
         MarkHandleLayoutDirty();
         WallHierarchyChanged?.Invoke();
     }
@@ -330,6 +331,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         RebuildGroupsFromEntries();
+        NormalizeWallNames();
         RefreshWallEndCaps();
         MarkHandleLayoutDirty();
         SetHandlesVisible(isDefaultModeActive);
@@ -572,6 +574,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
+        suppressWallRenaming = true;
         WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
         for (int i = 0; i < cachedWalls.Count; i++)
         {
@@ -583,6 +586,19 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 
             RegisterWall(wall.gameObject);
         }
+
+        suppressWallRenaming = false;
+        NormalizeWallNames();
+    }
+
+    private void NormalizeWallNames()
+    {
+        if (suppressWallRenaming)
+        {
+            return;
+        }
+
+        WallNamingUtility.NormalizeWallNames(wallRoot);
     }
 
     private void MarkHandleLayoutDirty()

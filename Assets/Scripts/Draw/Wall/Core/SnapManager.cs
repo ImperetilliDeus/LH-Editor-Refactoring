@@ -155,6 +155,7 @@ public class SnapManager : MonoBehaviour
                 wall.StartVertexId,
                 wall.Data.startPoint,
                 wall.SuppressStartHandle,
+                wall.IsStartSplitPoint,
                 ignoreVertexId,
                 ignoredStartVertexId,
                 ignoredEndVertexId);
@@ -165,6 +166,7 @@ public class SnapManager : MonoBehaviour
                 wall.EndVertexId,
                 wall.Data.endPoint,
                 wall.SuppressEndHandle,
+                wall.IsEndSplitPoint,
                 ignoreVertexId,
                 ignoredStartVertexId,
                 ignoredEndVertexId);
@@ -233,7 +235,7 @@ public class SnapManager : MonoBehaviour
             return baseSnappedPoint;
         }
 
-        bool canPointSnap = enableHandleSnap && handlePoints != null && handlePoints.Count > 0;
+        bool canPointSnap = ShouldApplyHandleSnap() && enableHandleSnap && handlePoints != null && handlePoints.Count > 0;
         bool canSegmentSnap = enableWallSegmentSnap && wallSegments != null && wallSegments.Count > 0;
         if (!canPointSnap && !canSegmentSnap)
         {
@@ -369,7 +371,7 @@ public class SnapManager : MonoBehaviour
     {
         snapPoint = Vector3.zero;
 
-        if (!enableHandleSnap || handlePoints == null || handlePoints.Count == 0)
+        if (!enableHandleSnap || !ShouldApplyHandleSnap() || handlePoints == null || handlePoints.Count == 0)
         {
             return false;
         }
@@ -627,11 +629,17 @@ public class SnapManager : MonoBehaviour
         int vertexId,
         Vector3 point,
         bool isSuppressed,
+        bool isSplitPoint,
         int ignoreVertexId,
         int ignoredStartVertexId,
         int ignoredEndVertexId)
     {
-        if (isSuppressed || vertexId <= 0)
+        if (vertexId <= 0)
+        {
+            return;
+        }
+
+        if (isSuppressed && !isSplitPoint)
         {
             return;
         }

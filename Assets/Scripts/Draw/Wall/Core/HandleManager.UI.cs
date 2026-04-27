@@ -170,8 +170,13 @@ public partial class HandleManager
     {
         if (targetCanvas != null)
         {
-            targetCanvas.overrideSorting = true;
-            targetCanvas.sortingOrder = handleCanvasSortingOrder;
+            return;
+        }
+
+        Canvas handleCanvas = LayerUtility.FindCanvasByName(LayerUtility.DefaultHandleCanvasName);
+        if (handleCanvas != null)
+        {
+            targetCanvas = handleCanvas;
             return;
         }
 
@@ -182,8 +187,6 @@ public partial class HandleManager
             if (canvas != null && canvas.name == HandleCanvasName)
             {
                 targetCanvas = canvas;
-                targetCanvas.overrideSorting = true;
-                targetCanvas.sortingOrder = handleCanvasSortingOrder;
                 return;
             }
         }
@@ -191,8 +194,6 @@ public partial class HandleManager
         GameObject canvasObject = new GameObject(HandleCanvasName);
         targetCanvas = canvasObject.AddComponent<Canvas>();
         targetCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        targetCanvas.overrideSorting = true;
-        targetCanvas.sortingOrder = handleCanvasSortingOrder;
         canvasObject.AddComponent<CanvasScaler>();
         canvasObject.AddComponent<GraphicRaycaster>();
     }
