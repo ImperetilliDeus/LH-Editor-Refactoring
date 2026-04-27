@@ -59,9 +59,7 @@ public partial class TopViewRenderManager
                     wall.Data.startPoint,
                     wall.Data.endPoint,
                     wall.transform.localScale.x,
-                    drawManager != null && drawManager.PreviewWall == wall.gameObject
-                        ? previewWallColor
-                        : IsWallSelectedInTopPlan(wall) ? selectedWallColor : wallColor,
+                    GetTopPlanWallColor(wall),
                     false,
                     0f,
                     0f,
@@ -217,6 +215,29 @@ public partial class TopViewRenderManager
         }
 
         return false;
+    }
+
+    private Color GetTopPlanWallColor(Wall wall)
+    {
+        if (drawManager != null && drawManager.PreviewWall == wall.gameObject)
+        {
+            return previewWallColor;
+        }
+
+        if (roomWallAuthoringPanelController != null)
+        {
+            if (roomWallAuthoringPanelController.IsWallSelectedForAuthoring(wall))
+            {
+                return authoringSelectedWallColor;
+            }
+
+            if (roomWallAuthoringPanelController.IsWallHoveredForAuthoring(wall))
+            {
+                return authoringHoveredWallColor;
+            }
+        }
+
+        return IsWallSelectedInTopPlan(wall) ? selectedWallColor : wallColor;
     }
 
     private void UpdateOpeningVisual(WallOpening opening, Image image)

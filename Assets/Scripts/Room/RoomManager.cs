@@ -50,6 +50,7 @@ public class RoomManager : MonoBehaviour
     [SerializeField] private float roomFaceAreaThreshold = 0.01f;
     [SerializeField] private float roomMatchDistanceThreshold = 0.5f;
     [SerializeField] private Vector3 roomSpawnLocalOffset = new Vector3(0f, 0.01f, 0f);
+    [SerializeField] private bool allowAutomaticRoomGeneration = false;
 
     private readonly Dictionary<HashSet<Wall>, Room> roomsByWalls = new Dictionary<HashSet<Wall>, Room>(new WallSetComparer());
     private readonly List<Room> allRooms = new List<Room>();
@@ -206,7 +207,14 @@ public class RoomManager : MonoBehaviour
         return true;
     }
 
-    public bool UpdateRoomMetadata(Room room, string roomName, string roomTypeKey)
+    public bool UpdateRoomMetadata(
+        Room room,
+        string roomName,
+        string roomTypeKey,
+        string roomCode = null,
+        string roomNativeCode = null,
+        string floorTextureCode = null,
+        string ceilingTextureCode = null)
     {
         if (room == null)
         {
@@ -216,6 +224,10 @@ public class RoomManager : MonoBehaviour
         bool changed = false;
         string normalizedName = roomName ?? string.Empty;
         string normalizedTypeKey = roomTypeKey ?? string.Empty;
+        string normalizedRoomCode = roomCode ?? room.RoomCode ?? string.Empty;
+        string normalizedRoomNativeCode = roomNativeCode ?? room.RoomNativeCode ?? string.Empty;
+        string normalizedFloorTextureCode = floorTextureCode ?? room.FloorTextureCode ?? string.Empty;
+        string normalizedCeilingTextureCode = ceilingTextureCode ?? room.CeilingTextureCode ?? string.Empty;
 
         if (!string.Equals(room.RoomName, normalizedName, System.StringComparison.Ordinal))
         {
@@ -229,12 +241,56 @@ public class RoomManager : MonoBehaviour
             changed = true;
         }
 
+        if (!string.Equals(room.RoomCode, normalizedRoomCode, System.StringComparison.Ordinal))
+        {
+            room.SetRoomCode(normalizedRoomCode);
+            changed = true;
+        }
+
+        if (!string.Equals(room.RoomNativeCode, normalizedRoomNativeCode, System.StringComparison.Ordinal))
+        {
+            room.SetRoomNativeCode(normalizedRoomNativeCode);
+            changed = true;
+        }
+
+        if (!string.Equals(room.FloorTextureCode, normalizedFloorTextureCode, System.StringComparison.Ordinal))
+        {
+            room.SetFloorTextureCode(normalizedFloorTextureCode);
+            changed = true;
+        }
+
+        if (!string.Equals(room.CeilingTextureCode, normalizedCeilingTextureCode, System.StringComparison.Ordinal))
+        {
+            room.SetCeilingTextureCode(normalizedCeilingTextureCode);
+            changed = true;
+        }
+
         if (changed)
         {
             RoomsChanged?.Invoke();
         }
 
         return changed;
+    }
+
+    public bool UpdateRoomWallSelection(Room room, IEnumerable<string> wallIds, bool enableManualSelection)
+    {
+        if (room == null)
+        {
+            return false;
+        }
+
+        if (enableManualSelection)
+        {
+            room.SetManualWallIds(wallIds);
+        }
+        else
+        {
+            room.ClearManualWallSelection();
+        }
+
+        RoomsChanged?.Invoke();
+        return true;
     }
 
     public void DeleteRoom(Room room)
@@ -309,6 +365,11 @@ public class RoomManager : MonoBehaviour
                 matchedRoom.UpdateGeometry(face.Vertices, face.Walls, face.VirtualBoundaries);
                 cachedAvailableRooms.Remove(matchedRoom);
                 nextRooms.Add(matchedRoom);
+                continue;
+            }
+
+            if (!allowAutomaticRoomGeneration)
+            {
                 continue;
             }
 

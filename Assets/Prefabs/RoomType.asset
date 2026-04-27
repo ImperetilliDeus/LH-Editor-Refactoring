@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce0efce953e57b14d8617a6e907a4c4d, type: 3}
+  m_Name: RoomType
+  m_EditorClassIdentifier: 
+  presets:
+  - name: "\uAC70\uC2E4"
+    code: 900
+  - name: "\uC695\uC2E4"
+    code: 901
+  - name: "\uC8FC\uBC29"
+    code: 902
+  - name: "\uCE68\uC2E4"
+    code: 903
+  - name: "\uBC1C\uCF54\uB2C8"
+    code: 904
+  - name: "\uC138\uD0C1\uC2E4"
+    code: 905
+  - name: "\uBCF4\uC77C\uB7EC\uC2E4"
+    code: 906
+  - name: "\uB2E4\uC6A9\uB3C4\uC2E4"
+    code: 907
+  - name: "\uB4DC\uB808\uC2A4\uB8F8"
+    code: 908
+  - name: "\uD604\uAD00"
+    code: 909
+  - name: "\uAE30\uD0C0"
+    code: -1

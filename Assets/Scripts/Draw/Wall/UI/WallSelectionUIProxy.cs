@@ -26,6 +26,18 @@ public class WallSelectionUIProxy : MonoBehaviour
 
     private RectTransform rootRect;
     private Image rootImage;
+    private Outline rootOutline;
+    private RectTransform startCapRect;
+    private RectTransform endCapRect;
+    private Image startCapImage;
+    private Image endCapImage;
+    private bool isSelected;
+    private bool hasTemporaryStyleOverride;
+    private Color temporaryFillColor;
+    private Color temporaryOutlineColor;
+    private Vector2 temporaryOutlineDistance;
+    private float temporaryThicknessMultiplier = 1f;
+    private bool temporaryShowEndCaps;
 
     private void Awake()
     {
@@ -60,16 +72,36 @@ public class WallSelectionUIProxy : MonoBehaviour
 
     public void SetSelected(bool selected)
     {
+        isSelected = selected;
         EnsureReferences();
         EnsureUI();
-        if (rootImage == null || selectionManager == null)
+        ApplyCurrentStyle();
+    }
+
+    public void SetTemporaryVisualOverride(Color fillColor, Color outlineColor, Vector2 outlineDistance, float thicknessMultiplier, bool showEndCaps)
+    {
+        hasTemporaryStyleOverride = true;
+        temporaryFillColor = fillColor;
+        temporaryOutlineColor = outlineColor;
+        temporaryOutlineDistance = outlineDistance;
+        temporaryThicknessMultiplier = Mathf.Max(1f, thicknessMultiplier);
+        temporaryShowEndCaps = showEndCaps;
+        EnsureReferences();
+        EnsureUI();
+        ApplyCurrentStyle();
+    }
+
+    public void ClearTemporaryVisualOverride()
+    {
+        if (!hasTemporaryStyleOverride)
         {
             return;
         }
 
-        rootImage.color = selected
-            ? selectionManager.WallUISelectedColor
-            : selectionManager.WallUINormalColor;
+        hasTemporaryStyleOverride = false;
+        EnsureReferences();
+        EnsureUI();
+        ApplyCurrentStyle();
     }
 
     public void RefreshVisual()
@@ -80,6 +112,8 @@ public class WallSelectionUIProxy : MonoBehaviour
         {
             return;
         }
+
+        rootRect.name = GetWallUIObjectName();
 
         Camera sourceCamera = worldCamera != null ? worldCamera : Camera.main;
         if (sourceCamera == null)
@@ -116,9 +150,14 @@ public class WallSelectionUIProxy : MonoBehaviour
         }
 
         rootRect.localRotation = Quaternion.Euler(0f, 0f, angle);
-        rootRect.sizeDelta = new Vector2(width, selectionManager.WallUIThicknessPixels);
+        float thicknessMultiplier = hasTemporaryStyleOverride ? temporaryThicknessMultiplier : (isSelected ? 1.15f : 1f);
+        float thickness = Mathf.Max(selectionManager.WallUIThicknessPixels, selectionManager.WallUIThicknessPixels * thicknessMultiplier);
+        rootRect.sizeDelta = new Vector2(width, thickness);
         rootRect.localScale = Vector3.one;
+        rootRect.SetAsLastSibling();
         rootImage.raycastTarget = selectionManager.IsWallUIInteractionEnabled;
+        UpdateEndCaps(width, thickness);
+        ApplyCurrentStyle();
     }
 
     public void DestroyUI()
@@ -128,6 +167,11 @@ public class WallSelectionUIProxy : MonoBehaviour
             Destroy(rootRect.gameObject);
             rootRect = null;
             rootImage = null;
+            rootOutline = null;
+            startCapRect = null;
+            endCapRect = null;
+            startCapImage = null;
+            endCapImage = null;
         }
     }
 
@@ -174,7 +218,7 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
-        GameObject rootObject = new GameObject($"WallUI_{GetInstanceID()}", typeof(RectTransform), typeof(Image));
+        GameObject rootObject = new GameObject(GetWallUIObjectName(), typeof(RectTransform), typeof(Image), typeof(Outline));
         rootObject.transform.SetParent(targetCanvas.transform, false);
         LayerUtility.ApplyLayer(rootObject, LayerUtility.WallUILayerName, false);
 
@@ -186,9 +230,122 @@ public class WallSelectionUIProxy : MonoBehaviour
         rootImage = rootObject.GetComponent<Image>();
         rootImage.color = selectionManager != null ? selectionManager.WallUINormalColor : new Color(1f, 1f, 1f, 0.04f);
         rootImage.raycastTarget = true;
+        rootOutline = rootObject.GetComponent<Outline>();
+        rootOutline.useGraphicAlpha = true;
+
+        startCapRect = CreateEndCap("StartCap");
+        endCapRect = CreateEndCap("EndCap");
+        startCapImage = startCapRect != null ? startCapRect.GetComponent<Image>() : null;
+        endCapImage = endCapRect != null ? endCapRect.GetComponent<Image>() : null;
 
         WallSelectionUIInput input = rootObject.AddComponent<WallSelectionUIInput>();
         input.Initialize(this);
+    }
+
+    private void ApplyCurrentStyle()
+    {
+        if (rootImage == null)
+        {
+            return;
+        }
+
+        if (hasTemporaryStyleOverride)
+        {
+            rootImage.color = temporaryFillColor;
+            ApplyOutline(temporaryOutlineColor, temporaryOutlineDistance);
+            ApplyEndCapStyle(temporaryOutlineColor, temporaryShowEndCaps);
+            return;
+        }
+
+        if (selectionManager == null)
+        {
+            return;
+        }
+
+        Color baseColor = isSelected
+            ? selectionManager.WallUISelectedColor
+            : selectionManager.WallUINormalColor;
+        Color fillColor = baseColor;
+        fillColor.a = isSelected ? Mathf.Min(0.08f, baseColor.a) : Mathf.Min(0.02f, baseColor.a);
+        Color outlineColor = baseColor;
+        outlineColor.a = isSelected ? Mathf.Max(0.95f, baseColor.a) : Mathf.Max(0.18f, baseColor.a);
+
+        rootImage.color = fillColor;
+        ApplyOutline(outlineColor, isSelected ? new Vector2(2f, 2f) : new Vector2(1f, 1f));
+        ApplyEndCapStyle(outlineColor, isSelected);
+    }
+
+    private void ApplyOutline(Color outlineColor, Vector2 outlineDistance)
+    {
+        if (rootOutline == null)
+        {
+            return;
+        }
+
+        rootOutline.effectColor = outlineColor;
+        rootOutline.effectDistance = outlineDistance;
+        rootOutline.enabled = outlineColor.a > 0.0001f &&
+                              (Mathf.Abs(outlineDistance.x) > 0.0001f || Mathf.Abs(outlineDistance.y) > 0.0001f);
+    }
+
+    private RectTransform CreateEndCap(string objectName)
+    {
+        if (rootRect == null)
+        {
+            return null;
+        }
+
+        GameObject capObject = new GameObject(objectName, typeof(RectTransform), typeof(Image));
+        RectTransform capRect = capObject.GetComponent<RectTransform>();
+        capRect.SetParent(rootRect, false);
+        capRect.anchorMin = new Vector2(0f, 0.5f);
+        capRect.anchorMax = new Vector2(0f, 0.5f);
+        capRect.pivot = new Vector2(0.5f, 0.5f);
+        capRect.anchoredPosition = Vector2.zero;
+        capRect.sizeDelta = new Vector2(10f, 10f);
+        capObject.GetComponent<Image>().raycastTarget = false;
+        return capRect;
+    }
+
+    private void UpdateEndCaps(float width, float thickness)
+    {
+        if (startCapRect == null || endCapRect == null)
+        {
+            return;
+        }
+
+        float capSize = Mathf.Max(8f, thickness + 4f);
+        startCapRect.anchorMin = new Vector2(0f, 0.5f);
+        startCapRect.anchorMax = new Vector2(0f, 0.5f);
+        endCapRect.anchorMin = new Vector2(1f, 0.5f);
+        endCapRect.anchorMax = new Vector2(1f, 0.5f);
+        startCapRect.anchoredPosition = Vector2.zero;
+        endCapRect.anchoredPosition = Vector2.zero;
+        startCapRect.sizeDelta = new Vector2(capSize, capSize);
+        endCapRect.sizeDelta = new Vector2(capSize, capSize);
+    }
+
+    private void ApplyEndCapStyle(Color color, bool visible)
+    {
+        if (startCapImage != null)
+        {
+            startCapImage.color = color;
+            startCapImage.enabled = visible;
+        }
+
+        if (endCapImage != null)
+        {
+            endCapImage.color = color;
+            endCapImage.enabled = visible;
+        }
+    }
+
+    private string GetWallUIObjectName()
+    {
+        string wallName = ownerWall != null && !string.IsNullOrWhiteSpace(ownerWall.name)
+            ? ownerWall.name
+            : "wall";
+        return $"{wallName}_ui";
     }
 
     private void GetVisualEndpoints(out Vector3 start, out Vector3 end)

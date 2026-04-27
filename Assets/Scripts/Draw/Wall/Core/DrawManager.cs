@@ -78,7 +78,11 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     private void OnDestroy()
     {
         UnbindModeEvents();
-        EditorInputManager.Instance.UnregisterHandler(EditorMode.Default, this);
+        if (EditorInputManager.HasInstance)
+        {
+            EditorInputManager.Instance.UnregisterHandler(EditorMode.Default, this);
+        }
+
         toolRuntime?.Dispose();
         toolRuntime = null;
     }

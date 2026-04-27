@@ -22,7 +22,6 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private Vector2 handleSize = new Vector2(16f, 16f);
     [SerializeField] private Color handleColor = new Color(0.2f, 1f, 0.55f, 1f);
     [SerializeField] private Color activeHandleColor = new Color(1f, 0.82f, 0.2f, 1f);
-    [SerializeField] private int handleCanvasSortingOrder = 20;
 
     [Header("Visibility")]
     [SerializeField] private bool showHandlesOnlyForFocusedRoom = true;
@@ -637,6 +636,13 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
+        Canvas handleCanvas = LayerUtility.FindCanvasByName(LayerUtility.DefaultHandleCanvasName);
+        if (handleCanvas != null)
+        {
+            targetCanvas = handleCanvas;
+            return;
+        }
+
         Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < canvases.Length; i++)
         {
@@ -652,8 +658,6 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
         GameObject canvasObject = new GameObject(HandleCanvasName);
         targetCanvas = canvasObject.AddComponent<Canvas>();
         targetCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        targetCanvas.overrideSorting = true;
-        targetCanvas.sortingOrder = handleCanvasSortingOrder;
         canvasObject.AddComponent<CanvasScaler>();
         canvasObject.AddComponent<GraphicRaycaster>();
     }

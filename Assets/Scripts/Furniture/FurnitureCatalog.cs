@@ -14,10 +14,21 @@ public class FurnitureCatalog : ScriptableObject
 public class FurnitureCatalogItem
 {
     public string code;
+    public string exportCode;
+    public string nativeCode;
     public string displayName;
     public GameObject prefab;
     public Texture2D thumbnail;
     public Vector3 placementOffset;
     public Vector3 defaultEulerAngles;
     public Vector3 boundsSize = Vector3.one;
+    public List<FurnitureDefectCatalogEntry> defects = new List<FurnitureDefectCatalogEntry>();
+}
+
+[Serializable]
+public class FurnitureDefectCatalogEntry
+{
+    public string mntnCd;
+    public string locCd;
+    public string mtrlCd;
 }

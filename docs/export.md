@@ -1,5 +1,7 @@
 # Export Guide
 
+- Mobile viewer schema draft: `docs/mobile-viewer-schema-v2.md`
+
 ## 목적
 
 LH scene 데이터를 JSON으로 내보내는 경로와 사전 점검 포인트를 정리합니다.

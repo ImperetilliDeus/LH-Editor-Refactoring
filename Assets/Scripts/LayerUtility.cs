@@ -3,6 +3,8 @@ using UnityEngine;
 public static class LayerUtility
 {
     public const string DefaultCanvasName = "_Screen";
+    public const string DefaultHandleCanvasName = "_Handle";
+    public const string DefaultWallUICanvasName = "_WallUI";
     public const string DefaultWallRootName = "Walls";
     public const string DefaultGridName = "Grid";
     public const string DefaultImportButtonName = "_ImportButton";
@@ -99,6 +101,26 @@ public static class LayerUtility
         }
 
         return preferredCanvas;
+    }
+
+    public static Canvas FindCanvasByName(string canvasName)
+    {
+        if (string.IsNullOrWhiteSpace(canvasName))
+        {
+            return null;
+        }
+
+        Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            Canvas canvas = canvases[i];
+            if (canvas != null && canvas.name == canvasName)
+            {
+                return canvas;
+            }
+        }
+
+        return null;
     }
 
     public static void ResolveObject<T>(ref T reference) where T : Object

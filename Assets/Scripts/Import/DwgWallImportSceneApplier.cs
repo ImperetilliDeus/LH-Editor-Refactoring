@@ -88,6 +88,7 @@ public static class DwgWallImportSceneApplier
             }
         }
 
+        WallNamingUtility.NormalizeWallNames(context.WallRoot);
         context.HandleManager?.RefreshRegisteredWalls();
 
         if (context.RefreshRoomsAfterImport)

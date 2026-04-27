@@ -15,11 +15,22 @@ public partial class WallSelectionManager
 
     private void EnsureSelectionCanvas()
     {
+        if (isShuttingDown)
+        {
+            return;
+        }
+
         wallSelectionCanvas = presentationController.EnsureSelectionCanvas(wallSelectionCanvas);
     }
 
     private void RefreshWallSelectionUIStates()
     {
+        if (isShuttingDown)
+        {
+            return;
+        }
+
+        EnsureSelectionCanvas();
         presentationController.RefreshWallSelectionUIStates(
             wallRoot,
             GetRootWalls(),
@@ -30,6 +41,12 @@ public partial class WallSelectionManager
 
     private void RefreshWallSelectionUIPositions()
     {
+        if (isShuttingDown)
+        {
+            return;
+        }
+
+        EnsureSelectionCanvas();
         presentationController.RefreshWallSelectionUIPositions(
             wallRoot,
             GetRootWalls(),

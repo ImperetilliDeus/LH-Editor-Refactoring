@@ -12,9 +12,15 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private TopViewRenderManager topViewRenderManager;
+    [SerializeField] private RoomTypePreset roomTypePreset;
+    [SerializeField] private string roomTypeJsonFileName = RoomTypeCatalog.DefaultJsonFileName;
     [SerializeField] private TMP_Dropdown roomTypeDropdown;
     [SerializeField] private GameObject roomEditMenu;
     [SerializeField] private InputField roomNameInputField;
+    [SerializeField] private InputField roomCodeInputField;
+    [SerializeField] private InputField roomNativeCodeInputField;
+    [SerializeField] private InputField floorTextureCodeInputField;
+    [SerializeField] private InputField ceilingTextureCodeInputField;
     [SerializeField] private InputField roomAreaInputField;
 
     [Header("Label")]
@@ -44,10 +50,12 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        PopulateRoomTypeDropdown();
         BindEvents();
         SyncModeState();
         RefreshDropdownState();
         RefreshNameField();
+        RefreshMetadataFields();
         RefreshAreaField();
         ValidateConfiguration();
     }
@@ -103,6 +111,26 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             roomNameInputField.onValueChanged.AddListener(HandleRoomNameChanged);
         }
 
+        if (roomCodeInputField != null)
+        {
+            roomCodeInputField.onValueChanged.AddListener(HandleRoomCodeChanged);
+        }
+
+        if (roomNativeCodeInputField != null)
+        {
+            roomNativeCodeInputField.onValueChanged.AddListener(HandleRoomNativeCodeChanged);
+        }
+
+        if (floorTextureCodeInputField != null)
+        {
+            floorTextureCodeInputField.onValueChanged.AddListener(HandleFloorTextureCodeChanged);
+        }
+
+        if (ceilingTextureCodeInputField != null)
+        {
+            ceilingTextureCodeInputField.onValueChanged.AddListener(HandleCeilingTextureCodeChanged);
+        }
+
         if (roomManager != null)
         {
             roomManager.RoomsChanged -= HandleRoomsChanged;
@@ -132,6 +160,26 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             roomNameInputField.onValueChanged.RemoveListener(HandleRoomNameChanged);
         }
 
+        if (roomCodeInputField != null)
+        {
+            roomCodeInputField.onValueChanged.RemoveListener(HandleRoomCodeChanged);
+        }
+
+        if (roomNativeCodeInputField != null)
+        {
+            roomNativeCodeInputField.onValueChanged.RemoveListener(HandleRoomNativeCodeChanged);
+        }
+
+        if (floorTextureCodeInputField != null)
+        {
+            floorTextureCodeInputField.onValueChanged.RemoveListener(HandleFloorTextureCodeChanged);
+        }
+
+        if (ceilingTextureCodeInputField != null)
+        {
+            ceilingTextureCodeInputField.onValueChanged.RemoveListener(HandleCeilingTextureCodeChanged);
+        }
+
         if (roomManager != null)
         {
             roomManager.RoomsChanged -= HandleRoomsChanged;
@@ -149,6 +197,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
         RefreshDropdownState();
         RefreshNameField();
+        RefreshMetadataFields();
         RefreshAreaField();
         labelsDirty = true;
         UpdateRoomEditMenuState();
@@ -169,6 +218,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         SetSelectedRoomInternal(room);
         RefreshDropdownState();
         RefreshNameField();
+        RefreshMetadataFields();
         RefreshAreaField();
         UpdateRoomEditMenuState();
     }
@@ -176,6 +226,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     private void HandleRoomsChanged()
     {
         RefreshNameField();
+        RefreshMetadataFields();
         RefreshAreaField();
         labelsDirty = true;
         UpdateRoomEditMenuState();
@@ -285,6 +336,32 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         RefreshAreaField();
     }
 
+    private void PopulateRoomTypeDropdown()
+    {
+        if (roomTypeDropdown == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<RoomTypeCatalog.Entry> roomTypes = RoomTypeCatalog.LoadEntries(roomTypePreset, roomTypeJsonFileName);
+        List<TMP_Dropdown.OptionData> options = new List<TMP_Dropdown.OptionData>(roomTypes.Count);
+
+        for (int i = 0; i < roomTypes.Count; i++)
+        {
+            RoomTypeCatalog.Entry roomType = roomTypes[i];
+            if (string.IsNullOrWhiteSpace(roomType.Name))
+            {
+                continue;
+            }
+
+            options.Add(new TMP_Dropdown.OptionData(roomType.Name));
+        }
+
+        roomTypeDropdown.ClearOptions();
+        roomTypeDropdown.AddOptions(options);
+        roomTypeDropdown.RefreshShownValue();
+    }
+
     private void RefreshAreaField()
     {
         if (roomAreaInputField == null)
@@ -339,6 +416,40 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         }
     }
 
+    private void RefreshMetadataFields()
+    {
+        RefreshMetadataField(roomCodeInputField, selectedRoom != null ? selectedRoom.RoomCode : string.Empty);
+        RefreshMetadataField(roomNativeCodeInputField, selectedRoom != null ? selectedRoom.RoomNativeCode : string.Empty);
+        RefreshMetadataField(floorTextureCodeInputField, selectedRoom != null ? selectedRoom.FloorTextureCode : string.Empty);
+        RefreshMetadataField(ceilingTextureCodeInputField, selectedRoom != null ? selectedRoom.CeilingTextureCode : string.Empty);
+    }
+
+    private void RefreshMetadataField(InputField inputField, string value)
+    {
+        if (inputField == null)
+        {
+            return;
+        }
+
+        bool canEdit = IsRoomAuthoringMode() && selectedRoom != null;
+        string nextText = canEdit ? value ?? string.Empty : string.Empty;
+
+        if (!inputField.isFocused && inputField.text != nextText)
+        {
+            inputField.SetTextWithoutNotify(nextText);
+        }
+
+        if (inputField.interactable != canEdit)
+        {
+            inputField.interactable = canEdit;
+        }
+
+        if (inputField.readOnly == canEdit)
+        {
+            inputField.readOnly = !canEdit;
+        }
+    }
+
     private int FindOptionIndex(string typeKey)
     {
         if (roomTypeDropdown == null || roomTypeDropdown.options == null)
@@ -385,7 +496,14 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         string typeKey = option != null ? option.text ?? string.Empty : string.Empty;
         if (roomManager != null)
         {
-            roomManager.UpdateRoomMetadata(selectedRoom, selectedRoom.RoomName, typeKey);
+            roomManager.UpdateRoomMetadata(
+                selectedRoom,
+                selectedRoom.RoomName,
+                typeKey,
+                selectedRoom.RoomCode,
+                selectedRoom.RoomNativeCode,
+                selectedRoom.FloorTextureCode,
+                selectedRoom.CeilingTextureCode);
         }
     }
 
@@ -398,8 +516,52 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
         if (roomManager != null)
         {
-            roomManager.UpdateRoomMetadata(selectedRoom, roomName, selectedRoom.RoomTypeKey);
+            roomManager.UpdateRoomMetadata(
+                selectedRoom,
+                roomName,
+                selectedRoom.RoomTypeKey,
+                selectedRoom.RoomCode,
+                selectedRoom.RoomNativeCode,
+                selectedRoom.FloorTextureCode,
+                selectedRoom.CeilingTextureCode);
         }
+    }
+
+    private void HandleRoomCodeChanged(string roomCode)
+    {
+        ApplyMetadataChanges(roomCode, selectedRoom != null ? selectedRoom.RoomNativeCode : string.Empty, selectedRoom != null ? selectedRoom.FloorTextureCode : string.Empty, selectedRoom != null ? selectedRoom.CeilingTextureCode : string.Empty);
+    }
+
+    private void HandleRoomNativeCodeChanged(string roomNativeCode)
+    {
+        ApplyMetadataChanges(selectedRoom != null ? selectedRoom.RoomCode : string.Empty, roomNativeCode, selectedRoom != null ? selectedRoom.FloorTextureCode : string.Empty, selectedRoom != null ? selectedRoom.CeilingTextureCode : string.Empty);
+    }
+
+    private void HandleFloorTextureCodeChanged(string floorTextureCode)
+    {
+        ApplyMetadataChanges(selectedRoom != null ? selectedRoom.RoomCode : string.Empty, selectedRoom != null ? selectedRoom.RoomNativeCode : string.Empty, floorTextureCode, selectedRoom != null ? selectedRoom.CeilingTextureCode : string.Empty);
+    }
+
+    private void HandleCeilingTextureCodeChanged(string ceilingTextureCode)
+    {
+        ApplyMetadataChanges(selectedRoom != null ? selectedRoom.RoomCode : string.Empty, selectedRoom != null ? selectedRoom.RoomNativeCode : string.Empty, selectedRoom != null ? selectedRoom.FloorTextureCode : string.Empty, ceilingTextureCode);
+    }
+
+    private void ApplyMetadataChanges(string roomCode, string roomNativeCode, string floorTextureCode, string ceilingTextureCode)
+    {
+        if (selectedRoom == null || !IsRoomAuthoringMode() || roomManager == null)
+        {
+            return;
+        }
+
+        roomManager.UpdateRoomMetadata(
+            selectedRoom,
+            selectedRoom.RoomName,
+            selectedRoom.RoomTypeKey,
+            roomCode,
+            roomNativeCode,
+            floorTextureCode,
+            ceilingTextureCode);
     }
 
     private void RefreshRoomTypeLabels()

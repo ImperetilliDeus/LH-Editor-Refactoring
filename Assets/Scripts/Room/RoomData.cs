@@ -9,6 +9,7 @@ public class RoomData
     [SerializeField, FormerlySerializedAs("roomName")] private string roomNameValue = string.Empty;
     [SerializeField, FormerlySerializedAs("roomTypeKey")] private string roomTypeKeyValue = string.Empty;
     [SerializeField, FormerlySerializedAs("roomCode")] private string roomCodeValue = string.Empty;
+    [SerializeField] private string roomNativeCodeValue = string.Empty;
     [SerializeField, FormerlySerializedAs("floorTextureCode")] private string floorTextureCodeValue = string.Empty;
     [SerializeField, FormerlySerializedAs("ceilingTextureCode")] private string ceilingTextureCodeValue = string.Empty;
     [SerializeField] private bool isManualRoomValue;
@@ -16,6 +17,8 @@ public class RoomData
     [SerializeField] private RoomGeometry geometryValue;
     [SerializeField] private List<Vector3> boundaryVertices = new List<Vector3>();
     [SerializeField] private List<string> wallIds = new List<string>();
+    [SerializeField] private bool manualWallSelectionEnabled;
+    [SerializeField] private List<string> manualWallIds = new List<string>();
 
     [NonSerialized] private int suppressNotifications;
 
@@ -37,6 +40,12 @@ public class RoomData
     {
         get => roomCodeValue;
         set => SetField(ref roomCodeValue, value ?? string.Empty);
+    }
+
+    public string RoomNativeCode
+    {
+        get => roomNativeCodeValue;
+        set => SetField(ref roomNativeCodeValue, value ?? string.Empty);
     }
 
     public string FloorTextureCode
@@ -71,6 +80,9 @@ public class RoomData
 
     public IReadOnlyList<Vector3> BoundaryVertices => boundaryVertices;
     public IReadOnlyList<string> WallIds => wallIds;
+    public bool ManualWallSelectionEnabled => manualWallSelectionEnabled;
+    public IReadOnlyList<string> ManualWallIds => manualWallIds;
+    public IReadOnlyList<string> EffectiveWallIds => manualWallSelectionEnabled ? manualWallIds : wallIds;
 
     public void SetBoundaryVertices(IReadOnlyList<Vector3> polygonVertices)
     {
@@ -92,6 +104,36 @@ public class RoomData
             }
         }
 
+        NotifyChanged();
+    }
+
+    public void SetManualWallIds(IEnumerable<string> ids)
+    {
+        manualWallIds.Clear();
+        if (ids != null)
+        {
+            foreach (string id in ids)
+            {
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    manualWallIds.Add(id);
+                }
+            }
+        }
+
+        manualWallSelectionEnabled = true;
+        NotifyChanged();
+    }
+
+    public void ClearManualWallSelection()
+    {
+        if (!manualWallSelectionEnabled && manualWallIds.Count == 0)
+        {
+            return;
+        }
+
+        manualWallSelectionEnabled = false;
+        manualWallIds.Clear();
         NotifyChanged();
     }
 

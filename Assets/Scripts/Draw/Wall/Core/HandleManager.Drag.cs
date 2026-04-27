@@ -216,7 +216,7 @@ public partial class HandleManager
         Vector3 appliedPoint = newPoint;
         if (!IsSplitPointGroup(group))
         {
-            appliedSplitChain = TryApplySplitPointChainEndpointDrag(group.vertexId, newPoint, out appliedPoint);
+            appliedSplitChain = TryApplySplitPointChainEndpointDrag(group.vertexId, affectedWallComponents, newPoint, out appliedPoint);
         }
 
         if (!appliedSplitChain)
@@ -231,10 +231,96 @@ public partial class HandleManager
         MarkHandlePositionsDirty();
     }
 
-    private bool TryApplySplitPointChainEndpointDrag(int draggedVertexId, Vector3 draggedPoint, out Vector3 appliedDraggedPoint)
+    private bool TryApplySplitPointChainEndpointDrag(int draggedVertexId, List<Wall> directlyConnectedWalls, Vector3 draggedPoint, out Vector3 appliedDraggedPoint)
     {
         appliedDraggedPoint = draggedPoint;
-        if (!TryBuildSplitChainFromEndpoint(draggedVertexId, splitChainWalls, splitChainVertexIds, splitChainPoints))
+        if (directlyConnectedWalls == null || directlyConnectedWalls.Count == 0)
+        {
+            return false;
+        }
+
+        splitChainWalls.Clear();
+        splitChainVertexIds.Clear();
+        splitChainPoints.Clear();
+
+        List<Wall> chainCandidateWalls = new List<Wall>();
+        for (int i = 0; i < directlyConnectedWalls.Count; i++)
+        {
+            Wall wall = directlyConnectedWalls[i];
+            if (wall == null || !wall.ContainsVertexId(draggedVertexId))
+            {
+                continue;
+            }
+
+            int nextVertexId = wall.GetOppositeVertexId(draggedVertexId);
+            if (nextVertexId > 0 && wall.IsSplitPointVertex(nextVertexId))
+            {
+                chainCandidateWalls.Add(wall);
+            }
+        }
+
+        if (chainCandidateWalls.Count == 0)
+        {
+            return false;
+        }
+
+        if (directlyConnectedWalls.Count == 1 && chainCandidateWalls.Count == 1)
+        {
+            return TryApplySingleSplitChainEndpointDrag(draggedVertexId, chainCandidateWalls[0], draggedPoint, out appliedDraggedPoint);
+        }
+
+        HashSet<Wall> chainWalls = new HashSet<Wall>();
+        bool appliedAnyChain = false;
+        for (int i = 0; i < chainCandidateWalls.Count; i++)
+        {
+            Wall chainStartWall = chainCandidateWalls[i];
+            if (!TryBuildSplitChainFromWall(draggedVertexId, chainStartWall, splitChainWalls, splitChainVertexIds, splitChainPoints))
+            {
+                continue;
+            }
+
+            if (!TryApplySplitChainKeepingDraggedEndpoint(splitChainWalls, splitChainVertexIds, splitChainPoints, draggedPoint))
+            {
+                continue;
+            }
+
+            appliedAnyChain = true;
+            for (int j = 0; j < splitChainWalls.Count; j++)
+            {
+                if (splitChainWalls[j] != null)
+                {
+                    chainWalls.Add(splitChainWalls[j]);
+                }
+            }
+        }
+
+        if (!appliedAnyChain)
+        {
+            return false;
+        }
+
+        List<Wall> nonChainWalls = new List<Wall>();
+        for (int i = 0; i < directlyConnectedWalls.Count; i++)
+        {
+            Wall wall = directlyConnectedWalls[i];
+            if (wall != null && !chainWalls.Contains(wall))
+            {
+                nonChainWalls.Add(wall);
+            }
+        }
+
+        if (nonChainWalls.Count > 0)
+        {
+            WallGeometryService.ApplyVertexMove(nonChainWalls, draggedVertexId, draggedPoint, dragPlaneHeight, minimumWallLength, wallLengthDisplay);
+        }
+
+        return true;
+    }
+
+    private bool TryApplySingleSplitChainEndpointDrag(int draggedVertexId, Wall startingWall, Vector3 draggedPoint, out Vector3 appliedDraggedPoint)
+    {
+        appliedDraggedPoint = draggedPoint;
+        if (!TryBuildSplitChainFromWall(draggedVertexId, startingWall, splitChainWalls, splitChainVertexIds, splitChainPoints))
         {
             return false;
         }
@@ -351,6 +437,114 @@ public partial class HandleManager
         return true;
     }
 
+    private bool TryApplySplitChainKeepingDraggedEndpoint(List<Wall> orderedWalls, List<int> orderedVertexIds, List<Vector3> orderedPoints, Vector3 draggedPoint)
+    {
+        if (orderedWalls == null || orderedVertexIds == null || orderedPoints == null)
+        {
+            return false;
+        }
+
+        if (orderedWalls.Count == 0 || orderedPoints.Count != orderedWalls.Count + 1)
+        {
+            return false;
+        }
+
+        float originalTotalLength = 0f;
+        List<float> originalSegmentLengths = new List<float>(orderedWalls.Count);
+        for (int i = 0; i < orderedWalls.Count; i++)
+        {
+            float segmentLength = Vector3.Distance(orderedPoints[i], orderedPoints[i + 1]);
+            if (segmentLength <= 0.0001f)
+            {
+                return false;
+            }
+
+            originalTotalLength += segmentLength;
+            originalSegmentLengths.Add(segmentLength);
+        }
+
+        if (originalTotalLength <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 terminalPoint = orderedPoints[orderedPoints.Count - 1];
+        terminalPoint.y = dragPlaneHeight;
+        draggedPoint.y = dragPlaneHeight;
+
+        Vector3 draggedToTerminal = draggedPoint - terminalPoint;
+        draggedToTerminal.y = 0f;
+        float newTotalLength = draggedToTerminal.magnitude;
+        if (newTotalLength <= minimumWallLength)
+        {
+            return false;
+        }
+
+        float minimumRequiredTotalLength = 0f;
+        for (int i = 0; i < originalSegmentLengths.Count; i++)
+        {
+            float segmentRatio = originalSegmentLengths[i] / originalTotalLength;
+            minimumRequiredTotalLength = Mathf.Max(minimumRequiredTotalLength, minimumWallLength / segmentRatio);
+        }
+
+        if (newTotalLength < minimumRequiredTotalLength)
+        {
+            return false;
+        }
+
+        Vector3 direction = (terminalPoint - draggedPoint).normalized;
+        orderedPoints[0] = draggedPoint;
+        float accumulatedDistance = 0f;
+        for (int i = 1; i < orderedPoints.Count - 1; i++)
+        {
+            float segmentRatio = originalSegmentLengths[i - 1] / originalTotalLength;
+            accumulatedDistance += newTotalLength * segmentRatio;
+            Vector3 point = draggedPoint + direction * accumulatedDistance;
+            point.y = dragPlaneHeight;
+            orderedPoints[i] = point;
+        }
+
+        orderedPoints[orderedPoints.Count - 1] = terminalPoint;
+
+        for (int i = 0; i < orderedWalls.Count; i++)
+        {
+            Wall wall = orderedWalls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            int firstVertexId = orderedVertexIds[i];
+            int secondVertexId = orderedVertexIds[i + 1];
+            Vector3 firstPoint = orderedPoints[i];
+            Vector3 secondPoint = orderedPoints[i + 1];
+
+            Vector3 startPoint;
+            Vector3 endPoint;
+            if (wall.StartVertexId == firstVertexId && wall.EndVertexId == secondVertexId)
+            {
+                startPoint = firstPoint;
+                endPoint = secondPoint;
+            }
+            else if (wall.StartVertexId == secondVertexId && wall.EndVertexId == firstVertexId)
+            {
+                startPoint = secondPoint;
+                endPoint = firstPoint;
+            }
+            else
+            {
+                return false;
+            }
+
+            if (!WallGeometryService.ApplyWallEndpoints(wall, startPoint, endPoint, minimumWallLength, wallLengthDisplay, false))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private bool TryBuildSplitChainFromEndpoint(int draggedVertexId, List<Wall> orderedWalls, List<int> orderedVertexIds, List<Vector3> orderedPoints)
     {
         if (orderedWalls == null || orderedVertexIds == null || orderedPoints == null)
@@ -368,14 +562,33 @@ public partial class HandleManager
             return false;
         }
 
-        Wall currentWall = cachedWalls[0];
-        int currentVertexId = draggedVertexId;
-        int nextVertexId = currentWall.GetOppositeVertexId(currentVertexId);
-        if (nextVertexId <= 0 || !currentWall.IsSplitPointVertex(nextVertexId))
+        return TryBuildSplitChainFromWall(draggedVertexId, cachedWalls[0], orderedWalls, orderedVertexIds, orderedPoints);
+    }
+
+    private bool TryBuildSplitChainFromWall(int startVertexId, Wall startingWall, List<Wall> orderedWalls, List<int> orderedVertexIds, List<Vector3> orderedPoints)
+    {
+        if (startingWall == null || orderedWalls == null || orderedVertexIds == null || orderedPoints == null)
         {
             return false;
         }
 
+        orderedWalls.Clear();
+        orderedVertexIds.Clear();
+        orderedPoints.Clear();
+
+        int currentVertexId = startVertexId;
+        if (!startingWall.ContainsVertexId(currentVertexId))
+        {
+            return false;
+        }
+
+        int nextVertexId = startingWall.GetOppositeVertexId(currentVertexId);
+        if (nextVertexId <= 0 || !startingWall.IsSplitPointVertex(nextVertexId))
+        {
+            return false;
+        }
+
+        Wall currentWall = startingWall;
         orderedVertexIds.Add(currentVertexId);
         orderedPoints.Add(GetWallPointForVertex(currentWall, currentVertexId));
 
