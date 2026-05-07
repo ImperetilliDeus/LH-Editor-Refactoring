@@ -44,6 +44,30 @@ public static class RoomTypeCatalog
         return BuildEntriesFromPreset(preset);
     }
 
+    public static bool TryGetCode(string roomTypeName, out int code, RoomTypePreset presetOverride = null, string jsonFileName = DefaultJsonFileName)
+    {
+        code = default;
+        if (string.IsNullOrWhiteSpace(roomTypeName))
+        {
+            return false;
+        }
+
+        IReadOnlyList<Entry> entries = LoadEntries(presetOverride, jsonFileName);
+        for (int i = 0; i < entries.Count; i++)
+        {
+            Entry entry = entries[i];
+            if (!string.Equals(entry.Name, roomTypeName.Trim(), StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            code = entry.Code;
+            return true;
+        }
+
+        return false;
+    }
+
     private static bool TryLoadFromJson(string jsonFileName, out List<Entry> entries)
     {
         entries = null;

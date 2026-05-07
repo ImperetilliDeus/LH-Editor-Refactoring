@@ -1,9 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class DrawManager : MonoBehaviour, IEditorModeInputHandler
 {
+    private const string DefaultWallMaterialPath = "Assets/Prefabs/Furniture/Models/Materials/Wall/W001.mat";
+
     [SerializeField] private Camera mainCamera;
     [SerializeField] private GameObject grid;
     [SerializeField] private Transform wallRoot;
@@ -26,6 +31,7 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     [Header("Preview")]
     [SerializeField] private bool enablePreviewWall = true;
     [SerializeField] private Color previewColor = new Color(0.2f, 0.8f, 1f, 0.45f);
+    [SerializeField] private Material wallMaterial;
     [SerializeField] private Color wallColor = new Color(0.78f, 0.78f, 0.78f, 1f);
     [SerializeField] private Material wallTopMaterial;
 
@@ -42,6 +48,7 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     {
         mainCamera = Camera.main;
         ResolveReferences();
+        ApplyDefaultWallMaterialIfMissing();
     }
 
     private void Awake()
@@ -68,6 +75,7 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
         wallHeight = Mathf.Max(0.1f, wallHeight);
         wallThickness = Mathf.Max(0.1f, wallThickness);
         wallSurfaceOffset = Mathf.Max(0f, wallSurfaceOffset);
+        ApplyDefaultWallMaterialIfMissing();
 
         if (!enablePreviewWall && toolRuntime != null)
         {
@@ -208,9 +216,20 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
             wallThickness,
             wallSurfaceOffset,
             previewColor,
+            wallMaterial,
             wallColor,
             wallTopMaterial,
             uiRaycastResults);
+    }
+
+    private void ApplyDefaultWallMaterialIfMissing()
+    {
+#if UNITY_EDITOR
+        if (wallMaterial == null)
+        {
+            wallMaterial = AssetDatabase.LoadAssetAtPath<Material>(DefaultWallMaterialPath);
+        }
+#endif
     }
 
     private void InitializeToolController()

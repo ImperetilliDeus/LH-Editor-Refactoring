@@ -420,8 +420,16 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     {
         RefreshMetadataField(roomCodeInputField, selectedRoom != null ? selectedRoom.RoomCode : string.Empty);
         RefreshMetadataField(roomNativeCodeInputField, selectedRoom != null ? selectedRoom.RoomNativeCode : string.Empty);
-        RefreshMetadataField(floorTextureCodeInputField, selectedRoom != null ? selectedRoom.FloorTextureCode : string.Empty);
-        RefreshMetadataField(ceilingTextureCodeInputField, selectedRoom != null ? selectedRoom.CeilingTextureCode : string.Empty);
+        RefreshMetadataField(
+            floorTextureCodeInputField,
+            selectedRoom != null && roomManager != null
+                ? roomManager.GetEffectiveFloorTextureCode(selectedRoom)
+                : string.Empty);
+        RefreshMetadataField(
+            ceilingTextureCodeInputField,
+            selectedRoom != null && roomManager != null
+                ? roomManager.GetEffectiveCeilingTextureCode(selectedRoom)
+                : string.Empty);
     }
 
     private void RefreshMetadataField(InputField inputField, string value)
@@ -494,13 +502,19 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
         TMP_Dropdown.OptionData option = roomTypeDropdown.options[optionIndex];
         string typeKey = option != null ? option.text ?? string.Empty : string.Empty;
+        string roomCode = selectedRoom.RoomCode;
+        if (RoomTypeCatalog.TryGetCode(typeKey, out int resolvedCode, roomTypePreset, roomTypeJsonFileName))
+        {
+            roomCode = resolvedCode.ToString();
+        }
+
         if (roomManager != null)
         {
             roomManager.UpdateRoomMetadata(
                 selectedRoom,
                 selectedRoom.RoomName,
                 typeKey,
-                selectedRoom.RoomCode,
+                roomCode,
                 selectedRoom.RoomNativeCode,
                 selectedRoom.FloorTextureCode,
                 selectedRoom.CeilingTextureCode);

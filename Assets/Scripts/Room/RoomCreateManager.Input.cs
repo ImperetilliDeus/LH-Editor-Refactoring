@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public sealed partial class RoomCreateManager
 {
@@ -23,11 +24,12 @@ public sealed partial class RoomCreateManager
         bool isPointerOverUI = inputFrame.PointerOverUI;
         bool hasPointerPosition = inputFrame.IsPointerAvailable;
         Vector2 pointerScreenPosition = inputFrame.PointerScreenPosition;
+        bool polygonModifierPressed = IsPolygonCreationModifierPressed();
         bool isPointerOverRoomHandle = hasPointerPosition &&
                                        roomHandleManager != null &&
                                        roomHandleManager.IsPointerOverHandle(pointerScreenPosition);
 
-        if (inputFrame.RightPressedThisFrame)
+        if (inputFrame.RightPressedThisFrame || inputFrame.EscapePressedThisFrame)
         {
             CancelCurrentInteraction();
             ClearSelectedRoom();
@@ -37,6 +39,12 @@ public sealed partial class RoomCreateManager
         if (isDraggingSelectedRoom)
         {
             UpdateSelectedRoomDrag();
+            return;
+        }
+
+        if (IsPolygonDrawMode())
+        {
+            HandlePolygonDrawInput(inputFrame, isPointerOverUI, isPointerOverRoomHandle, hasPointerPosition, pointerScreenPosition, polygonModifierPressed);
             return;
         }
 
@@ -79,6 +87,78 @@ public sealed partial class RoomCreateManager
         }
     }
 
+    private void HandlePolygonDrawInput(
+        EditorInputFrame inputFrame,
+        bool isPointerOverUI,
+        bool isPointerOverRoomHandle,
+        bool hasPointerPosition,
+        Vector2 pointerScreenPosition,
+        bool polygonModifierPressed)
+    {
+        if (isDrawingPolygon)
+        {
+            UpdatePolygonPreviewWhileDrawing();
+
+            if ((Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame) ||
+                (Keyboard.current != null && Keyboard.current.numpadEnterKey.wasPressedThisFrame))
+            {
+                TryCompletePolygonDraw();
+                return;
+            }
+
+            if (isPointerOverUI || isPointerOverRoomHandle || !inputFrame.LeftPressedThisFrame)
+            {
+                return;
+            }
+
+            if (IsPointerNearPolygonStart(pointerScreenPosition))
+            {
+                TryCompletePolygonDraw();
+                return;
+            }
+
+            Vector3 snapAnchor = polygonDraftVertices.Count > 0
+                ? polygonDraftVertices[polygonDraftVertices.Count - 1]
+                : Vector3.zero;
+            if (TryGetMouseWorldPoint(out Vector3 nextPoint, polygonDraftVertices.Count > 0 ? (Vector3?)snapAnchor : null))
+            {
+                AppendPolygonVertex(nextPoint);
+            }
+
+            return;
+        }
+
+        if (pendingRoomSelection)
+        {
+            HandlePendingRoomSelection(inputFrame);
+            return;
+        }
+
+        if (isPointerOverUI || isPointerOverRoomHandle || !inputFrame.LeftPressedThisFrame)
+        {
+            return;
+        }
+
+        if (!TryGetMouseWorldPoint(out Vector3 startPoint))
+        {
+            return;
+        }
+
+        if (!polygonModifierPressed)
+        {
+            pendingSelectedRoom = PickRoomAtWorldPoint(startPoint);
+            if (pendingSelectedRoom != null)
+            {
+                pendingRoomSelection = true;
+                pendingSelectionStartPoint = startPoint;
+                pendingSelectionStartMousePosition = hasPointerPosition ? pointerScreenPosition : Vector2.zero;
+                return;
+            }
+        }
+
+        BeginPolygonDraw(startPoint);
+    }
+
     private void UpdatePreviewWhileDragging()
     {
         if (!TryGetMouseWorldPoint(out Vector3 currentPoint))
@@ -88,6 +168,26 @@ public sealed partial class RoomCreateManager
         }
 
         UpdatePreviewFromRectangle(dragStartPoint, currentPoint);
+    }
+
+    private void UpdatePolygonPreviewWhileDrawing()
+    {
+        if (polygonDraftVertices.Count == 0)
+        {
+            HidePreviewObjects();
+            return;
+        }
+
+        Vector3 snapAnchor = polygonDraftVertices[polygonDraftVertices.Count - 1];
+        if (!TryGetMouseWorldPoint(out Vector3 currentPoint, snapAnchor))
+        {
+            hasPolygonHoverPoint = false;
+            UpdatePreviewFromPolygonDraft();
+            return;
+        }
+
+        UpdatePolygonHoverPoint(currentPoint);
+        UpdatePreviewFromPolygonDraft();
     }
 
     private void HandlePendingRoomSelection(EditorInputFrame inputFrame)
@@ -131,6 +231,12 @@ public sealed partial class RoomCreateManager
         if (room != null)
         {
             BeginSelectedRoomDrag(room, startPoint);
+            return;
+        }
+
+        if (IsPolygonDrawMode())
+        {
+            BeginPolygonDraw(startPoint);
             return;
         }
 

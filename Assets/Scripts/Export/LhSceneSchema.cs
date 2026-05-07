@@ -14,7 +14,26 @@ namespace LH.Schema
     }
 
     [Serializable]
+    public struct LhLegacySceneDto
+    {
+        public LhVector3Dto startPoint;
+        public List<LhLegacyWallDto> wallData;
+        public List<LhLegacyRoomDto> roomData;
+    }
+
+    [Serializable]
     public struct LhWallDto
+    {
+        public string name;
+        public int id;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
+        public List<LhWallSegmentDto> segments;
+    }
+
+    [Serializable]
+    public struct LhLegacyWallDto
     {
         public string name;
         public int id;
@@ -50,6 +69,20 @@ namespace LH.Schema
         public LhSurfaceDto floor;
         public LhSurfaceDto ceil;
         public List<LhFurnitureDto> furnish;
+    }
+
+    [Serializable]
+    public struct LhLegacyRoomDto
+    {
+        public string name;
+        public string code;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
+        public List<int> walls;
+        public LhSurfaceDto floor;
+        public LhSurfaceDto ceil;
+        public List<LhLegacyFurnitureDto> furnish;
     }
 
     [Serializable]
@@ -89,6 +122,16 @@ namespace LH.Schema
         public string name;
         public string code;
         public string nativeCode;
+        public LhVector3Dto position;
+        public LhVector3Dto angle;
+        public LhVector3Dto scale;
+        public List<LhFurnitureDefectDto> defects;
+    }
+
+    [Serializable]
+    public struct LhLegacyFurnitureDto
+    {
+        public string code;
         public LhVector3Dto position;
         public LhVector3Dto angle;
         public LhVector3Dto scale;
@@ -214,7 +257,11 @@ namespace LH.Schema
             return dto;
         }
 
-        public static LhMeshDto CreateMeshFromPolygon(IReadOnlyList<Vector3> worldVertices, Vector3 center)
+        public static LhMeshDto CreateMeshFromPolygon(
+            IReadOnlyList<Vector3> worldVertices,
+            Vector3 center,
+            Vector3 normal,
+            bool normalizeUvs)
         {
             LhMeshDto dto = new LhMeshDto
             {
@@ -230,13 +277,36 @@ namespace LH.Schema
             }
 
             List<Vector3> localVertices = new List<Vector3>(worldVertices.Count);
+            Vector3 min = Vector3.zero;
+            Vector3 max = Vector3.zero;
             for (int i = 0; i < worldVertices.Count; i++)
             {
                 Vector3 localVertex = worldVertices[i] - center;
                 localVertices.Add(localVertex);
                 dto.vertices.Add(LhVector3Dto.FromVector3(localVertex));
-                dto.normals.Add(LhVector3Dto.FromVector3(Vector3.up));
-                dto.uvs.Add(LhVector2Dto.FromVector2(new Vector2(localVertex.x, localVertex.z)));
+                dto.normals.Add(LhVector3Dto.FromVector3(normal));
+
+                if (i == 0)
+                {
+                    min = localVertex;
+                    max = localVertex;
+                }
+                else
+                {
+                    min = Vector3.Min(min, localVertex);
+                    max = Vector3.Max(max, localVertex);
+                }
+            }
+
+            float sizeX = Mathf.Max(max.x - min.x, 0.0001f);
+            float sizeZ = Mathf.Max(max.z - min.z, 0.0001f);
+            for (int i = 0; i < localVertices.Count; i++)
+            {
+                Vector3 localVertex = localVertices[i];
+                Vector2 uv = normalizeUvs
+                    ? new Vector2((localVertex.x - min.x) / sizeX, (localVertex.z - min.z) / sizeZ)
+                    : new Vector2(localVertex.x, localVertex.z);
+                dto.uvs.Add(LhVector2Dto.FromVector2(uv));
             }
 
             List<int> triangles = new List<int>();
@@ -251,8 +321,23 @@ namespace LH.Schema
                 }
             }
 
+            if (normal.y < 0f)
+            {
+                for (int i = 0; i + 2 < triangles.Count; i += 3)
+                {
+                    int temp = triangles[i + 1];
+                    triangles[i + 1] = triangles[i + 2];
+                    triangles[i + 2] = temp;
+                }
+            }
+
             dto.triangles.AddRange(triangles);
             return dto;
+        }
+
+        public static LhMeshDto CreateMeshFromPolygon(IReadOnlyList<Vector3> worldVertices, Vector3 center)
+        {
+            return CreateMeshFromPolygon(worldVertices, center, Vector3.up, false);
         }
     }
 }
