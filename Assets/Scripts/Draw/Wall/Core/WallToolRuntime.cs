@@ -19,6 +19,7 @@ internal sealed class WallToolRuntime : IWallToolContext
     private readonly float wallHeight;
     private readonly float wallThickness;
     private readonly float wallSurfaceOffset;
+    private readonly Material defaultWallMaterial;
     private readonly Material wallTopMaterial;
     private readonly List<RaycastResult> uiRaycastResults;
 
@@ -36,6 +37,7 @@ internal sealed class WallToolRuntime : IWallToolContext
     private GameObject previewWall;
     private Material previewMaterial;
     private Material wallMaterial;
+    private bool ownsWallMaterial;
     private Mesh cachedCubeMesh;
 
     public WallToolRuntime(
@@ -53,6 +55,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         float wallThickness,
         float wallSurfaceOffset,
         Color previewColor,
+        Material defaultWallMaterial,
         Color wallColor,
         Material wallTopMaterial,
         List<RaycastResult> uiRaycastResults)
@@ -70,13 +73,15 @@ internal sealed class WallToolRuntime : IWallToolContext
         this.wallHeight = wallHeight;
         this.wallThickness = wallThickness;
         this.wallSurfaceOffset = wallSurfaceOffset;
+        this.defaultWallMaterial = defaultWallMaterial;
         this.wallTopMaterial = wallTopMaterial;
         this.uiRaycastResults = uiRaycastResults ?? new List<RaycastResult>();
 
         RefreshDrawingPlane();
         EnsureCachedResources();
         previewMaterial = CreateWallMaterial(previewColor, true);
-        wallMaterial = CreateWallMaterial(wallColor, false);
+        wallMaterial = defaultWallMaterial != null ? defaultWallMaterial : CreateWallMaterial(wallColor, false);
+        ownsWallMaterial = defaultWallMaterial == null && wallMaterial != null;
     }
 
     public bool IsWallCreationMode => isWallCreationMode;
@@ -98,7 +103,7 @@ internal sealed class WallToolRuntime : IWallToolContext
             previewMaterial = null;
         }
 
-        if (wallMaterial != null)
+        if (ownsWallMaterial && wallMaterial != null)
         {
             Object.Destroy(wallMaterial);
             wallMaterial = null;

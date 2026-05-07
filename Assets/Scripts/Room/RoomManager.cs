@@ -45,6 +45,12 @@ public class RoomManager : MonoBehaviour
     [Header("Room")]
     [SerializeField] private Transform roomRoot;
     [SerializeField] private Material roomMaterial;
+    [SerializeField] private string floorMaterialFolderPath = "Assets/Materials";
+    [SerializeField] private string ceilingMaterialFolderPath = "Assets/Materials";
+    [SerializeField] private string defaultFloorTextureCode = string.Empty;
+    [SerializeField] private string defaultCeilingTextureCode = string.Empty;
+    [SerializeField, HideInInspector] private List<Material> floorMaterials = new List<Material>();
+    [SerializeField, HideInInspector] private List<Material> ceilingMaterials = new List<Material>();
     [SerializeField] private Color roomColor = new Color(0.2f, 0.8f, 0.2f, 0.3f);
     [SerializeField] private float wallConnectionThreshold = 0.1f;
     [SerializeField] private float roomFaceAreaThreshold = 0.01f;
@@ -63,7 +69,42 @@ public class RoomManager : MonoBehaviour
     private RoomPlanarGraph cachedGraph;
     private bool isGraphDirty = true;
 
+    public string FloorMaterialFolderPath => floorMaterialFolderPath;
+    public string CeilingMaterialFolderPath => ceilingMaterialFolderPath;
+    public string DefaultFloorTextureCode => defaultFloorTextureCode ?? string.Empty;
+    public string DefaultCeilingTextureCode => defaultCeilingTextureCode ?? string.Empty;
+
     public event System.Action RoomsChanged;
+
+    public IReadOnlyList<Material> GetFloorMaterials()
+    {
+        return floorMaterials;
+    }
+
+    public IReadOnlyList<Material> GetCeilingMaterials()
+    {
+        return ceilingMaterials;
+    }
+
+    public Material ResolveFloorMaterial(string materialCode)
+    {
+        return ResolveMaterial(floorMaterials, materialCode);
+    }
+
+    public Material ResolveCeilingMaterial(string materialCode)
+    {
+        return ResolveMaterial(ceilingMaterials, materialCode);
+    }
+
+    public string GetEffectiveFloorTextureCode(Room room)
+    {
+        return GetEffectiveTextureCode(room != null ? room.FloorTextureCode : null, defaultFloorTextureCode);
+    }
+
+    public string GetEffectiveCeilingTextureCode(Room room)
+    {
+        return GetEffectiveTextureCode(room != null ? room.CeilingTextureCode : null, defaultCeilingTextureCode);
+    }
 
     private void Awake()
     {
@@ -110,6 +151,75 @@ public class RoomManager : MonoBehaviour
             Destroy(fallbackRoomMaterial);
         }
     }
+
+    private static Material ResolveMaterial(IReadOnlyList<Material> materials, string materialCode)
+    {
+        if (materials == null || string.IsNullOrWhiteSpace(materialCode))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < materials.Count; i++)
+        {
+            Material material = materials[i];
+            if (material != null && string.Equals(material.name, materialCode, System.StringComparison.Ordinal))
+            {
+                return material;
+            }
+        }
+
+        return null;
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        RefreshMaterialCache();
+    }
+
+    [ContextMenu("Refresh Material Cache")]
+    private void RefreshMaterialCache()
+    {
+        RefreshMaterialCacheForFolder(floorMaterialFolderPath, floorMaterials);
+        RefreshMaterialCacheForFolder(ceilingMaterialFolderPath, ceilingMaterials);
+    }
+
+    private static void RefreshMaterialCacheForFolder(string folderPath, List<Material> target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.Clear();
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return;
+        }
+
+        string normalizedFolderPath = folderPath.Replace('\\', '/').Trim();
+        if (!normalizedFolderPath.StartsWith("Assets", System.StringComparison.Ordinal))
+        {
+            Debug.LogWarning($"Material folder path must start with 'Assets': {normalizedFolderPath}");
+            return;
+        }
+
+        string[] materialGuids = UnityEditor.AssetDatabase.FindAssets("t:Material", new[] { normalizedFolderPath });
+        List<Material> loadedMaterials = new List<Material>(materialGuids.Length);
+        for (int i = 0; i < materialGuids.Length; i++)
+        {
+            string assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(materialGuids[i]);
+            Material material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material != null)
+            {
+                loadedMaterials.Add(material);
+            }
+        }
+
+        loadedMaterials.Sort((left, right) => string.CompareOrdinal(left != null ? left.name : string.Empty, right != null ? right.name : string.Empty));
+        target.AddRange(loadedMaterials);
+    }
+#endif
 
     public Room CreateRoom(HashSet<Wall> wallSet)
     {
@@ -226,8 +336,8 @@ public class RoomManager : MonoBehaviour
         string normalizedTypeKey = roomTypeKey ?? string.Empty;
         string normalizedRoomCode = roomCode ?? room.RoomCode ?? string.Empty;
         string normalizedRoomNativeCode = roomNativeCode ?? room.RoomNativeCode ?? string.Empty;
-        string normalizedFloorTextureCode = floorTextureCode ?? room.FloorTextureCode ?? string.Empty;
-        string normalizedCeilingTextureCode = ceilingTextureCode ?? room.CeilingTextureCode ?? string.Empty;
+        string normalizedFloorTextureCode = NormalizeFloorTextureCode(floorTextureCode ?? room.FloorTextureCode);
+        string normalizedCeilingTextureCode = NormalizeCeilingTextureCode(ceilingTextureCode ?? room.CeilingTextureCode);
 
         if (!string.Equals(room.RoomName, normalizedName, System.StringComparison.Ordinal))
         {
@@ -519,9 +629,36 @@ public class RoomManager : MonoBehaviour
             PolygonUtility.CalculateGeometry(polygonVertices),
             Room.CreateSanitizedPolygonCopy(polygonVertices),
             keepManualVertices);
+        room.SetFloorTextureCode(NormalizeFloorTextureCode(room.FloorTextureCode));
+        room.SetCeilingTextureCode(NormalizeCeilingTextureCode(room.CeilingTextureCode));
 
         room.SetMaterial(roomMaterial ?? GetFallbackRoomMaterial(), roomColor);
         return room;
+    }
+
+    private string NormalizeFloorTextureCode(string materialCode)
+    {
+        return GetEffectiveTextureCode(materialCode, defaultFloorTextureCode);
+    }
+
+    private string NormalizeCeilingTextureCode(string materialCode)
+    {
+        return GetEffectiveTextureCode(materialCode, defaultCeilingTextureCode);
+    }
+
+    private static string GetEffectiveTextureCode(string selectedCode, string defaultCode)
+    {
+        if (!string.IsNullOrWhiteSpace(selectedCode))
+        {
+            return selectedCode.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(defaultCode))
+        {
+            return defaultCode.Trim();
+        }
+
+        return string.Empty;
     }
 
     private RoomGeometry CalculateRoomGeometry(HashSet<Wall> wallSet)

@@ -18,8 +18,10 @@ public class RoomVisualizer : MonoBehaviour
     private MeshFilter ceilingMeshFilter;
     private BoxCollider ceilingCollider;
     private Material roomMaterial;
-    private Material runtimeRoomMaterial;
+    private Material runtimeFloorMaterial;
     private Material runtimeCeilingMaterial;
+    private Material floorSourceMaterial;
+    private Material ceilingSourceMaterial;
     private Color roomColor;
     private Color selectionColor = new Color(0.28f, 0.6f, 1f, 0.42f);
     private bool isSelected;
@@ -51,10 +53,10 @@ public class RoomVisualizer : MonoBehaviour
             roomMesh = null;
         }
 
-        if (runtimeRoomMaterial != null)
+        if (runtimeFloorMaterial != null)
         {
-            Destroy(runtimeRoomMaterial);
-            runtimeRoomMaterial = null;
+            Destroy(runtimeFloorMaterial);
+            runtimeFloorMaterial = null;
         }
 
         if (runtimeCeilingMaterial != null)
@@ -111,19 +113,10 @@ public class RoomVisualizer : MonoBehaviour
         roomMesh = GenerateRoomMesh(cachedLocalVertices);
         floorMeshFilter.sharedMesh = roomMesh;
 
-        if (runtimeRoomMaterial == null && roomMaterial != null)
-        {
-            runtimeRoomMaterial = new Material(roomMaterial);
-        }
-
-        ApplyRuntimeColors();
-
-        if (runtimeRoomMaterial != null && runtimeRoomMaterial.HasProperty("_Cull"))
-        {
-            runtimeRoomMaterial.SetInt("_Cull", (int)CullMode.Off);
-        }
-
-        floorMeshRenderer.sharedMaterial = runtimeRoomMaterial;
+        Material resolvedFloorSourceMaterial = ResolveFloorSourceMaterial();
+        EnsureRuntimeMaterial(ref runtimeFloorMaterial, ref floorSourceMaterial, resolvedFloorSourceMaterial);
+        ApplyRuntimeMaterialAppearance(runtimeFloorMaterial, floorSourceMaterial, resolvedFloorSourceMaterial == roomMaterial);
+        floorMeshRenderer.sharedMaterial = runtimeFloorMaterial;
         UpdateCeilingVisual();
     }
 
@@ -162,10 +155,8 @@ public class RoomVisualizer : MonoBehaviour
 
     private void ApplyRuntimeColors()
     {
-        if (runtimeRoomMaterial != null)
-        {
-            runtimeRoomMaterial.color = isSelected ? selectionColor : roomColor;
-        }
+        ApplyRuntimeMaterialAppearance(runtimeFloorMaterial, floorSourceMaterial, floorSourceMaterial == roomMaterial);
+        ApplyRuntimeMaterialAppearance(runtimeCeilingMaterial, ceilingSourceMaterial, ceilingSourceMaterial == roomMaterial);
     }
 
     private Mesh GenerateRoomMesh(List<Vector3> vertices)
@@ -202,6 +193,8 @@ public class RoomVisualizer : MonoBehaviour
                 cachedTriangles.Add(i + 1);
             }
         }
+
+        EnsureTrianglesFaceUp(cachedTriangulationVertices, cachedTriangles);
 
         roomMesh.SetVertices(cachedTriangulationVertices);
         roomMesh.SetTriangles(cachedTriangles, 0);
@@ -309,19 +302,9 @@ public class RoomVisualizer : MonoBehaviour
             ceilingMeshFilter.sharedMesh = null;
         }
 
-        if (runtimeCeilingMaterial == null && roomMaterial != null)
-        {
-            runtimeCeilingMaterial = new Material(roomMaterial);
-        }
-
-        if (runtimeCeilingMaterial != null)
-        {
-            runtimeCeilingMaterial.color = roomColor;
-            if (runtimeCeilingMaterial.HasProperty("_Cull"))
-            {
-                runtimeCeilingMaterial.SetInt("_Cull", (int)CullMode.Off);
-            }
-        }
+        Material resolvedCeilingSourceMaterial = ResolveCeilingSourceMaterial();
+        EnsureRuntimeMaterial(ref runtimeCeilingMaterial, ref ceilingSourceMaterial, resolvedCeilingSourceMaterial);
+        ApplyRuntimeMaterialAppearance(runtimeCeilingMaterial, ceilingSourceMaterial, resolvedCeilingSourceMaterial == roomMaterial);
 
         if (ceilingMeshRenderer != null)
         {
@@ -431,5 +414,102 @@ public class RoomVisualizer : MonoBehaviour
         }
 
         return bounds;
+    }
+
+    private static void EnsureTrianglesFaceUp(List<Vector3> vertices, List<int> triangles)
+    {
+        if (vertices == null || triangles == null || triangles.Count < 3)
+        {
+            return;
+        }
+
+        int firstTriangleIndex = triangles[0];
+        int secondTriangleIndex = triangles[1];
+        int thirdTriangleIndex = triangles[2];
+
+        Vector3 a = vertices[firstTriangleIndex];
+        Vector3 b = vertices[secondTriangleIndex];
+        Vector3 c = vertices[thirdTriangleIndex];
+        Vector3 normal = Vector3.Cross(b - a, c - a);
+
+        if (normal.y >= 0f)
+        {
+            return;
+        }
+
+        for (int i = 0; i < triangles.Count; i += 3)
+        {
+            int temp = triangles[i + 1];
+            triangles[i + 1] = triangles[i + 2];
+            triangles[i + 2] = temp;
+        }
+    }
+
+    private Material ResolveFloorSourceMaterial()
+    {
+        if (roomMaterial == null)
+        {
+            roomMaterial = GetDefaultRoomMaterial();
+        }
+
+        Material explicitFloorMaterial = RoomManager.Instance != null && observedData != null
+            ? RoomManager.Instance.ResolveFloorMaterial(observedData.FloorTextureCode)
+            : null;
+
+        return explicitFloorMaterial != null ? explicitFloorMaterial : roomMaterial;
+    }
+
+    private Material ResolveCeilingSourceMaterial()
+    {
+        if (roomMaterial == null)
+        {
+            roomMaterial = GetDefaultRoomMaterial();
+        }
+
+        Material explicitCeilingMaterial = RoomManager.Instance != null && observedData != null
+            ? RoomManager.Instance.ResolveCeilingMaterial(observedData.CeilingTextureCode)
+            : null;
+
+        return explicitCeilingMaterial != null ? explicitCeilingMaterial : roomMaterial;
+    }
+
+    private void EnsureRuntimeMaterial(ref Material runtimeMaterial, ref Material cachedSourceMaterial, Material sourceMaterial)
+    {
+        if (sourceMaterial == null)
+        {
+            return;
+        }
+
+        if (runtimeMaterial != null && cachedSourceMaterial == sourceMaterial)
+        {
+            return;
+        }
+
+        if (runtimeMaterial != null)
+        {
+            Destroy(runtimeMaterial);
+        }
+
+        runtimeMaterial = new Material(sourceMaterial);
+        cachedSourceMaterial = sourceMaterial;
+    }
+
+    private void ApplyRuntimeMaterialAppearance(Material runtimeMaterial, Material sourceMaterial, bool useRoomTint)
+    {
+        if (runtimeMaterial == null)
+        {
+            return;
+        }
+
+        if (useRoomTint)
+        {
+            if (!runtimeMaterial.HasProperty("_Color"))
+            {
+                return;
+            }
+
+            runtimeMaterial.color = isSelected ? selectionColor : roomColor;
+            return;
+        }
     }
 }

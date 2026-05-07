@@ -45,6 +45,11 @@ Assets/TutorialInfo.meta
 *.opendb
 *.VC.db
 
+# Allow tracked .NET tool sources under tools/FurnitureAuthoringTool
+!tools/FurnitureAuthoringTool/
+!tools/FurnitureAuthoringTool/**/*.sln
+!tools/FurnitureAuthoringTool/**/*.csproj
+
 # Unity / Mono generated files
 *.pidb.meta
 *.pdb.meta

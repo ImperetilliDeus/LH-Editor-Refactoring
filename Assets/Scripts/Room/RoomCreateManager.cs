@@ -1,9 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputHandler
 {
+    private enum RoomCreationShapeMode
+    {
+        RectangleDrag = 0,
+        PolygonDraw = 1,
+    }
+
     [Header("References")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private GameObject grid;
@@ -16,9 +23,13 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     [SerializeField] private UndoRedoManager undoRedoManager;
 
     [Header("Input")]
+    [SerializeField] private RoomCreationShapeMode creationShapeMode = RoomCreationShapeMode.RectangleDrag;
     [SerializeField] private float minimumRoomWidth = 0.1f;
     [SerializeField] private float minimumRoomHeight = 0.1f;
     [SerializeField] private float clickToSelectThresholdPixels = 6f;
+    [SerializeField] private float polygonCloseDistance = 0.2f;
+    [SerializeField] private float polygonCloseDistancePixels = 18f;
+    [SerializeField] private float minimumPolygonEdgeLength = 0.1f;
 
     [Header("Auto Wall Match")]
     [SerializeField] private float autoWallMatchMaxAngleDegrees = 5f;
@@ -36,6 +47,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     private bool hasDrawingPlane;
     private bool hasGridBounds;
     private bool isDraggingRectangle;
+    private bool isDrawingPolygon;
     private bool isDraggingSelectedRoom;
     private bool pendingRoomSelection;
     private Vector3 dragStartPoint;
@@ -46,19 +58,22 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     private Material previewBoxMaterial;
     private Mesh cachedCubeMesh;
     private readonly List<VirtualBoundary> previewBoundaries = new List<VirtualBoundary>();
-    private readonly List<(Vector3 start, Vector3 end)> rectangleSegments = new List<(Vector3 start, Vector3 end)>();
+    private readonly List<(Vector3 start, Vector3 end)> previewSegments = new List<(Vector3 start, Vector3 end)>();
     private readonly List<Vector3> snapCandidates = new List<Vector3>();
     private readonly List<SnapManager.WallSnapSegment> wallSegmentSnapCandidates = new List<SnapManager.WallSnapSegment>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Room> cachedRooms = new List<Room>();
     private readonly List<Vector3> cachedRoomVertices = new List<Vector3>();
     private readonly List<Vector3> cachedDraggedRoomVertices = new List<Vector3>();
+    private readonly List<Vector3> polygonDraftVertices = new List<Vector3>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
     private Room selectedRoom;
     private Room pendingSelectedRoom;
     private bool isRoomCreateModeActive;
     private IEditorInputProvider inputProvider;
     private EditorInputFrame lastInputFrame;
+    private Vector3 polygonHoverPoint;
+    private bool hasPolygonHoverPoint;
 
     private void Reset()
     {
@@ -136,12 +151,99 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         HidePreviewObjects();
     }
 
+    private void CommitPolygonRoom(IReadOnlyList<Vector3> polygonVertices)
+    {
+        isDrawingPolygon = false;
+        hasPolygonHoverPoint = false;
+
+        if (polygonVertices == null || polygonVertices.Count < 3)
+        {
+            polygonDraftVertices.Clear();
+            HidePreviewObjects();
+            return;
+        }
+
+        List<Vector3> finalizedVertices = PolygonUtility.CreateSanitizedPolygonCopy(polygonVertices);
+        if (!RoomPolygonValidationUtility.IsValidPolygon(
+                finalizedVertices,
+                Mathf.Max(minimumPolygonEdgeLength, Mathf.Min(minimumRoomWidth, minimumRoomHeight)),
+                0.0001f))
+        {
+            isDrawingPolygon = true;
+            UpdatePreviewFromPolygonDraft();
+            return;
+        }
+
+        HashSet<Wall> relatedWalls = CollectWallsMatchingPolygon(finalizedVertices);
+        Room createdRoom = roomManager != null
+            ? roomManager.CreateRoomFromPolygon(finalizedVertices, relatedWalls.Count > 0 ? relatedWalls : null)
+            : null;
+
+        if (createdRoom != null)
+        {
+            undoRedoManager?.RecordRoomCreated(createdRoom);
+            SetSelectedRoom(createdRoom);
+            polygonDraftVertices.Clear();
+            HidePreviewObjects();
+            return;
+        }
+
+        isDrawingPolygon = true;
+        UpdatePreviewFromPolygonDraft();
+    }
+
     private void BeginRectangleDrag(Vector3 startPoint)
     {
         ClearSelectedRoom();
         isDraggingRectangle = true;
         dragStartPoint = startPoint;
         UpdatePreviewFromRectangle(dragStartPoint, dragStartPoint);
+    }
+
+    private void BeginPolygonDraw(Vector3 startPoint)
+    {
+        ClearSelectedRoom();
+        isDrawingPolygon = true;
+        hasPolygonHoverPoint = false;
+        polygonDraftVertices.Clear();
+        polygonDraftVertices.Add(startPoint);
+        UpdatePreviewFromPolygonDraft();
+    }
+
+    private void AppendPolygonVertex(Vector3 point)
+    {
+        if (polygonDraftVertices.Count == 0)
+        {
+            BeginPolygonDraw(point);
+            return;
+        }
+
+        if (ShouldClosePolygon(point))
+        {
+            TryCompletePolygonDraw();
+            return;
+        }
+
+        Vector3 lastPoint = polygonDraftVertices[polygonDraftVertices.Count - 1];
+        Vector3 delta = point - lastPoint;
+        delta.y = 0f;
+        if (delta.sqrMagnitude < minimumPolygonEdgeLength * minimumPolygonEdgeLength)
+        {
+            return;
+        }
+
+        polygonDraftVertices.Add(point);
+        UpdatePreviewFromPolygonDraft();
+    }
+
+    private void TryCompletePolygonDraw()
+    {
+        if (polygonDraftVertices.Count < 3)
+        {
+            return;
+        }
+
+        CommitPolygonRoom(polygonDraftVertices);
     }
 
     private void FocusRoomForEditing(Room room)
@@ -264,7 +366,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
                 startPoint,
                 endPoint,
                 Mathf.Min(minimumRoomWidth, minimumRoomHeight),
-                rectangleSegments,
+                previewSegments,
                 out Bounds previewBounds))
         {
             if (previewBoxObject != null)
@@ -288,17 +390,40 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
             previewBoxObject.transform.localScale = new Vector3(previewBounds.size.x, previewBoxHeight, previewBounds.size.z);
         }
 
-        EnsurePreviewBoundaryCount(rectangleSegments.Count);
+        EnsurePreviewBoundaryCount(previewSegments.Count);
         for (int i = 0; i < previewBoundaries.Count; i++)
         {
-            bool visible = i < rectangleSegments.Count;
+            bool visible = i < previewSegments.Count;
             previewBoundaries[i].gameObject.SetActive(visible);
             if (!visible)
             {
                 continue;
             }
 
-            previewBoundaries[i].SetEndpoints(rectangleSegments[i].start, rectangleSegments[i].end);
+            previewBoundaries[i].SetEndpoints(previewSegments[i].start, previewSegments[i].end);
+        }
+    }
+
+    private void UpdatePreviewFromPolygonDraft()
+    {
+        EnsurePreviewObjects();
+        if (previewBoxObject != null)
+        {
+            previewBoxObject.SetActive(false);
+        }
+
+        BuildPolygonPreviewSegments(previewSegments);
+        EnsurePreviewBoundaryCount(previewSegments.Count);
+        for (int i = 0; i < previewBoundaries.Count; i++)
+        {
+            bool visible = i < previewSegments.Count;
+            previewBoundaries[i].gameObject.SetActive(visible);
+            if (!visible)
+            {
+                continue;
+            }
+
+            previewBoundaries[i].SetEndpoints(previewSegments[i].start, previewSegments[i].end);
         }
     }
 
@@ -306,6 +431,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     {
         isDraggingRectangle = false;
         CancelSelectedRoomDrag();
+        CancelPolygonDraft();
         ClearPendingRoomSelection();
         HidePreviewObjects();
     }
@@ -314,8 +440,16 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     {
         isDraggingRectangle = false;
         CancelSelectedRoomDrag();
+        CancelPolygonDraft();
         ClearPendingRoomSelection();
         HidePreviewObjects();
+    }
+
+    private void CancelPolygonDraft()
+    {
+        isDrawingPolygon = false;
+        hasPolygonHoverPoint = false;
+        polygonDraftVertices.Clear();
     }
 
     private void ClearPendingRoomSelection()
@@ -503,6 +637,106 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         ClearSelectedRoom();
     }
 
+    public void SetRectangleCreationMode()
+    {
+        SetCreationShapeMode(RoomCreationShapeMode.RectangleDrag);
+    }
+
+    public void SetPolygonCreationMode()
+    {
+        SetCreationShapeMode(RoomCreationShapeMode.PolygonDraw);
+    }
+
+    private void SetCreationShapeMode(RoomCreationShapeMode mode)
+    {
+        if (creationShapeMode == mode)
+        {
+            return;
+        }
+
+        creationShapeMode = mode;
+        CancelCurrentInteraction();
+    }
+
+    private bool IsPolygonDrawMode()
+    {
+        return creationShapeMode == RoomCreationShapeMode.PolygonDraw;
+    }
+
+    private bool IsPolygonCreationModifierPressed()
+    {
+        return inputProvider != null &&
+               (inputProvider.IsKeyPressed(Key.LeftShift) || inputProvider.IsKeyPressed(Key.RightShift));
+    }
+
+    private bool ShouldClosePolygon(Vector3 point)
+    {
+        if (polygonDraftVertices.Count < 3)
+        {
+            return false;
+        }
+
+        Vector3 delta = point - polygonDraftVertices[0];
+        delta.y = 0f;
+        return delta.sqrMagnitude <= polygonCloseDistance * polygonCloseDistance;
+    }
+
+    private bool IsPointerNearPolygonStart(Vector2 pointerScreenPosition)
+    {
+        if (mainCamera == null || polygonDraftVertices.Count < 3)
+        {
+            return false;
+        }
+
+        Vector3 screenPoint = mainCamera.WorldToScreenPoint(polygonDraftVertices[0]);
+        if (screenPoint.z <= 0f)
+        {
+            return false;
+        }
+
+        return (new Vector2(screenPoint.x, screenPoint.y) - pointerScreenPosition).sqrMagnitude <=
+               polygonCloseDistancePixels * polygonCloseDistancePixels;
+    }
+
+    private void UpdatePolygonHoverPoint(Vector3 point)
+    {
+        polygonHoverPoint = ShouldClosePolygon(point) ? polygonDraftVertices[0] : point;
+        hasPolygonHoverPoint = true;
+    }
+
+    private void BuildPolygonPreviewSegments(List<(Vector3 start, Vector3 end)> segments)
+    {
+        if (segments == null)
+        {
+            return;
+        }
+
+        segments.Clear();
+        if (polygonDraftVertices.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 1; i < polygonDraftVertices.Count; i++)
+        {
+            segments.Add((polygonDraftVertices[i - 1], polygonDraftVertices[i]));
+        }
+
+        if (!hasPolygonHoverPoint)
+        {
+            return;
+        }
+
+        Vector3 lastPoint = polygonDraftVertices[polygonDraftVertices.Count - 1];
+        Vector3 delta = polygonHoverPoint - lastPoint;
+        delta.y = 0f;
+        if (delta.sqrMagnitude >= 0.0001f)
+        {
+            segments.Add((lastPoint, polygonHoverPoint));
+        }
+
+    }
+
     private void RefreshDrawingPlane()
     {
         hasDrawingPlane = false;
@@ -579,6 +813,14 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         }
 
         roomHandleManager?.CollectSnapPoints(snapCandidates, ignoreRoom);
+        if (isDrawingPolygon)
+        {
+            for (int i = 0; i < polygonDraftVertices.Count; i++)
+            {
+                snapCandidates.Add(polygonDraftVertices[i]);
+            }
+        }
+
         CollectWallSegmentSnapCandidates(wallSegmentSnapCandidates);
 
         Vector3 anchorPoint = snapAnchor ?? (isDraggingRectangle ? dragStartPoint : worldPoint);
