@@ -434,7 +434,7 @@ public partial class UndoRedoManager : MonoBehaviour
     {
         if (roomManager == null)
         {
-            roomManager = FindFirstObjectByType<RoomManager>();
+            LayerUtility.ResolveObject(ref roomManager);
         }
 
         return roomManager;
@@ -444,7 +444,7 @@ public partial class UndoRedoManager : MonoBehaviour
     {
         if (wallOpeningPlacementManager == null)
         {
-            wallOpeningPlacementManager = FindFirstObjectByType<WallOpeningPlacementManager>();
+            LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
         }
 
         return wallOpeningPlacementManager;
@@ -526,22 +526,22 @@ public partial class UndoRedoManager : MonoBehaviour
     {
         if (handleManager == null)
         {
-            handleManager = FindFirstObjectByType<HandleManager>();
+            LayerUtility.ResolveObject(ref handleManager);
         }
 
         if (wallLengthDisplay == null)
         {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
+            LayerUtility.ResolveObject(ref wallLengthDisplay);
         }
 
         if (roomManager == null)
         {
-            roomManager = FindFirstObjectByType<RoomManager>();
+            LayerUtility.ResolveObject(ref roomManager);
         }
 
         if (wallOpeningPlacementManager == null)
         {
-            wallOpeningPlacementManager = FindFirstObjectByType<WallOpeningPlacementManager>();
+            LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
         }
     }
 
@@ -549,7 +549,7 @@ public partial class UndoRedoManager : MonoBehaviour
     {
         if (handleManager == null)
         {
-            handleManager = FindFirstObjectByType<HandleManager>();
+            LayerUtility.ResolveObject(ref handleManager);
         }
 
         return handleManager;
@@ -559,7 +559,7 @@ public partial class UndoRedoManager : MonoBehaviour
     {
         if (wallLengthDisplay == null)
         {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
+            LayerUtility.ResolveObject(ref wallLengthDisplay);
         }
 
         return wallLengthDisplay;

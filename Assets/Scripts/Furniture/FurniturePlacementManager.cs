@@ -726,7 +726,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     {
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
 
         if (targetCamera == null)
@@ -736,7 +736,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
         if (roomManager == null)
         {
-            roomManager = FindFirstObjectByType<RoomManager>();
+            LayerUtility.ResolveObject(ref roomManager);
         }
     }
 

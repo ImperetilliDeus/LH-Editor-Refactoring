@@ -604,7 +604,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         for (int i = 0; i < containerWalls.Length; i++)
         {
             Wall wall = containerWalls[i];
-            if (wall == null || !wall.gameObject.activeInHierarchy)
+            if (wall == null || !wall.gameObject.activeInHierarchy || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
             {
                 continue;
             }

@@ -23,15 +23,39 @@ public partial class WallOpeningPlacementManager
         markerVisualsDirty = true;
     }
 
-    private void UpdateOpeningVisual(WallOpeningContainer container, WallOpening opening, int index)
+    private void UpdateOpeningVisual(WallOpeningContainer container, WallOpening opening, int index, Transform segmentRoot)
     {
+        Transform parent = segmentRoot != null ? segmentRoot : container.transform;
+        if (opening.transform.parent != parent)
+        {
+            opening.transform.SetParent(parent, false);
+        }
+
         Vector3 openingCenter = container.WallStart + container.WallDirection * opening.CenterDistance;
-        opening.transform.position = new Vector3(
-            openingCenter.x,
-            opening.BottomY + opening.Height * 0.5f,
-            openingCenter.z);
-        opening.transform.rotation = Quaternion.LookRotation(container.WallDirection, Vector3.up);
-        opening.transform.localScale = new Vector3(opening.Depth, opening.Height, opening.Width);
+        float openingCenterY = opening.BottomY + opening.Height * 0.5f;
+        if (segmentRoot != null)
+        {
+            Vector3 parentScale = parent.localScale;
+            opening.transform.localPosition = new Vector3(
+                0f,
+                SafeDivide(openingCenterY - parent.position.y, parentScale.y),
+                0f);
+            opening.transform.localRotation = Quaternion.identity;
+            opening.transform.localScale = new Vector3(
+                SafeDivide(opening.Depth, parentScale.x),
+                SafeDivide(opening.Height, parentScale.y),
+                SafeDivide(opening.Width, parentScale.z));
+        }
+        else
+        {
+            opening.transform.position = new Vector3(
+                openingCenter.x,
+                openingCenterY,
+                openingCenter.z);
+            opening.transform.rotation = Quaternion.LookRotation(container.WallDirection, Vector3.up);
+            opening.transform.localScale = new Vector3(opening.Depth, opening.Height, opening.Width);
+        }
+
         opening.name = opening.Type == OpeningPlacementType.Door ? $"Door_{index}" : $"Window_{index}";
 
         MeshFilter meshFilter = opening.GetComponent<MeshFilter>();
@@ -57,11 +81,28 @@ public partial class WallOpeningPlacementManager
             renderer = opening.gameObject.AddComponent<MeshRenderer>();
         }
 
-        renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
+        bool hasCatalogModel = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) &&
+                               definition.ModelPrefab != null;
 
-        CreateFillerSegment(container.transform, $"{opening.name}_BottomFill", container, opening, opening.BottomY - container.WallBottomY, container.WallBottomY);
+        if (hasCatalogModel)
+        {
+            renderer.enabled = false;
+            opening.ApplyModelPrefab(
+                definition.ModelPrefab,
+                definition.ModelLocalPosition,
+                definition.ModelLocalEulerAngles,
+                definition.ModelScaleMultiplier);
+        }
+        else
+        {
+            renderer.enabled = true;
+            renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
+            opening.ClearModelPrefab();
+        }
+
+        CreateFillerSegment(parent, $"{opening.name}_BottomFill", container, opening, opening.BottomY - container.WallBottomY, container.WallBottomY);
         CreateFillerSegment(
-            container.transform,
+            parent,
             $"{opening.name}_TopFill",
             container,
             opening,
@@ -73,6 +114,11 @@ public partial class WallOpeningPlacementManager
             mainCamera,
             GetMarkerPrefab(opening),
             GetMarkerScaleMultiplier(opening));
+    }
+
+    private static float SafeDivide(float numerator, float denominator)
+    {
+        return Mathf.Abs(denominator) > 0.000001f ? numerator / denominator : 0f;
     }
 
     private void EnsureCachedResources()

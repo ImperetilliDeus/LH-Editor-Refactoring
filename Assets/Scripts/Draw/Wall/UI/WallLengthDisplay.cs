@@ -51,6 +51,12 @@ public class WallLengthDisplay : MonoBehaviour
             return;
         }
 
+        if (wallTransform.GetComponentInParent<WallOpeningContainer>() != null)
+        {
+            RemoveWallLabel(wallTransform);
+            return;
+        }
+
         if (!wallTransform.gameObject.activeInHierarchy)
         {
             RemoveWallLabel(wallTransform);

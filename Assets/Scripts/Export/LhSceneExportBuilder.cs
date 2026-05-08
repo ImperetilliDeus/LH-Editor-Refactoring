@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LH.Export
 {
-    public static class LhSceneExportBuilder
+    public static partial class LhSceneExportBuilder
     {
         public enum ExportMode
         {
@@ -61,7 +61,7 @@ namespace LH.Export
             };
         }
 
-        public static List<string> CollectLegacyWarnings(IEnumerable<Wall> walls, IEnumerable<Room> rooms)
+        public static List<string> CollectLegacyWarnings(IEnumerable<Wall> walls)
         {
             List<string> warnings = new List<string>();
             HashSet<Transform> exportedRoots = new HashSet<Transform>();
@@ -87,701 +87,25 @@ namespace LH.Export
                 }
             }
 
-            if (rooms != null)
-            {
-                foreach (Room room in rooms)
-                {
-                    if (room == null)
-                    {
-                        continue;
-                    }
-
-                    IReadOnlyList<Vector3> boundaryVertices = room.Data != null ? room.Data.BoundaryVertices : null;
-                    if (boundaryVertices != null && boundaryVertices.Count >= 3 && !IsLegacyRectSurface(boundaryVertices))
-                    {
-                        warnings.Add($"Legacy export note: room '{room.name}' will export polygon floor/ceil meshType=1 instead of empty meshType=0.");
-                    }
-                }
-            }
-
             return warnings;
         }
 
-        private static List<LhWallDto> BuildWalls(IEnumerable<Wall> walls, BuildContext context)
-        {
-            List<LhWallDto> results = new List<LhWallDto>();
-            if (walls == null)
-            {
-                return results;
-            }
-
-            HashSet<Transform> exportedRoots = new HashSet<Transform>();
-            foreach (Wall wall in walls)
-            {
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                Transform root = GetWallExportRoot(wall.transform);
-                if (root == null || !exportedRoots.Add(root))
-                {
-                    continue;
-                }
-
-                int wallId = ResolveWallExportId(root, context);
-                context.wallIdsByRoot[root] = wallId;
-                RegisterWallDataIds(root, wallId, context);
-                results.Add(BuildWall(root, wallId, context.exportMode == ExportMode.LegacyExact));
-            }
-
-            return results;
-        }
-
-        private static List<LhLegacyWallDto> BuildLegacyWalls(IEnumerable<Wall> walls, BuildContext context)
-        {
-            List<LhLegacyWallDto> results = new List<LhLegacyWallDto>();
-            List<LhWallDto> builtWalls = BuildWalls(walls, context);
-            for (int i = 0; i < builtWalls.Count; i++)
-            {
-                LhWallDto wall = builtWalls[i];
-                results.Add(new LhLegacyWallDto
-                {
-                    name = wall.name,
-                    id = wall.id,
-                    position = wall.position,
-                    angle = wall.angle,
-                    scale = wall.scale,
-                    segments = wall.segments,
-                });
-            }
-
-            return results;
-        }
-
-        private static LhWallDto BuildWall(Transform root, int wallId, bool legacyExact)
-        {
-            List<LhWallSegmentDto> segments = new List<LhWallSegmentDto>();
-            WallOpeningContainer container = root.GetComponent<WallOpeningContainer>();
-
-            if (container != null)
-            {
-                Wall[] childWalls = root.GetComponentsInChildren<Wall>(true);
-                List<Wall> orderedSegments = new List<Wall>();
-                for (int i = 0; i < childWalls.Length; i++)
-                {
-                    Wall segmentWall = childWalls[i];
-                    if (segmentWall == null || segmentWall.transform.parent != root)
-                    {
-                        continue;
-                    }
-
-                    orderedSegments.Add(segmentWall);
-                }
-
-                orderedSegments.Sort((left, right) =>
-                {
-                    float leftDistance = GetSegmentSortDistance(container, left);
-                    float rightDistance = GetSegmentSortDistance(container, right);
-                    return leftDistance.CompareTo(rightDistance);
-                });
-
-                for (int i = 0; i < orderedSegments.Count; i++)
-                {
-                    segments.Add(BuildSegmentForContainer(root, orderedSegments[i], container, legacyExact));
-                }
-            }
-            else if (root.TryGetComponent(out Wall wall))
-            {
-                segments.Add(BuildStandaloneSegment(wall));
-            }
-
-            LhDtoFactory.FillTransform(root, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-            return new LhWallDto
-            {
-                name = root.name,
-                id = wallId,
-                position = position,
-                angle = angle,
-                scale = scale,
-                segments = segments,
-            };
-        }
-
-        private static LhWallSegmentDto BuildStandaloneSegment(Wall wall)
-        {
-            LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-            return new LhWallSegmentDto
-            {
-                position = position,
-                angle = angle,
-                scale = scale,
-                hasInterior = false,
-                door = null,
-                window = null,
-            };
-        }
-
-        private static LhWallSegmentDto BuildSegmentForContainer(Transform root, Wall segmentWall, WallOpeningContainer container, bool legacyExact)
-        {
-            WallOpening attachedOpening = FindOpeningForSegment(segmentWall, container);
-            bool hasInterior = attachedOpening != null;
-            LhDtoFactory.FillTransform(segmentWall.transform, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale, true);
-
-            return new LhWallSegmentDto
-            {
-                position = position,
-                angle = angle,
-                scale = scale,
-                hasInterior = hasInterior,
-                door = attachedOpening != null && attachedOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door
-                    ? BuildDoor(attachedOpening, root, legacyExact)
-                    : null,
-                window = attachedOpening != null && attachedOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Window
-                    ? BuildWindow(attachedOpening, root, legacyExact)
-                    : null,
-            };
-        }
-
-        private static LhDoorDto BuildDoor(WallOpening opening, Transform root, bool legacyExact)
-        {
-            if (legacyExact)
-            {
-                LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                return new LhDoorDto
-                {
-                    isExist = true,
-                    code = string.IsNullOrWhiteSpace(opening.DoorTypeKey) ? "Pass" : opening.DoorTypeKey,
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                };
-            }
-
-            FillRelativeTransform(root, opening.transform, out LhVector3Dto relativePosition, out LhVector3Dto relativeAngle, out LhVector3Dto relativeScale);
-            return new LhDoorDto
-            {
-                isExist = true,
-                code = string.IsNullOrWhiteSpace(opening.DoorTypeKey) ? "Door" : opening.DoorTypeKey,
-                position = relativePosition,
-                angle = relativeAngle,
-                scale = relativeScale,
-            };
-        }
-
-        private static LhWindowDto BuildWindow(WallOpening opening, Transform root, bool legacyExact)
-        {
-            if (legacyExact)
-            {
-                LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                return new LhWindowDto
-                {
-                    isExist = true,
-                    code = string.IsNullOrWhiteSpace(opening.WindowTypeKey) ? "Window" : opening.WindowTypeKey,
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                };
-            }
-
-            FillRelativeTransform(root, opening.transform, out LhVector3Dto relativePosition, out LhVector3Dto relativeAngle, out LhVector3Dto relativeScale);
-            return new LhWindowDto
-            {
-                isExist = true,
-                code = string.IsNullOrWhiteSpace(opening.WindowTypeKey) ? "Window" : opening.WindowTypeKey,
-                position = relativePosition,
-                angle = relativeAngle,
-                scale = relativeScale,
-            };
-        }
-
-        private static List<LhRoomDto> BuildRooms(IEnumerable<Room> rooms, BuildContext context)
-        {
-            List<LhRoomDto> results = new List<LhRoomDto>();
-            if (rooms == null)
-            {
-                return results;
-            }
-
-            foreach (Room room in rooms)
-            {
-                if (room == null)
-                {
-                    continue;
-                }
-
-                results.Add(BuildRoom(room, context));
-            }
-
-            return results;
-        }
-
-        private static List<LhLegacyRoomDto> BuildLegacyRooms(IEnumerable<Room> rooms, BuildContext context)
-        {
-            List<LhLegacyRoomDto> results = new List<LhLegacyRoomDto>();
-            if (rooms == null)
-            {
-                return results;
-            }
-
-            foreach (Room room in rooms)
-            {
-                if (room == null)
-                {
-                    continue;
-                }
-
-                RoomData roomData = room.Data;
-                Vector3 roomCenter = roomData.Geometry.Center;
-                Vector3 roomPosition = roomCenter + roomData.PlacementOffset;
-                LhDtoFactory.FillTransform(roomPosition, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-
-                results.Add(new LhLegacyRoomDto
-                {
-                    name = string.IsNullOrWhiteSpace(roomData.RoomName) ? room.name : roomData.RoomName,
-                    code = ResolveRoomCode(roomData),
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                    walls = BuildRoomWallReferences(room, roomData, room.WallSet, context),
-                    floor = BuildSurface(roomData, roomPosition, LegacyFloorWorldY, ResolveFloorTextureCode(room, roomData), true, false),
-                    ceil = BuildSurface(roomData, roomPosition, GetCeilingWorldY(roomData, context), ResolveCeilingTextureCode(room, roomData), true, true),
-                    furnish = BuildLegacyFurniture(room, context),
-                });
-            }
-
-            return results;
-        }
-
-        private static LhRoomDto BuildRoom(Room room, BuildContext context)
-        {
-            RoomData roomData = room.Data;
-            Vector3 roomCenter = roomData.Geometry.Center;
-            Vector3 roomPosition = roomCenter + roomData.PlacementOffset;
-            LhDtoFactory.FillTransform(roomPosition, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-
-            return new LhRoomDto
-            {
-                id = BuildRoomId(room, roomData),
-                name = string.IsNullOrWhiteSpace(roomData.RoomName) ? room.name : roomData.RoomName,
-                code = ResolveRoomCode(roomData),
-                roomTypeKey = roomData.RoomTypeKey ?? string.Empty,
-                nativeCode = roomData.RoomNativeCode ?? string.Empty,
-                position = position,
-                angle = angle,
-                scale = scale,
-                walls = BuildRoomWallReferences(room, roomData, room.WallSet, context),
-                floor = BuildSurface(roomData, roomPosition, DefaultFloorWorldY, ResolveFloorTextureCode(room, roomData), false, false),
-                ceil = BuildSurface(roomData, roomPosition, GetCeilingWorldY(roomData, context), ResolveCeilingTextureCode(room, roomData), false, false),
-                furnish = BuildFurniture(room, context),
-            };
-        }
-
-        private static List<LhFurnitureDto> BuildFurniture(Room room, BuildContext context)
-        {
-            List<LhFurnitureDto> results = new List<LhFurnitureDto>();
-            if (room == null ||
-                context == null ||
-                !context.furnitureByRoom.TryGetValue(room, out List<FurnitureInstance> furnitureInstances))
-            {
-                return results;
-            }
-
-            for (int i = 0; i < furnitureInstances.Count; i++)
-            {
-                FurnitureInstance instance = furnitureInstances[i];
-                if (instance == null || !instance.IsPlaced)
-                {
-                    continue;
-                }
-
-                FillRelativeTransform(room.transform, instance.transform, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                results.Add(new LhFurnitureDto
-                {
-                    name = instance.gameObject.name,
-                    code = instance.ExportCode ?? string.Empty,
-                    nativeCode = instance.NativeCode ?? string.Empty,
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                    defects = BuildFurnitureDefects(instance),
-                });
-            }
-
-            return results;
-        }
-
-        private static List<LhLegacyFurnitureDto> BuildLegacyFurniture(Room room, BuildContext context)
-        {
-            List<LhLegacyFurnitureDto> results = new List<LhLegacyFurnitureDto>();
-            if (room == null ||
-                context == null ||
-                !context.furnitureByRoom.TryGetValue(room, out List<FurnitureInstance> furnitureInstances))
-            {
-                return results;
-            }
-
-            for (int i = 0; i < furnitureInstances.Count; i++)
-            {
-                FurnitureInstance instance = furnitureInstances[i];
-                if (instance == null || !instance.IsPlaced)
-                {
-                    continue;
-                }
-
-                FillRelativeTransform(room.transform, instance.transform, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                results.Add(new LhLegacyFurnitureDto
-                {
-                    code = instance.ExportCode ?? string.Empty,
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                    defects = BuildFurnitureDefects(instance),
-                });
-            }
-
-            return results;
-        }
-
-        private static List<Room> CollectRooms(IEnumerable<Room> rooms)
-        {
-            List<Room> results = new List<Room>();
-            if (rooms == null)
-            {
-                return results;
-            }
-
-            foreach (Room room in rooms)
-            {
-                if (room != null)
-                {
-                    results.Add(room);
-                }
-            }
-
-            return results;
-        }
-
-        private static void PrimeFurnitureLookup(IReadOnlyList<Room> rooms, BuildContext context)
-        {
-            if (context == null)
-            {
-                return;
-            }
-
-            context.furnitureByRoom.Clear();
-            if (rooms != null)
-            {
-                for (int i = 0; i < rooms.Count; i++)
-                {
-                    Room room = rooms[i];
-                    if (room != null && !context.furnitureByRoom.ContainsKey(room))
-                    {
-                        context.furnitureByRoom.Add(room, new List<FurnitureInstance>());
-                    }
-                }
-            }
-
-            FurnitureInstance[] furnitureInstances = Object.FindObjectsByType<FurnitureInstance>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            for (int i = 0; i < furnitureInstances.Length; i++)
-            {
-                FurnitureInstance instance = furnitureInstances[i];
-                if (instance == null || !instance.IsPlaced)
-                {
-                    continue;
-                }
-
-                Room resolvedRoom = ResolveFurnitureRoom(instance, rooms);
-                if (resolvedRoom == null)
-                {
-                    continue;
-                }
-
-                if (!context.furnitureByRoom.TryGetValue(resolvedRoom, out List<FurnitureInstance> bucket))
-                {
-                    bucket = new List<FurnitureInstance>();
-                    context.furnitureByRoom.Add(resolvedRoom, bucket);
-                }
-
-                bucket.Add(instance);
-            }
-        }
-
-        private static Room ResolveFurnitureRoom(FurnitureInstance instance, IReadOnlyList<Room> rooms)
-        {
-            if (instance == null || rooms == null || rooms.Count == 0)
-            {
-                return null;
-            }
-
-            Bounds bounds = instance.CalculateWorldBounds();
-            Room currentRoom = instance.CurrentRoom;
-            if (IsFurnitureInsideRoom(currentRoom, bounds, instance.transform.position))
-            {
-                return currentRoom;
-            }
-
-            for (int i = 0; i < rooms.Count; i++)
-            {
-                Room room = rooms[i];
-                if (IsFurnitureInsideRoom(room, bounds, instance.transform.position))
-                {
-                    return room;
-                }
-            }
-
-            return null;
-        }
-
-        private static bool IsFurnitureInsideRoom(Room room, Bounds bounds, Vector3 worldPosition)
-        {
-            if (room == null)
-            {
-                return false;
-            }
-
-            List<Vector3> vertices = new List<Vector3>();
-            if (!room.TryGetOrderedVertices(vertices))
-            {
-                return false;
-            }
-
-            return IsBoundsFootprintInsidePolygonXZ(bounds, vertices) || IsPointInsidePolygonXZ(worldPosition, vertices);
-        }
-
-        private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> polygon)
-        {
-            if (polygon == null || polygon.Count < 3)
-            {
-                return false;
-            }
-
-            bool inside = false;
-            float x = point.x;
-            float z = point.z;
-
-            for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
-            {
-                Vector3 pi = polygon[i];
-                Vector3 pj = polygon[j];
-
-                bool intersects = ((pi.z > z) != (pj.z > z)) &&
-                                  (x < (pj.x - pi.x) * (z - pi.z) / Mathf.Max(0.000001f, pj.z - pi.z) + pi.x);
-                if (intersects)
-                {
-                    inside = !inside;
-                }
-            }
-
-            return inside;
-        }
-
-        private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, List<Vector3> polygon)
-        {
-            if (polygon == null || polygon.Count < 3)
-            {
-                return false;
-            }
-
-            float y = bounds.center.y;
-            Vector3[] testPoints =
-            {
-                new Vector3(bounds.center.x, y, bounds.center.z),
-                new Vector3(bounds.min.x, y, bounds.min.z),
-                new Vector3(bounds.min.x, y, bounds.max.z),
-                new Vector3(bounds.max.x, y, bounds.min.z),
-                new Vector3(bounds.max.x, y, bounds.max.z),
-            };
-
-            for (int i = 0; i < testPoints.Length; i++)
-            {
-                if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static List<int> BuildRoomWallReferences(Room room, RoomData roomData, IEnumerable<Wall> walls, BuildContext context)
-        {
-            List<int> results = new List<int>();
-            if (roomData == null)
-            {
-                return results;
-            }
-
-            HashSet<int> addedIds = new HashSet<int>();
-            IReadOnlyList<string> wallIds = room != null ? room.EffectiveWallIds : roomData.WallIds;
-            for (int i = 0; i < wallIds.Count; i++)
-            {
-                string wallIdKey = wallIds[i];
-                if (string.IsNullOrWhiteSpace(wallIdKey) ||
-                    !context.wallIdsByDataId.TryGetValue(wallIdKey, out int wallId) ||
-                    !addedIds.Add(wallId))
-                {
-                    continue;
-                }
-
-                results.Add(wallId);
-            }
-
-            if (results.Count > 0 || walls == null)
-            {
-                return results;
-            }
-
-            foreach (Wall wall in walls)
-            {
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                Transform root = GetWallExportRoot(wall.transform);
-                if (root == null || !context.wallIdsByRoot.TryGetValue(root, out int wallId) || !addedIds.Add(wallId))
-                {
-                    continue;
-                }
-
-                results.Add(wallId);
-            }
-
-            return results;
-        }
-
-        private static List<LhFurnitureDefectDto> BuildFurnitureDefects(FurnitureInstance instance)
-        {
-            List<LhFurnitureDefectDto> results = new List<LhFurnitureDefectDto>();
-            if (instance == null || instance.ExportDefects == null)
-            {
-                return results;
-            }
-
-            for (int i = 0; i < instance.ExportDefects.Count; i++)
-            {
-                FurnitureDefectCatalogEntry entry = instance.ExportDefects[i];
-                if (entry == null)
-                {
-                    continue;
-                }
-
-                results.Add(new LhFurnitureDefectDto
-                {
-                    mntnCd = entry.mntnCd ?? string.Empty,
-                    locCd = entry.locCd ?? string.Empty,
-                    mtrlCd = entry.mtrlCd ?? string.Empty,
-                });
-            }
-
-            return results;
-        }
-
-        private static LhSurfaceDto BuildSurface(
-            RoomData roomData,
-            Vector3 roomPosition,
-            float worldY,
-            string explicitTextureCode,
-            bool legacyExact,
-            bool flipNormals)
-        {
-            IReadOnlyList<Vector3> boundaryVertices = roomData != null ? roomData.BoundaryVertices : null;
-            string textureCode = explicitTextureCode ?? string.Empty;
-            Vector3 localPosition = new Vector3(0f, worldY - roomPosition.y, 0f);
-            Vector3 surfaceScale = CalculateSurfaceScale(boundaryVertices);
-            LhDtoFactory.FillTransform(localPosition, Vector3.zero, surfaceScale, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-
-            bool useLegacyRectSurface = legacyExact && IsLegacyRectSurface(boundaryVertices);
-            int meshType = useLegacyRectSurface ? 0 : boundaryVertices != null && boundaryVertices.Count >= 3 ? 1 : 0;
-            LhMeshDto mesh = meshType == 0
-                ? CreateEmptyMeshDto()
-                : LhDtoFactory.CreateMeshFromPolygon(
-                    boundaryVertices,
-                    roomData != null ? roomData.Geometry.Center : Vector3.zero,
-                    flipNormals ? Vector3.down : Vector3.up,
-                    legacyExact);
-
-            return new LhSurfaceDto
-            {
-                position = position,
-                angle = angle,
-                scale = scale,
-                meshType = meshType,
-                mesh = mesh,
-                texture = textureCode,
-            };
-        }
-
-        private static string ResolveFloorTextureCode(Room room, RoomData roomData)
-        {
-            if (RoomManager.Instance != null && room != null)
-            {
-                return RoomManager.Instance.GetEffectiveFloorTextureCode(room);
-            }
-
-            return roomData != null ? roomData.FloorTextureCode ?? string.Empty : string.Empty;
-        }
-
-        private static string ResolveCeilingTextureCode(Room room, RoomData roomData)
-        {
-            if (RoomManager.Instance != null && room != null)
-            {
-                return RoomManager.Instance.GetEffectiveCeilingTextureCode(room);
-            }
-
-            return roomData != null ? roomData.CeilingTextureCode ?? string.Empty : string.Empty;
-        }
-
-        private static string ResolveRoomCode(RoomData roomData)
-        {
-            if (roomData == null)
-            {
-                return string.Empty;
-            }
-
-            if (!string.IsNullOrWhiteSpace(roomData.RoomCode))
-            {
-                return roomData.RoomCode;
-            }
-
-            return RoomTypeCatalog.TryGetCode(roomData.RoomTypeKey, out int resolvedCode)
-                ? resolvedCode.ToString()
-                : string.Empty;
-        }
-
-        private static LhMeshDto CreateEmptyMeshDto()
-        {
-            return new LhMeshDto
-            {
-                vertices = new List<LhVector3Dto>(),
-                triangles = new List<int>(),
-                normals = new List<LhVector3Dto>(),
-                uvs = new List<LhVector2Dto>(),
-            };
-        }
-
-        private static string BuildRoomId(Room room, RoomData roomData)
-        {
-            string resolvedRoomCode = ResolveRoomCode(roomData);
-            if (!string.IsNullOrWhiteSpace(resolvedRoomCode))
-            {
-                return $"room_{resolvedRoomCode}";
-            }
-
-            if (room != null && !string.IsNullOrWhiteSpace(room.name))
-            {
-                return $"room_{SanitizeIdToken(room.name)}";
-            }
-
-            return "room";
-        }
-
-        private static WallOpening FindOpeningForSegment(Wall segmentWall, WallOpeningContainer container)
+        private static WallOpening FindOpeningForSegment(Transform segmentRoot, Wall segmentWall, WallOpeningContainer container, HashSet<WallOpening> consumedOpenings)
         {
             if (segmentWall == null || container == null)
             {
                 return null;
+            }
+
+            if (segmentRoot != null)
+            {
+                WallOpening directOpening = segmentRoot.GetComponentInChildren<WallOpening>(true);
+                if (directOpening != null &&
+                    (consumedOpenings == null || !consumedOpenings.Contains(directOpening)))
+                {
+                    consumedOpenings?.Add(directOpening);
+                    return directOpening;
+                }
             }
 
             float segmentMin = GetDistanceAlongContainer(container, segmentWall.Data.startPoint);
@@ -802,12 +126,19 @@ namespace LH.Export
                     continue;
                 }
 
+                if (consumedOpenings != null && consumedOpenings.Contains(opening))
+                {
+                    continue;
+                }
+
                 float openingStart = opening.CenterDistance - opening.Width * 0.5f;
                 float openingEnd = opening.CenterDistance + opening.Width * 0.5f;
                 if (openingEnd + 0.0001f < segmentMin || openingStart - 0.0001f > segmentMax)
                 {
                     continue;
                 }
+
+                consumedOpenings?.Add(opening);
 
                 return opening;
             }
@@ -819,6 +150,30 @@ namespace LH.Export
         {
             Vector3 fromStart = point - container.WallStart;
             return Vector3.Dot(fromStart, container.WallDirection);
+        }
+
+        private static void NormalizeSegmentRange(ref float start, ref float end)
+        {
+            if (start <= end)
+            {
+                return;
+            }
+
+            float swap = start;
+            start = end;
+            end = swap;
+        }
+
+        private static float GetSegmentOverlap(float leftStart, float leftEnd, float rightStart, float rightEnd)
+        {
+            float overlapStart = Mathf.Max(leftStart, rightStart);
+            float overlapEnd = Mathf.Min(leftEnd, rightEnd);
+            return Mathf.Max(0f, overlapEnd - overlapStart);
+        }
+
+        private static bool ApproximatelyEqual(float left, float right, float tolerance)
+        {
+            return Mathf.Abs(left - right) <= tolerance;
         }
 
         private static float GetSegmentSortDistance(WallOpeningContainer container, Wall segmentWall)
@@ -880,6 +235,101 @@ namespace LH.Export
                 out position,
                 out angle,
                 out scale);
+        }
+
+        private static void FillRelativeTransform(
+            Vector3 rootPosition,
+            Quaternion rootRotation,
+            Vector3 rootScale,
+            Vector3 targetPosition,
+            Quaternion targetRotation,
+            Vector3 targetScale,
+            out LhVector3Dto position,
+            out LhVector3Dto angle,
+            out LhVector3Dto scale)
+        {
+            Vector3 offset = Quaternion.Inverse(rootRotation) * (targetPosition - rootPosition);
+            Vector3 relativePosition = new Vector3(
+                SafeDivide(offset.x, rootScale.x),
+                SafeDivide(offset.y, rootScale.y),
+                SafeDivide(offset.z, rootScale.z));
+            Vector3 relativeScale = new Vector3(
+                SafeDivide(targetScale.x, rootScale.x),
+                SafeDivide(targetScale.y, rootScale.y),
+                SafeDivide(targetScale.z, rootScale.z));
+
+            LhDtoFactory.FillTransform(
+                relativePosition,
+                (Quaternion.Inverse(rootRotation) * targetRotation).eulerAngles,
+                relativeScale,
+                out position,
+                out angle,
+                out scale);
+        }
+
+        private static void GetExportRootTransform(
+            Transform root,
+            WallOpeningContainer container,
+            out Vector3 position,
+            out Quaternion rotation,
+            out Vector3 scale)
+        {
+            if (container == null)
+            {
+                if (root != null && root.TryGetComponent(out Wall wall) && wall.Data != null)
+                {
+                    Vector3 wallStart = wall.Data.startPoint;
+                    Vector3 wallEnd = wall.Data.endPoint;
+                    Vector3 wallDirection = wallEnd - wallStart;
+                    wallDirection.y = 0f;
+                    float wallLength = wallDirection.magnitude;
+                    if (wallLength <= 0.000001f)
+                    {
+                        wallDirection = Vector3.right;
+                        wallLength = 0f;
+                    }
+                    else
+                    {
+                        wallDirection /= wallLength;
+                    }
+
+                    position = (wallStart + wallEnd) * 0.5f;
+                    position.y = wall.Data.centerY;
+                    rotation = Quaternion.FromToRotation(Vector3.right, wallDirection);
+                    scale = new Vector3(wallLength, wall.Data.height, wall.Data.thickness);
+                    return;
+                }
+
+                position = root != null ? root.position : Vector3.zero;
+                rotation = root != null ? root.rotation : Quaternion.identity;
+                scale = root != null ? root.lossyScale : Vector3.one;
+                return;
+            }
+
+            Vector3 start = container.WallStart;
+            Vector3 end = container.WallEnd;
+            Vector3 direction = end - start;
+            direction.y = 0f;
+            float length = direction.magnitude;
+            if (length <= 0.000001f)
+            {
+                direction = Vector3.forward;
+                length = 0f;
+            }
+            else
+            {
+                direction /= length;
+            }
+
+            position = (start + end) * 0.5f;
+            position.y = container.CenterY;
+            rotation = Quaternion.FromToRotation(Vector3.right, direction);
+            scale = new Vector3(length, container.WallHeight, container.WallThickness);
+        }
+
+        private static float SafeDivide(float numerator, float denominator)
+        {
+            return Mathf.Abs(denominator) > 0.000001f ? numerator / denominator : 0f;
         }
 
         private static string SanitizeIdToken(string value)
@@ -977,7 +427,7 @@ namespace LH.Export
             for (int i = 0; i < childWalls.Length; i++)
             {
                 Wall childWall = childWalls[i];
-                if (childWall == null || childWall.transform.parent != root)
+                if (childWall == null)
                 {
                     continue;
                 }

@@ -33,4 +33,15 @@ public static class WallHierarchyUtility
             results.Add(wall);
         }
     }
+
+    public static bool IsHiddenOpeningBaseSegment(Wall wall)
+    {
+        if (wall == null || wall.GetComponentInParent<WallOpeningContainer>() == null)
+        {
+            return false;
+        }
+
+        MeshRenderer renderer = wall.GetComponent<MeshRenderer>();
+        return renderer != null && !renderer.enabled;
+    }
 }

@@ -94,6 +94,11 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (wallBatchGraphic != null)
+        {
+            wallBatchGraphic.SegmentClicked -= HandleTopPlanWallSegmentClicked;
+        }
+
         UnbindEvents();
         UnbindVisualEvents();
         ClearVisuals(openingImages);
@@ -121,6 +126,21 @@ public partial class TopViewRenderManager : MonoBehaviour
     public void MarkDirty()
     {
         visualsDirty = true;
+    }
+
+    private void HandleTopPlanWallSegmentClicked(TopPlanSegmentBatchGraphic.SegmentData segment)
+    {
+        if (!IsRoomWallAuthoringInteractionEnabled() ||
+            roomWallAuthoringPanelController == null ||
+            segment.wall == null)
+        {
+            return;
+        }
+
+        if (roomWallAuthoringPanelController.TryToggleWallSelectionFromWall(segment.wall))
+        {
+            MarkDirty();
+        }
     }
 
     private void BindEvents()
@@ -261,49 +281,49 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (handleManager == null)
-        {
-            handleManager = FindFirstObjectByType<HandleManager>();
-        }
-
         if (drawManager == null)
         {
-            drawManager = FindFirstObjectByType<DrawManager>();
+            LayerUtility.ResolveObject(ref drawManager);
+        }
+
+        if (handleManager == null)
+        {
+            LayerUtility.ResolveObject(ref handleManager);
         }
 
         if (wallSelectionManager == null)
         {
-            wallSelectionManager = FindFirstObjectByType<WallSelectionManager>();
+            LayerUtility.ResolveObject(ref wallSelectionManager);
         }
 
         if (wallOpeningPlacementManager == null)
         {
-            wallOpeningPlacementManager = FindFirstObjectByType<WallOpeningPlacementManager>();
+            LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
         }
 
         if (roomManager == null)
         {
-            roomManager = FindFirstObjectByType<RoomManager>();
+            LayerUtility.ResolveObject(ref roomManager);
         }
 
         if (roomAuthoringPanelManager == null)
         {
-            roomAuthoringPanelManager = FindFirstObjectByType<RoomAuthoringPanelManager>();
+            LayerUtility.ResolveObject(ref roomAuthoringPanelManager);
         }
 
         if (roomWallAuthoringPanelController == null)
         {
-            roomWallAuthoringPanelController = FindFirstObjectByType<RoomWallAuthoringPanelController>();
+            LayerUtility.ResolveObject(ref roomWallAuthoringPanelController);
         }
 
         if (roomHandleManager == null)
         {
-            roomHandleManager = FindFirstObjectByType<RoomHandleManager>();
+            LayerUtility.ResolveObject(ref roomHandleManager);
         }
 
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
     }
 
@@ -320,6 +340,14 @@ public partial class TopViewRenderManager : MonoBehaviour
         Debug.Assert(topViewCamera != null, $"{nameof(TopViewRenderManager)} requires {nameof(topViewCamera)}.", this);
         Debug.Assert(contentRoot != null, $"{nameof(TopViewRenderManager)} requires {nameof(contentRoot)}.", this);
         Debug.Assert(roomManager != null, $"{nameof(TopViewRenderManager)} requires {nameof(roomManager)}.", this);
+    }
+
+    private bool IsRoomWallAuthoringInteractionEnabled()
+    {
+        return modeManager != null &&
+               modeManager.CurrentMode == EditorMode.RoomCreate &&
+               roomWallAuthoringPanelController != null &&
+               roomWallAuthoringPanelController.HasSelectedRoomForAuthoring;
     }
 
     private void EnsureCanvas()

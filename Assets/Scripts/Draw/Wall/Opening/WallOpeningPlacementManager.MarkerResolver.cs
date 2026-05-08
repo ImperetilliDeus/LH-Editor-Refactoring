@@ -10,6 +10,12 @@ public partial class WallOpeningPlacementManager
             return null;
         }
 
+        if (TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) &&
+            definition.MarkerPrefab != null)
+        {
+            return definition.MarkerPrefab;
+        }
+
         MarkerVariantDefinition variant = GetMarkerVariantDefinition(opening);
         if (opening.Type == OpeningPlacementType.Door)
         {
@@ -24,6 +30,11 @@ public partial class WallOpeningPlacementManager
         if (opening == null)
         {
             return Vector2.one;
+        }
+
+        if (TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition))
+        {
+            return definition.MarkerScaleMultiplier;
         }
 
         MarkerVariantDefinition variant = GetMarkerVariantDefinition(opening);
@@ -42,6 +53,11 @@ public partial class WallOpeningPlacementManager
         if (opening == null)
         {
             return MarkerPlacementMode.OffsetFromOpening;
+        }
+
+        if (TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition))
+        {
+            return definition.MarkerPlacementMode;
         }
 
         MarkerVariantDefinition variant = GetMarkerVariantDefinition(opening);

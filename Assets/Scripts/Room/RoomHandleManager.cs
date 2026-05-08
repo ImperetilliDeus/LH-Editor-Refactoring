@@ -666,27 +666,27 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
     {
         if (snapManager == null)
         {
-            snapManager = FindFirstObjectByType<SnapManager>();
+            LayerUtility.ResolveObject(ref snapManager);
         }
 
         if (wallHandleManager == null)
         {
-            wallHandleManager = FindFirstObjectByType<HandleManager>();
+            LayerUtility.ResolveObject(ref wallHandleManager);
         }
 
         if (roomManager == null)
         {
-            roomManager = FindFirstObjectByType<RoomManager>();
+            LayerUtility.ResolveObject(ref roomManager);
         }
 
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
 
         if (undoRedoManager == null)
         {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
+            LayerUtility.ResolveObject(ref undoRedoManager);
         }
     }
 

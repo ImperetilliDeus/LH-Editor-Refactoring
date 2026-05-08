@@ -166,8 +166,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Material: {fileID: 0}
   m_Color: {r: 0.122641504, g: 0.122641504, b: 0.122641504, a: 1}
   m_RaycastTarget: 1
@@ -242,8 +242,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
@@ -280,8 +280,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Navigation:
     m_Mode: 3
     m_WrapAround: 0
@@ -372,8 +372,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
   m_BlockingMask:
@@ -969,7 +969,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &169978574
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1013,7 +1013,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &169978576
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1955,7 +1955,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_AnchorMin.x
@@ -1963,7 +1963,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_SizeDelta.x
@@ -2003,11 +2003,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 215
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -50
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1104431023673364465, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -2031,7 +2031,7 @@ PrefabInstance:
       objectReference: {fileID: 12800000, guid: 9316d85b724f07340b5bfb2289b56cfa, type: 3}
     - target: {fileID: 5119409737067347663, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_text
-      value: "\uC5EC\uB2EB\uC774\uBB38"
+      value: "\uCC3D\uBB38"
       objectReference: {fileID: 0}
     - target: {fileID: 5119409737067347663, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_Enabled
@@ -2103,7 +2103,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8970425287693320720, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_Name
-      value: _EditDoorType
+      value: _EditWindowType
       objectReference: {fileID: 0}
     - target: {fileID: 8970425287693320720, guid: ec2a53c6094314d459a96496ee57ae98, type: 3}
       propertyPath: m_IsActive
@@ -3688,6 +3688,7 @@ MonoBehaviour:
   roomAuthoringPanelManager: {fileID: 480306210}
   roomManager: {fileID: 480306209}
   wallSelectionManager: {fileID: 525080098}
+  uiReferenceSettings: {fileID: 11400000, guid: 5711295a6e254661b3c829b8bc4f72a5, type: 2}
   wallRoot: {fileID: 1525552874}
   menuRoot: {fileID: 251944473}
   wallScrollView: {fileID: 1422869753}
@@ -4195,7 +4196,6 @@ MonoBehaviour:
   handleManager: {fileID: 525080097}
   wallSelectionManager: {fileID: 525080098}
   undoRedoManager: {fileID: 1556874436}
-  roomManager: {fileID: 480306209}
   modeManager: {fileID: 1793356131}
   doubleClickThreshold: 0.25
   wallHeight: 22
@@ -4600,7 +4600,7 @@ PrefabInstance:
       objectReference: {fileID: 12800000, guid: 9316d85b724f07340b5bfb2289b56cfa, type: 3}
     - target: {fileID: 6373744117730283837, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_Name
-      value: _EditDoorDepth
+      value: _EditWindowDepth
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_Pivot.x
@@ -4616,7 +4616,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.x
@@ -4624,7 +4624,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_SizeDelta.x
@@ -4664,11 +4664,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 215
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -581
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -5407,6 +5407,8 @@ MonoBehaviour:
     scaleMultiplier: {x: 1, y: 0.1}
     placementMode: 1
   windowMarkerVariants: []
+  openingTypeCatalog: {fileID: 11400000, guid: 343704969584b7b429cffccae28c1f57, type: 2}
+  openingTypeCatalogResourcePath: OpeningTypeCatalog
   defaultDoorWidthMillimeters: 900
   defaultDoorHeightMillimeters: 2100
   defaultDoorDepthMillimeters: 50
@@ -6059,6 +6061,7 @@ MonoBehaviour:
   modeManager: {fileID: 1793356131}
   placementManager: {fileID: 800067018}
   catalog: {fileID: 11400000, guid: 0e8a7fa637ab98840b835b646eda79df, type: 2}
+  uiReferenceSettings: {fileID: 11400000, guid: 5711295a6e254661b3c829b8bc4f72a5, type: 2}
   furnitureMenuRoot: {fileID: 2014809046}
   scrollRect: {fileID: 135763570}
   contentRoot: {fileID: 1386536387}
@@ -6849,7 +6852,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.x
@@ -6857,7 +6860,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_SizeDelta.x
@@ -6897,11 +6900,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 215
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -758
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -10360,6 +10363,72 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1694583318}
   m_CullTransparentMesh: 1
+--- !u!1 &1696786638
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1696786640}
+  - component: {fileID: 1696786639}
+  m_Layer: 0
+  m_Name: SceneReferenceRegistry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1696786639
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1696786638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c90e6e0b7e24a8a88551907e88c4f81, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  mainCamera: {fileID: 330585545}
+  modeManager: {fileID: 1793356131}
+  roomManager: {fileID: 480306209}
+  drawManager: {fileID: 525080095}
+  handleManager: {fileID: 525080097}
+  snapManager: {fileID: 525080096}
+  wallSelectionManager: {fileID: 525080098}
+  wallOpeningPlacementManager: {fileID: 694528453}
+  wallLengthDisplay: {fileID: 514454709}
+  undoRedoManager: {fileID: 1556874436}
+  topViewRenderManager: {fileID: 2109814131}
+  roomAuthoringPanelManager: {fileID: 480306210}
+  roomWallAuthoringPanelController: {fileID: 480306213}
+  roomHandleManager: {fileID: 480306211}
+  drawingOverlayManager: {fileID: 1914858232}
+  overlayCalibrationPanelController: {fileID: 0}
+  wallRoot: {fileID: 1525552874}
+  grid: {fileID: 481239205}
+  importButton: {fileID: 1479247893}
+  defaultCanvas: {fileID: 1422295719}
+  handleCanvas: {fileID: 339099078}
+  wallUiCanvas: {fileID: 400122859}
+--- !u!4 &1696786640
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1696786638}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1699047005
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11276,6 +11345,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomAuthoringPanelManager: {fileID: 480306210}
   roomManager: {fileID: 480306209}
+  uiReferenceSettings: {fileID: 11400000, guid: 5711295a6e254661b3c829b8bc4f72a5, type: 2}
   contentRoot: {fileID: 1348814243}
   textureButtonTemplate: {fileID: 576871940971455559}
   floorCategoryButton: {fileID: 1133228979}
@@ -11541,7 +11611,7 @@ PrefabInstance:
       objectReference: {fileID: 12800000, guid: 9316d85b724f07340b5bfb2289b56cfa, type: 3}
     - target: {fileID: 6373744117730283837, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_Name
-      value: _EditDoorLength
+      value: _EditWindowLength
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_Pivot.x
@@ -11557,7 +11627,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.x
@@ -11565,7 +11635,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_SizeDelta.x
@@ -11605,11 +11675,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 215
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -227
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -12053,7 +12123,7 @@ PrefabInstance:
       objectReference: {fileID: 12800000, guid: 9316d85b724f07340b5bfb2289b56cfa, type: 3}
     - target: {fileID: 6373744117730283837, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_Name
-      value: _EditDoorHeight
+      value: _EditWindowHeight
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_Pivot.x
@@ -12069,7 +12139,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.x
@@ -12077,7 +12147,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_SizeDelta.x
@@ -12117,11 +12187,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 215
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -404
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -13617,3 +13687,4 @@ SceneRoots:
   - {fileID: 2044560965}
   - {fileID: 1592502334}
   - {fileID: 513303896}
+  - {fileID: 1696786640}

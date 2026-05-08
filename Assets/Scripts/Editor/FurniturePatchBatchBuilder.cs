@@ -123,7 +123,7 @@ public static class FurniturePatchBatchBuilder
         string destinationAssetPath = $"{targetAssetFolder}/{targetFileName}".Replace('\\', '/');
         string destinationAbsolutePath = Path.GetFullPath(destinationAssetPath);
 
-        string? directory = Path.GetDirectoryName(destinationAbsolutePath);
+        string directory = Path.GetDirectoryName(destinationAbsolutePath);
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
@@ -176,11 +176,21 @@ public static class FurniturePatchBatchBuilder
         }
     }
 
-    private static Vector3 ToVector3(FurniturePatchVector3File value, Vector3? fallback = null)
+    private static Vector3 ToVector3(FurniturePatchVector3File value)
     {
         if (value == null)
         {
-            return fallback ?? Vector3.zero;
+            return Vector3.zero;
+        }
+
+        return new Vector3(value.x, value.y, value.z);
+    }
+
+    private static Vector3 ToVector3(FurniturePatchVector3File value, Vector3 fallback)
+    {
+        if (value == null)
+        {
+            return fallback;
         }
 
         return new Vector3(value.x, value.y, value.z);

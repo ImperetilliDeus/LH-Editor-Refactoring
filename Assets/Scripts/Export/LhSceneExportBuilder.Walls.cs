@@ -1,0 +1,435 @@
+using System.Collections.Generic;
+using LH.Schema;
+using UnityEngine;
+
+namespace LH.Export
+{
+    public static partial class LhSceneExportBuilder
+    {
+        private static List<LhWallDto> BuildWalls(IEnumerable<Wall> walls, BuildContext context)
+        {
+            List<LhWallDto> results = new List<LhWallDto>();
+            if (walls == null)
+            {
+                return results;
+            }
+
+            HashSet<Transform> exportedRoots = new HashSet<Transform>();
+            foreach (Wall wall in walls)
+            {
+                if (wall == null)
+                {
+                    continue;
+                }
+
+                Transform root = GetWallExportRoot(wall.transform);
+                if (root == null || !exportedRoots.Add(root))
+                {
+                    continue;
+                }
+
+                int wallId = ResolveWallExportId(root, context);
+                context.wallIdsByRoot[root] = wallId;
+                RegisterWallDataIds(root, wallId, context);
+                results.Add(BuildWall(root, wallId, context.exportMode == ExportMode.LegacyExact));
+            }
+
+            return results;
+        }
+
+        private static List<LhLegacyWallDto> BuildLegacyWalls(IEnumerable<Wall> walls, BuildContext context)
+        {
+            List<LhLegacyWallDto> results = new List<LhLegacyWallDto>();
+            List<LhWallDto> builtWalls = BuildWalls(walls, context);
+            for (int i = 0; i < builtWalls.Count; i++)
+            {
+                LhWallDto wall = builtWalls[i];
+                results.Add(new LhLegacyWallDto
+                {
+                    name = wall.name,
+                    id = wall.id,
+                    position = wall.position,
+                    angle = wall.angle,
+                    scale = wall.scale,
+                    segments = wall.segments,
+                });
+            }
+
+            return results;
+        }
+
+        private static LhWallDto BuildWall(Transform root, int wallId, bool legacyExact)
+        {
+            List<LhWallSegmentDto> segments = new List<LhWallSegmentDto>();
+            WallOpeningContainer container = root.GetComponent<WallOpeningContainer>();
+            GetExportRootTransform(root, container, out Vector3 exportRootPosition, out Quaternion exportRootRotation, out Vector3 exportRootScale);
+
+            if (container != null)
+            {
+                Transform segmentParent = root.Find("Segments");
+                if (segmentParent == null)
+                {
+                    segmentParent = root;
+                }
+
+                List<(Transform root, Wall wall)> orderedSegments = new List<(Transform root, Wall wall)>();
+                for (int i = 0; i < segmentParent.childCount; i++)
+                {
+                    Transform child = segmentParent.GetChild(i);
+                    if (child == null)
+                    {
+                        continue;
+                    }
+
+                    Wall segmentWall = child.GetComponent<Wall>();
+                    if (segmentWall == null)
+                    {
+                        segmentWall = child.GetComponentInChildren<Wall>(true);
+                    }
+
+                    if (segmentWall == null)
+                    {
+                        continue;
+                    }
+
+                    orderedSegments.Add((child, segmentWall));
+                }
+
+                orderedSegments.Sort((left, right) =>
+                {
+                    float leftDistance = GetSegmentSortDistance(container, left.wall);
+                    float rightDistance = GetSegmentSortDistance(container, right.wall);
+                    return leftDistance.CompareTo(rightDistance);
+                });
+
+                HashSet<WallOpening> consumedOpenings = new HashSet<WallOpening>();
+
+                for (int i = 0; i < orderedSegments.Count; i++)
+                {
+                    segments.Add(BuildSegmentForContainer(
+                        orderedSegments[i].root,
+                        orderedSegments[i].wall,
+                        container,
+                        exportRootPosition,
+                        exportRootRotation,
+                        exportRootScale,
+                        legacyExact,
+                        consumedOpenings));
+                }
+            }
+            else if (root.TryGetComponent(out Wall wall))
+            {
+                segments.Add(BuildStandaloneSegment(wall));
+            }
+
+            LhDtoFactory.FillTransform(
+                exportRootPosition,
+                exportRootRotation.eulerAngles,
+                exportRootScale,
+                out LhVector3Dto position,
+                out LhVector3Dto angle,
+                out LhVector3Dto scale);
+            return new LhWallDto
+            {
+                name = root.name,
+                id = wallId,
+                position = position,
+                angle = angle,
+                scale = scale,
+                segments = segments,
+            };
+        }
+
+        private static void RemoveOverlappingOpeningBaseSegments(List<(Transform root, Wall wall)> orderedSegments, WallOpeningContainer container)
+        {
+            if (orderedSegments == null || orderedSegments.Count < 2 || container == null)
+            {
+                return;
+            }
+
+            WallOpening[] openings = container.GetComponentsInChildren<WallOpening>(true);
+            if (openings == null || openings.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = orderedSegments.Count - 1; i >= 0; i--)
+            {
+                (Transform root, Wall wall) candidate = orderedSegments[i];
+                if (candidate.wall == null || candidate.wall.Data == null)
+                {
+                    continue;
+                }
+
+                if (candidate.root != null && candidate.root.GetComponentInChildren<WallOpening>(true) != null)
+                {
+                    continue;
+                }
+
+                float candidateStart = GetDistanceAlongContainer(container, candidate.wall.Data.startPoint);
+                float candidateEnd = GetDistanceAlongContainer(container, candidate.wall.Data.endPoint);
+                NormalizeSegmentRange(ref candidateStart, ref candidateEnd);
+
+                bool removedForOpeningOverlap = false;
+                for (int openingIndex = 0; openingIndex < openings.Length; openingIndex++)
+                {
+                    WallOpening opening = openings[openingIndex];
+                    if (opening == null)
+                    {
+                        continue;
+                    }
+
+                    float openingStart = opening.CenterDistance - opening.Width * 0.5f;
+                    float openingEnd = opening.CenterDistance + opening.Width * 0.5f;
+                    float overlap = GetSegmentOverlap(candidateStart, candidateEnd, openingStart, openingEnd);
+                    if (overlap <= 0.0001f)
+                    {
+                        continue;
+                    }
+
+                    float candidateLength = Mathf.Max(candidateEnd - candidateStart, 0f);
+                    float overlapRatio = candidateLength > 0.0001f ? overlap / candidateLength : 0f;
+                    if (overlapRatio < 0.5f)
+                    {
+                        continue;
+                    }
+
+                    orderedSegments.RemoveAt(i);
+                    removedForOpeningOverlap = true;
+                    break;
+                }
+
+                if (removedForOpeningOverlap)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < orderedSegments.Count; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    (Transform root, Wall wall) reference = orderedSegments[j];
+                    if (reference.wall == null || reference.wall.Data == null || reference.root == null)
+                    {
+                        continue;
+                    }
+
+                    if (reference.root.GetComponentInChildren<WallOpening>(true) == null)
+                    {
+                        continue;
+                    }
+
+                    float referenceStart = GetDistanceAlongContainer(container, reference.wall.Data.startPoint);
+                    float referenceEnd = GetDistanceAlongContainer(container, reference.wall.Data.endPoint);
+                    NormalizeSegmentRange(ref referenceStart, ref referenceEnd);
+
+                    if (!ApproximatelyEqual(candidateStart, referenceStart, 0.0001f) ||
+                        !ApproximatelyEqual(candidateEnd, referenceEnd, 0.0001f))
+                    {
+                        continue;
+                    }
+
+                    orderedSegments.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+
+        private static LhWallSegmentDto BuildStandaloneSegment(Wall wall)
+        {
+            LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
+            return new LhWallSegmentDto
+            {
+                position = position,
+                angle = angle,
+                scale = scale,
+                hasInterior = false,
+                door = null,
+                window = null,
+            };
+        }
+
+        private static LhWallSegmentDto BuildSegmentForContainer(
+            Transform segmentRoot,
+            Wall segmentWall,
+            WallOpeningContainer container,
+            Vector3 exportRootPosition,
+            Quaternion exportRootRotation,
+            Vector3 exportRootScale,
+            bool legacyExact,
+            HashSet<WallOpening> consumedOpenings)
+        {
+            WallOpening attachedOpening = FindOpeningForSegment(segmentRoot, segmentWall, container, consumedOpenings);
+            bool hasInterior = attachedOpening != null;
+            LhVector3Dto position;
+            LhVector3Dto angle;
+            LhVector3Dto scale;
+            if (legacyExact)
+            {
+                BuildLegacySegmentTransform(
+                    segmentWall,
+                    container,
+                    attachedOpening,
+                    out position,
+                    out angle,
+                    out scale);
+            }
+            else
+            {
+                FillRelativeTransform(
+                    exportRootPosition,
+                    exportRootRotation,
+                    exportRootScale,
+                    segmentWall.transform.position,
+                    segmentWall.transform.rotation,
+                    segmentWall.transform.lossyScale,
+                    out position,
+                    out angle,
+                    out scale);
+            }
+
+            return new LhWallSegmentDto
+            {
+                position = position,
+                angle = angle,
+                scale = scale,
+                hasInterior = hasInterior,
+                door = attachedOpening != null && attachedOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door
+                    ? BuildDoor(attachedOpening, exportRootPosition, exportRootRotation, exportRootScale, legacyExact)
+                    : null,
+                window = attachedOpening != null && attachedOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Window
+                    ? BuildWindow(attachedOpening, exportRootPosition, exportRootRotation, exportRootScale, legacyExact)
+                    : null,
+            };
+        }
+
+        private static void BuildLegacySegmentTransform(
+            Wall segmentWall,
+            WallOpeningContainer container,
+            WallOpening attachedOpening,
+            out LhVector3Dto position,
+            out LhVector3Dto angle,
+            out LhVector3Dto scale)
+        {
+            if (segmentWall == null || segmentWall.Data == null || container == null)
+            {
+                LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out position, out angle, out scale);
+                return;
+            }
+
+            float wallLength = Mathf.Max(container.WallLength, 0.000001f);
+            float wallThickness = Mathf.Max(container.WallThickness, 0.000001f);
+            float legacySpan = Mathf.Max(wallLength - wallThickness, 0.000001f);
+            Vector3 direction = container.WallDirection;
+
+            Vector3 start = segmentWall.Data.startPoint;
+            Vector3 end = segmentWall.Data.endPoint;
+            Vector3 midpoint = (start + end) * 0.5f;
+            float halfLengthOffset = Vector3.Dot(midpoint - ((container.WallStart + container.WallEnd) * 0.5f), direction);
+            float segmentLength = Vector3.Distance(
+                new Vector3(start.x, 0f, start.z),
+                new Vector3(end.x, 0f, end.z));
+            if (attachedOpening != null)
+            {
+                Vector3 openingCenter = container.WallStart + direction * attachedOpening.CenterDistance;
+                halfLengthOffset = Vector3.Dot(openingCenter - ((container.WallStart + container.WallEnd) * 0.5f), direction);
+                segmentLength = attachedOpening.Width;
+            }
+
+            float depthRatio = attachedOpening != null
+                ? SafeDivide(attachedOpening.Depth, wallThickness)
+                : 1f;
+
+            LhDtoFactory.FillTransform(
+                new Vector3(SafeDivide(halfLengthOffset, legacySpan), 0f, 0f),
+                Vector3.zero,
+                new Vector3(SafeDivide(segmentLength, legacySpan), 1f, depthRatio),
+                out position,
+                out angle,
+                out scale);
+        }
+
+        private static LhDoorDto BuildDoor(
+            WallOpening opening,
+            Vector3 exportRootPosition,
+            Quaternion exportRootRotation,
+            Vector3 exportRootScale,
+            bool legacyExact)
+        {
+            if (legacyExact)
+            {
+                LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
+                return new LhDoorDto
+                {
+                    isExist = true,
+                    code = string.IsNullOrWhiteSpace(opening.DoorTypeKey) ? "Pass" : opening.DoorTypeKey,
+                    position = position,
+                    angle = angle,
+                    scale = scale,
+                };
+            }
+
+            FillRelativeTransform(
+                exportRootPosition,
+                exportRootRotation,
+                exportRootScale,
+                opening.transform.position,
+                opening.transform.rotation,
+                opening.transform.lossyScale,
+                out LhVector3Dto relativePosition,
+                out LhVector3Dto relativeAngle,
+                out LhVector3Dto relativeScale);
+            return new LhDoorDto
+            {
+                isExist = true,
+                code = string.IsNullOrWhiteSpace(opening.DoorTypeKey) ? "Door" : opening.DoorTypeKey,
+                position = relativePosition,
+                angle = relativeAngle,
+                scale = relativeScale,
+            };
+        }
+
+        private static LhWindowDto BuildWindow(
+            WallOpening opening,
+            Vector3 exportRootPosition,
+            Quaternion exportRootRotation,
+            Vector3 exportRootScale,
+            bool legacyExact)
+        {
+            if (legacyExact)
+            {
+                LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
+                return new LhWindowDto
+                {
+                    isExist = true,
+                    code = string.IsNullOrWhiteSpace(opening.WindowTypeKey) ? "Window" : opening.WindowTypeKey,
+                    position = position,
+                    angle = angle,
+                    scale = scale,
+                };
+            }
+
+            FillRelativeTransform(
+                exportRootPosition,
+                exportRootRotation,
+                exportRootScale,
+                opening.transform.position,
+                opening.transform.rotation,
+                opening.transform.lossyScale,
+                out LhVector3Dto relativePosition,
+                out LhVector3Dto relativeAngle,
+                out LhVector3Dto relativeScale);
+            return new LhWindowDto
+            {
+                isExist = true,
+                code = string.IsNullOrWhiteSpace(opening.WindowTypeKey) ? "Window" : opening.WindowTypeKey,
+                position = relativePosition,
+                angle = relativeAngle,
+                scale = relativeScale,
+            };
+        }
+    }
+}

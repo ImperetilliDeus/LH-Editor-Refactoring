@@ -17,7 +17,6 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private HandleManager handleManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private UndoRedoManager undoRedoManager;
-    [SerializeField] private RoomManager roomManager;
     [SerializeField] private ModeManager modeManager;
 
     [Header("Input")]
@@ -163,32 +162,32 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     {
         if (snapManager == null)
         {
-            snapManager = FindFirstObjectByType<SnapManager>();
+            LayerUtility.ResolveObject(ref snapManager);
         }
 
         if (wallLengthDisplay == null)
         {
-            wallLengthDisplay = FindFirstObjectByType<WallLengthDisplay>();
+            LayerUtility.ResolveObject(ref wallLengthDisplay);
         }
 
         if (handleManager == null)
         {
-            handleManager = FindFirstObjectByType<HandleManager>();
+            LayerUtility.ResolveObject(ref handleManager);
         }
 
         if (wallSelectionManager == null)
         {
-            wallSelectionManager = FindFirstObjectByType<WallSelectionManager>();
+            LayerUtility.ResolveObject(ref wallSelectionManager);
         }
 
         if (undoRedoManager == null)
         {
-            undoRedoManager = FindFirstObjectByType<UndoRedoManager>();
+            LayerUtility.ResolveObject(ref undoRedoManager);
         }
 
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
     }
 

@@ -2,6 +2,9 @@ using UnityEngine;
 
 public partial class WallOpeningPlacementManager
 {
+    private const string SegmentGroupName = "Segments";
+    private const string SegmentObjectName = "Segment";
+
     private void RemoveLayout(UndoRedoManager.OpeningLayoutSnapshot snapshot)
     {
         if (wallRoot == null)
@@ -267,7 +270,7 @@ public partial class WallOpeningPlacementManager
         };
     }
 
-    private void CreateWallSegment(
+    private Transform CreateWallSegment(
         Transform parent,
         string segmentName,
         Vector3 startPoint,
@@ -279,17 +282,18 @@ public partial class WallOpeningPlacementManager
         int endVertexId,
         bool suppressStartHandle,
         bool suppressEndHandle,
-        WallVisualState visualState)
+        WallVisualState visualState,
+        bool hideBaseWallVisual)
     {
         Vector3 direction = endPoint - startPoint;
         direction.y = 0f;
         if (direction.magnitude < MinimumWallSegmentLength)
         {
-            return;
+            return null;
         }
 
         GameObject wallObject = WallObjectFactory.CreateWallObject(
-            segmentName,
+            string.IsNullOrWhiteSpace(segmentName) ? SegmentObjectName : segmentName,
             parent,
             cachedCubeMesh,
             visualState);
@@ -309,12 +313,49 @@ public partial class WallOpeningPlacementManager
         if (!applied)
         {
             Destroy(wallObject);
-            return;
+            return null;
+        }
+
+        if (hideBaseWallVisual)
+        {
+            MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = null;
+                renderer.enabled = false;
+            }
+
+            Wall wallComponent = wallObject.GetComponent<Wall>();
+            wallComponent?.SetTopMaterial(null);
         }
 
         if (handleManager != null)
         {
             handleManager.RegisterWall(wallObject);
         }
+
+        return wallObject.transform;
+    }
+
+    private Transform GetOrCreateSegmentsRoot(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        Transform existing = container.transform.Find(SegmentGroupName);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        GameObject segmentsObject = new GameObject(SegmentGroupName);
+        segmentsObject.transform.SetParent(container.transform, false);
+        segmentsObject.transform.localPosition = Vector3.zero;
+        segmentsObject.transform.localRotation = Quaternion.identity;
+        segmentsObject.transform.localScale = Vector3.one;
+        LayerUtility.ApplyLayer(segmentsObject, LayerUtility.WallLayerName, false);
+        return segmentsObject.transform;
     }
 }

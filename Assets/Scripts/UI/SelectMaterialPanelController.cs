@@ -14,6 +14,7 @@ public class SelectMaterialPanelController : MonoBehaviour
     [Header("References")]
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private RoomManager roomManager;
+    [SerializeField] private UiReferenceSettings uiReferenceSettings;
     [SerializeField] private RectTransform contentRoot;
     [SerializeField] private RectTransform textureButtonTemplate;
     [SerializeField] private Button floorCategoryButton;
@@ -69,8 +70,8 @@ public class SelectMaterialPanelController : MonoBehaviour
 
         if (contentRoot == null)
         {
-            Transform scrollView = LayerUtility.FindChildByName(transform, "Scroll View");
-            Transform content = LayerUtility.FindChildByName(scrollView, "Content");
+            Transform scrollView = LayerUtility.FindChildByName(transform, GetMaterialScrollViewName());
+            Transform content = LayerUtility.FindChildByName(scrollView, GetMaterialContentName());
             contentRoot = content as RectTransform;
         }
 
@@ -81,7 +82,7 @@ public class SelectMaterialPanelController : MonoBehaviour
 
         if (floorCategoryButton == null)
         {
-            Transform left = LayerUtility.FindChildByName(transform, "_Left");
+            Transform left = LayerUtility.FindChildByName(transform, GetMaterialFloorButtonName());
             if (left != null)
             {
                 floorCategoryButton = left.GetComponent<Button>();
@@ -90,7 +91,7 @@ public class SelectMaterialPanelController : MonoBehaviour
 
         if (ceilingCategoryButton == null)
         {
-            Transform right = LayerUtility.FindChildByName(transform, "_Right");
+            Transform right = LayerUtility.FindChildByName(transform, GetMaterialCeilingButtonName());
             if (right != null)
             {
                 ceilingCategoryButton = right.GetComponent<Button>();
@@ -136,6 +137,34 @@ public class SelectMaterialPanelController : MonoBehaviour
         {
             roomAuthoringPanelManager.SelectedRoomChanged -= HandleSelectedRoomChanged;
         }
+    }
+
+    private string GetMaterialScrollViewName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.materialScrollViewName)
+            ? uiReferenceSettings.materialScrollViewName
+            : "Scroll View";
+    }
+
+    private string GetMaterialContentName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.materialContentName)
+            ? uiReferenceSettings.materialContentName
+            : "Content";
+    }
+
+    private string GetMaterialFloorButtonName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.materialFloorButtonName)
+            ? uiReferenceSettings.materialFloorButtonName
+            : "_Left";
+    }
+
+    private string GetMaterialCeilingButtonName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.materialCeilingButtonName)
+            ? uiReferenceSettings.materialCeilingButtonName
+            : "_Right";
     }
 
     private void HandleSelectedRoomChanged(Room room)

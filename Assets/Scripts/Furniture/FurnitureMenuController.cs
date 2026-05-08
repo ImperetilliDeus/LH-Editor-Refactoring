@@ -13,6 +13,7 @@ public class FurnitureMenuController : MonoBehaviour
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private FurniturePlacementManager placementManager;
     [SerializeField] private FurnitureCatalog catalog;
+    [SerializeField] private UiReferenceSettings uiReferenceSettings;
     [SerializeField] private GameObject furnitureMenuRoot;
     [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private RectTransform contentRoot;
@@ -287,17 +288,17 @@ public class FurnitureMenuController : MonoBehaviour
     {
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
 
         if (placementManager == null)
         {
-            placementManager = FindFirstObjectByType<FurniturePlacementManager>();
+            LayerUtility.ResolveObject(ref placementManager);
         }
 
         if (furnitureMenuRoot == null)
         {
-            Transform target = LayerUtility.FindTransformByName(DefaultFurnitureMenuRootName, true);
+            Transform target = LayerUtility.FindTransformByName(GetFurnitureMenuRootName(), true);
             if (target != null)
             {
                 furnitureMenuRoot = target.gameObject;
@@ -309,7 +310,7 @@ public class FurnitureMenuController : MonoBehaviour
             ScrollRect[] scrollRects = FindObjectsByType<ScrollRect>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             for (int i = 0; i < scrollRects.Length; i++)
             {
-                if (scrollRects[i] != null && scrollRects[i].name == DefaultScrollViewName)
+                if (scrollRects[i] != null && scrollRects[i].name == GetScrollViewName())
                 {
                     scrollRect = scrollRects[i];
                     break;
@@ -333,7 +334,7 @@ public class FurnitureMenuController : MonoBehaviour
                     continue;
                 }
 
-                if (currentButton.name == DefaultFurnitureButtonName)
+                if (currentButton.name == GetFurnitureButtonName())
                 {
                     continue;
                 }
@@ -342,5 +343,26 @@ public class FurnitureMenuController : MonoBehaviour
                 break;
             }
         }
+    }
+
+    private string GetFurnitureMenuRootName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.furnitureMenuRootName)
+            ? uiReferenceSettings.furnitureMenuRootName
+            : DefaultFurnitureMenuRootName;
+    }
+
+    private string GetFurnitureButtonName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.furnitureButtonName)
+            ? uiReferenceSettings.furnitureButtonName
+            : DefaultFurnitureButtonName;
+    }
+
+    private string GetScrollViewName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.furnitureScrollViewName)
+            ? uiReferenceSettings.furnitureScrollViewName
+            : DefaultScrollViewName;
     }
 }

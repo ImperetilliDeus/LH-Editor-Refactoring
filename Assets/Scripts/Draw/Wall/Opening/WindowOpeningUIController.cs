@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class WindowOpeningUIController : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class WindowOpeningUIController : MonoBehaviour
     [SerializeField] private TMP_Dropdown typeDropdown;
 
     private WallOpeningPlacementManager placementManager;
+    private readonly List<string> typeOptionKeys = new List<string>();
 
     public bool IsMenuVisible => detailMenu != null && detailMenu.activeSelf;
 
@@ -20,6 +22,46 @@ public class WindowOpeningUIController : MonoBehaviour
     {
         placementManager = manager;
         ApplyLayer();
+        EnsureTypeOptionKeys();
+    }
+
+    public void SetTypeOptions(IReadOnlyList<WallOpeningPlacementManager.OpeningTypeOption> options)
+    {
+        if (typeDropdown == null)
+        {
+            typeOptionKeys.Clear();
+            return;
+        }
+
+        string currentKey = GetWindowTypeKeyForOption(typeDropdown.value);
+        if (options == null || options.Count == 0)
+        {
+            EnsureTypeOptionKeys(true);
+            return;
+        }
+
+        List<TMP_Dropdown.OptionData> nextOptions = new List<TMP_Dropdown.OptionData>(options.Count);
+        typeOptionKeys.Clear();
+        for (int i = 0; i < options.Count; i++)
+        {
+            WallOpeningPlacementManager.OpeningTypeOption option = options[i];
+            typeOptionKeys.Add(option.Key ?? string.Empty);
+            nextOptions.Add(new TMP_Dropdown.OptionData(option.DisplayName ?? string.Empty));
+        }
+
+        typeDropdown.ClearOptions();
+        typeDropdown.AddOptions(nextOptions);
+
+        int nextIndex = FindWindowTypeOptionIndex(currentKey);
+        if (nextIndex < 0)
+        {
+            nextIndex = typeDropdown.options.Count > 0 ? 0 : -1;
+        }
+
+        if (nextIndex >= 0)
+        {
+            typeDropdown.SetValueWithoutNotify(nextIndex);
+        }
     }
 
     private void OnEnable()
@@ -101,32 +143,38 @@ public class WindowOpeningUIController : MonoBehaviour
 
     public string GetWindowTypeKeyForOption(int optionIndex)
     {
+        EnsureTypeOptionKeys();
         if (typeDropdown == null || typeDropdown.options == null || typeDropdown.options.Count == 0)
         {
             return string.Empty;
         }
 
-        if (optionIndex < 0 || optionIndex >= typeDropdown.options.Count)
+        if (optionIndex < 0 || optionIndex >= typeOptionKeys.Count)
         {
             return string.Empty;
         }
 
-        TMP_Dropdown.OptionData option = typeDropdown.options[optionIndex];
-        return option != null ? option.text ?? string.Empty : string.Empty;
+        return typeOptionKeys[optionIndex] ?? string.Empty;
     }
 
     public int FindWindowTypeOptionIndex(string windowTypeKey)
     {
+        EnsureTypeOptionKeys();
         if (typeDropdown == null || typeDropdown.options == null)
         {
             return -1;
         }
 
-        for (int i = 0; i < typeDropdown.options.Count; i++)
+        for (int i = 0; i < typeOptionKeys.Count; i++)
         {
+            if (string.Equals(typeOptionKeys[i], windowTypeKey, System.StringComparison.Ordinal))
+            {
+                return i;
+            }
+
             TMP_Dropdown.OptionData option = typeDropdown.options[i];
-            string optionText = option != null ? option.text : string.Empty;
-            if (string.Equals(optionText, windowTypeKey, System.StringComparison.Ordinal))
+            string displayName = option != null ? option.text ?? string.Empty : string.Empty;
+            if (string.Equals(displayName, windowTypeKey, System.StringComparison.Ordinal))
             {
                 return i;
             }
@@ -263,5 +311,26 @@ public class WindowOpeningUIController : MonoBehaviour
         }
 
         inputField.interactable = interactable;
+    }
+
+    private void EnsureTypeOptionKeys(bool forceRefresh = false)
+    {
+        if (typeDropdown == null || typeDropdown.options == null)
+        {
+            typeOptionKeys.Clear();
+            return;
+        }
+
+        if (!forceRefresh && typeOptionKeys.Count == typeDropdown.options.Count)
+        {
+            return;
+        }
+
+        typeOptionKeys.Clear();
+        for (int i = 0; i < typeDropdown.options.Count; i++)
+        {
+            TMP_Dropdown.OptionData option = typeDropdown.options[i];
+            typeOptionKeys.Add(option != null ? option.text ?? string.Empty : string.Empty);
+        }
     }
 }

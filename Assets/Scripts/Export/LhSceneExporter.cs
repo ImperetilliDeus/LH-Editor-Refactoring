@@ -62,10 +62,16 @@ namespace LH.Export
             }
 
             WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
+            cachedWalls.RemoveAll(IsExportExcludedWall);
+            if (roomManager != null)
+            {
+                roomManager.RefreshAllRooms();
+            }
+
             Room[] rooms = roomManager != null ? roomManager.GetAllRooms().ToArray() : FindObjectsByType<Room>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (exportMode == LhSceneExportBuilder.ExportMode.LegacyExact)
             {
-                List<string> warnings = LhSceneExportBuilder.CollectLegacyWarnings(cachedWalls, rooms);
+                List<string> warnings = LhSceneExportBuilder.CollectLegacyWarnings(cachedWalls);
                 for (int i = 0; i < warnings.Count; i++)
                 {
                     Debug.LogWarning(warnings[i], this);
@@ -91,7 +97,7 @@ namespace LH.Export
         {
             if (roomManager == null)
             {
-                roomManager = FindFirstObjectByType<RoomManager>();
+                LayerUtility.ResolveObject(ref roomManager);
             }
 
             if (wallRoot == null)
@@ -224,6 +230,12 @@ if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
         private static string EscapeForPowerShellSingleQuotedString(string value)
         {
             return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("'", "''");
+        }
+
+        private static bool IsExportExcludedWall(Wall wall)
+        {
+            return wall != null &&
+                   wall.name.Equals("WallPreview", System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }
