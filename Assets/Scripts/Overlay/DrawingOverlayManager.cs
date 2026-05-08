@@ -173,7 +173,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
 
         if (calibrationPanel == null)
         {
-            calibrationPanel = FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include);
+            LayerUtility.ResolveObject(ref calibrationPanel);
         }
 
         if (parentCanvas == null)

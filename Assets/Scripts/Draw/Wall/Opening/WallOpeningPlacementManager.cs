@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -87,6 +88,10 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     [SerializeField] private List<DoorMarkerVariant> doorMarkerVariants = new List<DoorMarkerVariant>();
     [SerializeField] private List<WindowMarkerVariant> windowMarkerVariants = new List<WindowMarkerVariant>();
 
+    [Header("Type Catalog")]
+    [SerializeField] private OpeningTypeCatalog openingTypeCatalog;
+    [SerializeField] private string openingTypeCatalogResourcePath = "OpeningTypeCatalog";
+
     [Header("Door Defaults")]
     [SerializeField] private float defaultDoorWidthMillimeters = 900f;
     [SerializeField] private float defaultDoorHeightMillimeters = 2100f;
@@ -107,6 +112,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private readonly List<WallOpening> cachedOpenings = new List<WallOpening>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Wall> pendingRoomRefreshRemovedWalls = new List<Wall>();
+    private readonly List<OpeningTypeOption> doorTypeOptions = new List<OpeningTypeOption>();
+    private readonly List<OpeningTypeOption> windowTypeOptions = new List<OpeningTypeOption>();
     private readonly HashSet<WallOpeningMarkerUI> markerUIs = new HashSet<WallOpeningMarkerUI>();
     private readonly List<WallOpeningMarkerUI> removedMarkerUIs = new List<WallOpeningMarkerUI>();
     private readonly WallOpeningPresentationController presentationController = new WallOpeningPresentationController();
@@ -170,6 +177,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         EnsureCachedResources();
         BindButtons();
         BindVisualEvents();
+        InitializeOpeningTypeOptions();
         doorUIController?.Initialize(this);
         windowUIController?.Initialize(this);
         SetOpeningDetailMenuVisible(false);
@@ -188,6 +196,9 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             Mathf.Max(0.01f, windowMarkerScaleMultiplier.y));
         ValidateMarkerVariants(doorMarkerVariants);
         ValidateMarkerVariants(windowMarkerVariants);
+        ResolveOpeningTypeCatalog();
+        RefreshOpeningTypeCatalogCache();
+        ApplyOpeningTypeOptionsToUI();
         markerVisualsDirty = true;
     }
 
@@ -363,10 +374,18 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             RoomTopologyEvents.RequestRefreshForWallReplacement(new[] { removedWall }, createdWalls);
         }
 
+        StartCoroutine(RefreshWallRegistryAfterSplit());
+
         if (wallSelectionManager != null)
         {
             wallSelectionManager.SetSelectedWall(firstWall);
         }
+    }
+
+    private IEnumerator RefreshWallRegistryAfterSplit()
+    {
+        yield return null;
+        handleManager?.RefreshRegisteredWalls();
     }
 
     public void ApplyContainerSpanFromExternalDrag(
@@ -440,6 +459,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             cachedOpenings,
             CollectOpenings,
             ClearGeneratedContainerVisuals,
+            GetOrCreateSegmentsRoot,
             CreateWallSegment,
             UpdateOpeningVisual,
             (targetTransform, result, includeInactive) => WallHierarchyUtility.CollectWalls(targetTransform, result, includeInactive),
@@ -475,7 +495,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         for (int i = 0; i < walls.Length; i++)
         {
             Wall wall = walls[i];
-            if (wall == null)
+            if (wall == null || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
             {
                 continue;
             }
@@ -515,6 +535,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     private void ClearGeneratedContainerVisuals(WallOpeningContainer container, List<Wall> wallsInContainer = null)
     {
+        if (container == null)
+        {
+            return;
+        }
+
         List<Wall> walls = wallsInContainer;
         if (walls == null)
         {
@@ -538,11 +563,10 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             Destroy(walls[i].gameObject);
         }
 
-        Transform[] children = container.GetComponentsInChildren<Transform>(true);
-        for (int i = 0; i < children.Length; i++)
+        for (int i = container.transform.childCount - 1; i >= 0; i--)
         {
-            Transform child = children[i];
-            if (child == null || child == container.transform)
+            Transform child = container.transform.GetChild(i);
+            if (child == null)
             {
                 continue;
             }
@@ -552,25 +576,17 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 continue;
             }
 
-            if (child.GetComponent<Wall>() != null)
+            if (child.GetComponentInChildren<WallOpening>(true) != null)
             {
                 continue;
             }
 
-            if (child.name.StartsWith("MarkerStart") || child.name.StartsWith("MarkerEnd"))
+            if (child.name == SegmentGroupName)
             {
                 continue;
             }
 
-            if (child.GetComponent<WallOpeningMarkerUI>() != null)
-            {
-                continue;
-            }
-
-            if (child.GetComponent<MeshRenderer>() != null || child.name.Contains("Fill"))
-            {
-                Destroy(child.gameObject);
-            }
+            Destroy(child.gameObject);
         }
     }
 

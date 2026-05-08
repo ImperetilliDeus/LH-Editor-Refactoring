@@ -82,10 +82,11 @@ public partial class HandleManager
         Vector3 newEnd = isDraggingStart ? fixedPoint : movedPoint;
         container.SetWallSpan(newStart, newEnd);
 
+        Transform segmentParent = GetContainerSegmentParent(container);
         containerChildren.Clear();
-        for (int i = 0; i < container.transform.childCount; i++)
+        for (int i = 0; i < segmentParent.childCount; i++)
         {
-            Transform child = container.transform.GetChild(i);
+            Transform child = segmentParent.GetChild(i);
             if (child != null)
             {
                 containerChildren.Add(child);
@@ -100,7 +101,11 @@ public partial class HandleManager
                 continue;
             }
 
-            Vector3 childCenter = child.position;
+            if (!TryGetContainerChildReferenceCenter(child, out Vector3 childCenter))
+            {
+                continue;
+            }
+
             float projectedCenter = Vector3.Dot(childCenter - oldStart, oldDirection);
             float distanceFromStart = projectedCenter;
             float distanceFromEnd = oldLength - projectedCenter;
@@ -110,42 +115,17 @@ public partial class HandleManager
 
             Vector3 nextCenter = newStart + newDirection * newProjectedCenter;
             nextCenter.y = childCenter.y;
-            child.position = nextCenter;
-            child.rotation = Quaternion.LookRotation(newDirection, Vector3.up);
-
-            if (child.TryGetComponent(out WallOpening opening))
-            {
-                opening.SetCenterDistance(Vector3.Dot(nextCenter - newStart, newDirection));
-            }
-
-            if (child.TryGetComponent(out Wall wall))
-            {
-                Vector3 wallStartPoint = wall.Data.startPoint;
-                Vector3 wallEndPoint = wall.Data.endPoint;
-                Vector3 nextStart = ResolveContainerEndpoint(
-                    wallStartPoint,
-                    wall.StartVertexId,
-                    isDraggingStart,
-                    container,
-                    oldStart,
-                    oldEnd,
-                    newStart,
-                    newEnd,
-                    oldDirection,
-                    newDirection);
-                Vector3 nextEnd = ResolveContainerEndpoint(
-                    wallEndPoint,
-                    wall.EndVertexId,
-                    isDraggingStart,
-                    container,
-                    oldStart,
-                    oldEnd,
-                    newStart,
-                    newEnd,
-                    oldDirection,
-                    newDirection);
-                wall.TryApplyCurrentProfileAndRefresh(nextStart, nextEnd, minimumWallLength, wallLengthDisplay, false);
-            }
+            ApplyContainerChildTransform(
+                child,
+                container,
+                isDraggingStart,
+                oldStart,
+                oldEnd,
+                newStart,
+                newEnd,
+                oldDirection,
+                newDirection,
+                nextCenter);
         }
 
         affectedWallComponents.Clear();
@@ -205,6 +185,162 @@ public partial class HandleManager
         }
 
         return startWall != null && endWall != null;
+    }
+
+    private Transform GetContainerSegmentParent(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        Transform segmentParent = container.transform.Find("Segments");
+        return segmentParent != null ? segmentParent : container.transform;
+    }
+
+    private bool TryGetContainerChildReferenceCenter(Transform child, out Vector3 center)
+    {
+        center = Vector3.zero;
+        if (child == null)
+        {
+            return false;
+        }
+
+        Wall[] walls = child.GetComponentsInChildren<Wall>(true);
+        Wall bestWall = null;
+        float bestLengthSqr = float.MinValue;
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            float lengthSqr = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
+            if (lengthSqr <= bestLengthSqr)
+            {
+                continue;
+            }
+
+            bestLengthSqr = lengthSqr;
+            bestWall = wall;
+        }
+
+        if (bestWall != null)
+        {
+            center = (bestWall.Data.startPoint + bestWall.Data.endPoint) * 0.5f;
+            return true;
+        }
+
+        WallOpening[] openings = child.GetComponentsInChildren<WallOpening>(true);
+        for (int i = 0; i < openings.Length; i++)
+        {
+            WallOpening opening = openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            center = opening.transform.position;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ApplyContainerChildTransform(
+        Transform child,
+        WallOpeningContainer container,
+        bool isDraggingStart,
+        Vector3 oldStart,
+        Vector3 oldEnd,
+        Vector3 newStart,
+        Vector3 newEnd,
+        Vector3 oldDirection,
+        Vector3 newDirection,
+        Vector3 nextCenter)
+    {
+        if (child == null)
+        {
+            return;
+        }
+
+        Wall[] walls = child.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            Vector3 nextStart = ResolveContainerEndpoint(
+                wall.Data.startPoint,
+                wall.StartVertexId,
+                isDraggingStart,
+                container,
+                oldStart,
+                oldEnd,
+                newStart,
+                newEnd,
+                oldDirection,
+                newDirection);
+            Vector3 nextEnd = ResolveContainerEndpoint(
+                wall.Data.endPoint,
+                wall.EndVertexId,
+                isDraggingStart,
+                container,
+                oldStart,
+                oldEnd,
+                newStart,
+                newEnd,
+                oldDirection,
+                newDirection);
+            wall.TryApplyCurrentProfileAndRefresh(nextStart, nextEnd, minimumWallLength, wallLengthDisplay, false);
+        }
+
+        WallOpening[] openings = child.GetComponentsInChildren<WallOpening>(true);
+        for (int i = 0; i < openings.Length; i++)
+        {
+            WallOpening opening = openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            Vector3 openingCenter = nextCenter;
+            openingCenter.y = opening.transform.position.y;
+            opening.transform.position = openingCenter;
+            opening.transform.rotation = Quaternion.LookRotation(newDirection, Vector3.up);
+            opening.SetCenterDistance(Vector3.Dot(openingCenter - newStart, newDirection));
+        }
+
+        MeshRenderer[] renderers = child.GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            MeshRenderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Transform rendererTransform = renderer.transform;
+            if (rendererTransform.GetComponent<Wall>() != null)
+            {
+                continue;
+            }
+
+            if (rendererTransform.GetComponentInParent<WallOpening>() != null)
+            {
+                continue;
+            }
+
+            Vector3 rendererCenter = nextCenter;
+            rendererCenter.y = rendererTransform.position.y;
+            rendererTransform.position = rendererCenter;
+            rendererTransform.rotation = Quaternion.LookRotation(newDirection, Vector3.up);
+        }
     }
 
     private Vector3 ResolveContainerEndpoint(

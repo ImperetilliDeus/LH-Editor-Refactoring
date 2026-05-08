@@ -78,6 +78,11 @@ public static class LayerUtility
 
     public static Canvas FindCanvasByNameOrFirst(string preferredName = DefaultCanvasName)
     {
+        if (SceneReferenceRegistry.TryResolveCanvas(preferredName, out Canvas registeredCanvas))
+        {
+            return registeredCanvas;
+        }
+
         Canvas preferredCanvas = null;
         Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < canvases.Length; i++)
@@ -110,6 +115,11 @@ public static class LayerUtility
             return null;
         }
 
+        if (SceneReferenceRegistry.TryResolveCanvas(canvasName, out Canvas registeredCanvas))
+        {
+            return registeredCanvas;
+        }
+
         Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < canvases.Length; i++)
         {
@@ -127,7 +137,10 @@ public static class LayerUtility
     {
         if (reference == null)
         {
-            reference = Object.FindFirstObjectByType<T>();
+            if (!SceneReferenceRegistry.TryResolve(out reference))
+            {
+                reference = Object.FindFirstObjectByType<T>();
+            }
         }
     }
 
@@ -152,6 +165,11 @@ public static class LayerUtility
         if (string.IsNullOrWhiteSpace(objectName))
         {
             return null;
+        }
+
+        if (SceneReferenceRegistry.TryResolveTransform(objectName, out Transform registeredTransform))
+        {
+            return registeredTransform;
         }
 
         FindObjectsInactive inactiveMode = includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;

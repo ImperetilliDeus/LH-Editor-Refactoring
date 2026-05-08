@@ -55,6 +55,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
+    [SerializeField] private UiReferenceSettings uiReferenceSettings;
     [SerializeField] private Transform wallRoot;
     [SerializeField] private RectTransform menuRoot;
     [SerializeField] private ScrollRect wallScrollView;
@@ -135,7 +136,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (menuRoot == null)
         {
-            Transform menuTransform = LayerUtility.FindTransformByName(menuRootName, true);
+            Transform menuTransform = LayerUtility.FindTransformByName(GetMenuRootName(), true);
             menuRoot = menuTransform as RectTransform;
         }
     }
@@ -149,7 +150,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (wallScrollView == null)
         {
-            Transform scrollTransform = LayerUtility.FindChildByName(menuRoot, wallScrollViewName);
+            Transform scrollTransform = LayerUtility.FindChildByName(menuRoot, GetWallScrollViewName());
             if (scrollTransform != null)
             {
                 wallScrollView = scrollTransform.GetComponent<ScrollRect>();
@@ -159,12 +160,12 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         if (wallToggleContainer == null)
         {
             Transform searchRoot = wallScrollView != null ? wallScrollView.transform : menuRoot;
-            wallToggleContainer = LayerUtility.FindChildByName(searchRoot, wallToggleContainerName);
+            wallToggleContainer = LayerUtility.FindChildByName(searchRoot, GetWallToggleContainerName());
         }
 
         if (wallToggleTemplate == null)
         {
-            Transform templateTransform = LayerUtility.FindChildByName(menuRoot, wallToggleTemplateName);
+            Transform templateTransform = LayerUtility.FindChildByName(menuRoot, GetWallToggleTemplateName());
             if (templateTransform != null)
             {
                 wallToggleTemplate = templateTransform.GetComponent<Toggle>();
@@ -173,7 +174,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (headerText == null)
         {
-            Transform target = LayerUtility.FindChildByName(menuRoot, headerTextName);
+            Transform target = LayerUtility.FindChildByName(menuRoot, GetHeaderTextName());
             if (target != null)
             {
                 headerText = target.GetComponent<Text>();
@@ -182,7 +183,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (statusText == null)
         {
-            Transform target = LayerUtility.FindChildByName(menuRoot, statusTextName);
+            Transform target = LayerUtility.FindChildByName(menuRoot, GetStatusTextName());
             if (target != null)
             {
                 statusText = target.GetComponent<Text>();
@@ -191,7 +192,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (autoAssignButton == null)
         {
-            Transform target = LayerUtility.FindChildByName(menuRoot, autoAssignButtonName);
+            Transform target = LayerUtility.FindChildByName(menuRoot, GetAutoAssignButtonName());
             if (target != null)
             {
                 autoAssignButton = target.GetComponent<Button>();
@@ -200,7 +201,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (resetButton == null)
         {
-            Transform target = LayerUtility.FindChildByName(menuRoot, resetButtonName);
+            Transform target = LayerUtility.FindChildByName(menuRoot, GetResetButtonName());
             if (target != null)
             {
                 resetButton = target.GetComponent<Button>();
@@ -209,7 +210,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (applyButton == null)
         {
-            Transform target = LayerUtility.FindChildByName(menuRoot, applyButtonName);
+            Transform target = LayerUtility.FindChildByName(menuRoot, GetApplyButtonName());
             if (target != null)
             {
                 applyButton = target.GetComponent<Button>();
@@ -724,6 +725,31 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         return IsWallTrackedByIds(wall, hoveredWallIds);
     }
 
+    public bool HasSelectedRoomForAuthoring => currentRoom != null;
+
+    public bool TryToggleWallSelectionFromWall(Wall wall)
+    {
+        if (currentRoom == null || wall == null)
+        {
+            return false;
+        }
+
+        WallListItem item = FindWallItemForWall(wall);
+        if (item == null)
+        {
+            return false;
+        }
+
+        bool nextValue = !AreAllIdsSelected(item.wallIds);
+        if (item.toggle != null)
+        {
+            item.toggle.SetIsOnWithoutNotify(nextValue);
+        }
+
+        HandleWallToggleChanged(item, nextValue);
+        return true;
+    }
+
     private void UpdatePanelState()
     {
         bool hasRoom = currentRoom != null;
@@ -800,6 +826,36 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         }
 
         return false;
+    }
+
+    private WallListItem FindWallItemForWall(Wall wall)
+    {
+        if (wall == null)
+        {
+            return null;
+        }
+
+        string wallId = wall.Data != null ? wall.Data.id : null;
+        if (string.IsNullOrWhiteSpace(wallId))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < wallItems.Count; i++)
+        {
+            WallListItem item = wallItems[i];
+            if (item == null)
+            {
+                continue;
+            }
+
+            if (ContainsWallId(item.wallIds, wallId))
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     private void ClearWallItems()
@@ -950,5 +1006,20 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
     private void NotifyHighlightStateChanged()
     {
         HighlightStateChanged?.Invoke();
+    }
+
+    private string GetMenuRootName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallMenuRootName : null, menuRootName);
+    private string GetWallScrollViewName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallScrollViewName : null, wallScrollViewName);
+    private string GetWallToggleContainerName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallToggleContainerName : null, wallToggleContainerName);
+    private string GetWallToggleTemplateName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallToggleTemplateName : null, wallToggleTemplateName);
+    private string GetHeaderTextName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallHeaderTextName : null, headerTextName);
+    private string GetStatusTextName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallStatusTextName : null, statusTextName);
+    private string GetAutoAssignButtonName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallAutoAssignButtonName : null, autoAssignButtonName);
+    private string GetResetButtonName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallResetButtonName : null, resetButtonName);
+    private string GetApplyButtonName() => GetConfiguredName(uiReferenceSettings != null ? uiReferenceSettings.roomWallApplyButtonName : null, applyButtonName);
+
+    private static string GetConfiguredName(string configuredValue, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(configuredValue) ? fallback : configuredValue;
     }
 }

@@ -321,7 +321,7 @@ namespace LH.Schema
                 }
             }
 
-            if (normal.y < 0f)
+            if (ShouldFlipTriangleWinding(localVertices, triangles, normal))
             {
                 for (int i = 0; i + 2 < triangles.Count; i += 3)
                 {
@@ -338,6 +338,39 @@ namespace LH.Schema
         public static LhMeshDto CreateMeshFromPolygon(IReadOnlyList<Vector3> worldVertices, Vector3 center)
         {
             return CreateMeshFromPolygon(worldVertices, center, Vector3.up, false);
+        }
+
+        private static bool ShouldFlipTriangleWinding(IReadOnlyList<Vector3> vertices, IReadOnlyList<int> triangles, Vector3 expectedNormal)
+        {
+            if (vertices == null || triangles == null || triangles.Count < 3)
+            {
+                return expectedNormal.y < 0f;
+            }
+
+            for (int i = 0; i + 2 < triangles.Count; i += 3)
+            {
+                int aIndex = triangles[i];
+                int bIndex = triangles[i + 1];
+                int cIndex = triangles[i + 2];
+                if (aIndex < 0 || bIndex < 0 || cIndex < 0 ||
+                    aIndex >= vertices.Count || bIndex >= vertices.Count || cIndex >= vertices.Count)
+                {
+                    continue;
+                }
+
+                Vector3 a = vertices[aIndex];
+                Vector3 b = vertices[bIndex];
+                Vector3 c = vertices[cIndex];
+                Vector3 cross = Vector3.Cross(b - a, c - a);
+                if (cross.sqrMagnitude <= 0.000001f)
+                {
+                    continue;
+                }
+
+                return Vector3.Dot(cross, expectedNormal) < 0f;
+            }
+
+            return expectedNormal.y < 0f;
         }
     }
 }

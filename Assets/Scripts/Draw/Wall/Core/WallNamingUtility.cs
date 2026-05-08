@@ -4,6 +4,7 @@ using UnityEngine;
 public static class WallNamingUtility
 {
     private const string WallNamePrefix = "wall";
+    private const string ContainerSegmentName = "Segment";
     private static readonly List<Wall> CachedWalls = new List<Wall>();
 
     public static void NormalizeWallNames(Transform wallRoot)
@@ -18,7 +19,19 @@ public static class WallNamingUtility
         int renamableCount = 0;
         for (int i = 0; i < CachedWalls.Count; i++)
         {
-            if (ShouldRename(CachedWalls[i]))
+            Wall wall = CachedWalls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            if (IsGeneratedContainerSegment(wall))
+            {
+                wall.name = ContainerSegmentName;
+                continue;
+            }
+
+            if (ShouldRename(wall))
             {
                 renamableCount++;
             }
@@ -52,5 +65,10 @@ public static class WallNamingUtility
         }
 
         return wall.GetComponent<Collider>() != null;
+    }
+
+    private static bool IsGeneratedContainerSegment(Wall wall)
+    {
+        return wall != null && wall.GetComponentInParent<WallOpeningContainer>() != null;
     }
 }

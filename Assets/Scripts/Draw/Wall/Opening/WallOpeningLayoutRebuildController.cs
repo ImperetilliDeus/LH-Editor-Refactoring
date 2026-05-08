@@ -10,8 +10,9 @@ internal sealed class WallOpeningLayoutRebuildController
         List<WallOpening> cachedOpenings,
         System.Action<WallOpeningContainer, List<WallOpening>> collectOpenings,
         System.Action<WallOpeningContainer, List<Wall>> clearGeneratedContainerVisuals,
-        System.Action<Transform, string, Vector3, Vector3, float, float, float, int, int, bool, bool, WallVisualState> createWallSegment,
-        System.Action<WallOpeningContainer, WallOpening, int> updateOpeningVisual,
+        System.Func<WallOpeningContainer, Transform> getSegmentsRoot,
+        System.Func<Transform, string, Vector3, Vector3, float, float, float, int, int, bool, bool, WallVisualState, bool, Transform> createWallSegment,
+        System.Action<WallOpeningContainer, WallOpening, int, Transform> updateOpeningVisual,
         System.Action<Transform, List<Wall>, bool> collectWalls,
         System.Action<List<Wall>, List<Wall>> requestRefreshForWallReplacement,
         System.Action markMarkerVisualsDirty)
@@ -40,14 +41,28 @@ internal sealed class WallOpeningLayoutRebuildController
 
         collectOpenings?.Invoke(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
+        for (int i = 0; i < cachedOpenings.Count; i++)
+        {
+            WallOpening opening = cachedOpenings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            if (opening.transform.parent != container.transform)
+            {
+                opening.transform.SetParent(container.transform, true);
+            }
+        }
 
         clearGeneratedContainerVisuals?.Invoke(container, cachedWalls);
+        Transform segmentsRoot = getSegmentsRoot != null ? getSegmentsRoot(container) : container.transform;
 
         if (cachedOpenings.Count == 0)
         {
             createWallSegment?.Invoke(
-                container.transform,
-                $"{container.name}_Segment_Full",
+                segmentsRoot,
+                "Segment",
                 container.WallStart,
                 container.WallEnd,
                 container.WallThickness,
@@ -57,7 +72,8 @@ internal sealed class WallOpeningLayoutRebuildController
                 container.OuterEndVertexId,
                 container.SuppressOuterStartHandle,
                 container.SuppressOuterEndHandle,
-                container.VisualState);
+                container.VisualState,
+                false);
 
             if (removedWalls.Count > 0)
             {
@@ -88,8 +104,8 @@ internal sealed class WallOpeningLayoutRebuildController
             Vector3 segmentStart = startPoint + direction * currentDistance;
             Vector3 segmentEnd = startPoint + direction * openingStartDistance;
             createWallSegment?.Invoke(
-                container.transform,
-                $"{container.name}_Segment_{i * 2}",
+                segmentsRoot,
+                "Segment",
                 segmentStart,
                 segmentEnd,
                 container.WallThickness,
@@ -99,17 +115,33 @@ internal sealed class WallOpeningLayoutRebuildController
                 0,
                 currentDistance > 0.001f || container.SuppressOuterStartHandle,
                 true,
-                container.VisualState);
+                container.VisualState,
+                false);
 
-            updateOpeningVisual?.Invoke(container, opening, i);
+            Transform openingSegment = createWallSegment?.Invoke(
+                segmentsRoot,
+                "Segment",
+                startPoint + direction * openingStartDistance,
+                startPoint + direction * openingEndDistance,
+                container.WallThickness,
+                container.WallHeight,
+                container.CenterY,
+                0,
+                0,
+                true,
+                true,
+                container.VisualState,
+                true);
+
+            updateOpeningVisual?.Invoke(container, opening, i, openingSegment);
             currentDistance = openingEndDistance;
         }
 
         Vector3 lastSegmentStart = startPoint + direction * currentDistance;
         Vector3 lastSegmentEnd = container.WallEnd;
         createWallSegment?.Invoke(
-            container.transform,
-            $"{container.name}_Segment_End",
+            segmentsRoot,
+            "Segment",
             lastSegmentStart,
             lastSegmentEnd,
             container.WallThickness,
@@ -119,7 +151,8 @@ internal sealed class WallOpeningLayoutRebuildController
             container.OuterEndVertexId,
             true,
             container.SuppressOuterEndHandle,
-            container.VisualState);
+            container.VisualState,
+            false);
 
         if (removedWalls.Count > 0)
         {

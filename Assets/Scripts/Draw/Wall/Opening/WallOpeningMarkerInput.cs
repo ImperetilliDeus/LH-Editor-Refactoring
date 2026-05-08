@@ -18,7 +18,7 @@ public class WallOpeningMarkerInput : MonoBehaviour, IPointerClickHandler, IBegi
             image = gameObject.AddComponent<Image>();
         }
 
-        image.color = new Color(1f, 1f, 1f, 0.001f);
+        image.color = Color.clear;
         image.raycastTarget = true;
     }
 

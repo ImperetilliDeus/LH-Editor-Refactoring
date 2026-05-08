@@ -44,13 +44,17 @@ public partial class TopViewRenderManager
     private void RefreshWallVisuals()
     {
         TopPlanSegmentBatchGraphic batchGraphic = GetOrCreateBatchGraphic(ref wallBatchGraphic, "TopPlanWallsBatch");
+        batchGraphic.SegmentClicked -= HandleTopPlanWallSegmentClicked;
+        batchGraphic.SegmentClicked += HandleTopPlanWallSegmentClicked;
+        batchGraphic.raycastTarget = IsRoomWallAuthoringInteractionEnabled();
+
         cachedWallSegments.Clear();
         WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
 
         for (int i = 0; i < cachedWalls.Count; i++)
         {
             Wall wall = cachedWalls[i];
-            if (wall == null || !wall.gameObject.activeInHierarchy)
+            if (wall == null || !wall.gameObject.activeInHierarchy || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
             {
                 continue;
             }
@@ -60,6 +64,7 @@ public partial class TopViewRenderManager
                     wall.Data.endPoint,
                     wall.transform.localScale.x,
                     GetTopPlanWallColor(wall),
+                    wall,
                     false,
                     0f,
                     0f,
@@ -97,6 +102,7 @@ public partial class TopViewRenderManager
                     endPoint,
                     virtualBoundaryThickness,
                     virtualBoundaryColor,
+                    null,
                     true,
                     virtualBoundaryDashLength,
                     virtualBoundaryGapLength,
@@ -616,6 +622,7 @@ public partial class TopViewRenderManager
         Vector3 endWorld,
         float worldThickness,
         Color segmentColor,
+        Wall ownerWall,
         bool dashed,
         float dashLength,
         float gapLength,
@@ -664,6 +671,7 @@ public partial class TopViewRenderManager
             end = endLocal,
             thickness = thickness,
             color = segmentColor,
+            wall = ownerWall,
             dashed = dashed,
             dashLength = dashLength,
             gapLength = gapLength,

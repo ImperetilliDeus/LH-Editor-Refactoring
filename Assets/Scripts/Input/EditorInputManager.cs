@@ -157,7 +157,7 @@ public sealed class EditorInputManager : MonoBehaviour
     {
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
     }
 }

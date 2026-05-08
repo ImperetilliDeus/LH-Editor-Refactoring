@@ -17,7 +17,7 @@ public sealed class ModeButtonBinder : MonoBehaviour
 
         if (modeManager == null)
         {
-            modeManager = FindFirstObjectByType<ModeManager>();
+            LayerUtility.ResolveObject(ref modeManager);
         }
 
         modeManager?.RegisterModeButton(targetButton, targetMode);

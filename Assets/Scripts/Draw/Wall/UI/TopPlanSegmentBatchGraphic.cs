@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic
+public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic, IPointerClickHandler
 {
     public struct SegmentData
     {
@@ -13,9 +14,11 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic
         public bool dashed;
         public float dashLength;
         public float gapLength;
+        public Wall wall;
     }
 
     private readonly List<SegmentData> segments = new List<SegmentData>();
+    public event System.Action<SegmentData> SegmentClicked;
 
     public void SetSegments(IReadOnlyList<SegmentData> values)
     {
@@ -29,6 +32,37 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic
         }
 
         SetVerticesDirty();
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData == null)
+        {
+            return;
+        }
+
+        if (!TryGetLocalPoint(eventData.position, eventData.pressEventCamera, out Vector2 localPoint))
+        {
+            return;
+        }
+
+        if (!TryFindSegmentAtPoint(localPoint, out SegmentData segment))
+        {
+            return;
+        }
+
+        SegmentClicked?.Invoke(segment);
+    }
+
+    public override bool Raycast(Vector2 sp, Camera eventCamera)
+    {
+        if (!base.Raycast(sp, eventCamera))
+        {
+            return false;
+        }
+
+        return TryGetLocalPoint(sp, eventCamera, out Vector2 localPoint) &&
+               TryFindSegmentAtPoint(localPoint, out _);
     }
 
     protected override void OnPopulateMesh(VertexHelper vh)
@@ -92,5 +126,54 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic
         vh.AddTriangle(vertexOffset, vertexOffset + 1, vertexOffset + 2);
         vh.AddTriangle(vertexOffset, vertexOffset + 2, vertexOffset + 3);
         vertexOffset += 4;
+    }
+
+    private bool TryGetLocalPoint(Vector2 screenPoint, Camera eventCamera, out Vector2 localPoint)
+    {
+        return RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, eventCamera, out localPoint);
+    }
+
+    private bool TryFindSegmentAtPoint(Vector2 localPoint, out SegmentData result)
+    {
+        result = default;
+
+        float bestDistanceSqr = float.PositiveInfinity;
+        bool found = false;
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            SegmentData segment = segments[i];
+            if (segment.wall == null)
+            {
+                continue;
+            }
+
+            float maxDistance = Mathf.Max(6f, segment.thickness * 0.75f);
+            float distanceSqr = DistanceToSegmentSqr(localPoint, segment.start, segment.end);
+            if (distanceSqr > maxDistance * maxDistance || distanceSqr >= bestDistanceSqr)
+            {
+                continue;
+            }
+
+            bestDistanceSqr = distanceSqr;
+            result = segment;
+            found = true;
+        }
+
+        return found;
+    }
+
+    private static float DistanceToSegmentSqr(Vector2 point, Vector2 start, Vector2 end)
+    {
+        Vector2 delta = end - start;
+        float lengthSqr = delta.sqrMagnitude;
+        if (lengthSqr <= Mathf.Epsilon)
+        {
+            return (point - start).sqrMagnitude;
+        }
+
+        float t = Mathf.Clamp01(Vector2.Dot(point - start, delta) / lengthSqr);
+        Vector2 projection = start + delta * t;
+        return (point - projection).sqrMagnitude;
     }
 }

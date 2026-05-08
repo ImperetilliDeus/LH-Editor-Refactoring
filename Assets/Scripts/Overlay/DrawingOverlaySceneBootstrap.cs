@@ -36,8 +36,11 @@ public static class DrawingOverlaySceneBootstrap
             existingPanel.Close();
         }
 
+        ModeManager modeManager = null;
+        LayerUtility.ResolveObject(ref modeManager);
+
         manager.Initialize(
-            UnityEngine.Object.FindFirstObjectByType<ModeManager>(),
+            modeManager,
             FindGridObject(),
             existingPanel);
 

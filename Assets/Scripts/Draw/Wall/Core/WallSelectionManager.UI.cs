@@ -84,7 +84,7 @@ public partial class WallSelectionManager
         for (int i = 0; i < walls.Length; i++)
         {
             Wall wall = walls[i];
-            if (wall == null)
+            if (wall == null || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
             {
                 continue;
             }

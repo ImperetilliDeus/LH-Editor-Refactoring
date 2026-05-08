@@ -76,7 +76,7 @@ public partial class HandleManager
         }
 
         Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPoint);
-        bool visible = screenPosition.z > 0f;
+        bool visible = isDefaultModeActive && screenPosition.z > 0f;
         handleRect.gameObject.SetActive(visible);
         if (!visible)
         {
@@ -108,6 +108,7 @@ public partial class HandleManager
     private RectTransform CreateHandleRect(string handleName, out Image image)
     {
         GameObject handleObject = new GameObject(handleName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        handleObject.SetActive(isDefaultModeActive);
         RectTransform handleRect = handleObject.GetComponent<RectTransform>();
         handleRect.SetParent(targetCanvas.transform, false);
         handleRect.SetAsLastSibling();

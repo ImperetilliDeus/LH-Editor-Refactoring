@@ -76,12 +76,28 @@ internal sealed class WallOpeningGeometryFactory
         GameObject filler = CreateCubeObject(cubeMesh, fillerName, parent, false);
         filler.name = fillerName;
         LayerUtility.ApplyLayer(filler, LayerUtility.WallLayerName, false);
-        filler.transform.position = new Vector3(
-            openingCenter.x,
-            segmentBottomY + segmentHeight * 0.5f,
-            openingCenter.z);
-        filler.transform.rotation = Quaternion.LookRotation(container.WallDirection, Vector3.up);
-        filler.transform.localScale = new Vector3(container.WallThickness, segmentHeight, opening.Width);
+        if (parent != null && parent.GetComponent<Wall>() != null)
+        {
+            Vector3 parentScale = parent.localScale;
+            filler.transform.localPosition = new Vector3(
+                0f,
+                SafeDivide((segmentBottomY + segmentHeight * 0.5f) - parent.position.y, parentScale.y),
+                0f);
+            filler.transform.localRotation = Quaternion.identity;
+            filler.transform.localScale = new Vector3(
+                SafeDivide(container.WallThickness, parentScale.x),
+                SafeDivide(segmentHeight, parentScale.y),
+                SafeDivide(opening.Width, parentScale.z));
+        }
+        else
+        {
+            filler.transform.position = new Vector3(
+                openingCenter.x,
+                segmentBottomY + segmentHeight * 0.5f,
+                openingCenter.z);
+            filler.transform.rotation = Quaternion.LookRotation(container.WallDirection, Vector3.up);
+            filler.transform.localScale = new Vector3(container.WallThickness, segmentHeight, opening.Width);
+        }
 
         MeshRenderer renderer = filler.GetComponent<MeshRenderer>();
         if (renderer != null && container.WallMaterial != null)
@@ -116,5 +132,10 @@ internal sealed class WallOpeningGeometryFactory
         }
 
         return cubeObject;
+    }
+
+    private static float SafeDivide(float numerator, float denominator)
+    {
+        return Mathf.Abs(denominator) > 0.000001f ? numerator / denominator : 0f;
     }
 }
