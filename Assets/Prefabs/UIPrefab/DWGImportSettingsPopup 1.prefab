@@ -89,6 +89,7 @@ GameObject:
   - component: {fileID: 1343453718307971089}
   - component: {fileID: 5815456368217261533}
   - component: {fileID: 8002555961853350887}
+  - component: {fileID: 5921300012345678902}
   m_Layer: 0
   m_Name: DWGImportSettingsPopup 1
   m_TagString: Untagged
@@ -154,6 +155,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5921300012345678902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 857113082053511250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59213c4b0a198c443a3e52655b1aa4e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  selectedPathText: {fileID: 0}
+  cadScaleInputField: {fileID: 0}
+  layerSearchInputField: {fileID: 0}
+  layerToggleContainer: {fileID: 0}
+  layerTogglePrefab: {fileID: 0}
+  selectAllLayersButton: {fileID: 0}
+  clearAllLayersButton: {fileID: 0}
+  cancelButton: {fileID: 0}
+  confirmButton: {fileID: 0}
 --- !u!1 &901617842784578950
 GameObject:
   m_ObjectHideFlags: 0

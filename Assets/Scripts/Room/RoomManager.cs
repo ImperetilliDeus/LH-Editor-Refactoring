@@ -426,6 +426,17 @@ public class RoomManager : MonoBehaviour
         return new List<Room>(allRooms);
     }
 
+    public void GetAllRooms(List<Room> results)
+    {
+        if (results == null)
+        {
+            return;
+        }
+
+        results.Clear();
+        results.AddRange(allRooms);
+    }
+
     public void RefreshAllRooms()
     {
         EnsureRoomRoot();

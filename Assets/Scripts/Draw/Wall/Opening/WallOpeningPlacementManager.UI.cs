@@ -151,24 +151,10 @@ public partial class WallOpeningPlacementManager
 
     public void ApplySelectedDoorSwingDirection(bool opensRight)
     {
-        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Door)
-        {
-            return;
-        }
-
-        SelectedOpening.SetDoorOpensRight(opensRight);
-        RebuildSelectedOpeningWithUndo();
     }
 
     public void ApplySelectedDoorVerticalFlip(bool verticalFlip)
     {
-        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Door)
-        {
-            return;
-        }
-
-        SelectedOpening.SetDoorVerticalFlip(verticalFlip);
-        RebuildSelectedOpeningWithUndo();
     }
 
     public void ApplySelectedWindowTypeFromDropdown(int optionIndex)

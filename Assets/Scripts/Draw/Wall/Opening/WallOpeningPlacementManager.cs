@@ -5,12 +5,6 @@ using UnityEngine.UI;
 
 public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInputHandler
 {
-    public enum MarkerPlacementMode
-    {
-        OffsetFromOpening,
-        CenterOnOpening,
-    }
-
     public enum OpeningPlacementType
     {
         Door,
@@ -31,37 +25,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         public WallVisualState visualState;
     }
 
-    [System.Serializable]
-    private class MarkerVariantDefinition
-    {
-        [SerializeField] private string typeName;
-        [SerializeField] private GameObject markerPrefab;
-        [SerializeField] private Vector2 scaleMultiplier = Vector2.one;
-        [SerializeField] private MarkerPlacementMode placementMode = MarkerPlacementMode.OffsetFromOpening;
-
-        public string TypeName => typeName;
-        public GameObject MarkerPrefab => markerPrefab;
-        public Vector2 ScaleMultiplier => scaleMultiplier;
-        public MarkerPlacementMode PlacementMode => placementMode;
-
-        public void ClampValues()
-        {
-            scaleMultiplier = new Vector2(
-                Mathf.Max(0.01f, scaleMultiplier.x),
-                Mathf.Max(0.01f, scaleMultiplier.y));
-        }
-    }
-
-    [System.Serializable]
-    private class DoorMarkerVariant : MarkerVariantDefinition
-    {
-    }
-
-    [System.Serializable]
-    private class WindowMarkerVariant : MarkerVariantDefinition
-    {
-    }
-
     [Header("References")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Transform wallRoot;
@@ -77,16 +40,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     [SerializeField] private Button addSplitPointButton;
     [SerializeField] private DoorOpeningUIController doorUIController;
     [SerializeField] private WindowOpeningUIController windowUIController;
-
-    [Header("Marker UI")]
-    [SerializeField] private GameObject doorMarkerPrefab;
-    [SerializeField] private GameObject windowMarkerPrefab;
-    [SerializeField] private Vector2 doorMarkerScaleMultiplier = Vector2.one;
-    [SerializeField] private Vector2 windowMarkerScaleMultiplier = Vector2.one;
-    [SerializeField] private MarkerPlacementMode doorMarkerPlacementMode = MarkerPlacementMode.OffsetFromOpening;
-    [SerializeField] private MarkerPlacementMode windowMarkerPlacementMode = MarkerPlacementMode.OffsetFromOpening;
-    [SerializeField] private List<DoorMarkerVariant> doorMarkerVariants = new List<DoorMarkerVariant>();
-    [SerializeField] private List<WindowMarkerVariant> windowMarkerVariants = new List<WindowMarkerVariant>();
 
     [Header("Type Catalog")]
     [SerializeField] private OpeningTypeCatalog openingTypeCatalog;
@@ -188,14 +141,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     private void OnValidate()
     {
-        doorMarkerScaleMultiplier = new Vector2(
-            Mathf.Max(0.01f, doorMarkerScaleMultiplier.x),
-            Mathf.Max(0.01f, doorMarkerScaleMultiplier.y));
-        windowMarkerScaleMultiplier = new Vector2(
-            Mathf.Max(0.01f, windowMarkerScaleMultiplier.x),
-            Mathf.Max(0.01f, windowMarkerScaleMultiplier.y));
-        ValidateMarkerVariants(doorMarkerVariants);
-        ValidateMarkerVariants(windowMarkerVariants);
         ResolveOpeningTypeCatalog();
         RefreshOpeningTypeCatalogCache();
         ApplyOpeningTypeOptionsToUI();

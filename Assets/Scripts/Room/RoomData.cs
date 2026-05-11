@@ -137,6 +137,55 @@ public class RoomData
         NotifyChanged();
     }
 
+    public void ReplaceManualWallIds(IEnumerable<string> removedIds, IEnumerable<string> addedIds)
+    {
+        if (!manualWallSelectionEnabled)
+        {
+            return;
+        }
+
+        HashSet<string> removed = CreateNormalizedIdSet(removedIds);
+        if (removed.Count == 0)
+        {
+            return;
+        }
+
+        bool changed = false;
+        List<string> nextIds = new List<string>(manualWallIds.Count);
+        HashSet<string> seenIds = new HashSet<string>(StringComparer.Ordinal);
+
+        for (int i = 0; i < manualWallIds.Count; i++)
+        {
+            string id = manualWallIds[i];
+            if (string.IsNullOrWhiteSpace(id) || removed.Contains(id))
+            {
+                changed = true;
+                continue;
+            }
+
+            if (seenIds.Add(id))
+            {
+                nextIds.Add(id);
+            }
+        }
+
+        if (!AppendUniqueIds(nextIds, seenIds, addedIds))
+        {
+            if (!changed)
+            {
+                return;
+            }
+        }
+        else
+        {
+            changed = true;
+        }
+
+        manualWallIds.Clear();
+        manualWallIds.AddRange(nextIds);
+        NotifyChanged();
+    }
+
     public void ApplyLayout(
         IReadOnlyList<Vector3> polygonVertices,
         RoomGeometry geometry,
@@ -178,5 +227,46 @@ public class RoomData
 
         field = value;
         NotifyChanged();
+    }
+
+    private static HashSet<string> CreateNormalizedIdSet(IEnumerable<string> ids)
+    {
+        HashSet<string> results = new HashSet<string>(StringComparer.Ordinal);
+        if (ids == null)
+        {
+            return results;
+        }
+
+        foreach (string id in ids)
+        {
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                results.Add(id);
+            }
+        }
+
+        return results;
+    }
+
+    private static bool AppendUniqueIds(List<string> target, HashSet<string> seenIds, IEnumerable<string> ids)
+    {
+        if (target == null || seenIds == null || ids == null)
+        {
+            return false;
+        }
+
+        bool changed = false;
+        foreach (string id in ids)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !seenIds.Add(id))
+            {
+                continue;
+            }
+
+            target.Add(id);
+            changed = true;
+        }
+
+        return changed;
     }
 }

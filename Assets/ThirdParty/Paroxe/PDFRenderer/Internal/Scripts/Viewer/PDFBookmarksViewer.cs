@@ -20,7 +20,6 @@ namespace Paroxe.PdfRenderer.Internal.Viewer
 #if !UNITY_WEBGL
         private CanvasGroup m_ContainerCanvasGroup;
         private PDFViewerLeftPanelScrollbar m_Scrollbar;
-        private bool m_Initialized = false;
         private RectTransform m_LeftPanel;
         private bool m_Loaded = false;
         private PDFDocument m_Document;
@@ -85,7 +84,6 @@ namespace Paroxe.PdfRenderer.Internal.Viewer
             if (m_Loaded)
             {
                 m_Loaded = false;
-                m_Initialized = false;
                 m_TopLevelItems = null;
                 m_Document = null;
                 m_RootBookmark = null;

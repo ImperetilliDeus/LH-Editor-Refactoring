@@ -59,7 +59,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private bool hasGridBounds;
 
     private readonly WallSelectionState selectionState = new WallSelectionState();
-    private readonly HashSet<GameObject> multiSelectWallsInBox = new HashSet<GameObject>();
     private GameObject multiSelectBoxObject;
     private BoxCollider multiSelectBoxCollider;
     private Material multiSelectBoxMaterial;
@@ -76,12 +75,13 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Wall> rootWallsCache = new List<Wall>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
-    private readonly HashSet<WallOpeningContainer> processedSelectionUIContainers = new HashSet<WallOpeningContainer>();
     private readonly WallSelectionPresentationController presentationController = new WallSelectionPresentationController();
+    private readonly WallSelectionQueryService queryService = new WallSelectionQueryService();
     private readonly WallSelectionDragController dragController = new WallSelectionDragController();
     private readonly WallSelectionDragState dragState = new WallSelectionDragState();
     private readonly WallSelectionInputController inputController = new WallSelectionInputController();
     private readonly WallSelectionInputState inputState = new WallSelectionInputState();
+    private readonly WallSelectionMutationService mutationService = new WallSelectionMutationService();
     private readonly WallSelectionUndoRecorder undoRecorder = new WallSelectionUndoRecorder();
     private Mesh cachedCubeMesh;
     private bool rootWallsCacheDirty = true;
@@ -347,7 +347,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             handleManager != null && handleManager.IsPointerOverHandle(pointerFrame.ScreenPosition),
             screenPosition =>
             {
-                bool success = TryGetWallFromMouseRay(screenPosition, out GameObject wall);
+                bool success = queryService.TryGetWallFromMouseRay(mainCamera, wallRoot, screenPosition, out GameObject wall);
                 return (success, wall);
             },
             screenPosition =>
@@ -365,75 +365,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
                 dragStartPoint = worldPoint;
                 selectedWallStartPosition = selectionState.SelectedWall.transform.position;
             });
-    }
-
-    private bool TryGetWallFromMouseRay(Vector2 pointerScreenPosition, out GameObject wall)
-    {
-        wall = null;
-
-        Ray ray = mainCamera.ScreenPointToRay(pointerScreenPosition);
-        int wallMask = LayerUtility.GetMaskOrDefault(LayerUtility.WallLayerName);
-        if (!Physics.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity, wallMask))
-        {
-            return false;
-        }
-
-        GameObject hitObject = hitInfo.collider != null ? hitInfo.collider.gameObject : null;
-        if (hitObject == null)
-        {
-            return false;
-        }
-
-        GameObject wallObject = ResolveWallObject(hitObject);
-        if (wallObject == null)
-        {
-            return false;
-        }
-
-        wall = wallObject;
-        return true;
-    }
-
-    private bool IsWallObject(GameObject candidate)
-    {
-        if (candidate == null)
-        {
-            return false;
-        }
-
-        if (LayerUtility.TryGetLayer(LayerUtility.WallLayerName, out int wallLayer) &&
-            candidate.layer != wallLayer)
-        {
-            return false;
-        }
-
-        if (wallRoot == null)
-        {
-            return true;
-        }
-
-        return candidate.transform.IsChildOf(wallRoot);
-    }
-
-    private GameObject ResolveWallObject(GameObject candidate)
-    {
-        if (candidate == null)
-        {
-            return null;
-        }
-
-        Wall wall = candidate.GetComponentInParent<Wall>();
-        if (wall != null && IsWallObject(wall.gameObject))
-        {
-            return wall.gameObject;
-        }
-
-        if (IsWallObject(candidate))
-        {
-            return candidate;
-        }
-
-        return null;
     }
 
     private bool IsPointerOverUI(Vector2 pointerScreenPosition)
@@ -469,7 +400,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         bool isModifierPressed = IsSelectionModifierPressed();
-        if (TryGetWallFromMouseRay(pointerFrame.ScreenPosition, out GameObject hitWall))
+        if (queryService.TryGetWallFromMouseRay(mainCamera, wallRoot, pointerFrame.ScreenPosition, out GameObject hitWall))
         {
             HandleDetailWallClick(hitWall, isModifierPressed);
             return;
@@ -542,103 +473,19 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             wallOpeningPlacementManager.ClearOpeningSelection();
         }
 
-        multiSelectWallsInBox.Clear();
-        if (multiSelectBoxCollider != null && wallRoot != null)
-        {
-            Bounds bounds = multiSelectBoxCollider.bounds;
-            List<Wall> walls = GetRootWalls();
-            processedSelectionUIContainers.Clear();
-            for (int i = 0; i < walls.Count; i++)
-            {
-                Wall wall = walls[i];
-                if (wall == null || !wall.gameObject.activeInHierarchy)
-                {
-                    continue;
-                }
-
-                WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-                if (container != null)
-                {
-                    if (!processedSelectionUIContainers.Add(container))
-                    {
-                        continue;
-                    }
-
-                    if (TryGetSelectableWallFromContainerInBounds(container, bounds, out GameObject representativeWall))
-                    {
-                        multiSelectWallsInBox.Add(representativeWall);
-                    }
-
-                    continue;
-                }
-
-                if (ContainsPointXZ(bounds, wall.Data.startPoint) && ContainsPointXZ(bounds, wall.Data.endPoint))
-                {
-                    multiSelectWallsInBox.Add(wall.gameObject);
-                }
-            }
-        }
+        IReadOnlyCollection<GameObject> wallsInBounds = queryService.CollectWallsInSelectionBounds(
+            multiSelectBoxCollider,
+            wallRoot,
+            GetRootWalls());
 
         if (!additive)
         {
             selectionState.ClearAll();
         }
 
-        selectionState.ApplyMultiSelection(multiSelectWallsInBox, additive);
+        selectionState.ApplyMultiSelection(wallsInBounds, additive);
 
         RefreshSelectionVisuals();
-    }
-
-    private bool TryGetSelectableWallFromContainerInBounds(WallOpeningContainer container, Bounds bounds, out GameObject representativeWall)
-    {
-        representativeWall = null;
-        if (container == null)
-        {
-            return false;
-        }
-
-        Wall[] containerWalls = container.GetComponentsInChildren<Wall>(true);
-        Wall bestWall = null;
-        float bestLength = float.MinValue;
-
-        for (int i = 0; i < containerWalls.Length; i++)
-        {
-            Wall wall = containerWalls[i];
-            if (wall == null || !wall.gameObject.activeInHierarchy || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
-            {
-                continue;
-            }
-
-            if (!ContainsPointXZ(bounds, wall.Data.startPoint) || !ContainsPointXZ(bounds, wall.Data.endPoint))
-            {
-                return false;
-            }
-
-            float length = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
-            if (length <= bestLength)
-            {
-                continue;
-            }
-
-            bestLength = length;
-            bestWall = wall;
-        }
-
-        if (bestWall == null)
-        {
-            return false;
-        }
-
-        representativeWall = bestWall.gameObject;
-        return true;
-    }
-
-    private bool ContainsPointXZ(Bounds bounds, Vector3 point)
-    {
-        return point.x >= bounds.min.x &&
-               point.x <= bounds.max.x &&
-               point.z >= bounds.min.z &&
-               point.z <= bounds.max.z;
     }
 
     private bool IsSelectionModifierPressed()
@@ -813,11 +660,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
-        if (wallRootTransform != null)
-        {
-            wallRoot = wallRootTransform;
-        }
+        wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
     }
 
     private void ResolveReferences()
@@ -834,41 +677,34 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void RefreshDragPlane()
     {
-        hasDragPlane = false;
-        hasGridBounds = false;
         float planeY = 0f;
+        Bounds bounds = default;
+        hasGridBounds = false;
 
         if (grid != null)
         {
             if (grid.TryGetComponent(out Collider gridCollider))
             {
                 planeY = gridCollider.bounds.center.y;
-                hasDragPlane = true;
-                gridBounds = gridCollider.bounds;
+                bounds = gridCollider.bounds;
                 hasGridBounds = true;
             }
             else if (grid.TryGetComponent(out Renderer gridRenderer))
             {
                 planeY = gridRenderer.bounds.center.y;
-                hasDragPlane = true;
-                gridBounds = gridRenderer.bounds;
+                bounds = gridRenderer.bounds;
                 hasGridBounds = true;
             }
             else
             {
                 planeY = grid.transform.position.y;
-                hasDragPlane = true;
             }
         }
 
-        if (!hasDragPlane)
-        {
-            planeY = 0f;
-            hasDragPlane = true;
-        }
-
-        dragPlaneHeight = planeY;
         dragPlane = new Plane(Vector3.up, new Vector3(0f, planeY, 0f));
+        dragPlaneHeight = planeY;
+        gridBounds = bounds;
+        hasDragPlane = true;
     }
 
     private void EnsureMultiSelectBoxVisual()
@@ -1142,101 +978,15 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void DeleteSelectedWalls()
     {
-        if (wallOpeningPlacementManager == null)
-        {
-            return;
-        }
-
         List<GameObject> selectedWalls = new List<GameObject>();
         GetSelectedWalls(selectedWalls);
-        if (selectedWalls.Count == 0)
+        if (!mutationService.TryDeleteSelectedWalls(
+                selectedWalls,
+                wallOpeningPlacementManager,
+                roomManager,
+                undoRedoManager))
         {
             return;
-        }
-
-        List<UndoRedoManager.OpeningLayoutSnapshot> deletedLayouts = new List<UndoRedoManager.OpeningLayoutSnapshot>();
-        HashSet<string> processedLayoutKeys = new HashSet<string>();
-        HashSet<Wall> affectedWalls = new HashSet<Wall>();
-
-        for (int i = 0; i < selectedWalls.Count; i++)
-        {
-            GameObject wallObject = selectedWalls[i];
-            if (wallObject == null || !wallObject.TryGetComponent(out Wall wall))
-            {
-                continue;
-            }
-
-            UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(wall);
-            string key = snapshot.hasContainer
-                ? $"container:{snapshot.layoutName}"
-                : $"wall:{wallObject.GetInstanceID()}";
-            if (!processedLayoutKeys.Add(key))
-            {
-                continue;
-            }
-
-            deletedLayouts.Add(snapshot);
-
-            if (snapshot.hasContainer)
-            {
-                WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-                if (container != null)
-                {
-                    Wall[] containerWalls = container.GetComponentsInChildren<Wall>(true);
-                    for (int j = 0; j < containerWalls.Length; j++)
-                    {
-                        if (containerWalls[j] != null)
-                        {
-                            affectedWalls.Add(containerWalls[j]);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                affectedWalls.Add(wall);
-            }
-        }
-
-        List<Room> affectedRooms = new List<Room>();
-        if (roomManager != null && affectedWalls.Count > 0)
-        {
-            List<Room> rooms = roomManager.GetAllRooms();
-            for (int i = 0; i < rooms.Count; i++)
-            {
-                Room room = rooms[i];
-                if (room == null || room.WallSet == null)
-                {
-                    continue;
-                }
-
-                foreach (Wall wall in affectedWalls)
-                {
-                    if (wall != null && room.WallSet.Contains(wall))
-                    {
-                        affectedRooms.Add(room);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordDeletedLayouts(deletedLayouts, affectedRooms);
-        }
-
-        for (int i = 0; i < affectedRooms.Count; i++)
-        {
-            if (affectedRooms[i] != null)
-            {
-                roomManager.DeleteRoom(affectedRooms[i]);
-            }
-        }
-
-        for (int i = 0; i < deletedLayouts.Count; i++)
-        {
-            wallOpeningPlacementManager.ApplyLayoutSnapshot(default, deletedLayouts[i]);
         }
 
         ClearAllSelectionState();

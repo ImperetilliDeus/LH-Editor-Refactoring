@@ -143,6 +143,7 @@ public class Room : MonoBehaviour
             return false;
         }
 
+        List<string> removedWallIds = new List<string>();
         bool changed = false;
         if (removedWalls != null)
         {
@@ -150,17 +151,28 @@ public class Room : MonoBehaviour
             {
                 if (wall != null && WallSet.Remove(wall))
                 {
+                    if (wall.Data != null && !string.IsNullOrWhiteSpace(wall.Data.id))
+                    {
+                        removedWallIds.Add(wall.Data.id);
+                    }
+
                     changed = true;
                 }
             }
         }
 
+        List<string> addedWallIds = new List<string>();
         if (addedWalls != null)
         {
             foreach (Wall wall in addedWalls)
             {
                 if (wall != null && WallSet.Add(wall))
                 {
+                    if (wall.Data != null && !string.IsNullOrWhiteSpace(wall.Data.id))
+                    {
+                        addedWallIds.Add(wall.Data.id);
+                    }
+
                     changed = true;
                 }
             }
@@ -169,6 +181,7 @@ public class Room : MonoBehaviour
         if (changed)
         {
             EnsureData().SetWallIds(EnumerateWallIds(WallSet));
+            EnsureData().ReplaceManualWallIds(removedWallIds, addedWallIds);
         }
 
         return changed;
