@@ -76,7 +76,6 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         }
 
         CacheTopViewCameraState();
-        UpdateRoomEditMenuState();
     }
 
     private void ResolveReferences()
@@ -589,7 +588,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         SetLabelsVisible(true);
 
         cachedRooms.Clear();
-        cachedRooms.AddRange(roomManager != null ? roomManager.GetAllRooms() : new List<Room>());
+        roomManager?.GetAllRooms(cachedRooms);
         removeRooms.Clear();
 
         foreach (KeyValuePair<Room, TMP_Text> pair in labelsByRoom)

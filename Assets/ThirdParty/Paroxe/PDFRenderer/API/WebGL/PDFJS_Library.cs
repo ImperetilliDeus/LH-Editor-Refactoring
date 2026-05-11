@@ -19,7 +19,7 @@ namespace Paroxe.PdfRenderer.WebGL
             get
             {
                 if (s_Instance == null)
-                    s_Instance = FindObjectOfType<PDFJS_Library>();
+                    s_Instance = FindFirstObjectByType<PDFJS_Library>();
                 if (s_Instance == null)
                     s_Instance = new GameObject("WebGL_JSRuntime").AddComponent<PDFJS_Library>();
                 return s_Instance;

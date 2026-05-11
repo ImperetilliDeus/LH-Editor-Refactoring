@@ -3,6 +3,8 @@ using UnityEngine;
 
 public partial class UndoRedoManager
 {
+    private const float PositionEpsilonSqr = 0.000001f;
+
     public struct RoomPolygonSnapshot
     {
         public Room room;
@@ -59,7 +61,6 @@ public partial class UndoRedoManager
             }
 
             Wall wallComponent = wallObject.GetComponent<Wall>();
-
             return new WallStateSnapshot
             {
                 wallObject = wallObject,
@@ -78,46 +79,47 @@ public partial class UndoRedoManager
         public static WallStateSnapshot Capture(GameObject wallObject, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             WallStateSnapshot snapshot = Capture(wallObject);
-            if (wallObject != null)
+            if (wallObject == null)
             {
-                Wall wallComponent = wallObject.GetComponent<Wall>();
-                if (wallComponent != null)
-                {
-                    float planeY = wallComponent.Data.startPoint.y;
-                    float halfLength = scale.z * 0.5f;
-                    Vector3 direction = rotation * Vector3.forward;
-
-                    Vector3 start = position - direction * halfLength;
-                    Vector3 end = position + direction * halfLength;
-                    start.y = planeY;
-                    end.y = planeY;
-
-                    snapshot.wallData = new WallData
-                    {
-                        id = wallComponent.Data.id,
-                        startPoint = start,
-                        endPoint = end,
-                        thickness = scale.x,
-                        height = scale.y,
-                        centerY = position.y,
-                    };
-                }
+                return snapshot;
             }
+
+            Wall wallComponent = wallObject.GetComponent<Wall>();
+            if (wallComponent == null)
+            {
+                return snapshot;
+            }
+
+            float planeY = wallComponent.Data.startPoint.y;
+            float halfLength = scale.z * 0.5f;
+            Vector3 direction = rotation * Vector3.forward;
+            Vector3 start = position - direction * halfLength;
+            Vector3 end = position + direction * halfLength;
+            start.y = planeY;
+            end.y = planeY;
+
+            snapshot.wallData = new WallData
+            {
+                id = wallComponent.Data.id,
+                startPoint = start,
+                endPoint = end,
+                thickness = scale.x,
+                height = scale.y,
+                centerY = position.y,
+            };
 
             return snapshot;
         }
 
         public static bool HasMeaningfulDelta(WallStateSnapshot before, WallStateSnapshot after)
         {
-            bool endpointsChanged =
-                !AreWallDataEquivalent(before.wallData, after.wallData) ||
-                after.startVertexId != before.startVertexId ||
-                after.endVertexId != before.endVertexId ||
-                after.suppressStartHandle != before.suppressStartHandle ||
-                after.suppressEndHandle != before.suppressEndHandle ||
-                after.startSplitPoint != before.startSplitPoint ||
-                after.endSplitPoint != before.endSplitPoint;
-            return endpointsChanged;
+            return !AreWallDataEquivalent(before.wallData, after.wallData) ||
+                   after.startVertexId != before.startVertexId ||
+                   after.endVertexId != before.endVertexId ||
+                   after.suppressStartHandle != before.suppressStartHandle ||
+                   after.suppressEndHandle != before.suppressEndHandle ||
+                   after.startSplitPoint != before.startSplitPoint ||
+                   after.endSplitPoint != before.endSplitPoint;
         }
 
         private static bool AreWallDataEquivalent(WallData left, WallData right)
@@ -132,22 +134,12 @@ public partial class UndoRedoManager
                 return false;
             }
 
-            return
-                (left.startPoint - right.startPoint).sqrMagnitude <= PositionEpsilonSqr &&
-                (left.endPoint - right.endPoint).sqrMagnitude <= PositionEpsilonSqr &&
-                Mathf.Abs(left.thickness - right.thickness) <= 0.0001f &&
-                Mathf.Abs(left.height - right.height) <= 0.0001f &&
-                Mathf.Abs(left.centerY - right.centerY) <= 0.0001f;
+            return (left.startPoint - right.startPoint).sqrMagnitude <= PositionEpsilonSqr &&
+                   (left.endPoint - right.endPoint).sqrMagnitude <= PositionEpsilonSqr &&
+                   Mathf.Abs(left.thickness - right.thickness) <= 0.0001f &&
+                   Mathf.Abs(left.height - right.height) <= 0.0001f &&
+                   Mathf.Abs(left.centerY - right.centerY) <= 0.0001f;
         }
-    }
-
-    private struct WallReference
-    {
-        public string name;
-        public Vector3 startPoint;
-        public Vector3 endPoint;
-        public int startVertexId;
-        public int endVertexId;
     }
 
     public struct WallTransformRecord

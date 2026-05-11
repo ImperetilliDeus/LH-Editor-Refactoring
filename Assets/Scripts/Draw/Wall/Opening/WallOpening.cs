@@ -119,7 +119,7 @@ public class WallOpening : MonoBehaviour
         doorVerticalFlip = type == WallOpeningPlacementManager.OpeningPlacementType.Door && value;
     }
 
-    public void EnsureMarker(Canvas canvas, Camera worldCamera, GameObject markerPrefab, Vector2 scaleMultiplier)
+    public void EnsureMarker(Canvas canvas, Camera worldCamera)
     {
         EnsureAnchors();
 
@@ -132,7 +132,7 @@ public class WallOpening : MonoBehaviour
             }
         }
 
-        markerUI.Initialize(this, placementManager, canvas, worldCamera, startAnchor, endAnchor, markerPrefab, scaleMultiplier);
+        markerUI.Initialize(this, placementManager, canvas, worldCamera, startAnchor, endAnchor);
     }
 
     private void EnsureAnchors()

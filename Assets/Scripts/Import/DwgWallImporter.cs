@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,6 +13,41 @@ using ProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 [AddComponentMenu("LH Editor/Import/DWG Wall Importer")]
 public sealed class DwgWallImporter : MonoBehaviour
 {
+    private readonly struct PopupBindings
+    {
+        public PopupBindings(
+            Text selectedPathText,
+            InputField cadScaleInputField,
+            InputField layerSearchInputField,
+            Transform layerToggleContainer,
+            Toggle layerTogglePrefab,
+            Button selectAllLayersButton,
+            Button clearAllLayersButton,
+            Button cancelButton,
+            Button confirmButton)
+        {
+            SelectedPathText = selectedPathText;
+            CadScaleInputField = cadScaleInputField;
+            LayerSearchInputField = layerSearchInputField;
+            LayerToggleContainer = layerToggleContainer;
+            LayerTogglePrefab = layerTogglePrefab;
+            SelectAllLayersButton = selectAllLayersButton;
+            ClearAllLayersButton = clearAllLayersButton;
+            CancelButton = cancelButton;
+            ConfirmButton = confirmButton;
+        }
+
+        public Text SelectedPathText { get; }
+        public InputField CadScaleInputField { get; }
+        public InputField LayerSearchInputField { get; }
+        public Transform LayerToggleContainer { get; }
+        public Toggle LayerTogglePrefab { get; }
+        public Button SelectAllLayersButton { get; }
+        public Button ClearAllLayersButton { get; }
+        public Button CancelButton { get; }
+        public Button ConfirmButton { get; }
+    }
+
     private const string DefaultTargetLayerKeyword = "WALL";
 
     [Header("File")]
@@ -30,15 +65,7 @@ public sealed class DwgWallImporter : MonoBehaviour
     [SerializeField] private Canvas importSettingsPopupCanvas;
     [SerializeField] private GameObject importSettingsPopupPrefab;
     [SerializeField] private GameObject importSettingsPopupRoot;
-    [SerializeField] private Text popupSelectedPathText;
-    [SerializeField] private InputField popupCadScaleInputField;
-    [SerializeField] private InputField popupLayerSearchInputField;
-    [SerializeField] private Transform popupLayerToggleContainer;
-    [SerializeField] private Toggle popupLayerTogglePrefab;
-    [SerializeField] private Button popupSelectAllLayersButton;
-    [SerializeField] private Button popupClearAllLayersButton;
-    [SerializeField] private Button popupCancelButton;
-    [SerializeField] private Button popupConfirmButton;
+    [SerializeField] private DwgWallImportPopupView importSettingsPopupView;
 
     [Header("Wall Size")]
     [SerializeField] private float wallHeight = 22f;
@@ -79,10 +106,10 @@ public sealed class DwgWallImporter : MonoBehaviour
     private readonly List<string> warnings = new List<string>();
     private readonly DwgWallImportPopupState popupState = new DwgWallImportPopupState();
     private readonly DwgWallImportPopupController popupController = new DwgWallImportPopupController();
-    private readonly DwgWallImportPopupValidationService popupValidationService = new DwgWallImportPopupValidationService();
     private readonly DwgWallImportExecutionBuilder executionBuilder = new DwgWallImportExecutionBuilder();
     private readonly DwgWallImportProcessingService processingService = new DwgWallImportProcessingService();
     private readonly DwgWallImportApplyService applyService = new DwgWallImportApplyService();
+    private PopupBindings popupBindings;
 
     public string CadFilePath
     {
@@ -184,126 +211,40 @@ public sealed class DwgWallImporter : MonoBehaviour
     {
         ResolvePopupReferencesFromRoot();
 
-        if (popupCancelButton != null)
+        BindButton(popupBindings.CancelButton, CloseImportSettingsPopup);
+        BindButton(popupBindings.SelectAllLayersButton, HandleSelectAllPopupLayers);
+        BindButton(popupBindings.ClearAllLayersButton, HandleClearAllPopupLayers);
+        BindButton(popupBindings.ConfirmButton, ConfirmImportSettingsAndImport);
+        if (popupBindings.LayerSearchInputField != null)
         {
-            popupCancelButton.onClick.RemoveListener(CloseImportSettingsPopup);
-            popupCancelButton.onClick.AddListener(CloseImportSettingsPopup);
-        }
-
-        if (popupSelectAllLayersButton != null)
-        {
-            popupSelectAllLayersButton.onClick.RemoveListener(HandleSelectAllPopupLayers);
-            popupSelectAllLayersButton.onClick.AddListener(HandleSelectAllPopupLayers);
-        }
-
-        if (popupClearAllLayersButton != null)
-        {
-            popupClearAllLayersButton.onClick.RemoveListener(HandleClearAllPopupLayers);
-            popupClearAllLayersButton.onClick.AddListener(HandleClearAllPopupLayers);
-        }
-
-        if (popupLayerSearchInputField != null)
-        {
-            popupLayerSearchInputField.onValueChanged.RemoveListener(HandlePopupLayerSearchChanged);
-            popupLayerSearchInputField.onValueChanged.AddListener(HandlePopupLayerSearchChanged);
-        }
-
-        if (popupConfirmButton != null)
-        {
-            popupConfirmButton.onClick.RemoveListener(ConfirmImportSettingsAndImport);
-            popupConfirmButton.onClick.AddListener(ConfirmImportSettingsAndImport);
+            popupBindings.LayerSearchInputField.onValueChanged.RemoveListener(HandlePopupLayerSearchChanged);
+            popupBindings.LayerSearchInputField.onValueChanged.AddListener(HandlePopupLayerSearchChanged);
         }
     }
 
     private void UnbindPopupButtons()
     {
-        if (popupCancelButton != null)
-        {
-            popupCancelButton.onClick.RemoveListener(CloseImportSettingsPopup);
-        }
+        UnbindButton(popupBindings.CancelButton, CloseImportSettingsPopup);
+        UnbindButton(popupBindings.SelectAllLayersButton, HandleSelectAllPopupLayers);
+        UnbindButton(popupBindings.ClearAllLayersButton, HandleClearAllPopupLayers);
+        UnbindButton(popupBindings.ConfirmButton, ConfirmImportSettingsAndImport);
 
-        if (popupSelectAllLayersButton != null)
+        if (popupBindings.LayerSearchInputField != null)
         {
-            popupSelectAllLayersButton.onClick.RemoveListener(HandleSelectAllPopupLayers);
-        }
-
-        if (popupClearAllLayersButton != null)
-        {
-            popupClearAllLayersButton.onClick.RemoveListener(HandleClearAllPopupLayers);
-        }
-
-        if (popupLayerSearchInputField != null)
-        {
-            popupLayerSearchInputField.onValueChanged.RemoveListener(HandlePopupLayerSearchChanged);
-        }
-
-        if (popupConfirmButton != null)
-        {
-            popupConfirmButton.onClick.RemoveListener(ConfirmImportSettingsAndImport);
+            popupBindings.LayerSearchInputField.onValueChanged.RemoveListener(HandlePopupLayerSearchChanged);
         }
     }
 
     private void ResolvePopupReferencesFromRoot()
     {
-        if (importSettingsPopupRoot == null)
+        if (importSettingsPopupView != null)
         {
-            return;
+            importSettingsPopupView.RefreshReferences();
         }
 
-        Transform popupRootTransform = importSettingsPopupRoot.transform;
-        if (popupSelectedPathText == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "PathValue");
-            popupSelectedPathText = target != null ? target.GetComponent<Text>() : null;
-        }
-
-        if (popupCadScaleInputField == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "ScaleInput");
-            popupCadScaleInputField = target != null ? target.GetComponent<InputField>() : null;
-        }
-
-        if (popupLayerSearchInputField == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "LayerSearchInput");
-            popupLayerSearchInputField = target != null ? target.GetComponent<InputField>() : null;
-        }
-
-        if (popupLayerToggleContainer == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "LayerToggleContainer");
-            popupLayerToggleContainer = target;
-        }
-
-        if (popupLayerTogglePrefab == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "LayerToggleTemplate");
-            popupLayerTogglePrefab = target != null ? target.GetComponent<Toggle>() : null;
-        }
-
-        if (popupCancelButton == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "CancelButton");
-            popupCancelButton = target != null ? target.GetComponent<Button>() : null;
-        }
-
-        if (popupSelectAllLayersButton == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "SelectAllLayersButton");
-            popupSelectAllLayersButton = target != null ? target.GetComponent<Button>() : null;
-        }
-
-        if (popupClearAllLayersButton == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "ClearAllLayersButton");
-            popupClearAllLayersButton = target != null ? target.GetComponent<Button>() : null;
-        }
-
-        if (popupConfirmButton == null)
-        {
-            Transform target = LayerUtility.FindChildByName(popupRootTransform, "ImportButton");
-            popupConfirmButton = target != null ? target.GetComponent<Button>() : null;
-        }
+        popupBindings = ResolvePopupBindings(
+            importSettingsPopupRoot,
+            importSettingsPopupView);
     }
 
     private static Button ResolveButton(Button currentButton, string objectName)
@@ -319,81 +260,46 @@ public sealed class DwgWallImporter : MonoBehaviour
 
     private void ShowImportSettingsPopup(string path)
     {
-        popupState.PendingImportPath = path ?? string.Empty;
-        LoadAvailableLayersForPopup(popupState.PendingImportPath);
+        string pendingImportPath = path ?? string.Empty;
+        popupState.PendingImportPath = pendingImportPath;
+        LoadAvailableLayers(pendingImportPath);
         EnsureImportSettingsPopup();
         if (importSettingsPopupRoot == null)
         {
-            ImportFromPath(popupState.PendingImportPath);
+            ImportFromPath(pendingImportPath);
             return;
         }
 
-        if (popupCadScaleInputField != null)
+        if (!TryPreparePopup(pendingImportPath))
         {
-            popupCadScaleInputField.SetTextWithoutNotify(cadUnitToWorldScale.ToString("0.#######", System.Globalization.CultureInfo.InvariantCulture));
+            ImportFromPath(pendingImportPath);
         }
-
-        popupLayerSearchInputField?.SetTextWithoutNotify(string.Empty);
-
-        if (popupSelectedPathText != null)
-        {
-            popupSelectedPathText.text = popupState.PendingImportPath;
-        }
-
-        PopulateLayerToggleList();
-
-        importSettingsPopupRoot.SetActive(true);
-        Canvas.ForceUpdateCanvases();
-        if (popupLayerToggleContainer is RectTransform containerRect)
-        {
-            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
-        }
-        UDebug.Log($"[{nameof(DwgWallImporter)}] Popup layers detected: {popupController.AvailableLayerCount}, visible toggles: {CountVisiblePopupLayerToggles()}", this);
-        popupCadScaleInputField?.ActivateInputField();
     }
 
     private void EnsureImportSettingsPopup()
     {
-        if (importSettingsPopupRoot != null)
+        if (!EnsurePopup())
         {
-            BindPopupButtons();
+            UDebug.LogWarning($"[{nameof(DwgWallImporter)}] No popup root or popup prefab could be resolved. Falling back to direct import.", this);
             return;
         }
 
-        if (importSettingsPopupPrefab != null)
-        {
-            Canvas canvas = importSettingsPopupCanvas != null
-                ? importSettingsPopupCanvas
-                : LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
-            if (canvas == null)
-            {
-                UDebug.LogWarning($"[{nameof(DwgWallImporter)}] No canvas was found for the import settings popup. Falling back to direct import.", this);
-                return;
-            }
-
-            importSettingsPopupRoot = Instantiate(importSettingsPopupPrefab, canvas.transform);
-            importSettingsPopupRoot.name = importSettingsPopupPrefab.name;
-            popupState.OwnsRuntimeImportSettingsPopup = true;
-            ResolvePopupReferencesFromRoot();
-            BindPopupButtons();
-            importSettingsPopupRoot.SetActive(false);
-            return;
-        }
+        BindPopupButtons();
     }
 
     private void ConfirmImportSettingsAndImport()
     {
-        if (!popupValidationService.TryApplyCadScale(popupCadScaleInputField, this, out float parsedScale))
+        if (!TryApplyCadScale(out float parsedScale))
         {
             return;
         }
 
-        if (popupCadScaleInputField != null)
+        if (popupBindings.CadScaleInputField != null)
         {
             cadUnitToWorldScale = parsedScale;
         }
 
-        if (!popupValidationService.ValidateLayerSelection(popupController, CountVisiblePopupLayerToggles(), this))
+        if (!ValidateLayerSelection())
         {
             return;
         }
@@ -431,48 +337,19 @@ public sealed class DwgWallImporter : MonoBehaviour
         }
 
         importSettingsPopupRoot = null;
-        popupSelectedPathText = null;
-        popupCadScaleInputField = null;
-        popupLayerSearchInputField = null;
-        popupLayerToggleContainer = null;
-        popupLayerTogglePrefab = null;
-        popupSelectAllLayersButton = null;
-        popupClearAllLayersButton = null;
-        popupCancelButton = null;
-        popupConfirmButton = null;
+        importSettingsPopupView = null;
+        popupBindings = default;
         popupController.Reset();
         popupState.Reset();
-    }
-
-    private void LoadAvailableLayersForPopup(string path)
-    {
-        List<string> availableLayers = new List<string>();
-        string resolvedPath = CadWallImportService.ResolveFilePath(path);
-        if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath))
-        {
-            popupController.SetAvailableLayers(availableLayers);
-            return;
-        }
-
-        try
-        {
-            availableLayers.AddRange(CadWallImportService.LoadAvailableLayers(resolvedPath));
-        }
-        catch (Exception ex)
-        {
-            UDebug.LogWarning($"[{nameof(DwgWallImporter)}] Failed to read layer list for popup: {ex.Message}", this);
-        }
-
-        popupController.SetAvailableLayers(availableLayers);
     }
 
     private void PopulateLayerToggleList()
     {
         ResolvePopupReferencesFromRoot();
         popupController.PopulateLayerToggleList(
-            popupLayerToggleContainer,
-            popupLayerTogglePrefab,
-            popupLayerSearchInputField != null ? popupLayerSearchInputField.text : string.Empty,
+            popupBindings.LayerToggleContainer,
+            popupBindings.LayerTogglePrefab,
+            popupBindings.LayerSearchInputField != null ? popupBindings.LayerSearchInputField.text : string.Empty,
             layerName => CadWallImportService.ShouldImportLayerByDefault(layerName, CreateImportSettings()),
             DestroySafely);
     }
@@ -506,12 +383,12 @@ public sealed class DwgWallImporter : MonoBehaviour
     {
         popupController.SetPopupLayerSelectionState(
             selected,
-            popupLayerSearchInputField != null ? popupLayerSearchInputField.text : string.Empty);
+            popupBindings.LayerSearchInputField != null ? popupBindings.LayerSearchInputField.text : string.Empty);
     }
 
     private void ApplyPopupLayerSearchFilter(string searchText)
     {
-        popupController.ApplyPopupLayerSearchFilter(popupLayerToggleContainer, searchText);
+        popupController.ApplyPopupLayerSearchFilter(popupBindings.LayerToggleContainer, searchText);
     }
 
     private bool HasAnyPopupLayerSelected()
@@ -534,7 +411,6 @@ public sealed class DwgWallImporter : MonoBehaviour
         }
 
         UDebug.Log($"[1/6] Import started: {resolvedPath}", this);
-
         cadFilePath = resolvedPath;
 
         if (!processingService.TryParse(resolvedPath, CreateImportSettings(), this, out CadWallImportParseResult parseResult))
@@ -552,7 +428,6 @@ public sealed class DwgWallImporter : MonoBehaviour
         UDebug.Log($"[{nameof(DwgWallImporter)}] Popup-selected layers: {(includedLayers != null ? includedLayers.Length : 0)}", this);
 
         processingService.PopulateSegmentsAndWarnings(parseResult, segments, warnings);
-
         UDebug.Log($"[5/6] Extraction complete. Wall segment count: {segments.Count}", this);
 
         if (autoCenterImportAtOrigin)
@@ -574,8 +449,6 @@ public sealed class DwgWallImporter : MonoBehaviour
         ResolveReferences();
         wallRoot = executionBuilder.EnsureWallRoot(wallRoot);
         cachedCubeMesh = executionBuilder.EnsureCachedCubeMesh(cachedCubeMesh, DestroySafely);
-
-        // resolvedPath was already normalized above.
         wallMaterial = executionBuilder.ResolveWallMaterial(wallRoot, wallMaterial, fallbackWallColor);
         Material resolvedWallMaterial = wallMaterial;
         wallTopMaterial = executionBuilder.ResolveTopMaterial(wallRoot, wallTopMaterial, resolvedWallMaterial);
@@ -608,7 +481,6 @@ public sealed class DwgWallImporter : MonoBehaviour
         applyService.LogImportSummary(resolvedPath, applyResult, this);
     }
 
-
     private CadWallImportSettings CreateImportSettings()
     {
         return executionBuilder.CreateImportSettings(
@@ -623,6 +495,213 @@ public sealed class DwgWallImporter : MonoBehaviour
             includedLayers,
             excludedLayers,
             targetLayerKeyword);
+    }
+
+    private PopupBindings ResolvePopupBindings(
+        GameObject popupRoot,
+        DwgWallImportPopupView popupView)
+    {
+        DwgWallImportPopupView resolvedView = popupView != null
+            ? popupView
+            : popupRoot != null ? popupRoot.GetComponent<DwgWallImportPopupView>() : null;
+
+        if (resolvedView != null)
+        {
+            return new PopupBindings(
+                resolvedView.SelectedPathText,
+                resolvedView.CadScaleInputField,
+                resolvedView.LayerSearchInputField,
+                resolvedView.LayerToggleContainer,
+                resolvedView.LayerTogglePrefab,
+                resolvedView.SelectAllLayersButton,
+                resolvedView.ClearAllLayersButton,
+                resolvedView.CancelButton,
+                resolvedView.ConfirmButton);
+        }
+
+        if (popupRoot == null)
+        {
+            return default;
+        }
+
+        Transform popupRootTransform = popupRoot.transform;
+        return new PopupBindings(
+            ResolvePopupComponent<Text>(popupRootTransform, "PathValue"),
+            ResolvePopupComponent<InputField>(popupRootTransform, "ScaleInput"),
+            ResolvePopupComponent<InputField>(popupRootTransform, "LayerSearchInput"),
+            LayerUtility.FindChildByName(popupRootTransform, "LayerToggleContainer"),
+            ResolvePopupComponent<Toggle>(popupRootTransform, "LayerToggleTemplate"),
+            ResolvePopupComponent<Button>(popupRootTransform, "SelectAllLayersButton"),
+            ResolvePopupComponent<Button>(popupRootTransform, "ClearAllLayersButton"),
+            ResolvePopupComponent<Button>(popupRootTransform, "CancelButton"),
+            ResolvePopupComponent<Button>(popupRootTransform, "ImportButton"));
+    }
+
+    private bool EnsurePopup()
+    {
+        if (importSettingsPopupRoot != null)
+        {
+            importSettingsPopupView = ResolvePopupView(importSettingsPopupRoot, importSettingsPopupView);
+            popupBindings = ResolvePopupBindings(importSettingsPopupRoot, importSettingsPopupView);
+            return true;
+        }
+
+        if (importSettingsPopupPrefab == null)
+        {
+            return false;
+        }
+
+        Canvas canvas = importSettingsPopupCanvas != null
+            ? importSettingsPopupCanvas
+            : LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
+        if (canvas == null)
+        {
+            return false;
+        }
+
+        importSettingsPopupRoot = Instantiate(importSettingsPopupPrefab, canvas.transform);
+        importSettingsPopupRoot.name = importSettingsPopupPrefab.name;
+        popupState.OwnsRuntimeImportSettingsPopup = true;
+        importSettingsPopupView = ResolvePopupView(importSettingsPopupRoot, null);
+        popupBindings = ResolvePopupBindings(importSettingsPopupRoot, importSettingsPopupView);
+        importSettingsPopupRoot.SetActive(false);
+        return true;
+    }
+
+    private bool TryPreparePopup(string pendingImportPath)
+    {
+        popupState.PendingImportPath = pendingImportPath ?? string.Empty;
+        if (importSettingsPopupRoot == null)
+        {
+            return false;
+        }
+
+        if (popupBindings.CadScaleInputField != null)
+        {
+            popupBindings.CadScaleInputField.SetTextWithoutNotify(cadUnitToWorldScale.ToString("0.#######", CultureInfo.InvariantCulture));
+        }
+
+        popupBindings.LayerSearchInputField?.SetTextWithoutNotify(string.Empty);
+
+        if (popupBindings.SelectedPathText != null)
+        {
+            popupBindings.SelectedPathText.text = popupState.PendingImportPath;
+        }
+
+        PopulateLayerToggleList();
+
+        importSettingsPopupRoot.SetActive(true);
+        Canvas.ForceUpdateCanvases();
+        if (popupBindings.LayerToggleContainer is RectTransform containerRect)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+        }
+
+        UDebug.Log(
+            $"[{nameof(DwgWallImporter)}] Popup layers detected: {popupController.AvailableLayerCount}, visible toggles: {CountVisiblePopupLayerToggles()}",
+            this);
+        popupBindings.CadScaleInputField?.ActivateInputField();
+        return true;
+    }
+
+    private void LoadAvailableLayers(string path)
+    {
+        List<string> availableLayers = new List<string>();
+        string resolvedPath = CadWallImportService.ResolveFilePath(path);
+        if (string.IsNullOrWhiteSpace(resolvedPath) || !System.IO.File.Exists(resolvedPath))
+        {
+            popupController.SetAvailableLayers(availableLayers);
+            return;
+        }
+
+        try
+        {
+            availableLayers.AddRange(CadWallImportService.LoadAvailableLayers(resolvedPath));
+        }
+        catch (Exception ex)
+        {
+            UDebug.LogWarning($"[{nameof(DwgWallImporter)}] Failed to read layer list for popup: {ex.Message}", this);
+        }
+
+        popupController.SetAvailableLayers(availableLayers);
+    }
+
+    private bool TryApplyCadScale(out float parsedScale)
+    {
+        parsedScale = 0f;
+        if (popupBindings.CadScaleInputField == null)
+        {
+            return true;
+        }
+
+        string scaleText = popupBindings.CadScaleInputField.text?.Trim();
+        if (!float.TryParse(scaleText, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedScale) ||
+            parsedScale <= 0f)
+        {
+            Debug.LogWarning($"[{nameof(DwgWallImporter)}] Invalid CAD unit scale: '{scaleText}'.", this);
+            popupBindings.CadScaleInputField.ActivateInputField();
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateLayerSelection()
+    {
+        int visibleLayerToggleCount = CountVisiblePopupLayerToggles();
+        if (popupController.AvailableLayerCount == 0 || visibleLayerToggleCount == 0)
+        {
+            Debug.LogWarning($"[{nameof(DwgWallImporter)}] No visible layer entries are available in the popup. Import was cancelled.", this);
+            return false;
+        }
+
+        if (!popupController.HasAnyPopupLayerSelected())
+        {
+            Debug.LogWarning($"[{nameof(DwgWallImporter)}] Select at least one layer before importing.", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void BindButton(Button button, UnityEngine.Events.UnityAction callback)
+    {
+        if (button == null || callback == null)
+        {
+            return;
+        }
+
+        button.onClick.RemoveListener(callback);
+        button.onClick.AddListener(callback);
+    }
+
+    private static void UnbindButton(Button button, UnityEngine.Events.UnityAction callback)
+    {
+        if (button == null || callback == null)
+        {
+            return;
+        }
+
+        button.onClick.RemoveListener(callback);
+    }
+
+    private static T ResolvePopupComponent<T>(Transform root, string childName) where T : Component
+    {
+        Transform target = LayerUtility.FindChildByName(root, childName);
+        return target != null ? target.GetComponent<T>() : null;
+    }
+
+    private static DwgWallImportPopupView ResolvePopupView(
+        GameObject popupRoot,
+        DwgWallImportPopupView popupView)
+    {
+        DwgWallImportPopupView resolvedView = popupView != null ? popupView : popupRoot.GetComponent<DwgWallImportPopupView>();
+        if (resolvedView != null)
+        {
+            resolvedView.RefreshReferences();
+        }
+
+        return resolvedView;
     }
 
     private void DestroySafely(UnityEngine.Object target)

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public partial class TopViewRenderManager
 {
@@ -119,11 +118,9 @@ public partial class TopViewRenderManager
     private void RefreshOpeningVisuals()
     {
         WallOpening[] openings = wallRoot.GetComponentsInChildren<WallOpening>(true);
-        removedKeys.Clear();
-        foreach (KeyValuePair<Transform, Image> pair in openingImages)
-        {
-            removedKeys.Add(pair.Key);
-        }
+        TopPlanSegmentBatchGraphic batchGraphic = GetOrCreateBatchGraphic(ref openingBatchGraphic, "TopPlanOpeningsBatch");
+        batchGraphic.raycastTarget = false;
+        cachedOpeningSegments.Clear();
 
         for (int i = 0; i < openings.Length; i++)
         {
@@ -133,13 +130,14 @@ public partial class TopViewRenderManager
                 continue;
             }
 
-            removedKeys.Remove(opening.transform);
-            Color baseColor = opening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door ? doorColor : windowColor;
-            Image image = GetOrCreateVisual(openingImages, opening.transform, "TopPlanOpening", baseColor);
-            UpdateOpeningVisual(opening, image);
+            if (TryBuildOpeningSegmentData(opening, out TopPlanSegmentBatchGraphic.SegmentData segment))
+            {
+                cachedOpeningSegments.Add(segment);
+            }
         }
 
-        RemoveUnusedVisuals(openingImages, removedKeys);
+        batchGraphic.SetSegments(cachedOpeningSegments);
+        batchGraphic.gameObject.SetActive(cachedOpeningSegments.Count > 0);
     }
 
     private bool TryBuildFloorPolygon(Room room, out TopPlanPolygonBatchGraphic.PolygonData polygon)
@@ -184,6 +182,11 @@ public partial class TopViewRenderManager
     private bool IsWallSelectedInTopPlan(Wall wall)
     {
         if (wall == null)
+        {
+            return false;
+        }
+
+        if (wallOpeningPlacementManager != null && wallOpeningPlacementManager.SelectedOpening != null)
         {
             return false;
         }
@@ -246,18 +249,18 @@ public partial class TopViewRenderManager
         return IsWallSelectedInTopPlan(wall) ? selectedWallColor : wallColor;
     }
 
-    private void UpdateOpeningVisual(WallOpening opening, Image image)
+    private bool TryBuildOpeningSegmentData(WallOpening opening, out TopPlanSegmentBatchGraphic.SegmentData segment)
     {
-        if (opening == null || image == null)
+        segment = default;
+        if (opening == null)
         {
-            return;
+            return false;
         }
 
         WallOpeningContainer container = opening.Container;
         if (container == null)
         {
-            image.gameObject.SetActive(false);
-            return;
+            return false;
         }
 
         Vector3 direction = container.WallDirection;
@@ -279,253 +282,16 @@ public partial class TopViewRenderManager
             selectedColor = selectedWindowColor;
         }
 
-        GameObject markerPrefab = wallOpeningPlacementManager != null
-            ? wallOpeningPlacementManager.GetMarkerPrefab(opening)
-            : null;
-        Vector2 scaleMultiplier = wallOpeningPlacementManager != null
-            ? wallOpeningPlacementManager.GetMarkerScaleMultiplier(opening)
-            : Vector2.one;
-
-        if (markerPrefab != null)
-        {
-            UpdateOpeningMarkerVisual(
-                opening,
-                image,
-                start,
-                end,
-                scaleMultiplier,
-                isSelected ? selectedColor : baseColor,
-                markerPrefab);
-        }
-        else
-        {
-            ClearOpeningMarkerContent(image.rectTransform);
-            ApplySegmentRect(image.rectTransform, start, end, opening.Depth);
-            image.color = isSelected ? selectedColor : baseColor;
-        }
-
-        image.gameObject.SetActive(true);
-    }
-
-    private void UpdateOpeningMarkerVisual(
-        WallOpening opening,
-        Image image,
-        Vector3 startWorld,
-        Vector3 endWorld,
-        Vector2 scaleMultiplier,
-        Color tintColor,
-        GameObject markerPrefab)
-    {
-        RectTransform rectTransform = image.rectTransform;
-        RectTransform markerContent = EnsureOpeningMarkerContent(rectTransform, markerPrefab);
-        if (markerContent == null)
-        {
-            ApplySegmentRect(rectTransform, startWorld, endWorld, opening.Depth);
-            image.color = tintColor;
-            return;
-        }
-
-        Vector3 startScreenWorld = topViewCamera.WorldToScreenPoint(startWorld);
-        Vector3 endScreenWorld = topViewCamera.WorldToScreenPoint(endWorld);
-        bool visible = startScreenWorld.z > 0f && endScreenWorld.z > 0f;
-        rectTransform.gameObject.SetActive(visible);
-        if (!visible)
-        {
-            return;
-        }
-
-        Vector2 startScreen = startScreenWorld;
-        Vector2 endScreen = endScreenWorld;
-        Vector2 midpointScreen = (startScreen + endScreen) * 0.5f;
-        Vector2 delta = endScreen - startScreen;
-        float width = delta.magnitude;
-        float scaledWidth = Mathf.Max(1f, width * Mathf.Max(0.01f, scaleMultiplier.x));
-        float scaledHeight = Mathf.Max(1f, scaledWidth * Mathf.Max(0.01f, scaleMultiplier.y));
-        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
-
-        WallOpeningPlacementManager.MarkerPlacementMode placementMode =
-            wallOpeningPlacementManager != null
-                ? wallOpeningPlacementManager.GetMarkerPlacementMode(opening)
-                : WallOpeningPlacementManager.MarkerPlacementMode.OffsetFromOpening;
-
-        if (placementMode == WallOpeningPlacementManager.MarkerPlacementMode.OffsetFromOpening)
-        {
-            Vector2 normal = width > 0.0001f
-                ? new Vector2(-delta.y, delta.x).normalized
-                : Vector2.up;
-            float offsetDirection = opening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door &&
-                                    opening.DoorVerticalFlip
-                ? -1f
-                : 1f;
-            midpointScreen += normal * (scaledHeight * 0.5f * offsetDirection);
-        }
-
-        Camera uiCamera = targetCanvas != null && targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay
-            ? null
-            : targetCanvas != null ? targetCanvas.worldCamera : null;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(contentRoot, midpointScreen, uiCamera, out Vector2 localPoint))
-        {
-            rectTransform.anchoredPosition = localPoint;
-        }
-        else
-        {
-            rectTransform.position = midpointScreen;
-        }
-
-        rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
-        rectTransform.sizeDelta = new Vector2(scaledWidth, scaledHeight);
-        rectTransform.localScale = Vector3.one;
-
-        image.color = Color.clear;
-        image.raycastTarget = false;
-        ApplyMarkerTint(markerContent, tintColor);
-        ApplyDoorMarkerFlip(markerContent, opening);
-    }
-
-    private void ApplySegmentRect(RectTransform rectTransform, Vector3 startWorld, Vector3 endWorld, float worldThickness)
-    {
-        Vector3 direction = endWorld - startWorld;
-        direction.y = 0f;
-        if (direction.sqrMagnitude <= 0.000001f)
-        {
-            rectTransform.gameObject.SetActive(false);
-            return;
-        }
-
-        Vector3 midpoint = (startWorld + endWorld) * 0.5f;
-        Vector3 normal = Vector3.Cross(Vector3.up, direction.normalized);
-        Vector3 thicknessOffset = normal * (worldThickness * 0.5f);
-
-        Vector2 startScreen = topViewCamera.WorldToScreenPoint(startWorld);
-        Vector2 endScreen = topViewCamera.WorldToScreenPoint(endWorld);
-        Vector2 positiveThicknessScreen = topViewCamera.WorldToScreenPoint(midpoint + thicknessOffset);
-        Vector2 negativeThicknessScreen = topViewCamera.WorldToScreenPoint(midpoint - thicknessOffset);
-
-        float width = Vector2.Distance(startScreen, endScreen);
-        float thickness = Mathf.Max(1f, Vector2.Distance(positiveThicknessScreen, negativeThicknessScreen));
-        float angle = Mathf.Atan2(endScreen.y - startScreen.y, endScreen.x - startScreen.x) * Mathf.Rad2Deg;
-        Vector2 midpointScreen = (startScreen + endScreen) * 0.5f;
-
-        Camera uiCamera = targetCanvas != null && targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : targetCanvas != null ? targetCanvas.worldCamera : null;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(contentRoot, midpointScreen, uiCamera, out Vector2 localPoint))
-        {
-            rectTransform.anchoredPosition = localPoint;
-        }
-        else
-        {
-            rectTransform.position = midpointScreen;
-        }
-
-        rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
-        rectTransform.sizeDelta = new Vector2(width, thickness);
-    }
-
-    private Image GetOrCreateVisual(Dictionary<Transform, Image> map, Transform key, string namePrefix, Color defaultColor)
-    {
-        if (map.TryGetValue(key, out Image existing) && existing != null)
-        {
-            return existing;
-        }
-
-        GameObject visualObject = new GameObject($"{namePrefix}_{key.name}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        visualObject.transform.SetParent(contentRoot, false);
-        LayerUtility.ApplyLayer(visualObject, LayerUtility.TopPlanUILayerName, true);
-
-        Image image = visualObject.GetComponent<Image>();
-        image.color = defaultColor;
-        image.raycastTarget = false;
-
-        RectTransform rectTransform = image.rectTransform;
-        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        rectTransform.pivot = new Vector2(0.5f, 0.5f);
-
-        map[key] = image;
-        return image;
-    }
-
-    private RectTransform EnsureOpeningMarkerContent(RectTransform parent, GameObject markerPrefab)
-    {
-        if (parent == null || markerPrefab == null)
-        {
-            return null;
-        }
-
-        RectTransform existing = parent.childCount > 0 ? parent.GetChild(0) as RectTransform : null;
-        if (existing != null && existing.name == markerPrefab.name)
-        {
-            return existing;
-        }
-
-        ClearOpeningMarkerContent(parent);
-
-        GameObject markerObject = Instantiate(markerPrefab, parent);
-        markerObject.name = markerPrefab.name;
-        LayerUtility.ApplyLayer(markerObject, LayerUtility.TopPlanUILayerName, true);
-
-        RectTransform markerRect = markerObject.GetComponent<RectTransform>();
-        if (markerRect == null)
-        {
-            markerRect = markerObject.AddComponent<RectTransform>();
-        }
-
-        markerRect.SetParent(parent, false);
-        markerRect.anchorMin = Vector2.zero;
-        markerRect.anchorMax = Vector2.one;
-        markerRect.pivot = new Vector2(0.5f, 0.5f);
-        markerRect.offsetMin = Vector2.zero;
-        markerRect.offsetMax = Vector2.zero;
-        markerRect.anchoredPosition = Vector2.zero;
-        markerRect.localScale = Vector3.one;
-        markerRect.localRotation = Quaternion.identity;
-        return markerRect;
-    }
-
-    private void ClearOpeningMarkerContent(RectTransform parent)
-    {
-        if (parent == null)
-        {
-            return;
-        }
-
-        for (int i = parent.childCount - 1; i >= 0; i--)
-        {
-            Destroy(parent.GetChild(i).gameObject);
-        }
-    }
-
-    private static void ApplyMarkerTint(RectTransform markerRoot, Color tintColor)
-    {
-        if (markerRoot == null)
-        {
-            return;
-        }
-
-        Graphic[] graphics = markerRoot.GetComponentsInChildren<Graphic>(true);
-        for (int i = 0; i < graphics.Length; i++)
-        {
-            Graphic graphic = graphics[i];
-            if (graphic == null)
-            {
-                continue;
-            }
-
-            graphic.color = tintColor;
-            graphic.raycastTarget = false;
-        }
-    }
-
-    private static void ApplyDoorMarkerFlip(RectTransform markerRoot, WallOpening opening)
-    {
-        if (markerRoot == null || opening == null || opening.Type != WallOpeningPlacementManager.OpeningPlacementType.Door)
-        {
-            return;
-        }
-
-        Vector3 scale = markerRoot.localScale;
-        scale.x = Mathf.Abs(scale.x) * (opening.DoorOpensRight ? -1f : 1f);
-        scale.y = Mathf.Abs(scale.y) * (opening.DoorVerticalFlip ? -1f : 1f);
-        markerRoot.localScale = scale;
+        return TryBuildScreenSegmentData(
+            start,
+            end,
+            container.WallThickness,
+            isSelected ? selectedColor : baseColor,
+            null,
+            false,
+            0f,
+            0f,
+            out segment);
     }
 
     private TopPlanPolygonBatchGraphic GetOrCreateFloorBatchGraphic()
@@ -550,38 +316,6 @@ public partial class TopViewRenderManager
         rectTransform.offsetMin = Vector2.zero;
         rectTransform.offsetMax = Vector2.zero;
         return floorBatchGraphic;
-    }
-
-    private void RemoveUnusedVisuals(Dictionary<Transform, Image> map, List<Transform> keys)
-    {
-        for (int i = 0; i < keys.Count; i++)
-        {
-            Transform key = keys[i];
-            if (!map.TryGetValue(key, out Image image))
-            {
-                continue;
-            }
-
-            if (image != null)
-            {
-                Destroy(image.gameObject);
-            }
-
-            map.Remove(key);
-        }
-    }
-
-    private void ClearVisuals(Dictionary<Transform, Image> map)
-    {
-        foreach (KeyValuePair<Transform, Image> pair in map)
-        {
-            if (pair.Value != null)
-            {
-                Destroy(pair.Value.gameObject);
-            }
-        }
-
-        map.Clear();
     }
 
     private void ClearPolygonBatchGraphic(ref TopPlanPolygonBatchGraphic graphic)
@@ -690,4 +424,3 @@ public partial class TopViewRenderManager
         graphic = null;
     }
 }
-

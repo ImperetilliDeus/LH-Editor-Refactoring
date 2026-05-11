@@ -81,24 +81,9 @@ public partial class WallOpeningPlacementManager
             renderer = opening.gameObject.AddComponent<MeshRenderer>();
         }
 
-        bool hasCatalogModel = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) &&
-                               definition.ModelPrefab != null;
-
-        if (hasCatalogModel)
-        {
-            renderer.enabled = false;
-            opening.ApplyModelPrefab(
-                definition.ModelPrefab,
-                definition.ModelLocalPosition,
-                definition.ModelLocalEulerAngles,
-                definition.ModelScaleMultiplier);
-        }
-        else
-        {
-            renderer.enabled = true;
-            renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
-            opening.ClearModelPrefab();
-        }
+        renderer.enabled = true;
+        renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
+        opening.ClearModelPrefab();
 
         CreateFillerSegment(parent, $"{opening.name}_BottomFill", container, opening, opening.BottomY - container.WallBottomY, container.WallBottomY);
         CreateFillerSegment(
@@ -109,11 +94,7 @@ public partial class WallOpeningPlacementManager
             container.WallTopY - (opening.BottomY + opening.Height),
             opening.BottomY + opening.Height);
 
-        opening.EnsureMarker(
-            previewCanvas,
-            mainCamera,
-            GetMarkerPrefab(opening),
-            GetMarkerScaleMultiplier(opening));
+        opening.EnsureMarker(previewCanvas, mainCamera);
     }
 
     private static float SafeDivide(float numerator, float denominator)

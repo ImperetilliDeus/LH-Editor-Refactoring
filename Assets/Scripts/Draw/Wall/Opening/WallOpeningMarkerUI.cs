@@ -2,19 +2,23 @@ using UnityEngine;
 
 public class WallOpeningMarkerUI : MonoBehaviour
 {
+    private const float MarkerThickness = 3f;
+    private const float SelectedMarkerThickness = 5f;
+    private const float MarkerHitPadding = 18f;
+    private static readonly Color DoorMarkerColor = new Color32(99, 58, 29, 255);
+    private static readonly Color WindowMarkerColor = new Color32(70, 150, 214, 255);
+    private static readonly Color SelectedMarkerColor = new Color32(255, 190, 92, 255);
+
     [SerializeField] private WallOpening ownerOpening;
     [SerializeField] private WallOpeningPlacementManager placementManager;
     [SerializeField] private Canvas targetCanvas;
     [SerializeField] private Camera worldCamera;
     [SerializeField] private Transform startAnchor;
     [SerializeField] private Transform endAnchor;
-    [SerializeField] private GameObject markerPrefab;
-    [SerializeField] private Vector2 scaleMultiplier = Vector2.one;
 
     private RectTransform markerRootRect;
     private RectTransform markerContentRect;
-    private Vector2 baseSize;
-    private Vector3 baseScale = Vector3.one;
+    private TopPlanSegmentBatchGraphic markerGraphic;
     private Coroutine deferredRefreshRoutine;
 
     public void Initialize(
@@ -23,9 +27,7 @@ public class WallOpeningMarkerUI : MonoBehaviour
         Canvas canvas,
         Camera camera,
         Transform start,
-        Transform end,
-        GameObject prefab,
-        Vector2 markerScaleMultiplier)
+        Transform end)
     {
         ownerOpening = opening;
         placementManager = manager;
@@ -33,19 +35,7 @@ public class WallOpeningMarkerUI : MonoBehaviour
         worldCamera = camera;
         startAnchor = start;
         endAnchor = end;
-        Vector2 nextScaleMultiplier = new Vector2(
-            Mathf.Max(0.01f, markerScaleMultiplier.x),
-            Mathf.Max(0.01f, markerScaleMultiplier.y));
-        bool prefabChanged = markerPrefab != prefab;
-        bool scaleChanged = scaleMultiplier != nextScaleMultiplier;
-        markerPrefab = prefab;
-        scaleMultiplier = nextScaleMultiplier;
         EnsureUI();
-        if (prefabChanged || scaleChanged)
-        {
-            RebuildMarkerContent();
-        }
-
         placementManager?.RegisterMarkerUI(this);
         RefreshVisual();
         ScheduleDeferredRefresh();
@@ -114,7 +104,7 @@ public class WallOpeningMarkerUI : MonoBehaviour
         }
 
         ApplyCurrentLayer();
-        if (markerContentRect == null)
+        if (markerContentRect == null || markerGraphic == null)
         {
             RebuildMarkerContent();
         }
@@ -132,43 +122,27 @@ public class WallOpeningMarkerUI : MonoBehaviour
             Destroy(markerContentRect.gameObject);
             markerContentRect = null;
         }
+        markerGraphic = null;
 
-        GameObject markerGO;
-        if (markerPrefab != null)
-        {
-            markerGO = Instantiate(markerPrefab, markerRootRect);
-            markerGO.name = markerPrefab.name;
-            ApplyLayerRecursively(markerGO);
-        }
-        else
-        {
-            markerGO = new GameObject("OpeningMarkerUI", typeof(RectTransform));
-            markerGO.transform.SetParent(markerRootRect, false);
-            ApplyLayerRecursively(markerGO);
-        }
+        GameObject markerGO = new GameObject(
+            "OpeningMarkerLine",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TopPlanSegmentBatchGraphic));
+        markerGO.transform.SetParent(markerRootRect, false);
+        ApplyLayerRecursively(markerGO);
 
         markerContentRect = markerGO.GetComponent<RectTransform>();
-        if (markerContentRect == null)
-        {
-            markerContentRect = markerGO.AddComponent<RectTransform>();
-        }
-
         markerContentRect.SetParent(markerRootRect, false);
         markerContentRect.anchorMin = new Vector2(0f, 0f);
         markerContentRect.anchorMax = new Vector2(1f, 1f);
         markerContentRect.pivot = new Vector2(0.5f, 0.5f);
         markerContentRect.anchoredPosition = Vector2.zero;
+        markerContentRect.offsetMin = Vector2.zero;
+        markerContentRect.offsetMax = Vector2.zero;
 
-        baseSize = markerContentRect.sizeDelta;
-        baseScale = markerContentRect.localScale;
-        if (baseSize.x <= 0f)
-        {
-            baseSize.x = 100f;
-        }
-        if (baseSize.y <= 0f)
-        {
-            baseSize.y = 100f;
-        }
+        markerGraphic = markerGO.GetComponent<TopPlanSegmentBatchGraphic>();
+        markerGraphic.raycastTarget = false;
     }
 
     private void ApplyCurrentLayer()
@@ -233,26 +207,8 @@ public class WallOpeningMarkerUI : MonoBehaviour
         Vector2 delta = endPoint - startPoint;
         float width = delta.magnitude;
         float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
-        float scaledWidth = width * scaleMultiplier.x;
-        float scaledHeight = scaledWidth * scaleMultiplier.y;
-
-        WallOpeningPlacementManager.MarkerPlacementMode placementMode =
-            placementManager != null
-                ? placementManager.GetMarkerPlacementMode(ownerOpening)
-                : WallOpeningPlacementManager.MarkerPlacementMode.OffsetFromOpening;
-
-        if (placementMode == WallOpeningPlacementManager.MarkerPlacementMode.OffsetFromOpening)
-        {
-            Vector2 normal = width > 0.0001f
-                ? new Vector2(-delta.y, delta.x).normalized
-                : Vector2.up;
-            float offsetDirection = ownerOpening != null &&
-                                    ownerOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door &&
-                                    ownerOpening.DoorVerticalFlip
-                ? -1f
-                : 1f;
-            midpoint += normal * (scaledHeight * 0.5f * offsetDirection);
-        }
+        bool isSelected = placementManager != null && placementManager.SelectedOpening == ownerOpening;
+        float thickness = isSelected ? SelectedMarkerThickness : MarkerThickness;
 
         RectTransform canvasRect = targetCanvas.transform as RectTransform;
         if (canvasRect != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, midpoint, uiCamera, out Vector2 localPoint))
@@ -265,17 +221,35 @@ public class WallOpeningMarkerUI : MonoBehaviour
         }
 
         markerRootRect.localRotation = Quaternion.Euler(0f, 0f, angle);
-        markerRootRect.sizeDelta = new Vector2(scaledWidth, scaledHeight);
+        markerRootRect.sizeDelta = new Vector2(width + thickness, thickness + MarkerHitPadding);
         markerRootRect.localScale = Vector3.one;
+        markerContentRect.localRotation = Quaternion.identity;
+        markerContentRect.localScale = Vector3.one;
 
-        markerContentRect.sizeDelta = Vector2.zero;
-        Vector3 markerScale = baseScale;
-        if (ownerOpening != null && ownerOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door)
+        if (markerGraphic == null)
         {
-            markerScale.x = Mathf.Abs(markerScale.x) * (ownerOpening.DoorOpensRight ? -1f : 1f);
-            markerScale.y = Mathf.Abs(markerScale.y) * (ownerOpening.DoorVerticalFlip ? -1f : 1f);
+            return;
         }
 
-        markerContentRect.localScale = markerScale;
+        TopPlanSegmentBatchGraphic.SegmentData segment = new TopPlanSegmentBatchGraphic.SegmentData
+        {
+            start = new Vector2(-(width * 0.5f), 0f),
+            end = new Vector2(width * 0.5f, 0f),
+            thickness = thickness,
+            color = isSelected ? SelectedMarkerColor : GetMarkerColor(),
+            dashed = false,
+            dashLength = 0f,
+            gapLength = 0f,
+            wall = null,
+        };
+
+        markerGraphic.SetSegments(new[] { segment });
+    }
+
+    private Color GetMarkerColor()
+    {
+        return ownerOpening != null && ownerOpening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door
+            ? DoorMarkerColor
+            : WindowMarkerColor;
     }
 }

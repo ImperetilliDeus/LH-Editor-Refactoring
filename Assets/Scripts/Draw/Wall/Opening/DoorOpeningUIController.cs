@@ -1,8 +1,8 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 public class DoorOpeningUIController : MonoBehaviour
 {
@@ -139,24 +139,22 @@ public class DoorOpeningUIController : MonoBehaviour
         SetInputFieldValue(depthInputField, depth, force, isDoorSelected);
         SetInputFieldValue(bottomOffsetInputField, bottomOffset, force, isDoorSelected);
 
-        bool opensRight = isDoorSelected && selectedOpening.DoorOpensRight;
-        bool verticalFlip = isDoorSelected && selectedOpening.DoorVerticalFlip;
         if (leftSwingButton != null)
         {
-            leftSwingButton.interactable = isDoorSelected && opensRight;
+            leftSwingButton.interactable = false;
         }
 
         if (rightSwingButton != null)
         {
-            rightSwingButton.interactable = isDoorSelected && !opensRight;
+            rightSwingButton.interactable = false;
         }
 
         if (verticalFlipToggle != null)
         {
-            verticalFlipToggle.interactable = isDoorSelected;
-            if (force || !verticalFlipToggle.isOn.Equals(verticalFlip))
+            verticalFlipToggle.interactable = false;
+            if (force || verticalFlipToggle.isOn)
             {
-                verticalFlipToggle.SetIsOnWithoutNotify(verticalFlip);
+                verticalFlipToggle.SetIsOnWithoutNotify(false);
             }
         }
 

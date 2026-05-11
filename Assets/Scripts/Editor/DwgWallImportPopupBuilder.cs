@@ -147,19 +147,19 @@ internal static class DwgWallImportPopupBuilder
 
         root.SetActive(false);
 
+        DwgWallImportPopupView popupView = root.GetComponent<DwgWallImportPopupView>();
+        if (popupView == null)
+        {
+            popupView = Undo.AddComponent<DwgWallImportPopupView>(root);
+        }
+
+        popupView.RefreshReferences();
+
         AssignReferences(
             importer,
             canvas,
             root,
-            pathValue,
-            scaleInput,
-            searchInput,
-            contentRect,
-            toggleTemplate,
-            selectAllButton,
-            clearAllButton,
-            cancelButton,
-            importButton);
+            popupView);
 
         Selection.activeGameObject = root;
         EditorGUIUtility.PingObject(root);
@@ -169,31 +169,17 @@ internal static class DwgWallImportPopupBuilder
         DwgWallImporter importer,
         Canvas canvas,
         GameObject root,
-        Text pathValue,
-        InputField scaleInput,
-        InputField searchInput,
-        RectTransform toggleContainer,
-        Toggle toggleTemplate,
-        Button selectAllButton,
-        Button clearAllButton,
-        Button cancelButton,
-        Button importButton)
+        DwgWallImportPopupView popupView)
     {
         SerializedObject serializedObject = new SerializedObject(importer);
         serializedObject.FindProperty("importSettingsPopupCanvas").objectReferenceValue = canvas;
         serializedObject.FindProperty("importSettingsPopupPrefab").objectReferenceValue = null;
         serializedObject.FindProperty("importSettingsPopupRoot").objectReferenceValue = root;
-        serializedObject.FindProperty("popupSelectedPathText").objectReferenceValue = pathValue;
-        serializedObject.FindProperty("popupCadScaleInputField").objectReferenceValue = scaleInput;
-        serializedObject.FindProperty("popupLayerSearchInputField").objectReferenceValue = searchInput;
-        serializedObject.FindProperty("popupLayerToggleContainer").objectReferenceValue = toggleContainer;
-        serializedObject.FindProperty("popupLayerTogglePrefab").objectReferenceValue = toggleTemplate;
-        serializedObject.FindProperty("popupSelectAllLayersButton").objectReferenceValue = selectAllButton;
-        serializedObject.FindProperty("popupClearAllLayersButton").objectReferenceValue = clearAllButton;
-        serializedObject.FindProperty("popupCancelButton").objectReferenceValue = cancelButton;
-        serializedObject.FindProperty("popupConfirmButton").objectReferenceValue = importButton;
+        serializedObject.FindProperty("importSettingsPopupView").objectReferenceValue = popupView;
         serializedObject.ApplyModifiedProperties();
         EditorUtility.SetDirty(importer);
+        EditorUtility.SetDirty(root);
+        EditorUtility.SetDirty(popupView);
     }
 
     private static GameObject CreateCard(string name, RectTransform parent, Vector2 anchoredPosition, Vector2 size)

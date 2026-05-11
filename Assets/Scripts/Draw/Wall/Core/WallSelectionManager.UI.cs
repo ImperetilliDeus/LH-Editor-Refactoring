@@ -56,83 +56,21 @@ public partial class WallSelectionManager
 
     private bool ShouldDisplaySelectionProxy(Wall wall)
     {
-        if (wall == null)
-        {
-            return false;
-        }
-
-        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-        if (container == null)
-        {
-            return true;
-        }
-
-        return GetRepresentativeWallForContainer(container) == wall;
+        return queryService.ShouldDisplaySelectionProxy(wall);
     }
 
     private Wall GetRepresentativeWallForContainer(WallOpeningContainer container)
     {
-        if (container == null)
-        {
-            return null;
-        }
-
-        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
-        Wall representative = null;
-        float bestLengthSqr = float.MinValue;
-
-        for (int i = 0; i < walls.Length; i++)
-        {
-            Wall wall = walls[i];
-            if (wall == null || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
-            {
-                continue;
-            }
-
-            float lengthSqr = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
-            if (lengthSqr <= bestLengthSqr)
-            {
-                continue;
-            }
-
-            bestLengthSqr = lengthSqr;
-            representative = wall;
-        }
-
-        return representative;
+        return queryService.GetRepresentativeWallForContainer(container);
     }
 
     private bool IsWallOrContainerSelected(Wall wall)
     {
-        if (wall == null)
+        if (wallOpeningPlacementManager != null && wallOpeningPlacementManager.SelectedOpening != null)
         {
             return false;
         }
 
-        if (selectionState.IsSelected(wall.gameObject))
-        {
-            return true;
-        }
-
-        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-        if (container == null)
-        {
-            return false;
-        }
-
-        if (selectionState.SelectedWall != null && selectionState.SelectedWall.transform.IsChildOf(container.transform))
-        {
-            return true;
-        }
-
-        foreach (GameObject detailWall in selectionState.DetailSelectedWalls)
-        {
-            if (detailWall != null && detailWall.transform.IsChildOf(container.transform))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return queryService.IsWallOrContainerSelected(wall, selectionState);
     }
 }

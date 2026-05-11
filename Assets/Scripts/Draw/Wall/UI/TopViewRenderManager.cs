@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public partial class TopViewRenderManager : MonoBehaviour
 {
@@ -43,17 +42,17 @@ public partial class TopViewRenderManager : MonoBehaviour
     [SerializeField] private float virtualBoundaryDashLength = 14f;
     [SerializeField] private float virtualBoundaryGapLength = 10f;
 
-    private readonly Dictionary<Transform, Image> openingImages = new Dictionary<Transform, Image>();
-    private readonly List<Transform> removedKeys = new List<Transform>();
     private readonly List<Vector2> cachedPolygonPoints = new List<Vector2>();
     private readonly List<GameObject> cachedSelectedWalls = new List<GameObject>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<TopPlanPolygonBatchGraphic.PolygonData> cachedFloorPolygons = new List<TopPlanPolygonBatchGraphic.PolygonData>();
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedWallSegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
+    private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedOpeningSegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedVirtualBoundarySegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
 
     private TopPlanPolygonBatchGraphic floorBatchGraphic;
     private TopPlanSegmentBatchGraphic wallBatchGraphic;
+    private TopPlanSegmentBatchGraphic openingBatchGraphic;
     private TopPlanSegmentBatchGraphic virtualBoundaryBatchGraphic;
 
     private Vector3 lastCameraPosition;
@@ -101,9 +100,9 @@ public partial class TopViewRenderManager : MonoBehaviour
 
         UnbindEvents();
         UnbindVisualEvents();
-        ClearVisuals(openingImages);
         ClearPolygonBatchGraphic(ref floorBatchGraphic);
         ClearBatchGraphic(ref wallBatchGraphic);
+        ClearBatchGraphic(ref openingBatchGraphic);
         ClearBatchGraphic(ref virtualBoundaryBatchGraphic);
     }
 
