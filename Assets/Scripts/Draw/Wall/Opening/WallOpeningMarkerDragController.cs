@@ -26,7 +26,7 @@ internal sealed class WallOpeningMarkerDragController
         Vector2 screenPosition,
         Camera mainCamera,
         System.Func<WallOpeningContainer, WallOpening, float, float> clampOpeningCenterDistance,
-        System.Action<WallOpeningContainer> rebuildContainer)
+        System.Action<WallOpeningContainer, bool> rebuildContainer)
     {
         if (opening == null || mainCamera == null || clampOpeningCenterDistance == null || rebuildContainer == null)
         {
@@ -51,14 +51,14 @@ internal sealed class WallOpeningMarkerDragController
         float projectedDistance = Vector3.Dot(point - container.WallStart, direction);
         float clampedDistance = clampOpeningCenterDistance(container, opening, projectedDistance);
         opening.SetCenterDistance(clampedDistance);
-        rebuildContainer(container);
+        rebuildContainer(container, true);
     }
 
     public void EndDrag(
         WallOpening opening,
         WallOpeningMarkerDragState dragState,
         UndoRedoManager undoRedoManager,
-        System.Action<WallOpeningContainer> rebuildContainer,
+        System.Action<WallOpeningContainer, bool> rebuildContainer,
         System.Action<WallOpeningContainer, float> refreshSelectedWallForContainer,
         System.Func<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> captureLayoutSnapshot)
     {
@@ -74,7 +74,7 @@ internal sealed class WallOpeningMarkerDragController
         }
 
         dragState.IsDraggingMarker = false;
-        rebuildContainer?.Invoke(opening.Container);
+        rebuildContainer?.Invoke(opening.Container, false);
         refreshSelectedWallForContainer?.Invoke(opening.Container, opening.CenterDistance);
 
         if (dragState.HasDragStartSnapshot && undoRedoManager != null && captureLayoutSnapshot != null)

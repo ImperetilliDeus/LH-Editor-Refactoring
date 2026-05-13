@@ -64,6 +64,7 @@ public partial class TopViewRenderManager
                     wall.transform.localScale.x,
                     GetTopPlanWallColor(wall),
                     wall,
+                    null,
                     false,
                     0f,
                     0f,
@@ -102,6 +103,7 @@ public partial class TopViewRenderManager
                     virtualBoundaryThickness,
                     virtualBoundaryColor,
                     null,
+                    null,
                     true,
                     virtualBoundaryDashLength,
                     virtualBoundaryGapLength,
@@ -119,7 +121,9 @@ public partial class TopViewRenderManager
     {
         WallOpening[] openings = wallRoot.GetComponentsInChildren<WallOpening>(true);
         TopPlanSegmentBatchGraphic batchGraphic = GetOrCreateBatchGraphic(ref openingBatchGraphic, "TopPlanOpeningsBatch");
-        batchGraphic.raycastTarget = false;
+        batchGraphic.SegmentClicked -= HandleTopPlanOpeningSegmentClicked;
+        batchGraphic.SegmentClicked += HandleTopPlanOpeningSegmentClicked;
+        batchGraphic.raycastTarget = IsOpeningInteractionEnabled();
         cachedOpeningSegments.Clear();
 
         for (int i = 0; i < openings.Length; i++)
@@ -288,6 +292,7 @@ public partial class TopViewRenderManager
             container.WallThickness,
             isSelected ? selectedColor : baseColor,
             null,
+            opening,
             false,
             0f,
             0f,
@@ -357,6 +362,7 @@ public partial class TopViewRenderManager
         float worldThickness,
         Color segmentColor,
         Wall ownerWall,
+        WallOpening ownerOpening,
         bool dashed,
         float dashLength,
         float gapLength,
@@ -406,6 +412,7 @@ public partial class TopViewRenderManager
             thickness = thickness,
             color = segmentColor,
             wall = ownerWall,
+            opening = ownerOpening,
             dashed = dashed,
             dashLength = dashLength,
             gapLength = gapLength,

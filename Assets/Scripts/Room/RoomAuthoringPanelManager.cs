@@ -30,6 +30,7 @@ public class RoomAuthoringPanelManager : MonoBehaviour
     [SerializeField] private Color selectedRoomHighlightColor = new Color(0.28f, 0.6f, 1f, 0.42f);
 
     private readonly Dictionary<Room, TMP_Text> labelsByRoom = new Dictionary<Room, TMP_Text>();
+    private readonly HashSet<Room> cachedRoomSet = new HashSet<Room>();
     private readonly List<TMP_Text> pooledLabels = new List<TMP_Text>();
     private readonly List<Room> cachedRooms = new List<Room>();
     private readonly List<Vector2> cachedPolygon = new List<Vector2>();
@@ -373,6 +374,11 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             ? $"{selectedRoom.Geometry.Area * SquareUnitsToSquareMeters:0.##} m²"
             : string.Empty;
 
+        if (shouldShowValue)
+        {
+            nextText = string.Format("{0:0.##} m2", selectedRoom.Geometry.Area * SquareUnitsToSquareMeters);
+        }
+
         if (roomAreaInputField.text != nextText)
         {
             roomAreaInputField.SetTextWithoutNotify(nextText);
@@ -588,12 +594,22 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         SetLabelsVisible(true);
 
         cachedRooms.Clear();
+        cachedRoomSet.Clear();
         roomManager?.GetAllRooms(cachedRooms);
+        for (int i = 0; i < cachedRooms.Count; i++)
+        {
+            Room room = cachedRooms[i];
+            if (room != null)
+            {
+                cachedRoomSet.Add(room);
+            }
+        }
+
         removeRooms.Clear();
 
         foreach (KeyValuePair<Room, TMP_Text> pair in labelsByRoom)
         {
-            if (pair.Key == null || !cachedRooms.Contains(pair.Key))
+            if (pair.Key == null || !cachedRoomSet.Contains(pair.Key))
             {
                 removeRooms.Add(pair.Key);
             }

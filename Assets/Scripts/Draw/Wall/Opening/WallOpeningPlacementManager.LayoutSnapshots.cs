@@ -75,13 +75,15 @@ public partial class WallOpeningPlacementManager
             openingBottomY);
 
         SelectOpening(opening);
-        RebuildContainer(container);
+        RebuildContainer(container, false);
         RefreshSelectedWallForContainer(container, opening.CenterDistance);
 
         if (undoRedoManager != null)
         {
             undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, CaptureLayoutSnapshot(container));
         }
+
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
     }
 
     public UndoRedoManager.OpeningLayoutSnapshot CaptureLayoutSnapshot(Wall wall)
@@ -91,8 +93,8 @@ public partial class WallOpeningPlacementManager
             return default;
         }
 
-        Transform parent = wall.transform.parent;
-        if (parent != null && parent.TryGetComponent(out WallOpeningContainer container))
+        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+        if (container != null)
         {
             return CaptureLayoutSnapshot(container);
         }
@@ -147,6 +149,8 @@ public partial class WallOpeningPlacementManager
             outerEndVertexId = container.OuterEndVertexId,
             suppressOuterStartHandle = container.SuppressOuterStartHandle,
             suppressOuterEndHandle = container.SuppressOuterEndHandle,
+            outerStartSplitPoint = container.OuterStartSplitPoint,
+            outerEndSplitPoint = container.OuterEndSplitPoint,
             openings = openingSnapshots,
         };
     }
@@ -201,7 +205,9 @@ public partial class WallOpeningPlacementManager
             target.outerStartVertexId,
             target.outerEndVertexId,
             target.suppressOuterStartHandle,
-            target.suppressOuterEndHandle);
+            target.suppressOuterEndHandle,
+            target.outerStartSplitPoint,
+            target.outerEndSplitPoint);
 
         for (int i = 0; i < openingCount; i++)
         {
@@ -228,12 +234,12 @@ public partial class WallOpeningPlacementManager
                 openingSnapshot.bottomY);
         }
 
-        RebuildContainer(container);
+        RebuildContainer(container, false);
     }
 
     public void RebuildOpeningContainer(WallOpeningContainer container)
     {
-        RebuildContainer(container);
+        RebuildContainer(container, false);
     }
 
     public void SelectPreferredWallForContainer(WallOpeningContainer container, float preferredDistance)

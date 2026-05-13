@@ -7,6 +7,7 @@ public class Room : MonoBehaviour
 
     public HashSet<Wall> WallSet { get; private set; }
     public RoomData Data => EnsureData();
+    public IReadOnlyList<Vector3> BoundaryVertices => Data.BoundaryVertices;
     public IReadOnlyList<Vector3> ManualBoundaryVertices => Data.IsManualRoom ? Data.BoundaryVertices : EmptyVertices;
     public RoomGeometry Geometry => Data.Geometry;
     public Vector3 Centroid => Data.Geometry.Center;

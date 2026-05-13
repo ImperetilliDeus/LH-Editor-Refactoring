@@ -14,6 +14,8 @@ public class WallOpeningContainer : MonoBehaviour
     [SerializeField] private int outerEndVertexId;
     [SerializeField] private bool suppressOuterStartHandle;
     [SerializeField] private bool suppressOuterEndHandle;
+    [SerializeField] private bool outerStartSplitPoint;
+    [SerializeField] private bool outerEndSplitPoint;
 
     public Vector3 WallStart => wallStart;
     public Vector3 WallEnd => wallEnd;
@@ -28,6 +30,8 @@ public class WallOpeningContainer : MonoBehaviour
     public WallVisualState VisualState => visualState;
     public bool SuppressOuterStartHandle => suppressOuterStartHandle;
     public bool SuppressOuterEndHandle => suppressOuterEndHandle;
+    public bool OuterStartSplitPoint => outerStartSplitPoint;
+    public bool OuterEndSplitPoint => outerEndSplitPoint;
 
     public Vector3 WallDirection
     {
@@ -62,7 +66,9 @@ public class WallOpeningContainer : MonoBehaviour
         int startVertexId,
         int endVertexId,
         bool suppressStartHandle,
-        bool suppressEndHandle)
+        bool suppressEndHandle,
+        bool startSplitPoint = false,
+        bool endSplitPoint = false)
     {
         wallStart = start;
         wallEnd = end;
@@ -76,12 +82,26 @@ public class WallOpeningContainer : MonoBehaviour
         outerEndVertexId = endVertexId;
         suppressOuterStartHandle = suppressStartHandle;
         suppressOuterEndHandle = suppressEndHandle;
+        outerStartSplitPoint = startSplitPoint;
+        outerEndSplitPoint = endSplitPoint;
     }
 
     public void SetOuterVertexIds(int startVertexId, int endVertexId)
     {
         outerStartVertexId = startVertexId;
         outerEndVertexId = endVertexId;
+    }
+
+    public void SetOuterSplitPointFlags(bool startSplitPoint, bool endSplitPoint)
+    {
+        outerStartSplitPoint = startSplitPoint;
+        outerEndSplitPoint = endSplitPoint;
+    }
+
+    public void SetHandleSuppression(bool suppressStart, bool suppressEnd)
+    {
+        suppressOuterStartHandle = suppressStart;
+        suppressOuterEndHandle = suppressEnd;
     }
 
     public void SetWallSpan(Vector3 start, Vector3 end)

@@ -98,6 +98,11 @@ public partial class TopViewRenderManager : MonoBehaviour
             wallBatchGraphic.SegmentClicked -= HandleTopPlanWallSegmentClicked;
         }
 
+        if (openingBatchGraphic != null)
+        {
+            openingBatchGraphic.SegmentClicked -= HandleTopPlanOpeningSegmentClicked;
+        }
+
         UnbindEvents();
         UnbindVisualEvents();
         ClearPolygonBatchGraphic(ref floorBatchGraphic);
@@ -140,6 +145,19 @@ public partial class TopViewRenderManager : MonoBehaviour
         {
             MarkDirty();
         }
+    }
+
+    private void HandleTopPlanOpeningSegmentClicked(TopPlanSegmentBatchGraphic.SegmentData segment)
+    {
+        if (!IsOpeningInteractionEnabled() ||
+            wallOpeningPlacementManager == null ||
+            segment.opening == null)
+        {
+            return;
+        }
+
+        wallOpeningPlacementManager.SelectOpening(segment.opening);
+        MarkDirty();
     }
 
     private void BindEvents()
@@ -347,6 +365,13 @@ public partial class TopViewRenderManager : MonoBehaviour
                modeManager.CurrentMode == EditorMode.RoomCreate &&
                roomWallAuthoringPanelController != null &&
                roomWallAuthoringPanelController.HasSelectedRoomForAuthoring;
+    }
+
+    private bool IsOpeningInteractionEnabled()
+    {
+        return modeManager != null &&
+               modeManager.CurrentMode == EditorMode.DetailEdit &&
+               wallOpeningPlacementManager != null;
     }
 
     private void EnsureCanvas()

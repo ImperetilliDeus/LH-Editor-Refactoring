@@ -223,6 +223,7 @@ public class WallOpeningMarkerUI : MonoBehaviour
         markerRootRect.localRotation = Quaternion.Euler(0f, 0f, angle);
         markerRootRect.sizeDelta = new Vector2(width + thickness, thickness + MarkerHitPadding);
         markerRootRect.localScale = Vector3.one;
+        markerRootRect.SetAsLastSibling();
         markerContentRect.localRotation = Quaternion.identity;
         markerContentRect.localScale = Vector3.one;
 

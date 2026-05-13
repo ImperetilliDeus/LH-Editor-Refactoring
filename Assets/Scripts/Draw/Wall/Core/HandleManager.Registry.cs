@@ -316,7 +316,7 @@ public partial class HandleManager
         foreach (KeyValuePair<int, WallHandleEntry> pair in wallEntries)
         {
             WallHandleEntry entry = pair.Value;
-            if (entry?.wallComponent == null)
+            if (entry?.wallComponent == null || !entry.wallComponent.gameObject.activeInHierarchy)
             {
                 continue;
             }

@@ -20,6 +20,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private RoomManager roomManager;
+    [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
 
     [Header("Handle UI")]
     [SerializeField] private Vector2 handleSize = new Vector2(14f, 14f);
@@ -60,6 +61,18 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         public Vector3 worldPoint;
     }
 
+    private sealed class LinearChainElement
+    {
+        public Wall wall;
+        public WallOpeningContainer container;
+        public int startVertexId;
+        public int endVertexId;
+        public Vector3 startPoint;
+        public Vector3 endPoint;
+
+        public bool IsContainer => container != null;
+    }
+
     private readonly Dictionary<int, WallHandleEntry> wallEntries = new Dictionary<int, WallHandleEntry>();
     private readonly Dictionary<int, VertexGroup> groupsByVertexId = new Dictionary<int, VertexGroup>();
     private readonly List<VertexGroup> vertexGroups = new List<VertexGroup>();
@@ -78,16 +91,21 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private readonly List<Vector3> dragSnapCandidates = new List<Vector3>();
     private readonly List<SnapManager.WallSnapSegment> dragWallSegmentSnapCandidates = new List<SnapManager.WallSnapSegment>();
     private readonly List<Transform> containerChildren = new List<Transform>();
+    private readonly HashSet<WallOpeningContainer> affectedOpeningContainers = new HashSet<WallOpeningContainer>();
     private readonly HashSet<GameObject> affectedWallObjects = new HashSet<GameObject>();
     private readonly List<Wall> affectedWallComponents = new List<Wall>();
     private readonly List<Wall> splitChainWalls = new List<Wall>();
     private readonly List<int> splitChainVertexIds = new List<int>();
     private readonly List<Vector3> splitChainPoints = new List<Vector3>();
+    private readonly List<LinearChainElement> splitChainCandidates = new List<LinearChainElement>();
+    private readonly List<LinearChainElement> splitChainElements = new List<LinearChainElement>();
+    private readonly List<LinearChainElement> connectedChainElements = new List<LinearChainElement>();
     private readonly List<int> removedWallEntryKeys = new List<int>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> dragStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
 
     private IEditorInputProvider inputProvider;
     private int nextVertexId = 1;
+    private int suppressActiveDragCancellationDepth;
     private Sprite circularHandleSprite;
     private bool handleLayoutDirty = true;
     private bool handlePositionsDirty = true;
@@ -228,7 +246,9 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        if (draggingGroup != null && GroupContainsWall(draggingGroup, wallObject))
+        if (suppressActiveDragCancellationDepth == 0 &&
+            draggingGroup != null &&
+            GroupContainsWall(draggingGroup, wallObject))
         {
             draggingGroup = null;
             dragStartStates.Clear();
@@ -244,6 +264,16 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         NormalizeWallNames();
         MarkHandleLayoutDirty();
         WallHierarchyChanged?.Invoke();
+    }
+
+    public void BeginTransientDragRebuild()
+    {
+        suppressActiveDragCancellationDepth++;
+    }
+
+    public void EndTransientDragRebuild()
+    {
+        suppressActiveDragCancellationDepth = Mathf.Max(0, suppressActiveDragCancellationDepth - 1);
     }
 
     public void CollectSnapPoints(List<Vector3> points, GameObject ignoreWall = null)
@@ -645,6 +675,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref roomManager);
+        LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
     }
 
     private void RefreshWallEndCaps()
@@ -665,4 +696,26 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         Debug.Assert(modeManager != null, $"{nameof(HandleManager)} requires {nameof(modeManager)}.", this);
     }
 
+    private bool IsVertexInContainer(WallOpeningContainer container, int vertexId)
+    {
+        if (container == null || vertexId <= 0)
+        {
+            return false;
+        }
+
+        if (container.OuterStartVertexId == vertexId || container.OuterEndVertexId == vertexId)
+        {
+            return true;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>();
+        for (int i = 0; i < walls.Length; i++)
+        {
+            if (walls[i] != null && walls[i].ContainsVertexId(vertexId))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

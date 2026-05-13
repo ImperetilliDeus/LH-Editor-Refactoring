@@ -3,19 +3,22 @@ using UnityEngine;
 
 internal sealed class WallOpeningLayoutRebuildController
 {
+    private const float EndpointMatchThresholdSqr = 0.0001f;
+
     public void RebuildContainer(
         WallOpeningContainer container,
         List<Wall> pendingRoomRefreshRemovedWalls,
         List<Wall> cachedWalls,
         List<WallOpening> cachedOpenings,
         System.Action<WallOpeningContainer, List<WallOpening>> collectOpenings,
-        System.Action<WallOpeningContainer, List<Wall>> clearGeneratedContainerVisuals,
+        System.Action<WallOpeningContainer, List<Wall>, bool> clearGeneratedContainerVisuals,
         System.Func<WallOpeningContainer, Transform> getSegmentsRoot,
-        System.Func<Transform, string, Vector3, Vector3, float, float, float, int, int, bool, bool, WallVisualState, bool, Transform> createWallSegment,
+        System.Func<Transform, string, Vector3, Vector3, float, float, float, int, int, bool, bool, WallVisualState, bool, bool, bool, Transform> createWallSegment,
         System.Action<WallOpeningContainer, WallOpening, int, Transform> updateOpeningVisual,
         System.Action<Transform, List<Wall>, bool> collectWalls,
         System.Action<List<Wall>, List<Wall>> requestRefreshForWallReplacement,
-        System.Action markMarkerVisualsDirty)
+        System.Action markMarkerVisualsDirty,
+        bool isDragging)
     {
         if (container == null)
         {
@@ -55,7 +58,7 @@ internal sealed class WallOpeningLayoutRebuildController
             }
         }
 
-        clearGeneratedContainerVisuals?.Invoke(container, cachedWalls);
+        clearGeneratedContainerVisuals?.Invoke(container, cachedWalls, isDragging);
         Transform segmentsRoot = getSegmentsRoot != null ? getSegmentsRoot(container) : container.transform;
 
         if (cachedOpenings.Count == 0)
@@ -73,7 +76,11 @@ internal sealed class WallOpeningLayoutRebuildController
                 container.SuppressOuterStartHandle,
                 container.SuppressOuterEndHandle,
                 container.VisualState,
-                false);
+                false,
+                container.OuterStartSplitPoint,
+                container.OuterEndSplitPoint);
+
+            SyncContainerOuterMetadata(container, cachedWalls, collectWalls);
 
             if (removedWalls.Count > 0)
             {
@@ -116,6 +123,8 @@ internal sealed class WallOpeningLayoutRebuildController
                 currentDistance > 0.001f || container.SuppressOuterStartHandle,
                 true,
                 container.VisualState,
+                false,
+                currentDistance <= 0.001f && container.OuterStartSplitPoint,
                 false);
 
             Transform openingSegment = createWallSegment?.Invoke(
@@ -131,7 +140,9 @@ internal sealed class WallOpeningLayoutRebuildController
                 true,
                 true,
                 container.VisualState,
-                true);
+                true,
+                false,
+                false);
 
             updateOpeningVisual?.Invoke(container, opening, i, openingSegment);
             currentDistance = openingEndDistance;
@@ -152,7 +163,11 @@ internal sealed class WallOpeningLayoutRebuildController
             true,
             container.SuppressOuterEndHandle,
             container.VisualState,
-            false);
+            false,
+            false,
+            container.OuterEndSplitPoint);
+
+        SyncContainerOuterMetadata(container, cachedWalls, collectWalls);
 
         if (removedWalls.Count > 0)
         {
@@ -161,5 +176,61 @@ internal sealed class WallOpeningLayoutRebuildController
         }
 
         markMarkerVisualsDirty?.Invoke();
+    }
+
+    private static void SyncContainerOuterMetadata(
+        WallOpeningContainer container,
+        List<Wall> cachedWalls,
+        System.Action<Transform, List<Wall>, bool> collectWalls)
+    {
+        if (container == null || cachedWalls == null)
+        {
+            return;
+        }
+
+        collectWalls?.Invoke(container.transform, cachedWalls, true);
+
+        Wall startWall = null;
+        Wall endWall = null;
+        for (int i = 0; i < cachedWalls.Count; i++)
+        {
+            Wall wall = cachedWalls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            if (startWall == null &&
+                ArePointsNearXZ(wall.Data.startPoint, container.WallStart))
+            {
+                startWall = wall;
+            }
+
+            if (endWall == null &&
+                ArePointsNearXZ(wall.Data.endPoint, container.WallEnd))
+            {
+                endWall = wall;
+            }
+
+            if (startWall != null && endWall != null)
+            {
+                break;
+            }
+        }
+
+        int startVertexId = startWall != null ? startWall.StartVertexId : container.OuterStartVertexId;
+        int endVertexId = endWall != null ? endWall.EndVertexId : container.OuterEndVertexId;
+        bool startSplitPoint = startWall != null ? startWall.IsStartSplitPoint : container.OuterStartSplitPoint;
+        bool endSplitPoint = endWall != null ? endWall.IsEndSplitPoint : container.OuterEndSplitPoint;
+
+        container.SetOuterVertexIds(startVertexId, endVertexId);
+        container.SetOuterSplitPointFlags(startSplitPoint, endSplitPoint);
+    }
+
+    private static bool ArePointsNearXZ(Vector3 left, Vector3 right)
+    {
+        float dx = left.x - right.x;
+        float dz = left.z - right.z;
+        return dx * dx + dz * dz <= EndpointMatchThresholdSqr;
     }
 }

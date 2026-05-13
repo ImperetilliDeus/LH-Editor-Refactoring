@@ -31,11 +31,13 @@ public partial class WallSelectionManager
         }
 
         EnsureSelectionCanvas();
+        CollectLogicalWallRoots(wallRoot, logicalWallRoots);
+
         presentationController.RefreshWallSelectionUIStates(
             wallRoot,
-            GetRootWalls(),
-            ShouldDisplaySelectionProxy,
+            logicalWallRoots,
             IsWallOrContainerSelected,
+            IsSelected,
             this);
     }
 
@@ -47,21 +49,22 @@ public partial class WallSelectionManager
         }
 
         EnsureSelectionCanvas();
+        CollectLogicalWallRoots(wallRoot, logicalWallRoots);
+
         presentationController.RefreshWallSelectionUIPositions(
             wallRoot,
-            GetRootWalls(),
-            ShouldDisplaySelectionProxy,
+            logicalWallRoots,
             this);
     }
 
     private bool ShouldDisplaySelectionProxy(Wall wall)
     {
-        return queryService.ShouldDisplaySelectionProxy(wall);
+        return ShouldDisplaySelectionProxyInternal(wall);
     }
 
     private Wall GetRepresentativeWallForContainer(WallOpeningContainer container)
     {
-        return queryService.GetRepresentativeWallForContainer(container);
+        return GetRepresentativeWallForContainerInternal(container);
     }
 
     private bool IsWallOrContainerSelected(Wall wall)
@@ -71,6 +74,25 @@ public partial class WallSelectionManager
             return false;
         }
 
-        return queryService.IsWallOrContainerSelected(wall, selectionState);
+        return IsWallOrContainerSelectedInternal(wall);
+    }
+
+    private void CollectLogicalWallRoots(Transform currentWallRoot, List<Transform> results)
+    {
+        results.Clear();
+        if (currentWallRoot == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < currentWallRoot.childCount; i++)
+        {
+            Transform child = currentWallRoot.GetChild(i);
+            if (child != null && child.gameObject.activeInHierarchy &&
+                (child.GetComponent<WallOpeningContainer>() != null || child.GetComponent<Wall>() != null))
+            {
+                results.Add(child);
+            }
+        }
     }
 }

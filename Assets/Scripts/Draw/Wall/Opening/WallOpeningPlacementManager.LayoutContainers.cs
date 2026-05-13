@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public partial class WallOpeningPlacementManager
@@ -128,6 +129,7 @@ public partial class WallOpeningPlacementManager
         }
 
         RoomTopologyEvents.RequestRefreshAll();
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
         MarkMarkerVisualsDirty();
         return restoredWall;
@@ -148,6 +150,8 @@ public partial class WallOpeningPlacementManager
             outerEndVertexId = container != null ? container.OuterEndVertexId : 0,
             suppressOuterStartHandle = container != null && container.SuppressOuterStartHandle,
             suppressOuterEndHandle = container != null && container.SuppressOuterEndHandle,
+            outerStartSplitPoint = container != null && container.OuterStartSplitPoint,
+            outerEndSplitPoint = container != null && container.OuterEndSplitPoint,
         });
     }
 
@@ -162,6 +166,8 @@ public partial class WallOpeningPlacementManager
             endVertexId = snapshot.outerEndVertexId,
             suppressStartHandle = snapshot.suppressOuterStartHandle,
             suppressEndHandle = snapshot.suppressOuterEndHandle,
+            startSplitPoint = snapshot.outerStartSplitPoint,
+            endSplitPoint = snapshot.outerEndSplitPoint,
         };
     }
 
@@ -228,7 +234,9 @@ public partial class WallOpeningPlacementManager
             geometry.outerStartVertexId,
             geometry.outerEndVertexId,
             selectedWall.SuppressStartHandle,
-            selectedWall.SuppressEndHandle);
+            selectedWall.SuppressEndHandle,
+            selectedWall.IsStartSplitPoint,
+            selectedWall.IsEndSplitPoint);
 
         if (handleManager != null)
         {
@@ -240,6 +248,208 @@ public partial class WallOpeningPlacementManager
         selectedWall.ClearLengthDisplay(wallLengthDisplay);
         Destroy(selectedWall.gameObject);
         return container.transform;
+    }
+
+    private void SplitContainerWallSegment(WallOpeningContainer container, Wall selectedSegment)
+    {
+        if (container == null || selectedSegment == null || wallRoot == null)
+        {
+            return;
+        }
+
+        Vector3 segmentMidpoint = (selectedSegment.Data.startPoint + selectedSegment.Data.endPoint) * 0.5f;
+        float splitDistance = Vector3.Dot(segmentMidpoint - container.WallStart, container.WallDirection);
+        if (splitDistance <= MinimumWallSegmentLength || splitDistance >= container.WallLength - MinimumWallSegmentLength)
+        {
+            return;
+        }
+
+        CollectOpenings(container, cachedOpenings);
+        cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
+
+        const float splitEpsilon = 0.0001f;
+        for (int i = 0; i < cachedOpenings.Count; i++)
+        {
+            WallOpening opening = cachedOpenings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            float openingStart = opening.CenterDistance - opening.Width * 0.5f;
+            float openingEnd = opening.CenterDistance + opening.Width * 0.5f;
+            if (splitDistance >= openingStart - splitEpsilon && splitDistance <= openingEnd + splitEpsilon)
+            {
+                Debug.LogWarning("Wall split point overlaps an opening span.", selectedSegment);
+                return;
+            }
+        }
+
+        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot = CaptureLayoutSnapshot(container);
+        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
+        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
+
+        for (int i = 0; i < cachedOpenings.Count; i++)
+        {
+            WallOpening opening = cachedOpenings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            UndoRedoManager.OpeningStateSnapshot snapshot = new UndoRedoManager.OpeningStateSnapshot
+            {
+                type = opening.Type,
+                doorTypeKey = opening.DoorTypeKey,
+                windowTypeKey = opening.WindowTypeKey,
+                doorOpensRight = opening.DoorOpensRight,
+                doorVerticalFlip = opening.DoorVerticalFlip,
+                centerDistance = opening.CenterDistance,
+                width = opening.Width,
+                height = opening.Height,
+                depth = opening.Depth,
+                bottomY = opening.BottomY,
+            };
+
+            if (opening.CenterDistance < splitDistance)
+            {
+                leftOpenings.Add(snapshot);
+            }
+            else
+            {
+                snapshot.centerDistance -= splitDistance;
+                rightOpenings.Add(snapshot);
+            }
+        }
+
+        RemoveLayout(sourceSnapshot);
+
+        Vector3 splitPoint = container.WallStart + container.WallDirection * splitDistance;
+        CreateSplitContainerLayout(
+            sourceSnapshot,
+            container.name + "_A",
+            container.WallStart,
+            splitPoint,
+            container.OuterStartVertexId,
+            0,
+            container.SuppressOuterStartHandle,
+            false,
+            container.OuterStartSplitPoint,
+            true,
+            leftOpenings);
+        CreateSplitContainerLayout(
+            sourceSnapshot,
+            container.name + "_B",
+            splitPoint,
+            container.WallEnd,
+            0,
+            container.OuterEndVertexId,
+            false,
+            container.SuppressOuterEndHandle,
+            true,
+            container.OuterEndSplitPoint,
+            rightOpenings);
+
+        RoomTopologyEvents.RequestRefreshAll();
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
+
+        if (wallSelectionManager != null)
+        {
+            Wall replacementWall = FindClosestVisibleWallToPoint(splitPoint);
+            if (replacementWall != null)
+            {
+                wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
+            }
+        }
+    }
+
+    private void CreateSplitContainerLayout(
+        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        string layoutName,
+        Vector3 startPoint,
+        Vector3 endPoint,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle,
+        bool startSplitPoint,
+        bool endSplitPoint,
+        List<UndoRedoManager.OpeningStateSnapshot> openings)
+    {
+        float length = Vector3.Distance(startPoint, endPoint);
+        if (length <= MinimumWallSegmentLength)
+        {
+            return;
+        }
+
+        if (openings == null || openings.Count == 0)
+        {
+            CreateStandaloneWallSegment(
+                layoutName,
+                startPoint,
+                endPoint,
+                sourceSnapshot.wallThickness,
+                sourceSnapshot.wallHeight,
+                sourceSnapshot.centerY,
+                startVertexId,
+                endVertexId,
+                suppressStartHandle,
+                suppressEndHandle,
+                startSplitPoint,
+                endSplitPoint,
+                sourceSnapshot.visualState);
+            return;
+        }
+
+        GameObject containerObject = new GameObject(layoutName);
+        containerObject.transform.SetParent(wallRoot, false);
+        containerObject.transform.position = Vector3.zero;
+        containerObject.transform.rotation = Quaternion.identity;
+        containerObject.transform.localScale = Vector3.one;
+        LayerUtility.ApplyLayer(containerObject, LayerUtility.WallLayerName, false);
+
+        WallOpeningContainer nextContainer = containerObject.AddComponent<WallOpeningContainer>();
+        nextContainer.Initialize(
+            startPoint,
+            endPoint,
+            sourceSnapshot.wallThickness,
+            sourceSnapshot.wallHeight,
+            sourceSnapshot.centerY,
+            sourceSnapshot.visualState,
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            startSplitPoint,
+            endSplitPoint);
+
+        for (int i = 0; i < openings.Count; i++)
+        {
+            UndoRedoManager.OpeningStateSnapshot openingSnapshot = openings[i];
+            GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
+            openingObject.transform.SetParent(nextContainer.transform, false);
+            LayerUtility.ApplyLayer(
+                openingObject,
+                openingSnapshot.type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
+                false);
+
+            WallOpening opening = openingObject.AddComponent<WallOpening>();
+            opening.Initialize(
+                this,
+                nextContainer,
+                openingSnapshot.type,
+                openingSnapshot.doorTypeKey,
+                openingSnapshot.windowTypeKey,
+                openingSnapshot.doorOpensRight,
+                openingSnapshot.doorVerticalFlip,
+                openingSnapshot.centerDistance,
+                openingSnapshot.width,
+                openingSnapshot.height,
+                openingSnapshot.depth,
+                openingSnapshot.bottomY);
+        }
+
+        RebuildContainer(nextContainer, false);
     }
 
     private WallGeometryData CaptureGeometry(Wall wall)
@@ -267,6 +477,8 @@ public partial class WallOpeningPlacementManager
             outerStartVertexId = wall.StartVertexId,
             outerEndVertexId = wall.EndVertexId,
             visualState = WallVisualState.Capture(wall.gameObject),
+            outerStartSplitPoint = wall.IsStartSplitPoint,
+            outerEndSplitPoint = wall.IsEndSplitPoint,
         };
     }
 
@@ -283,7 +495,9 @@ public partial class WallOpeningPlacementManager
         bool suppressStartHandle,
         bool suppressEndHandle,
         WallVisualState visualState,
-        bool hideBaseWallVisual)
+        bool hideBaseWallVisual,
+        bool startSplitPoint,
+        bool endSplitPoint)
     {
         Vector3 direction = endPoint - startPoint;
         direction.y = 0f;
@@ -304,8 +518,8 @@ public partial class WallOpeningPlacementManager
             endVertexId,
             suppressStartHandle,
             suppressEndHandle,
-            false,
-            false,
+            startSplitPoint,
+            endSplitPoint,
             MinimumWallSegmentLength,
             wallLengthDisplay,
             false);
@@ -357,5 +571,38 @@ public partial class WallOpeningPlacementManager
         segmentsObject.transform.localScale = Vector3.one;
         LayerUtility.ApplyLayer(segmentsObject, LayerUtility.WallLayerName, false);
         return segmentsObject.transform;
+    }
+
+    private Wall FindClosestVisibleWallToPoint(Vector3 point)
+    {
+        if (wallRoot == null)
+        {
+            return null;
+        }
+
+        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
+        Wall bestWall = null;
+        float bestDistanceSqr = float.MaxValue;
+
+        for (int i = 0; i < cachedWalls.Count; i++)
+        {
+            Wall wall = cachedWalls[i];
+            if (wall == null || !wall.gameObject.activeInHierarchy || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            {
+                continue;
+            }
+
+            Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
+            float distanceSqr = (midpoint - point).sqrMagnitude;
+            if (distanceSqr >= bestDistanceSqr)
+            {
+                continue;
+            }
+
+            bestDistanceSqr = distanceSqr;
+            bestWall = wall;
+        }
+
+        return bestWall;
     }
 }

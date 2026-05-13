@@ -22,6 +22,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         public float centerY;
         public int outerStartVertexId;
         public int outerEndVertexId;
+        public bool outerStartSplitPoint;
+        public bool outerEndSplitPoint;
         public WallVisualState visualState;
     }
 
@@ -78,6 +80,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private Material cachedDoorMaterial;
     private Material cachedWindowMaterial;
     private readonly WallOpeningSelectionState selectionState = new WallOpeningSelectionState();
+    private Transform deactivatedWallsHolder;
     private bool markerVisualsDirty = true;
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
@@ -126,6 +129,13 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         LayerUtility.ResolveCanvasByNameOrFirst(ref previewCanvas, LayerUtility.DefaultCanvasName);
 
+        // Create a holder for objects that are deactivated during a drag.
+        // This prevents them from being found by GetComponentsInChildren while keeping them
+        // alive for the HandleManager's drag operation.
+        GameObject tempHolder = new GameObject("DeactivatedWallHolder");
+        tempHolder.transform.SetParent(transform, false);
+        tempHolder.SetActive(false);
+        deactivatedWallsHolder = tempHolder.transform;
         EnsureWallRoot();
         EnsureCachedResources();
         BindButtons();
@@ -159,6 +169,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         if (cachedDoorMaterial != null)
         {
             Destroy(cachedDoorMaterial);
+        }
+
+        if (deactivatedWallsHolder != null)
+        {
+            Destroy(deactivatedWallsHolder.gameObject);
         }
 
         if (cachedWindowMaterial != null)
@@ -217,9 +232,10 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return;
         }
 
-        if (selectedWallComponent.GetComponentInParent<WallOpeningContainer>() != null)
+        WallOpeningContainer selectedContainer = selectedWallComponent.GetComponentInParent<WallOpeningContainer>();
+        if (selectedContainer != null)
         {
-            Debug.LogWarning("Wall split does not support walls inside opening containers yet.", selectedWallComponent);
+            SplitContainerWallSegment(selectedContainer, selectedWallComponent);
             return;
         }
 
@@ -319,7 +335,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             RoomTopologyEvents.RequestRefreshForWallReplacement(new[] { removedWall }, createdWalls);
         }
 
-        StartCoroutine(RefreshWallRegistryAfterSplit());
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
         if (wallSelectionManager != null)
         {
@@ -327,9 +343,9 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
     }
 
-    private IEnumerator RefreshWallRegistryAfterSplit()
+    private IEnumerator RefreshWallRegistryAfterSplit(bool isDragging)
     {
-        yield return null;
+        if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
     }
 
@@ -344,6 +360,9 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return;
         }
 
+        container.SetOuterSplitPointFlags(baselineSnapshot.outerStartSplitPoint, baselineSnapshot.outerEndSplitPoint);
+        container.SetHandleSuppression(baselineSnapshot.suppressOuterStartHandle, baselineSnapshot.suppressOuterEndHandle);
+
         float oldLength = Vector3.Distance(baselineSnapshot.wallStart, baselineSnapshot.wallEnd);
         float newLength = Vector3.Distance(newStart, newEnd);
         if (oldLength <= MinimumWallSegmentLength || newLength <= MinimumWallSegmentLength)
@@ -356,6 +375,24 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         Vector3 startDelta = newStart - baselineSnapshot.wallStart;
         Vector3 endDelta = newEnd - baselineSnapshot.wallEnd;
         bool translated = movedStart && movedEnd && (startDelta - endDelta).sqrMagnitude <= 0.000001f;
+
+        if (movedStart && !movedEnd &&
+            TryConstrainContainerOuterSplitPointDrag(container, container.OuterStartVertexId, newStart, out Vector3 constrainedStart))
+        {
+            newStart = constrainedStart;
+        }
+
+        if (!movedStart && movedEnd &&
+            TryConstrainContainerOuterSplitPointDrag(container, container.OuterEndVertexId, newEnd, out Vector3 constrainedEnd))
+        {
+            newEnd = constrainedEnd;
+        }
+
+        newLength = Vector3.Distance(newStart, newEnd);
+        if (newLength <= MinimumWallSegmentLength)
+        {
+            return;
+        }
 
         container.SetWallSpan(newStart, newEnd);
 
@@ -384,32 +421,158 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             {
                 nextCenterDistance = openingSnapshot.centerDistance;
             }
-            else
+            else // Both moved (stretch)
             {
-                nextCenterDistance = (openingSnapshot.centerDistance / oldLength) * newLength;
+                nextCenterDistance = oldLength > 0.001f ? (openingSnapshot.centerDistance / oldLength) * newLength : newLength * 0.5f;
             }
 
             opening.SetCenterDistance(ClampOpeningCenterDistance(container, opening, nextCenterDistance, opening.Width));
         }
 
-        RebuildContainer(container);
+        RebuildContainer(container, true);
+
+        if (wallSelectionManager != null && wallSelectionManager.SelectedWall == null)
+        {
+            // After clearing selection during drag, re-select the appropriate segment
+            bool startDragged = (newStart - baselineSnapshot.wallStart).sqrMagnitude > 0.001f;
+            float preferredDistance = startDragged ? 0f : newLength;
+            RefreshSelectedWallForContainer(container, preferredDistance);
+        }
     }
 
-    private void RebuildContainer(WallOpeningContainer container)
+    internal bool TryConstrainContainerOuterSplitPointDrag(
+        WallOpeningContainer container,
+        int draggedVertexId,
+        Vector3 desiredPoint,
+        out Vector3 constrainedPoint)
     {
+        constrainedPoint = desiredPoint;
+        if (container == null)
+        {
+            return false;
+        }
+
+        bool draggingStart = draggedVertexId == container.OuterStartVertexId;
+        bool draggingEnd = draggedVertexId == container.OuterEndVertexId;
+        if (!draggingStart && !draggingEnd)
+        {
+            return false;
+        }
+
+        CollectOpenings(container, cachedOpenings);
+        if (cachedOpenings.Count == 0)
+        {
+            return true;
+        }
+
+        float effectiveSideWall = Mathf.Max(MillimetersToUnits(minimumSideWallMillimeters), MinimumWallSegmentLength);
+        float minimumRequiredLength = MinimumWallSegmentLength;
+        float maxStartDistance = float.PositiveInfinity;
+        float minEndDistance = float.NegativeInfinity;
+
+        for (int i = 0; i < cachedOpenings.Count; i++)
+        {
+            WallOpening opening = cachedOpenings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            float halfWidth = opening.Width * 0.5f;
+            if (draggingStart)
+            {
+                float distanceFromEnd = container.WallLength - opening.CenterDistance;
+                minimumRequiredLength = Mathf.Max(minimumRequiredLength, distanceFromEnd + halfWidth + effectiveSideWall);
+                maxStartDistance = Mathf.Min(maxStartDistance, opening.CenterDistance - halfWidth - effectiveSideWall);
+            }
+            else
+            {
+                minimumRequiredLength = Mathf.Max(minimumRequiredLength, opening.CenterDistance + halfWidth + effectiveSideWall);
+                minEndDistance = Mathf.Max(minEndDistance, opening.CenterDistance + halfWidth + effectiveSideWall);
+            }
+        }
+
+        Vector3 anchorPoint = draggingStart ? container.WallEnd : container.WallStart;
+        Vector3 desiredOffset = desiredPoint - anchorPoint;
+        desiredOffset.y = 0f;
+        float desiredLength = desiredOffset.magnitude;
+        if (desiredLength >= minimumRequiredLength - 0.0001f)
+        {
+            return true;
+        }
+
+        Vector3 fallbackDirection = draggingStart
+            ? container.WallStart - container.WallEnd
+            : container.WallEnd - container.WallStart;
+        fallbackDirection.y = 0f;
+
+        Vector3 direction = desiredLength > 0.0001f
+            ? desiredOffset / desiredLength
+            : (fallbackDirection.sqrMagnitude > 0.0001f ? fallbackDirection.normalized : Vector3.right);
+
+        constrainedPoint = anchorPoint + direction * minimumRequiredLength;
+        constrainedPoint.y = desiredPoint.y;
+
+        Vector3 wallDirection = container.WallDirection;
+        float desiredDistance = Vector3.Dot(constrainedPoint - container.WallStart, wallDirection);
+        if (draggingStart && maxStartDistance != float.PositiveInfinity)
+        {
+            desiredDistance = Mathf.Min(desiredDistance, maxStartDistance);
+        }
+        else if (draggingEnd && minEndDistance != float.NegativeInfinity)
+        {
+            desiredDistance = Mathf.Max(desiredDistance, minEndDistance);
+        }
+
+        constrainedPoint = container.WallStart + wallDirection * desiredDistance;
+        constrainedPoint.y = desiredPoint.y;
+        return true;
+    }
+    private void RebuildContainer(WallOpeningContainer container, bool isDragging = false)
+    {
+        if (isDragging)
+        {
+            handleManager?.BeginTransientDragRebuild();
+        }
+
+        try
+        {
+        if (!isDragging && deactivatedWallsHolder != null)
+        {
+            for (int i = deactivatedWallsHolder.childCount - 1; i >= 0; i--)
+            {
+                Transform child = deactivatedWallsHolder.GetChild(i);
+                if (child == null)
+                {
+                    continue;
+                }
+
+                Destroy(child.gameObject);
+            }
+        }
+
         layoutRebuildController.RebuildContainer(
-            container,
-            pendingRoomRefreshRemovedWalls,
-            cachedWalls,
-            cachedOpenings,
-            CollectOpenings,
-            ClearGeneratedContainerVisuals,
-            GetOrCreateSegmentsRoot,
-            CreateWallSegment,
-            UpdateOpeningVisual,
-            (targetTransform, result, includeInactive) => WallHierarchyUtility.CollectWalls(targetTransform, result, includeInactive),
-            RoomTopologyEvents.RequestRefreshForWallReplacement,
-            MarkMarkerVisualsDirty);
+            container: container,
+            pendingRoomRefreshRemovedWalls: pendingRoomRefreshRemovedWalls,
+            cachedWalls: cachedWalls,
+            cachedOpenings: cachedOpenings,
+            collectOpenings: CollectOpenings,
+            clearGeneratedContainerVisuals: ClearGeneratedContainerVisuals,
+            getSegmentsRoot: GetOrCreateSegmentsRoot,
+            createWallSegment: CreateWallSegment,
+            updateOpeningVisual: UpdateOpeningVisual,
+            collectWalls: (targetTransform, result, includeInactive) => WallHierarchyUtility.CollectWalls(targetTransform, result, includeInactive),
+            requestRefreshForWallReplacement: RoomTopologyEvents.RequestRefreshForWallReplacement,
+            markMarkerVisualsDirty: MarkMarkerVisualsDirty,
+            isDragging: isDragging);
+        }
+        finally
+        {
+            if (isDragging)
+            {
+                handleManager?.EndTransientDragRebuild();
+            }
+        }
     }
 
     private void RefreshSelectedWallForContainer(WallOpeningContainer container, float preferredDistance)
@@ -478,7 +641,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
     }
 
-    private void ClearGeneratedContainerVisuals(WallOpeningContainer container, List<Wall> wallsInContainer = null)
+    private void ClearGeneratedContainerVisuals(WallOpeningContainer container, List<Wall> wallsInContainer = null, bool isDragging = false)
     {
         if (container == null)
         {
@@ -499,13 +662,37 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 continue;
             }
 
-            if (handleManager != null)
+            if (isDragging && wallSelectionManager != null && wallSelectionManager.SelectedWall == walls[i].gameObject)
             {
-                handleManager.UnregisterWall(walls[i].gameObject);
+                wallSelectionManager.SetSelectedWallPreservingOpeningSelection(null);
             }
 
             walls[i].ClearLengthDisplay(wallLengthDisplay);
-            Destroy(walls[i].gameObject);
+
+            if (isDragging)
+            {
+                if (handleManager != null)
+                {
+                    handleManager.UnregisterWall(walls[i].gameObject);
+                }
+
+                WallSelectionUIProxy selectionProxy = walls[i].GetComponent<WallSelectionUIProxy>();
+                if (selectionProxy != null)
+                {
+                    selectionProxy.DestroyUI();
+                    Destroy(selectionProxy);
+                }
+
+                walls[i].transform.SetParent(deactivatedWallsHolder, false);
+            }
+            else
+            {
+                if (handleManager != null)
+                {
+                    handleManager.UnregisterWall(walls[i].gameObject);
+                }
+                Destroy(walls[i].gameObject);
+            }
         }
 
         for (int i = container.transform.childCount - 1; i >= 0; i--)
@@ -548,7 +735,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        WallVisualState visualState)
+        WallVisualState visualState,
+        bool isDragging = false)
     {
         return geometryFactory.CreateStandaloneWallSegment(
             wallRoot,
@@ -568,8 +756,9 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             suppressEndHandle,
             startSplitPoint,
             endSplitPoint,
-            visualState,
-            MinimumWallSegmentLength);
+            visualState, // No change here
+            MinimumWallSegmentLength,
+            isDragging); // Pass isDragging
     }
 
     private void CreateFillerSegment(

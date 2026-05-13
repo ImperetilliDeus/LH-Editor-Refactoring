@@ -6,56 +6,59 @@ using UnityEngine;
 [Serializable]
 public class WallData
 {
-    [SerializeField, FormerlySerializedAs("id")] private string idValue;
-    [SerializeField, FormerlySerializedAs("startPoint")] private Vector3 startPointValue;
-    [SerializeField, FormerlySerializedAs("endPoint")] private Vector3 endPointValue;
-    [SerializeField, FormerlySerializedAs("thickness")] private float thicknessValue;
-    [SerializeField, FormerlySerializedAs("height")] private float heightValue;
-    [SerializeField, FormerlySerializedAs("centerY")] private float centerYValue;
+    [SerializeField, FormerlySerializedAs("id")] private string _id;
+    [SerializeField, FormerlySerializedAs("startPoint")] private Vector3 _startPoint;
+    [SerializeField, FormerlySerializedAs("endPoint")] private Vector3 _endPoint;
+    [SerializeField, FormerlySerializedAs("thickness")] private float _thickness;
+    [SerializeField, FormerlySerializedAs("height")] private float _height;
+    [SerializeField, FormerlySerializedAs("centerY")] private float _centerY;
 
+    [SerializeField] private List<WallOpeningData> openings = new List<WallOpeningData>();
     [NonSerialized] private int suppressNotifications;
 
     public event Action Changed;
 
     public string id
     {
-        get => idValue;
-        set => SetField(ref idValue, value);
+        get => _id;
+        set => SetField(ref _id, value);
     }
 
     public Vector3 startPoint
     {
-        get => startPointValue;
-        set => SetField(ref startPointValue, value);
+        get => _startPoint;
+        set => SetField(ref _startPoint, value);
     }
 
     public Vector3 endPoint
     {
-        get => endPointValue;
-        set => SetField(ref endPointValue, value);
+        get => _endPoint;
+        set => SetField(ref _endPoint, value);
     }
 
     public float thickness
     {
-        get => thicknessValue;
-        set => SetField(ref thicknessValue, value);
+        get => _thickness;
+        set => SetField(ref _thickness, value);
     }
 
     public float height
     {
-        get => heightValue;
-        set => SetField(ref heightValue, value);
+        get => _height;
+        set => SetField(ref _height, value);
     }
 
     public float centerY
     {
-        get => centerYValue;
-        set => SetField(ref centerYValue, value);
+        get => _centerY;
+        set => SetField(ref _centerY, value);
     }
+
+    public List<WallOpeningData> Openings => openings;
 
     public WallData()
     {
-        idValue = Guid.NewGuid().ToString("N");
+        _id = Guid.NewGuid().ToString("N");
     }
 
     public WallData(Vector3 start, Vector3 end, float wallThickness, float wallHeight, float wallCenterY)

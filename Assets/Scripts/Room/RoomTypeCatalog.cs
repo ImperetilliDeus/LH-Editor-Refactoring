@@ -17,8 +17,10 @@ public static class RoomTypeCatalog
     [Serializable]
     private sealed class RoomTypeEntryDto
     {
+#pragma warning disable CS0649
         public string name;
         public int code;
+#pragma warning restore CS0649
     }
 
     public readonly struct Entry
