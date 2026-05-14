@@ -7,17 +7,24 @@ using UnityEngine;
 public class LhWorkStateLoaderTests
 {
     private GameObject wallRoot;
+    private GameObject furnitureRoot;
+    private GameObject roomManagerObject;
+    private UnityEngine.Object furnitureCatalog;
 
     [SetUp]
     public void SetUp()
     {
         wallRoot = new GameObject("Walls");
+        furnitureRoot = new GameObject("FurnitureRoot");
     }
 
     [TearDown]
     public void TearDown()
     {
         UnityEngine.Object.DestroyImmediate(wallRoot);
+        UnityEngine.Object.DestroyImmediate(furnitureRoot);
+        UnityEngine.Object.DestroyImmediate(roomManagerObject);
+        UnityEngine.Object.DestroyImmediate(furnitureCatalog);
     }
 
     [Test]
@@ -120,6 +127,148 @@ public class LhWorkStateLoaderTests
         Assert.That(((Component)walls.GetValue(0)).name, Is.EqualTo("ExistingWall"));
     }
 
+    [Test]
+    public void Load_DoesNotClearCurrentWalls_WhenSavedWallGeometryInvalid()
+    {
+        CreateExistingWall();
+        object state = CreateState();
+        AddWall(
+            state,
+            "invalid-wall-id",
+            "InvalidWall",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(2f, 0f, 0f),
+            0.25f,
+            3.2f,
+            1.6f,
+            10,
+            11,
+            false,
+            false,
+            false,
+            false);
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.False);
+        AssertExistingWallStillPresent();
+    }
+
+    [Test]
+    public void Load_DoesNotClearCurrentWalls_WhenFurnitureDependencyMissing()
+    {
+        CreateExistingWall();
+        object state = CreateState();
+        AddWall(
+            state,
+            "saved-wall-id",
+            "SavedWall",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(5f, 0f, 0f),
+            0.25f,
+            3.2f,
+            1.6f,
+            10,
+            11,
+            false,
+            false,
+            false,
+            false);
+        AddFurniture(state, "chair-a", "Chair A", "Living");
+
+        object result = Load(state, wallRoot.transform, null, furnitureRoot.transform, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.False);
+        AssertExistingWallStillPresent();
+    }
+
+    [Test]
+    public void Load_DoesNotClearCurrentWalls_WhenFurniturePrefabMissing()
+    {
+        CreateExistingWall();
+        object state = CreateState();
+        AddWall(
+            state,
+            "saved-wall-id",
+            "SavedWall",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(5f, 0f, 0f),
+            0.25f,
+            3.2f,
+            1.6f,
+            10,
+            11,
+            false,
+            false,
+            false,
+            false);
+        AddFurniture(state, "chair-a", "Chair A", "Living");
+        object catalog = CreateFurnitureCatalog("chair-a", null);
+
+        object result = Load(state, wallRoot.transform, null, furnitureRoot.transform, catalog);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.False);
+        AssertExistingWallStillPresent();
+    }
+
+    [Test]
+    public void Load_RestoresRoomMetadataAndManualFlag()
+    {
+        object state = CreateState();
+        AddWall(
+            state,
+            "wall-a",
+            "WallA",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+        AddRoom(
+            state,
+            "Living",
+            "living-type",
+            "RM-01",
+            "NATIVE-01",
+            "floor-a",
+            "ceiling-a",
+            false,
+            new[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                new Vector3(4f, 0f, 3f),
+                new Vector3(0f, 0f, 3f),
+            },
+            new[] { "wall-a" },
+            true,
+            new[] { "wall-a" });
+        object roomManager = CreateRoomManager();
+
+        object result = Load(state, wallRoot.transform, roomManager, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        IList rooms = (IList)roomManager.GetType()
+            .GetMethod("GetAllRooms", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null)
+            ?.Invoke(roomManager, null);
+        Assert.That(rooms, Has.Count.EqualTo(1));
+        object room = rooms[0];
+        Assert.That(GetPropertyValue<string>(room, "RoomName"), Is.EqualTo("Living"));
+        Assert.That(GetPropertyValue<string>(room, "RoomTypeKey"), Is.EqualTo("living-type"));
+        Assert.That(GetPropertyValue<string>(room, "RoomCode"), Is.EqualTo("RM-01"));
+        Assert.That(GetPropertyValue<string>(room, "RoomNativeCode"), Is.EqualTo("NATIVE-01"));
+        Assert.That(GetPropertyValue<string>(room, "FloorTextureCode"), Is.EqualTo("floor-a"));
+        Assert.That(GetPropertyValue<string>(room, "CeilingTextureCode"), Is.EqualTo("ceiling-a"));
+        Assert.That(GetPropertyValue<bool>(room, "IsManualRoom"), Is.False);
+        Assert.That(GetPropertyValue<bool>(room, "ManualWallSelectionEnabled"), Is.True);
+    }
+
     private static object Load(object state, Transform wallRoot, object roomManager, Transform furnitureRoot, object furnitureCatalog)
     {
         Type loaderType = GetAssemblyType("LhWorkStateLoader");
@@ -169,11 +318,115 @@ public class LhWorkStateLoaderTests
         GetFieldValue<IList>(state, "walls").Add(wall);
     }
 
+    private static void AddRoom(
+        object state,
+        string roomName,
+        string roomTypeKey,
+        string roomCode,
+        string roomNativeCode,
+        string floorTextureCode,
+        string ceilingTextureCode,
+        bool isManualRoom,
+        Vector3[] boundaryVertices,
+        string[] wallIds,
+        bool manualWallSelectionEnabled,
+        string[] manualWallIds)
+    {
+        object room = Activator.CreateInstance(GetAssemblyType("LhWorkRoomDto"));
+        SetFieldValue(room, "name", roomName);
+        SetFieldValue(room, "roomTypeKey", roomTypeKey);
+        SetFieldValue(room, "roomCode", roomCode);
+        SetFieldValue(room, "roomNativeCode", roomNativeCode);
+        SetFieldValue(room, "floorTextureCode", floorTextureCode);
+        SetFieldValue(room, "ceilingTextureCode", ceilingTextureCode);
+        SetFieldValue(room, "isManualRoom", isManualRoom);
+        SetFieldValue(room, "placementOffset", ToVectorDto(new Vector3(0.5f, 0f, 0.25f)));
+        IList boundary = GetFieldValue<IList>(room, "boundaryVertices");
+        for (int i = 0; i < boundaryVertices.Length; i++)
+        {
+            boundary.Add(ToVectorDto(boundaryVertices[i]));
+        }
+
+        IList roomWallIds = GetFieldValue<IList>(room, "wallIds");
+        for (int i = 0; i < wallIds.Length; i++)
+        {
+            roomWallIds.Add(wallIds[i]);
+        }
+
+        SetFieldValue(room, "manualWallSelectionEnabled", manualWallSelectionEnabled);
+        IList roomManualWallIds = GetFieldValue<IList>(room, "manualWallIds");
+        for (int i = 0; i < manualWallIds.Length; i++)
+        {
+            roomManualWallIds.Add(manualWallIds[i]);
+        }
+
+        GetFieldValue<IList>(state, "rooms").Add(room);
+    }
+
+    private static void AddFurniture(object state, string catalogCode, string name, string roomName)
+    {
+        object furniture = Activator.CreateInstance(GetAssemblyType("LhWorkFurnitureDto"));
+        SetFieldValue(furniture, "catalogCode", catalogCode);
+        SetFieldValue(furniture, "name", name);
+        SetFieldValue(furniture, "position", ToVectorDto(Vector3.zero));
+        SetFieldValue(furniture, "eulerAngles", ToVectorDto(Vector3.zero));
+        SetFieldValue(furniture, "localScale", ToVectorDto(Vector3.one));
+        SetFieldValue(furniture, "isPlaced", true);
+        SetFieldValue(furniture, "roomName", roomName);
+        GetFieldValue<IList>(state, "furniture").Add(furniture);
+    }
+
     private static object ToVectorDto(Vector3 value)
     {
         return GetAssemblyType("LhWorkVector3Dto")
             .GetMethod("FromVector3", BindingFlags.Public | BindingFlags.Static)
             ?.Invoke(null, new object[] { value });
+    }
+
+    private GameObject CreateExistingWall()
+    {
+        GameObject existingWall = CreateWallObject("ExistingWall", wallRoot.transform);
+        ConfigureWall(
+            existingWall,
+            new Vector3(0f, 0f, 0f),
+            new Vector3(1f, 0f, 0f),
+            0.1f,
+            2f,
+            1f,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+        return existingWall;
+    }
+
+    private void AssertExistingWallStillPresent()
+    {
+        Array walls = wallRoot.GetComponentsInChildren(GetAssemblyType("Wall"), true);
+        Assert.That(walls, Has.Length.EqualTo(1));
+        Assert.That(((Component)walls.GetValue(0)).name, Is.EqualTo("ExistingWall"));
+    }
+
+    private object CreateRoomManager()
+    {
+        Type roomManagerType = GetAssemblyType("RoomManager");
+        roomManagerObject = new GameObject("RoomManager");
+        return roomManagerObject.AddComponent(roomManagerType);
+    }
+
+    private object CreateFurnitureCatalog(string code, GameObject prefab)
+    {
+        Type catalogType = GetAssemblyType("FurnitureCatalog");
+        Type itemType = GetAssemblyType("FurnitureCatalogItem");
+        object catalog = ScriptableObject.CreateInstance(catalogType);
+        furnitureCatalog = (UnityEngine.Object)catalog;
+        object item = Activator.CreateInstance(itemType);
+        SetFieldValue(item, "code", code);
+        SetFieldValue(item, "prefab", prefab);
+        GetFieldValue<IList>(catalog, "items").Add(item);
+        return catalog;
     }
 
     private static GameObject CreateWallObject(string name, Transform parent)
@@ -231,7 +484,7 @@ public class LhWorkStateLoaderTests
 
     private static T GetFieldValue<T>(object target, string fieldName)
     {
-        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.That(field, Is.Not.Null);
         return (T)field.GetValue(target);
     }

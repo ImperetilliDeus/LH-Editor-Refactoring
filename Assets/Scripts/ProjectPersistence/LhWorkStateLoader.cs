@@ -34,7 +34,7 @@ public static class LhWorkStateLoader
         Transform furnitureRoot,
         FurnitureCatalog furnitureCatalog)
     {
-        LhWorkStateLoadResult validationResult = Validate(state, wallRoot);
+        LhWorkStateLoadResult validationResult = Validate(state, wallRoot, roomManager, furnitureRoot, furnitureCatalog);
         if (!validationResult.Success)
         {
             return validationResult;
@@ -51,14 +51,28 @@ public static class LhWorkStateLoader
             ClearChildren(furnitureRoot);
         }
 
-        Dictionary<string, Wall> wallsById = RestoreWalls(state.walls, wallRoot);
-        RestoreRooms(state.rooms, roomManager, wallsById);
-        RestoreFurniture(state.furniture, furnitureRoot, furnitureCatalog);
-        RoomTopologyEvents.RequestRefreshAll();
+        if (!RestoreWalls(state.walls, wallRoot, out Dictionary<string, Wall> wallsById))
+        {
+            return LhWorkStateLoadResult.Fail("Failed to restore walls.");
+        }
+
+        Dictionary<string, Room> roomsByName = RestoreRooms(state.rooms, roomManager, wallsById);
+        RestoreFurniture(state.furniture, furnitureRoot, furnitureCatalog, roomsByName);
+        if (roomManager != null)
+        {
+            roomManager.RebuildRoomLookupForWorkStateLoad();
+        }
+
+        RoomTopologyEvents.RequestRefreshForWallReplacement(System.Array.Empty<Wall>(), wallsById.Values);
         return LhWorkStateLoadResult.Ok();
     }
 
-    private static LhWorkStateLoadResult Validate(LhWorkStateDto state, Transform wallRoot)
+    private static LhWorkStateLoadResult Validate(
+        LhWorkStateDto state,
+        Transform wallRoot,
+        RoomManager roomManager,
+        Transform furnitureRoot,
+        FurnitureCatalog furnitureCatalog)
     {
         if (state == null)
         {
@@ -75,15 +89,32 @@ public static class LhWorkStateLoader
             return LhWorkStateLoadResult.Fail("Wall root is missing.");
         }
 
+        LhWorkStateLoadResult wallResult = ValidateWalls(state.walls);
+        if (!wallResult.Success)
+        {
+            return wallResult;
+        }
+
+        LhWorkStateLoadResult roomResult = ValidateRooms(state.rooms, roomManager);
+        if (!roomResult.Success)
+        {
+            return roomResult;
+        }
+
+        LhWorkStateLoadResult furnitureResult = ValidateFurniture(state.furniture, furnitureRoot, furnitureCatalog);
+        if (!furnitureResult.Success)
+        {
+            return furnitureResult;
+        }
+
         return LhWorkStateLoadResult.Ok();
     }
 
-    private static Dictionary<string, Wall> RestoreWalls(IReadOnlyList<LhWorkWallDto> walls, Transform wallRoot)
+    private static LhWorkStateLoadResult ValidateWalls(IReadOnlyList<LhWorkWallDto> walls)
     {
-        Dictionary<string, Wall> wallsById = new Dictionary<string, Wall>(System.StringComparer.Ordinal);
         if (walls == null)
         {
-            return wallsById;
+            return LhWorkStateLoadResult.Ok();
         }
 
         for (int i = 0; i < walls.Count; i++)
@@ -91,17 +122,118 @@ public static class LhWorkStateLoader
             LhWorkWallDto wallDto = walls[i];
             if (wallDto == null)
             {
+                return LhWorkStateLoadResult.Fail($"Wall #{i} is missing.");
+            }
+
+            if (!HasValidWallGeometry(wallDto))
+            {
+                return LhWorkStateLoadResult.Fail($"Wall #{i} has invalid geometry.");
+            }
+        }
+
+        return LhWorkStateLoadResult.Ok();
+    }
+
+    private static LhWorkStateLoadResult ValidateRooms(IReadOnlyList<LhWorkRoomDto> rooms, RoomManager roomManager)
+    {
+        if (rooms == null || rooms.Count == 0)
+        {
+            return LhWorkStateLoadResult.Ok();
+        }
+
+        if (roomManager == null)
+        {
+            return LhWorkStateLoadResult.Fail("Room manager is required to load rooms.");
+        }
+
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            LhWorkRoomDto roomDto = rooms[i];
+            if (roomDto == null)
+            {
+                return LhWorkStateLoadResult.Fail($"Room #{i} is missing.");
+            }
+
+            List<Vector3> vertices = ToVectors(roomDto.boundaryVertices);
+            if (!RoomPolygonValidationUtility.IsValidPolygon(vertices))
+            {
+                return LhWorkStateLoadResult.Fail($"Room #{i} has invalid polygon.");
+            }
+        }
+
+        return LhWorkStateLoadResult.Ok();
+    }
+
+    private static LhWorkStateLoadResult ValidateFurniture(
+        IReadOnlyList<LhWorkFurnitureDto> furniture,
+        Transform furnitureRoot,
+        FurnitureCatalog furnitureCatalog)
+    {
+        if (furniture == null || furniture.Count == 0)
+        {
+            return LhWorkStateLoadResult.Ok();
+        }
+
+        if (furnitureRoot == null)
+        {
+            return LhWorkStateLoadResult.Fail("Furniture root is required to load furniture.");
+        }
+
+        if (furnitureCatalog == null)
+        {
+            return LhWorkStateLoadResult.Fail("Furniture catalog is required to load furniture.");
+        }
+
+        for (int i = 0; i < furniture.Count; i++)
+        {
+            LhWorkFurnitureDto furnitureDto = furniture[i];
+            if (furnitureDto == null)
+            {
+                return LhWorkStateLoadResult.Fail($"Furniture #{i} is missing.");
+            }
+
+            if (string.IsNullOrWhiteSpace(furnitureDto.catalogCode))
+            {
                 continue;
             }
 
+            FurnitureCatalogItem item = ResolveFurnitureItem(furnitureCatalog, furnitureDto);
+            if (item == null || item.prefab == null)
+            {
+                return LhWorkStateLoadResult.Fail($"Furniture #{i} cannot resolve a prefab.");
+            }
+        }
+
+        return LhWorkStateLoadResult.Ok();
+    }
+
+    private static bool RestoreWalls(
+        IReadOnlyList<LhWorkWallDto> walls,
+        Transform wallRoot,
+        out Dictionary<string, Wall> wallsById)
+    {
+        wallsById = new Dictionary<string, Wall>(System.StringComparer.Ordinal);
+        if (walls == null)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < walls.Count; i++)
+        {
+            LhWorkWallDto wallDto = walls[i];
             Wall wall = RestoreStandaloneWall(wallDto, wallRoot);
+            if (wall == null)
+            {
+                return false;
+            }
+
             if (wall != null && wall.Data != null && !string.IsNullOrWhiteSpace(wall.Data.id))
             {
                 wallsById[wall.Data.id] = wall;
             }
         }
 
-        return wallsById;
+        return true;
     }
 
     private static Wall RestoreStandaloneWall(LhWorkWallDto wallDto, Transform wallRoot)
@@ -140,26 +272,22 @@ public static class LhWorkStateLoader
         return wallObject.GetComponent<Wall>();
     }
 
-    private static void RestoreRooms(
+    private static Dictionary<string, Room> RestoreRooms(
         IReadOnlyList<LhWorkRoomDto> rooms,
         RoomManager roomManager,
         Dictionary<string, Wall> wallsById)
     {
+        Dictionary<string, Room> roomsByName = new Dictionary<string, Room>(System.StringComparer.Ordinal);
         if (rooms == null || roomManager == null)
         {
-            return;
+            return roomsByName;
         }
 
         for (int i = 0; i < rooms.Count; i++)
         {
             LhWorkRoomDto roomDto = rooms[i];
-            if (roomDto == null || roomDto.boundaryVertices == null || roomDto.boundaryVertices.Count < 3)
-            {
-                continue;
-            }
-
             List<Vector3> vertices = ToVectors(roomDto.boundaryVertices);
-            Room room = roomManager.CreateRoomFromPolygon(vertices, ResolveWallSet(roomDto.wallIds, wallsById));
+            Room room = roomManager.CreateRoomForWorkStateLoad(vertices, ResolveWallSet(roomDto.wallIds, wallsById), roomDto.isManualRoom);
             if (room == null)
             {
                 continue;
@@ -175,13 +303,19 @@ public static class LhWorkStateLoader
                 roomDto.floorTextureCode,
                 roomDto.ceilingTextureCode);
             roomManager.UpdateRoomWallSelection(room, roomDto.manualWallIds, roomDto.manualWallSelectionEnabled);
+            AddRoomAlias(roomsByName, roomDto.name, room);
+            AddRoomAlias(roomsByName, room.RoomName, room);
+            AddRoomAlias(roomsByName, room.name, room);
         }
+
+        return roomsByName;
     }
 
     private static void RestoreFurniture(
         IReadOnlyList<LhWorkFurnitureDto> furniture,
         Transform furnitureRoot,
-        FurnitureCatalog furnitureCatalog)
+        FurnitureCatalog furnitureCatalog,
+        Dictionary<string, Room> roomsByName)
     {
         if (furniture == null || furnitureRoot == null || furnitureCatalog == null)
         {
@@ -191,8 +325,13 @@ public static class LhWorkStateLoader
         for (int i = 0; i < furniture.Count; i++)
         {
             LhWorkFurnitureDto furnitureDto = furniture[i];
+            if (furnitureDto == null || string.IsNullOrWhiteSpace(furnitureDto.catalogCode))
+            {
+                continue;
+            }
+
             FurnitureCatalogItem item = ResolveFurnitureItem(furnitureCatalog, furnitureDto);
-            if (furnitureDto == null || item == null || item.prefab == null)
+            if (item == null || item.prefab == null)
             {
                 continue;
             }
@@ -211,6 +350,11 @@ public static class LhWorkStateLoader
 
             instance.Initialize(item);
             instance.SetPlaced(furnitureDto.isPlaced);
+            if (TryResolveRoom(roomsByName, furnitureDto.roomName, out Room room))
+            {
+                instance.SetCurrentRoom(room);
+            }
+
             instance.ApplyLayerRecursively();
         }
     }
@@ -269,6 +413,36 @@ public static class LhWorkStateLoader
         return wallSet;
     }
 
+    private static void AddRoomAlias(Dictionary<string, Room> roomsByName, string roomName, Room room)
+    {
+        if (roomsByName == null || string.IsNullOrWhiteSpace(roomName) || room == null)
+        {
+            return;
+        }
+
+        roomsByName[roomName] = room;
+    }
+
+    private static bool TryResolveRoom(Dictionary<string, Room> roomsByName, string roomName, out Room room)
+    {
+        room = null;
+        return roomsByName != null &&
+               !string.IsNullOrWhiteSpace(roomName) &&
+               roomsByName.TryGetValue(roomName, out room);
+    }
+
+    private static bool HasValidWallGeometry(LhWorkWallDto wallDto)
+    {
+        if (wallDto == null)
+        {
+            return false;
+        }
+
+        Vector3 delta = wallDto.end.ToVector3() - wallDto.start.ToVector3();
+        delta.y = 0f;
+        return delta.magnitude >= MinimumWallLength;
+    }
+
     private static List<Vector3> ToVectors(IReadOnlyList<LhWorkVector3Dto> values)
     {
         List<Vector3> results = new List<Vector3>();
@@ -311,6 +485,11 @@ public static class LhWorkStateLoader
 
         if (Application.isPlaying)
         {
+            if (target is GameObject gameObject)
+            {
+                gameObject.SetActive(false);
+            }
+
             Object.Destroy(target);
         }
         else

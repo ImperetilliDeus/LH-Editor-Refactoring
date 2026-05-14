@@ -306,6 +306,21 @@ public class RoomManager : MonoBehaviour
         return room;
     }
 
+    public Room CreateRoomForWorkStateLoad(List<Vector3> polygonVertices, HashSet<Wall> wallSet, bool isManualRoom)
+    {
+        List<Vector3> sanitizedPolygonVertices = PolygonUtility.CreateSanitizedPolygonCopy(polygonVertices);
+        if (!RoomPolygonValidationUtility.IsValidPolygon(sanitizedPolygonVertices))
+        {
+            Debug.LogWarning("Cannot restore room: polygon is invalid");
+            return null;
+        }
+
+        Room room = CreateRoomObject(wallSet ?? new HashSet<Wall>(), sanitizedPolygonVertices, isManualRoom);
+        allRooms.Add(room);
+        RoomsChanged?.Invoke();
+        return room;
+    }
+
     public bool UpdateRoomPolygon(Room room, IReadOnlyList<Vector3> polygonVertices, bool clearWallSet = false)
     {
         if (room == null)
@@ -440,6 +455,7 @@ public class RoomManager : MonoBehaviour
             {
                 if (Application.isPlaying)
                 {
+                    room.gameObject.SetActive(false);
                     Destroy(room.gameObject);
                 }
                 else
@@ -453,6 +469,12 @@ public class RoomManager : MonoBehaviour
         roomsByWalls.Clear();
         MarkGraphDirty();
         RoomsChanged?.Invoke();
+    }
+
+    public void RebuildRoomLookupForWorkStateLoad()
+    {
+        RebuildRoomLookup();
+        MarkGraphDirty();
     }
 
     public List<Room> GetAllRooms()
