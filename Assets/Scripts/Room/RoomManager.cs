@@ -431,6 +431,30 @@ public class RoomManager : MonoBehaviour
         RoomsChanged?.Invoke();
     }
 
+    public void ClearAllRoomsForWorkStateLoad()
+    {
+        for (int i = allRooms.Count - 1; i >= 0; i--)
+        {
+            Room room = allRooms[i];
+            if (room != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(room.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(room.gameObject);
+                }
+            }
+        }
+
+        allRooms.Clear();
+        roomsByWalls.Clear();
+        MarkGraphDirty();
+        RoomsChanged?.Invoke();
+    }
+
     public List<Room> GetAllRooms()
     {
         return new List<Room>(allRooms);
