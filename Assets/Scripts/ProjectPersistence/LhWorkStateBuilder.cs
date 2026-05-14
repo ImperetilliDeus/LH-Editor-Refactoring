@@ -7,14 +7,15 @@ public static class LhWorkStateBuilder
 
     public static LhWorkStateDto Build(Transform wallRoot, RoomManager roomManager, Transform furnitureRoot)
     {
+        Dictionary<string, string> normalizedWallIdsBySourceId = new Dictionary<string, string>(System.StringComparer.Ordinal);
         LhWorkStateDto state = LhWorkStateDto.CreateEmpty();
-        state.walls = BuildWalls(wallRoot);
-        state.rooms = BuildRooms(roomManager);
+        state.walls = BuildWalls(wallRoot, normalizedWallIdsBySourceId);
+        state.rooms = BuildRooms(roomManager, normalizedWallIdsBySourceId);
         state.furniture = BuildFurniture(furnitureRoot);
         return state;
     }
 
-    private static List<LhWorkWallDto> BuildWalls(Transform wallRoot)
+    private static List<LhWorkWallDto> BuildWalls(Transform wallRoot, Dictionary<string, string> normalizedWallIdsBySourceId)
     {
         List<LhWorkWallDto> results = new List<LhWorkWallDto>();
         HashSet<Transform> exportedRoots = new HashSet<Transform>();
@@ -35,7 +36,17 @@ public static class LhWorkStateBuilder
                 continue;
             }
 
-            results.Add(container != null ? BuildContainerWall(container, wall) : BuildStandaloneWall(wall));
+            if (container != null)
+            {
+                string collapsedId = GetCollapsedContainerId(container);
+                RegisterContainerWallIds(container, collapsedId, normalizedWallIdsBySourceId);
+                results.Add(BuildContainerWall(container, collapsedId));
+            }
+            else
+            {
+                RegisterWallId(wall, GetWallId(wall), normalizedWallIdsBySourceId);
+                results.Add(BuildStandaloneWall(wall));
+            }
         }
 
         return results;
@@ -63,13 +74,11 @@ public static class LhWorkStateBuilder
         };
     }
 
-    private static LhWorkWallDto BuildContainerWall(WallOpeningContainer container, Wall representativeWall)
+    private static LhWorkWallDto BuildContainerWall(WallOpeningContainer container, string collapsedId)
     {
         return new LhWorkWallDto
         {
-            id = representativeWall != null && representativeWall.Data != null
-                ? representativeWall.Data.id ?? string.Empty
-                : string.Empty,
+            id = collapsedId ?? string.Empty,
             name = container.name ?? string.Empty,
             start = LhWorkVector3Dto.FromVector3(container.WallStart),
             end = LhWorkVector3Dto.FromVector3(container.WallEnd),
@@ -122,7 +131,7 @@ public static class LhWorkStateBuilder
         return results;
     }
 
-    private static List<LhWorkRoomDto> BuildRooms(RoomManager roomManager)
+    private static List<LhWorkRoomDto> BuildRooms(RoomManager roomManager, Dictionary<string, string> normalizedWallIdsBySourceId)
     {
         List<LhWorkRoomDto> results = new List<LhWorkRoomDto>();
         if (roomManager == null)
@@ -151,9 +160,9 @@ public static class LhWorkStateBuilder
                 isManualRoom = room.IsManualRoom,
                 placementOffset = LhWorkVector3Dto.FromVector3(data != null ? data.PlacementOffset : Vector3.zero),
                 boundaryVertices = ToVectorDtos(room.BoundaryVertices),
-                wallIds = ToStringList(data != null ? data.WallIds : null),
+                wallIds = NormalizeWallIds(data != null ? data.WallIds : null, normalizedWallIdsBySourceId),
                 manualWallSelectionEnabled = data != null && data.ManualWallSelectionEnabled,
-                manualWallIds = ToStringList(data != null ? data.ManualWallIds : null),
+                manualWallIds = NormalizeWallIds(data != null ? data.ManualWallIds : null, normalizedWallIdsBySourceId),
             });
         }
 
@@ -213,7 +222,7 @@ public static class LhWorkStateBuilder
         return results;
     }
 
-    private static List<string> ToStringList(IReadOnlyList<string> values)
+    private static List<string> NormalizeWallIds(IReadOnlyList<string> values, Dictionary<string, string> normalizedWallIdsBySourceId)
     {
         List<string> results = new List<string>();
         if (values == null)
@@ -221,12 +230,85 @@ public static class LhWorkStateBuilder
             return results;
         }
 
+        HashSet<string> seenIds = new HashSet<string>(System.StringComparer.Ordinal);
         for (int i = 0; i < values.Count; i++)
         {
-            results.Add(values[i] ?? string.Empty);
+            string sourceId = values[i] ?? string.Empty;
+            string normalizedId = sourceId;
+            if (normalizedWallIdsBySourceId != null &&
+                normalizedWallIdsBySourceId.TryGetValue(sourceId, out string mappedId))
+            {
+                normalizedId = mappedId ?? string.Empty;
+            }
+
+            if (seenIds.Add(normalizedId))
+            {
+                results.Add(normalizedId);
+            }
         }
 
         return results;
+    }
+
+    private static string GetCollapsedContainerId(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return string.Empty;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < walls.Length; i++)
+        {
+            string id = GetWallId(walls[i]);
+            if (!string.IsNullOrEmpty(id))
+            {
+                return id;
+            }
+        }
+
+        return container.name ?? string.Empty;
+    }
+
+    private static void RegisterContainerWallIds(
+        WallOpeningContainer container,
+        string collapsedId,
+        Dictionary<string, string> normalizedWallIdsBySourceId)
+    {
+        if (container == null || normalizedWallIdsBySourceId == null)
+        {
+            return;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < walls.Length; i++)
+        {
+            RegisterWallId(walls[i], collapsedId, normalizedWallIdsBySourceId);
+        }
+    }
+
+    private static void RegisterWallId(
+        Wall wall,
+        string normalizedId,
+        Dictionary<string, string> normalizedWallIdsBySourceId)
+    {
+        if (wall == null || normalizedWallIdsBySourceId == null)
+        {
+            return;
+        }
+
+        string sourceId = GetWallId(wall);
+        if (string.IsNullOrEmpty(sourceId))
+        {
+            return;
+        }
+
+        normalizedWallIdsBySourceId[sourceId] = normalizedId ?? string.Empty;
+    }
+
+    private static string GetWallId(Wall wall)
+    {
+        return wall != null && wall.Data != null ? wall.Data.id ?? string.Empty : string.Empty;
     }
 
     private static bool IsPreviewWall(Transform root)
