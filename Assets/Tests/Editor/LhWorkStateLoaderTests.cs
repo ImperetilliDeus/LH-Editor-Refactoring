@@ -9,6 +9,7 @@ public class LhWorkStateLoaderTests
     private GameObject wallRoot;
     private GameObject furnitureRoot;
     private GameObject roomManagerObject;
+    private GameObject furniturePrefab;
     private UnityEngine.Object furnitureCatalog;
 
     [SetUp]
@@ -24,6 +25,7 @@ public class LhWorkStateLoaderTests
         UnityEngine.Object.DestroyImmediate(wallRoot);
         UnityEngine.Object.DestroyImmediate(furnitureRoot);
         UnityEngine.Object.DestroyImmediate(roomManagerObject);
+        UnityEngine.Object.DestroyImmediate(furniturePrefab);
         UnityEngine.Object.DestroyImmediate(furnitureCatalog);
     }
 
@@ -212,6 +214,38 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
+    public void Load_RestoresFurnitureUsingExportCode_WhenCatalogCodeEmpty()
+    {
+        object state = CreateState();
+        AddFurniture(state, string.Empty, "export-chair", string.Empty, "Export Chair", string.Empty);
+        furniturePrefab = new GameObject("ChairPrefab");
+        object catalog = CreateFurnitureCatalog(string.Empty, "export-chair", string.Empty, furniturePrefab);
+
+        object result = Load(state, wallRoot.transform, null, furnitureRoot.transform, catalog);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(furnitureRoot.transform.childCount, Is.EqualTo(1));
+        Transform restored = furnitureRoot.transform.GetChild(0);
+        Assert.That(restored.name, Is.EqualTo("Export Chair"));
+        Assert.That(restored.GetComponent(GetAssemblyType("FurnitureInstance")), Is.Not.Null);
+    }
+
+    [Test]
+    public void Load_DoesNotClearCurrentWalls_WhenFurnitureHasNoResolvableIdentifier()
+    {
+        CreateExistingWall();
+        object state = CreateState();
+        AddFurniture(state, string.Empty, string.Empty, string.Empty, "Nameless Chair", string.Empty);
+        furniturePrefab = new GameObject("ChairPrefab");
+        object catalog = CreateFurnitureCatalog("chair-a", "export-chair", "native-chair", furniturePrefab);
+
+        object result = Load(state, wallRoot.transform, null, furnitureRoot.transform, catalog);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.False);
+        AssertExistingWallStillPresent();
+    }
+
+    [Test]
     public void Load_RestoresRoomMetadataAndManualFlag()
     {
         object state = CreateState();
@@ -365,8 +399,21 @@ public class LhWorkStateLoaderTests
 
     private static void AddFurniture(object state, string catalogCode, string name, string roomName)
     {
+        AddFurniture(state, catalogCode, string.Empty, string.Empty, name, roomName);
+    }
+
+    private static void AddFurniture(
+        object state,
+        string catalogCode,
+        string exportCode,
+        string nativeCode,
+        string name,
+        string roomName)
+    {
         object furniture = Activator.CreateInstance(GetAssemblyType("LhWorkFurnitureDto"));
         SetFieldValue(furniture, "catalogCode", catalogCode);
+        SetFieldValue(furniture, "exportCode", exportCode);
+        SetFieldValue(furniture, "nativeCode", nativeCode);
         SetFieldValue(furniture, "name", name);
         SetFieldValue(furniture, "position", ToVectorDto(Vector3.zero));
         SetFieldValue(furniture, "eulerAngles", ToVectorDto(Vector3.zero));
@@ -418,12 +465,19 @@ public class LhWorkStateLoaderTests
 
     private object CreateFurnitureCatalog(string code, GameObject prefab)
     {
+        return CreateFurnitureCatalog(code, string.Empty, string.Empty, prefab);
+    }
+
+    private object CreateFurnitureCatalog(string code, string exportCode, string nativeCode, GameObject prefab)
+    {
         Type catalogType = GetAssemblyType("FurnitureCatalog");
         Type itemType = GetAssemblyType("FurnitureCatalogItem");
         object catalog = ScriptableObject.CreateInstance(catalogType);
         furnitureCatalog = (UnityEngine.Object)catalog;
         object item = Activator.CreateInstance(itemType);
         SetFieldValue(item, "code", code);
+        SetFieldValue(item, "exportCode", exportCode);
+        SetFieldValue(item, "nativeCode", nativeCode);
         SetFieldValue(item, "prefab", prefab);
         GetFieldValue<IList>(catalog, "items").Add(item);
         return catalog;

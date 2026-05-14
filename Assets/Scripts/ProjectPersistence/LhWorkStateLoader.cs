@@ -192,11 +192,6 @@ public static class LhWorkStateLoader
                 return LhWorkStateLoadResult.Fail($"Furniture #{i} is missing.");
             }
 
-            if (string.IsNullOrWhiteSpace(furnitureDto.catalogCode))
-            {
-                continue;
-            }
-
             FurnitureCatalogItem item = ResolveFurnitureItem(furnitureCatalog, furnitureDto);
             if (item == null || item.prefab == null)
             {
@@ -325,7 +320,7 @@ public static class LhWorkStateLoader
         for (int i = 0; i < furniture.Count; i++)
         {
             LhWorkFurnitureDto furnitureDto = furniture[i];
-            if (furnitureDto == null || string.IsNullOrWhiteSpace(furnitureDto.catalogCode))
+            if (furnitureDto == null)
             {
                 continue;
             }
