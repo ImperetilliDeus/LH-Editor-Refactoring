@@ -57,6 +57,8 @@ public class LhWorkStateBuilderTests
         Assert.That(GetFieldValue<int>(wall, "startVertexId"), Is.EqualTo(10));
         Assert.That(GetFieldValue<int>(wall, "endVertexId"), Is.EqualTo(11));
         Assert.That(GetFieldValue<bool>(wall, "suppressStartHandle"), Is.True);
+        Assert.That(GetFieldValue<bool>(wall, "suppressEndHandle"), Is.False);
+        Assert.That(GetFieldValue<bool>(wall, "startSplitPoint"), Is.False);
         Assert.That(GetFieldValue<bool>(wall, "endSplitPoint"), Is.True);
     }
 
