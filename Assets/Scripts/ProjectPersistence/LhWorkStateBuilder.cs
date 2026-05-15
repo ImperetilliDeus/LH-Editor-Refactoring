@@ -117,6 +117,7 @@ public static class LhWorkStateBuilder
                 type = opening.Type.ToString(),
                 doorTypeKey = opening.DoorTypeKey ?? string.Empty,
                 windowTypeKey = opening.WindowTypeKey ?? string.Empty,
+                prefabKey = ResolveOpeningPrefabKey(opening),
                 doorOpensRight = opening.DoorOpensRight,
                 doorVerticalFlip = opening.DoorVerticalFlip,
                 centerDistance = opening.CenterDistance,
@@ -129,6 +130,18 @@ public static class LhWorkStateBuilder
 
         results.Sort((left, right) => left.centerDistance.CompareTo(right.centerDistance));
         return results;
+    }
+
+    private static string ResolveOpeningPrefabKey(WallOpening opening)
+    {
+        if (opening == null)
+        {
+            return string.Empty;
+        }
+
+        return opening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door
+            ? opening.DoorTypeKey ?? string.Empty
+            : opening.WindowTypeKey ?? string.Empty;
     }
 
     private static List<LhWorkRoomDto> BuildRooms(RoomManager roomManager, Dictionary<string, string> normalizedWallIdsBySourceId)

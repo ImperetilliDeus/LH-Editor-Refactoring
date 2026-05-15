@@ -32,6 +32,12 @@ public partial class HandleManager
                 continue;
             }
 
+            if (group.endpoints.Count == 0 || !IsValidHandleWorldPoint(group.worldPoint))
+            {
+                group.handleRect.gameObject.SetActive(false);
+                continue;
+            }
+
             SetHandleScreenPosition(group.handleRect, group.worldPoint);
         }
     }

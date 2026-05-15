@@ -42,6 +42,8 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
 
     public bool IsWallCreationMode => _toolRuntime != null && _toolRuntime.IsWallCreationMode;
     public GameObject PreviewWall => _toolRuntime != null ? _toolRuntime.PreviewWall : null;
+    public Material WallMaterial => _wallMaterial;
+    public Material WallTopMaterial => _wallTopMaterial;
 
     private void Reset()
     {

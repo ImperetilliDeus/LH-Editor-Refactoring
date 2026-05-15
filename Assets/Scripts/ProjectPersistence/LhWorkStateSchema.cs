@@ -54,6 +54,7 @@ public class LhWorkOpeningDto
     public string type = string.Empty;
     public string doorTypeKey = string.Empty;
     public string windowTypeKey = string.Empty;
+    public string prefabKey = string.Empty;
     public bool doorOpensRight;
     public bool doorVerticalFlip;
     public float centerDistance;

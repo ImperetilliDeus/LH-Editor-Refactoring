@@ -16,6 +16,7 @@ public class LhWorkStatePersistenceController : MonoBehaviour
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private Transform furnitureRoot;
     [SerializeField] private FurnitureCatalog furnitureCatalog;
+    [SerializeField] private DrawManager drawManager;
     [SerializeField] private HandleManager handleManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
@@ -175,6 +176,11 @@ public class LhWorkStatePersistenceController : MonoBehaviour
             LayerUtility.ResolveObject(ref handleManager);
         }
 
+        if (drawManager == null)
+        {
+            LayerUtility.ResolveObject(ref drawManager);
+        }
+
         if (wallLengthDisplay == null)
         {
             LayerUtility.ResolveObject(ref wallLengthDisplay);
@@ -232,7 +238,8 @@ public class LhWorkStatePersistenceController : MonoBehaviour
             handleManager,
             wallLengthDisplay,
             wallOpeningPlacementManager,
-            furniturePlacementManager);
+            furniturePlacementManager,
+            drawManager);
     }
 
     private string ResolveDefaultPath()

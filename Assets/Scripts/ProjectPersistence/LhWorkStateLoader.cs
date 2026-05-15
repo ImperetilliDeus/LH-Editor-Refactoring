@@ -29,17 +29,20 @@ public sealed class LhWorkStateLoadServices
     public WallLengthDisplay WallLengthDisplay { get; }
     public WallOpeningPlacementManager WallOpeningPlacementManager { get; }
     public FurniturePlacementManager FurniturePlacementManager { get; }
+    public DrawManager DrawManager { get; }
 
     public LhWorkStateLoadServices(
         HandleManager handleManager,
         WallLengthDisplay wallLengthDisplay,
         WallOpeningPlacementManager wallOpeningPlacementManager,
-        FurniturePlacementManager furniturePlacementManager)
+        FurniturePlacementManager furniturePlacementManager,
+        DrawManager drawManager = null)
     {
         HandleManager = handleManager;
         WallLengthDisplay = wallLengthDisplay;
         WallOpeningPlacementManager = wallOpeningPlacementManager;
         FurniturePlacementManager = furniturePlacementManager;
+        DrawManager = drawManager;
     }
 }
 
@@ -251,7 +254,7 @@ public static class LhWorkStateLoader
             LhWorkWallDto wallDto = walls[i];
             Wall wall = HasOpenings(wallDto)
                 ? RestoreContainerWall(wallDto, wallRoot, services)
-                : RestoreStandaloneWall(wallDto, wallRoot, services?.WallLengthDisplay);
+                : RestoreStandaloneWall(wallDto, wallRoot, services?.WallLengthDisplay, ResolveDefaultWallVisualState(services));
             if (wall == null)
             {
                 return false;
@@ -280,7 +283,7 @@ public static class LhWorkStateLoader
             wallDto.thickness,
             wallDto.height,
             wallDto.centerY,
-            new WallVisualState(),
+            ResolveDefaultWallVisualState(services),
             wallDto.startVertexId,
             wallDto.endVertexId,
             wallDto.suppressStartHandle,
@@ -311,7 +314,11 @@ public static class LhWorkStateLoader
             openings = new List<LhWorkOpeningDto>(),
         };
 
-        Wall wall = RestoreStandaloneWall(baseWallDto, container.transform, services?.WallLengthDisplay);
+        Wall wall = RestoreStandaloneWall(
+            baseWallDto,
+            container.transform,
+            services?.WallLengthDisplay,
+            ResolveDefaultWallVisualState(services));
         if (services?.WallOpeningPlacementManager != null)
         {
             services.WallOpeningPlacementManager.RebuildOpeningContainer(container);
@@ -322,10 +329,14 @@ public static class LhWorkStateLoader
         return wall;
     }
 
-    private static Wall RestoreStandaloneWall(LhWorkWallDto wallDto, Transform wallRoot, WallLengthDisplay wallLengthDisplay)
+    private static Wall RestoreStandaloneWall(
+        LhWorkWallDto wallDto,
+        Transform wallRoot,
+        WallLengthDisplay wallLengthDisplay,
+        WallVisualState visualState)
     {
         string wallName = string.IsNullOrWhiteSpace(wallDto.name) ? "Wall" : wallDto.name;
-        GameObject wallObject = WallObjectFactory.CreateWallObject(wallName, wallRoot, null, new WallVisualState());
+        GameObject wallObject = WallObjectFactory.CreateWallObject(wallName, wallRoot, null, visualState);
         WallData wallData = new WallData(
             wallDto.start.ToVector3(),
             wallDto.end.ToVector3(),
@@ -358,6 +369,16 @@ public static class LhWorkStateLoader
         return wallObject.GetComponent<Wall>();
     }
 
+    private static WallVisualState ResolveDefaultWallVisualState(LhWorkStateLoadServices services)
+    {
+        DrawManager drawManager = services?.DrawManager;
+        return new WallVisualState
+        {
+            wallMaterial = drawManager != null ? drawManager.WallMaterial : null,
+            topMaterial = drawManager != null ? drawManager.WallTopMaterial : null,
+        };
+    }
+
     private static void RestoreOpening(
         WallOpeningContainer container,
         LhWorkOpeningDto openingDto,
@@ -379,12 +400,14 @@ public static class LhWorkStateLoader
             false);
 
         WallOpening opening = openingObject.AddComponent<WallOpening>();
+        string doorTypeKey = ResolveOpeningTypeKey(openingType, openingDto, true);
+        string windowTypeKey = ResolveOpeningTypeKey(openingType, openingDto, false);
         opening.Initialize(
             wallOpeningPlacementManager,
             container,
             openingType,
-            openingDto.doorTypeKey,
-            openingDto.windowTypeKey,
+            doorTypeKey,
+            windowTypeKey,
             openingDto.doorOpensRight,
             openingDto.doorVerticalFlip,
             openingDto.centerDistance,
@@ -392,6 +415,33 @@ public static class LhWorkStateLoader
             openingDto.height,
             openingDto.depth,
             openingDto.bottomY);
+    }
+
+    private static string ResolveOpeningTypeKey(
+        WallOpeningPlacementManager.OpeningPlacementType openingType,
+        LhWorkOpeningDto openingDto,
+        bool doorKey)
+    {
+        if (openingDto == null)
+        {
+            return string.Empty;
+        }
+
+        if (doorKey && openingType == WallOpeningPlacementManager.OpeningPlacementType.Door)
+        {
+            return !string.IsNullOrWhiteSpace(openingDto.prefabKey)
+                ? openingDto.prefabKey
+                : openingDto.doorTypeKey ?? string.Empty;
+        }
+
+        if (!doorKey && openingType == WallOpeningPlacementManager.OpeningPlacementType.Window)
+        {
+            return !string.IsNullOrWhiteSpace(openingDto.prefabKey)
+                ? openingDto.prefabKey
+                : openingDto.windowTypeKey ?? string.Empty;
+        }
+
+        return string.Empty;
     }
 
     private static Wall ResolveRepresentativeWall(WallOpeningContainer container, string preferredWallId)

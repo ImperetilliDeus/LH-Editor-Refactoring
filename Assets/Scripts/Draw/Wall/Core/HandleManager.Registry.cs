@@ -90,6 +90,10 @@ public partial class HandleManager
         }
 
         Vector3 point = isStart ? entry.wallComponent.Data.startPoint : entry.wallComponent.Data.endPoint;
+        if (!IsValidHandleWorldPoint(point))
+        {
+            return;
+        }
 
         VertexGroup group = GetOrCreateGroup(vertexId, point);
         group.endpoints.Add(new EndpointRef
@@ -183,6 +187,10 @@ public partial class HandleManager
             Vector3 point = endpointRef.isStart
                 ? endpointRef.entry.wallComponent.Data.startPoint
                 : endpointRef.entry.wallComponent.Data.endPoint;
+            if (!IsValidHandleWorldPoint(point))
+            {
+                continue;
+            }
 
             sum += point;
             count++;
@@ -203,6 +211,42 @@ public partial class HandleManager
         {
             UpdateGroupWorldPoint(vertexGroups[i]);
         }
+
+        PruneInvalidVertexGroups();
+    }
+
+    private void PruneInvalidVertexGroups()
+    {
+        for (int i = vertexGroups.Count - 1; i >= 0; i--)
+        {
+            VertexGroup group = vertexGroups[i];
+            if (group != null && group.endpoints.Count > 0 && IsValidHandleWorldPoint(group.worldPoint))
+            {
+                continue;
+            }
+
+            if (group?.handleRect != null)
+            {
+                Destroy(group.handleRect.gameObject);
+            }
+
+            if (group != null)
+            {
+                groupsByVertexId.Remove(group.vertexId);
+            }
+
+            vertexGroups.RemoveAt(i);
+        }
+    }
+
+    private static bool IsValidHandleWorldPoint(Vector3 point)
+    {
+        return IsFinite(point.x) && IsFinite(point.y) && IsFinite(point.z);
+    }
+
+    private static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     private VertexGroup TryMergeDraggedGroupToNearby(VertexGroup source)

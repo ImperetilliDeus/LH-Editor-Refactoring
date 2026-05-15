@@ -89,7 +89,18 @@ public partial class WallOpeningPlacementManager
 
         renderer.enabled = true;
         renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
-        opening.ClearModelPrefab();
+        if (TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null)
+        {
+            opening.ApplyModelPrefab(
+                definition.ModelPrefab,
+                definition.ModelLocalPosition,
+                definition.ModelLocalEulerAngles,
+                definition.ModelScaleMultiplier);
+        }
+        else
+        {
+            opening.ClearModelPrefab();
+        }
 
         CreateFillerSegment(parent, $"{opening.name}_BottomFill", container, opening, opening.BottomY - container.WallBottomY, container.WallBottomY);
         CreateFillerSegment(

@@ -14,8 +14,16 @@ public class OpeningTypeCatalogItem
     [SerializeField] private WallOpeningPlacementManager.OpeningPlacementType openingType;
     [SerializeField] private string typeKey;
     [SerializeField] private string displayName;
+    [SerializeField] private GameObject modelPrefab;
+    [SerializeField] private Vector3 modelLocalPosition = Vector3.zero;
+    [SerializeField] private Vector3 modelLocalEulerAngles = Vector3.zero;
+    [SerializeField] private Vector3 modelScaleMultiplier = Vector3.one;
 
     public WallOpeningPlacementManager.OpeningPlacementType OpeningType => openingType;
     public string TypeKey => typeKey;
     public string DisplayName => displayName;
+    public GameObject ModelPrefab => modelPrefab;
+    public Vector3 ModelLocalPosition => modelLocalPosition;
+    public Vector3 ModelLocalEulerAngles => modelLocalEulerAngles;
+    public Vector3 ModelScaleMultiplier => modelScaleMultiplier;
 }
