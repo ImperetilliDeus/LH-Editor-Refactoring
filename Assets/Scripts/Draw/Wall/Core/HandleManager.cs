@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 {
     private const string HandleCanvasName = "HandleCanvas";
+    private const string HandleObjectNamePrefix = "Handle_Vertex_";
 
     public event Action WallHierarchyChanged;
 
@@ -113,7 +114,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
-    private bool isDefaultModeActive = true;
+    private EditorMode activeMode = EditorMode.Default;
 
     public bool IsDraggingHandle => draggingGroup != null;
 
@@ -155,7 +156,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 
     private void Update()
     {
-        if (!isDefaultModeActive || mainCamera == null)
+        if (!IsHandleInteractionModeActive() || mainCamera == null)
         {
             return;
         }
@@ -190,7 +191,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
-        if (!isDefaultModeActive || mainCamera == null || !inputFrame.IsPointerAvailable)
+        if (!IsHandleInteractionModeActive() || mainCamera == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
@@ -235,6 +236,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         AddEntryToVertexGroup(entry, false);
         NormalizeWallNames();
         MarkHandleLayoutDirty();
+        RefreshActiveHandlePositions();
         WallHierarchyChanged?.Invoke();
     }
 
@@ -268,6 +270,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         wallEntries.Remove(key);
         NormalizeWallNames();
         MarkHandleLayoutDirty();
+        RefreshActiveHandlePositions();
         WallHierarchyChanged?.Invoke();
     }
 
@@ -369,12 +372,13 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         NormalizeWallNames();
         RefreshWallEndCaps();
         MarkHandleLayoutDirty();
-        SetHandlesVisible(isDefaultModeActive);
+        RefreshActiveHandlePositions();
     }
 
     public void RebuildRegisteredWallsFromHierarchy()
     {
         CancelInteractionState();
+        DestroyAllHandleRects();
         wallEntries.Clear();
         groupsByVertexId.Clear();
         vertexGroups.Clear();
@@ -384,7 +388,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         UpdateHandlePositions();
         handleLayoutDirty = false;
         handlePositionsDirty = false;
-        SetHandlesVisible(isDefaultModeActive);
+        SetHandlesVisibleForActiveMode();
         WallHierarchyChanged?.Invoke();
     }
 
@@ -608,14 +612,45 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
 
     private void HandleModeChanged(EditorMode mode)
     {
-        isDefaultModeActive = mode == EditorMode.Default;
-        SetHandlesVisible(isDefaultModeActive);
-        if (!isDefaultModeActive)
+        activeMode = mode;
+        bool isInteractionModeActive = IsHandleInteractionModeActive();
+        RefreshActiveHandlePositions();
+
+        if (!isInteractionModeActive)
         {
             CancelInteractionState();
         }
 
-        enabled = isDefaultModeActive;
+        enabled = isInteractionModeActive;
+    }
+
+    private bool IsHandleInteractionModeActive()
+    {
+        return activeMode == EditorMode.Default || activeMode == EditorMode.DetailEdit;
+    }
+
+    private bool ShouldShowHandle(VertexGroup group)
+    {
+        if (activeMode == EditorMode.Default)
+        {
+            return true;
+        }
+
+        return activeMode == EditorMode.DetailEdit && IsSplitPointGroup(group);
+    }
+
+    private void RefreshActiveHandlePositions()
+    {
+        SetHandlesVisibleForActiveMode();
+        if (!IsHandleInteractionModeActive() || mainCamera == null)
+        {
+            return;
+        }
+
+        RefreshAllGroupWorldPoints();
+        UpdateHandlePositions();
+        handleLayoutDirty = false;
+        handlePositionsDirty = false;
     }
 
     private void RegisterExistingWalls()

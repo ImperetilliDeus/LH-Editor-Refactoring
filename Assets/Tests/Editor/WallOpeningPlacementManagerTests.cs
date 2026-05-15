@@ -173,6 +173,94 @@ public class WallOpeningPlacementManagerTests
         Assert.That(constrainedPoint.x, Is.EqualTo(2f - minimumSideWallUnits).Within(0.0001f));
     }
 
+    [Test]
+    public void UpdateOpeningVisual_DoesNotOverlayDoorMaterial_WhenDoorPrefabExists()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type catalogType = GetAssemblyType("OpeningTypeCatalog");
+        Type catalogItemType = GetAssemblyType("OpeningTypeCatalogItem");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                0.1f,
+                3f,
+                1.5f,
+                visualState,
+                1,
+                2,
+                false,
+                false,
+                false,
+                false,
+            });
+
+        Material prefabMaterial = new Material(Shader.Find("Standard"));
+        createdObjects.Add(prefabMaterial);
+        GameObject doorPrefab = CreateGameObject("DoorPrefab");
+        MeshRenderer prefabRenderer = doorPrefab.AddComponent<MeshRenderer>();
+        doorPrefab.AddComponent<MeshFilter>();
+        prefabRenderer.sharedMaterial = prefabMaterial;
+
+        ScriptableObject catalog = ScriptableObject.CreateInstance(catalogType);
+        createdObjects.Add(catalog);
+        object catalogItem = Activator.CreateInstance(catalogItemType);
+        object doorEnumValue = Enum.Parse(openingPlacementType, "Door");
+        SetPrivateField(catalogItem, "openingType", doorEnumValue);
+        SetPrivateField(catalogItem, "typeKey", "DoorA");
+        SetPrivateField(catalogItem, "displayName", "Door A");
+        SetPrivateField(catalogItem, "modelPrefab", doorPrefab);
+        GetPrivateField<System.Collections.IList>(catalog, "items").Add(catalogItem);
+        SetPrivateField(manager, "openingTypeCatalog", catalog);
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Door"), openingType);
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                doorEnumValue,
+                "DoorA",
+                string.Empty,
+                false,
+                false,
+                2f,
+                1f,
+                2f,
+                0.1f,
+                0f,
+            });
+
+        InvokePrivate(manager, "UpdateOpeningVisual", container, opening, 0, null);
+
+        MeshRenderer openingRenderer = ((Component)opening).GetComponent<MeshRenderer>();
+        MeshRenderer restoredPrefabRenderer = null;
+        MeshRenderer[] renderers = ((Component)opening).GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != openingRenderer)
+            {
+                restoredPrefabRenderer = renderers[i];
+                break;
+            }
+        }
+
+        Assert.That(openingRenderer.enabled, Is.False);
+        Assert.That(restoredPrefabRenderer, Is.Not.Null);
+        Assert.That(restoredPrefabRenderer.sharedMaterial, Is.SameAs(prefabMaterial));
+    }
+
     private Component CreateComponent(string name, Type componentType)
     {
         return AddComponent(CreateGameObject(name), componentType);
@@ -202,6 +290,13 @@ public class WallOpeningPlacementManagerTests
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
+    }
+
+    private static T GetPrivateField<T>(object target, string fieldName)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(field, Is.Not.Null);
+        return (T)field.GetValue(target);
     }
 
     private static void InvokePrivate(object target, string methodName, params object[] args)

@@ -398,7 +398,8 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void TryBeginDetailSelection(EditorPointerFrame pointerFrame)
     {
-        if (IsPointerOverUI(pointerFrame.ScreenPosition))
+        if (IsPointerOverUI(pointerFrame.ScreenPosition) ||
+            (handleManager != null && handleManager.IsPointerOverHandle(pointerFrame.ScreenPosition)))
         {
             return;
         }

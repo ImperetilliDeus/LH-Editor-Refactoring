@@ -1,0 +1,99 @@
+<h2>Scene Hierarchy Tree View</h2>
+<p class="subtitle">Pick the layout direction for showing rooms and walls in the LH Editor UI.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. Dedicated Hierarchy Panel</div>
+        <div class="mockup-body" style="display:grid;grid-template-columns:220px 1fr;gap:12px;min-height:280px;">
+          <div style="border-right:1px solid #d8dde4;padding-right:10px;">
+            <div class="label">Scene</div>
+            <div style="margin-top:10px;font:13px system-ui;line-height:1.9;">
+              <div style="font-weight:700;">v Room (Living Room)</div>
+              <div style="padding-left:18px;">- Wall_001</div>
+              <div style="padding-left:18px;">- Wall_002</div>
+              <div style="font-weight:700;margin-top:8px;">v Room (Kitchen)</div>
+              <div style="padding-left:18px;">- Wall_003</div>
+              <div style="margin-top:8px;">- Wall_004</div>
+              <div>- Wall_005</div>
+            </div>
+          </div>
+          <div class="placeholder">Existing editor canvas stays unchanged</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Dedicated Hierarchy Panel</h3>
+      <p>Best match for Unity Hierarchy. A separate scrollable panel lists rooms first and standalone walls at root.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Room Edit Panel Extension</div>
+        <div class="mockup-body" style="display:grid;grid-template-columns:1fr 230px;gap:12px;min-height:280px;">
+          <div class="placeholder">Editor canvas</div>
+          <div style="border-left:1px solid #d8dde4;padding-left:10px;">
+            <div class="label">Room Tools</div>
+            <div style="margin-top:8px;padding:8px;border:1px solid #d8dde4;border-radius:6px;">Room metadata</div>
+            <div style="margin-top:8px;padding:8px;border:1px solid #d8dde4;border-radius:6px;">
+              <div style="font-weight:700;">Hierarchy</div>
+              <div style="padding-left:8px;margin-top:6px;">Room (Living Room)</div>
+              <div style="padding-left:24px;">Wall_001</div>
+              <div style="padding-left:24px;">Wall_002</div>
+              <div style="padding-left:8px;margin-top:6px;">Wall_004</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Extend Room Edit Panel</h3>
+      <p>Lower UI footprint and reuses current room tooling, but the hierarchy is less global and may feel hidden.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. Floating Mini Hierarchy</div>
+        <div class="mockup-body" style="position:relative;min-height:280px;">
+          <div class="placeholder" style="height:260px;">Editor canvas</div>
+          <div style="position:absolute;top:16px;left:16px;width:210px;background:white;border:1px solid #cfd6df;border-radius:8px;box-shadow:0 8px 24px rgba(15,23,42,.18);padding:10px;">
+            <div class="label">Hierarchy</div>
+            <div style="font:13px system-ui;line-height:1.8;margin-top:8px;">
+              <div>v Room (Living Room)</div>
+              <div style="padding-left:18px;">Wall_001</div>
+              <div style="padding-left:18px;">Wall_002</div>
+              <div>Wall_004</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Floating Mini Hierarchy</h3>
+      <p>Fast to add and easy to move around, but more likely to overlap the editor and feel temporary.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Recommendation</h4>
+      <ul>
+        <li>Use option A for the first implementation.</li>
+        <li>It matches the feature request and stays independent from room authoring controls.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Scope Note</h4>
+      <ul>
+        <li>Selection sync can be added as a small optional hook after the tree is reliable.</li>
+      </ul>
+    </div>
+  </div>
+</div>

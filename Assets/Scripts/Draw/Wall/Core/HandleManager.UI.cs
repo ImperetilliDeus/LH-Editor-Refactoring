@@ -42,13 +42,14 @@ public partial class HandleManager
         }
     }
 
-    private void SetHandlesVisible(bool visible)
+    private void SetHandlesVisibleForActiveMode()
     {
         for (int i = 0; i < vertexGroups.Count; i++)
         {
-            if (vertexGroups[i]?.handleRect != null)
+            VertexGroup group = vertexGroups[i];
+            if (group?.handleRect != null)
             {
-                vertexGroups[i].handleRect.gameObject.SetActive(visible);
+                group.handleRect.gameObject.SetActive(IsHandleInteractionModeActive() && ShouldShowHandle(group));
             }
         }
     }
@@ -87,7 +88,11 @@ public partial class HandleManager
         }
 
         Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPoint);
-        bool visible = isDefaultModeActive && screenPosition.z > 0f && IsValidScreenPoint(screenPosition);
+        VertexGroup group = FindGroupByHandleRect(handleRect);
+        bool visible = IsHandleInteractionModeActive() &&
+                       ShouldShowHandle(group) &&
+                       screenPosition.z > 0f &&
+                       IsValidScreenPoint(screenPosition);
         handleRect.gameObject.SetActive(visible);
         if (!visible)
         {
@@ -129,7 +134,7 @@ public partial class HandleManager
     private RectTransform CreateHandleRect(string handleName, out Image image)
     {
         GameObject handleObject = new GameObject(handleName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        handleObject.SetActive(isDefaultModeActive);
+        handleObject.SetActive(IsHandleInteractionModeActive());
         RectTransform handleRect = handleObject.GetComponent<RectTransform>();
         handleRect.SetParent(targetCanvas.transform, false);
         handleRect.SetAsLastSibling();
@@ -234,7 +239,7 @@ public partial class HandleManager
         {
             if (vertexGroups[i]?.handleRect != null)
             {
-                Destroy(vertexGroups[i].handleRect.gameObject);
+                DestroyHandleRect(vertexGroups[i].handleRect);
             }
         }
 
@@ -253,5 +258,24 @@ public partial class HandleManager
         vertexGroups.Clear();
         groupsByVertexId.Clear();
         wallEntries.Clear();
+    }
+
+    private VertexGroup FindGroupByHandleRect(RectTransform handleRect)
+    {
+        if (handleRect == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < vertexGroups.Count; i++)
+        {
+            VertexGroup group = vertexGroups[i];
+            if (group != null && group.handleRect == handleRect)
+            {
+                return group;
+            }
+        }
+
+        return null;
     }
 }

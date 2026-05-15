@@ -85,6 +85,7 @@ public static class LhWorkStateLoader
             ClearChildren(furnitureRoot);
         }
 
+        NormalizeWallVertexIds(state.walls);
         if (!RestoreWalls(state.walls, wallRoot, services, out Dictionary<string, Wall> wallsById))
         {
             return LhWorkStateLoadResult.Fail("Failed to restore walls.");
@@ -658,6 +659,95 @@ public static class LhWorkStateLoader
     private static bool HasOpenings(LhWorkWallDto wallDto)
     {
         return wallDto != null && wallDto.openings != null && wallDto.openings.Count > 0;
+    }
+
+    private static void NormalizeWallVertexIds(IReadOnlyList<LhWorkWallDto> walls)
+    {
+        if (walls == null || walls.Count == 0)
+        {
+            return;
+        }
+
+        Dictionary<VertexCoordinateKey, int> canonicalIdsByCoordinate = new Dictionary<VertexCoordinateKey, int>();
+        for (int i = 0; i < walls.Count; i++)
+        {
+            LhWorkWallDto wall = walls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            RegisterCanonicalVertexId(wall.start.ToVector3(), wall.startVertexId, canonicalIdsByCoordinate);
+            RegisterCanonicalVertexId(wall.end.ToVector3(), wall.endVertexId, canonicalIdsByCoordinate);
+        }
+
+        for (int i = 0; i < walls.Count; i++)
+        {
+            LhWorkWallDto wall = walls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            wall.startVertexId = ResolveCanonicalVertexId(wall.start.ToVector3(), wall.startVertexId, canonicalIdsByCoordinate);
+            wall.endVertexId = ResolveCanonicalVertexId(wall.end.ToVector3(), wall.endVertexId, canonicalIdsByCoordinate);
+        }
+    }
+
+    private static void RegisterCanonicalVertexId(
+        Vector3 point,
+        int vertexId,
+        Dictionary<VertexCoordinateKey, int> canonicalIdsByCoordinate)
+    {
+        if (canonicalIdsByCoordinate == null || vertexId <= 0)
+        {
+            return;
+        }
+
+        VertexCoordinateKey key = VertexCoordinateKey.From(point);
+        if (!canonicalIdsByCoordinate.ContainsKey(key))
+        {
+            canonicalIdsByCoordinate[key] = vertexId;
+        }
+    }
+
+    private static int ResolveCanonicalVertexId(
+        Vector3 point,
+        int vertexId,
+        Dictionary<VertexCoordinateKey, int> canonicalIdsByCoordinate)
+    {
+        if (canonicalIdsByCoordinate == null)
+        {
+            return vertexId;
+        }
+
+        return canonicalIdsByCoordinate.TryGetValue(VertexCoordinateKey.From(point), out int canonicalId)
+            ? canonicalId
+            : vertexId;
+    }
+
+    private readonly struct VertexCoordinateKey
+    {
+        private const float Precision = 10000f;
+
+        private readonly int x;
+        private readonly int y;
+        private readonly int z;
+
+        private VertexCoordinateKey(int x, int y, int z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public static VertexCoordinateKey From(Vector3 point)
+        {
+            return new VertexCoordinateKey(
+                Mathf.RoundToInt(point.x * Precision),
+                Mathf.RoundToInt(point.y * Precision),
+                Mathf.RoundToInt(point.z * Precision));
+        }
     }
 
     private static void RefreshRestoredEditorState(Transform wallRoot, LhWorkStateLoadServices services)

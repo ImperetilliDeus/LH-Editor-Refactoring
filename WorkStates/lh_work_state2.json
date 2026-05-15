@@ -1,0 +1,873 @@
+﻿{
+    "version": 1,
+    "walls": [
+        {
+            "id": "baf27361e20d49eaa5c4075d981f095c",
+            "name": "wall01",
+            "start": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "end": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 1,
+            "endVertexId": 2,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "4ec73a94f8a14684b94c65a1489d1ee7",
+            "name": "wall02",
+            "start": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "end": {
+                "x": -5.9921875,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 3,
+            "endVertexId": 4,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "e680d55975c34b26b222be58ab3e89e1",
+            "name": "wall03",
+            "start": {
+                "x": -5.9921875,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "end": {
+                "x": -5.9921875,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 4,
+            "endVertexId": 5,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "80a279af852b43388a3c3ee96b08c269",
+            "name": "wall04",
+            "start": {
+                "x": -5.9921875,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 4,
+            "endVertexId": 6,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "4faba0fbb6824432b063bc4c76848d2b",
+            "name": "wall05",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "end": {
+                "x": 10.35546875,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 7,
+            "endVertexId": 8,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "67da11bec78b488f972665c1966c9cc5",
+            "name": "wall06",
+            "start": {
+                "x": 10.35546875,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "end": {
+                "x": 10.35546875,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 8,
+            "endVertexId": 9,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "90281c99c0404616bf2147b5f711642f",
+            "name": "wall07",
+            "start": {
+                "x": 10.35546875,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 8,
+            "endVertexId": 10,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "44d702486d96461e8cfc7fb39733d00a",
+            "name": "wall08",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 8.87890625
+            },
+            "end": {
+                "x": -15.671875,
+                "y": 0.0,
+                "z": 8.87890625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 12,
+            "endVertexId": 13,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "0eac0669995e42e790e1c3c907a39ac3",
+            "name": "wall09",
+            "start": {
+                "x": -15.671875,
+                "y": 0.0,
+                "z": 8.87890625
+            },
+            "end": {
+                "x": -15.671875,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 13,
+            "endVertexId": 14,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "e56def0f70fc482cb802e7e001fb5126",
+            "name": "wall10",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 7,
+            "endVertexId": 16,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "ef4748aa23ba43d1b10121990ceeadfb",
+            "name": "wall11",
+            "start": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 17,
+            "endVertexId": 11,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "b347db1f2ab3498d89bbe30042ea7c4a",
+            "name": "wall12",
+            "start": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 11,
+            "endVertexId": 10,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "48ac0e2908d1467586be9c720590cbb9",
+            "name": "wall13",
+            "start": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 10,
+            "endVertexId": 18,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "a36ec5e239974670a8964932032b9f53",
+            "name": "wall14",
+            "start": {
+                "x": 16.44140625,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 19,
+            "endVertexId": 17,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "c1a07202fdd243c7a7d7e3c690dadbc5",
+            "name": "wall15",
+            "start": {
+                "x": 16.44140625,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "end": {
+                "x": 16.44140625,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 19,
+            "endVertexId": 20,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "31713a6f903640f4a79ac50b0b6f1f2c",
+            "name": "wall16",
+            "start": {
+                "x": 16.44140625,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 20,
+            "endVertexId": 21,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "9bd893532b6e4f5d8a07fe177c7cd01d",
+            "name": "wall17",
+            "start": {
+                "x": -5.9921875,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "end": {
+                "x": 16.44140625,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 5,
+            "endVertexId": 20,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "c4d3e294ea704bd1a839cbc204cb7330",
+            "name": "wall18",
+            "start": {
+                "x": -21.921875,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "end": {
+                "x": -5.9921875,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 22,
+            "endVertexId": 5,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "5d08776fe87a41f8b644fb8e002f388e",
+            "name": "wall19",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 49.87109375
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 23,
+            "endVertexId": 6,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "0ea9869fdf8c4d7e9d617d1017911da3",
+            "name": "wall20",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 8.87890625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 6,
+            "endVertexId": 12,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "67ba48f9483c4d2199a2f2851a7a7757",
+            "name": "wall21",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 8.87890625
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 12,
+            "endVertexId": 15,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "f04f7dd12d894f36976455019817c37d",
+            "name": "wall22",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "end": {
+                "x": 10.35546875,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 16,
+            "endVertexId": 9,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "cfe5b311bc2d4fadbef880abc6f35ae0",
+            "name": "wall23",
+            "start": {
+                "x": 10.35546875,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 9,
+            "endVertexId": 18,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "d111046cc3224ceebe5c44e02859eee9",
+            "name": "wall24",
+            "start": {
+                "x": -15.671875,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 14,
+            "endVertexId": 15,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "82d0370606894c14a22d191e9c8a31fd",
+            "name": "wall25",
+            "start": {
+                "x": -15.671875,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "end": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 14,
+            "endVertexId": 2,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "792f955784174492bd1ad9610f8f6e31",
+            "name": "wall26",
+            "start": {
+                "x": 16.44140625,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "end": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 19,
+            "endVertexId": 1,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "d1fa4f12cfdc482fb9a9f7e64eecdafd",
+            "name": "wall27",
+            "start": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": 40.38671875
+            },
+            "end": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 3,
+            "endVertexId": 1,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "8d17560dc5a84afa80cf66c31f58a1fe",
+            "name": "wall28",
+            "start": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": 36.85546875
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 17,
+            "endVertexId": 21,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "7a1083bdc72348fc9e9c840e8be24580",
+            "name": "wall29",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": 49.87109375
+            },
+            "end": {
+                "x": -21.921875,
+                "y": 0.0,
+                "z": 49.87109375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 23,
+            "endVertexId": 24,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "496c94fe7476466bae90b486140f8732",
+            "name": "wall30",
+            "start": {
+                "x": -21.921875,
+                "y": 0.0,
+                "z": 49.87109375
+            },
+            "end": {
+                "x": -21.921875,
+                "y": 0.0,
+                "z": 61.25390625
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 24,
+            "endVertexId": 22,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": []
+        },
+        {
+            "id": "2075926ed10e4b8aa89b505957627f27",
+            "name": "wall31",
+            "start": {
+                "x": -0.66796875,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "end": {
+                "x": 26.83984375,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 2,
+            "endVertexId": 11,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": [
+                {
+                    "type": "Door",
+                    "doorTypeKey": "F001",
+                    "windowTypeKey": "",
+                    "prefabKey": "F001",
+                    "doorOpensRight": false,
+                    "doorVerticalFlip": false,
+                    "centerDistance": 6.279026031494141,
+                    "width": 9.0,
+                    "height": 21.0,
+                    "depth": 0.5,
+                    "bottomY": 0.5100002288818359
+                }
+            ]
+        },
+        {
+            "id": "dbcb442eb3f44ea6bcc7cb5fba54b950",
+            "name": "wall32",
+            "start": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -4.484375
+            },
+            "end": {
+                "x": -26.83984375,
+                "y": 0.0,
+                "z": -41.37109375
+            },
+            "thickness": 1.5,
+            "height": 22.0,
+            "centerY": 11.010000228881836,
+            "startVertexId": 15,
+            "endVertexId": 7,
+            "suppressStartHandle": false,
+            "suppressEndHandle": false,
+            "startSplitPoint": false,
+            "endSplitPoint": false,
+            "openings": [
+                {
+                    "type": "Window",
+                    "doorTypeKey": "",
+                    "windowTypeKey": "창문",
+                    "prefabKey": "창문",
+                    "doorOpensRight": false,
+                    "doorVerticalFlip": false,
+                    "centerDistance": 18.443359375,
+                    "width": 9.0,
+                    "height": 8.0,
+                    "depth": 0.5,
+                    "bottomY": 8.010000228881836
+                }
+            ]
+        }
+    ],
+    "rooms": [
+        {
+            "name": "거실이다",
+            "roomTypeKey": "거실",
+            "roomCode": "900",
+            "roomNativeCode": "",
+            "floorTextureCode": "F001",
+            "ceilingTextureCode": "C001",
+            "isManualRoom": true,
+            "placementOffset": {
+                "x": 0.0,
+                "y": 0.009999999776482582,
+                "z": 0.0
+            },
+            "boundaryVertices": [
+                {
+                    "x": -26.83984375,
+                    "y": 0.0,
+                    "z": -41.93210983276367
+                },
+                {
+                    "x": 26.83984375,
+                    "y": 0.0,
+                    "z": -41.93210983276367
+                },
+                {
+                    "x": 26.83984375,
+                    "y": 0.0,
+                    "z": -3.474720001220703
+                },
+                {
+                    "x": -26.83984375,
+                    "y": 0.0,
+                    "z": -3.4747209548950197
+                }
+            ],
+            "wallIds": [
+                "dbcb442eb3f44ea6bcc7cb5fba54b950",
+                "6c6ed8b1b18849079254550fa4282855",
+                "5f9c33a7f0c94294931c9e4b0bce1e3a",
+                "9d6b46c3b97341d8b04a7ad62dc1d4d7",
+                "2075926ed10e4b8aa89b505957627f27"
+            ],
+            "manualWallSelectionEnabled": false,
+            "manualWallIds": []
+        }
+    ],
+    "furniture": [
+        {
+            "catalogCode": "CT002",
+            "exportCode": "CT002",
+            "nativeCode": "",
+            "name": "CT002",
+            "position": {
+                "x": 20.748537063598634,
+                "y": 11.0,
+                "z": -22.83978843688965
+            },
+            "eulerAngles": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "localScale": {
+                "x": 10.0,
+                "y": 22.0,
+                "z": 35.0
+            },
+            "isPlaced": true,
+            "roomName": "거실이다"
+        }
+    ]
+}

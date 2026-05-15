@@ -87,9 +87,11 @@ public partial class WallOpeningPlacementManager
             renderer = opening.gameObject.AddComponent<MeshRenderer>();
         }
 
-        renderer.enabled = true;
-        renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
-        if (TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null)
+        bool hasModelPrefab = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null;
+        bool hidePlaceholderVisual = opening.Type == OpeningPlacementType.Door && hasModelPrefab;
+        renderer.enabled = !hidePlaceholderVisual;
+        renderer.sharedMaterial = hidePlaceholderVisual ? null : GetOpeningMaterial(opening.Type);
+        if (hasModelPrefab)
         {
             opening.ApplyModelPrefab(
                 definition.ModelPrefab,

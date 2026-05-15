@@ -374,6 +374,8 @@ public static partial class RoomGraphUtility
         {
             nextGeneratedVertexId = Mathf.Max(nextGeneratedVertexId, rawSegments[i].startVertexId + 1);
             nextGeneratedVertexId = Mathf.Max(nextGeneratedVertexId, rawSegments[i].endVertexId + 1);
+            SeedExplicitBoundaryVertex(rawSegments[i].start, rawSegments[i].startVertexId, generatedVertices);
+            SeedExplicitBoundaryVertex(rawSegments[i].end, rawSegments[i].endVertexId, generatedVertices);
         }
 
         for (int i = 0; i < rawSegments.Count; i++)
@@ -537,6 +539,32 @@ public static partial class RoomGraphUtility
             vertexId = created,
         });
         return created;
+    }
+
+    private static void SeedExplicitBoundaryVertex(
+        Vector3 point,
+        int vertexId,
+        List<GeneratedBoundaryVertex> generatedVertices)
+    {
+        if (vertexId <= 0 || generatedVertices == null)
+        {
+            return;
+        }
+
+        float thresholdSqr = BoundaryVertexSnapThreshold * BoundaryVertexSnapThreshold;
+        for (int i = 0; i < generatedVertices.Count; i++)
+        {
+            if ((generatedVertices[i].point - point).sqrMagnitude <= thresholdSqr)
+            {
+                return;
+            }
+        }
+
+        generatedVertices.Add(new GeneratedBoundaryVertex
+        {
+            point = point,
+            vertexId = vertexId,
+        });
     }
 
     private static string BuildPointKey(Vector3 point)

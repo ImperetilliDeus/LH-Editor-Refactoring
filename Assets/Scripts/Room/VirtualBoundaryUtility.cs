@@ -3,9 +3,6 @@ using UnityEngine;
 
 public static class VirtualBoundaryUtility
 {
-    private const float DirectionDotThreshold = 0.995f;
-    private const float Epsilon = 0.0001f;
-
     public static bool TryBuildRectangleOutlineFromRect(
         Vector3 startCorner,
         Vector3 endCorner,
@@ -52,5 +49,4 @@ public static class VirtualBoundaryUtility
 
         return true;
     }
-
 }

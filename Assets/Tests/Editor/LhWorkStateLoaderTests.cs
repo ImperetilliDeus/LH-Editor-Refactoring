@@ -9,6 +9,8 @@ public class LhWorkStateLoaderTests
     private GameObject wallRoot;
     private GameObject furnitureRoot;
     private GameObject roomManagerObject;
+    private GameObject handleManagerObject;
+    private GameObject handleCanvasObject;
     private GameObject furniturePrefab;
     private UnityEngine.Object furnitureCatalog;
 
@@ -25,6 +27,8 @@ public class LhWorkStateLoaderTests
         UnityEngine.Object.DestroyImmediate(wallRoot);
         UnityEngine.Object.DestroyImmediate(furnitureRoot);
         UnityEngine.Object.DestroyImmediate(roomManagerObject);
+        UnityEngine.Object.DestroyImmediate(handleManagerObject);
+        UnityEngine.Object.DestroyImmediate(handleCanvasObject);
         UnityEngine.Object.DestroyImmediate(furniturePrefab);
         UnityEngine.Object.DestroyImmediate(furnitureCatalog);
     }
@@ -303,12 +307,105 @@ public class LhWorkStateLoaderTests
         Assert.That(GetPropertyValue<bool>(room, "ManualWallSelectionEnabled"), Is.True);
     }
 
+    [Test]
+    public void Load_AssignsSingleHandleToSharedVertexCoordinates()
+    {
+        object state = CreateState();
+        AddWall(
+            state,
+            "wall-a",
+            "WallA",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(2f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            10,
+            0,
+            false,
+            false,
+            false,
+            false);
+        AddWall(
+            state,
+            "wall-b",
+            "WallB",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(2f, 0f, 2f),
+            0.2f,
+            3f,
+            1.5f,
+            12,
+            13,
+            false,
+            false,
+            false,
+            false);
+        object services = CreateLoadServices(CreateHandleManager());
+
+        object result = Load(state, wallRoot.transform, null, null, null, services);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(CountHandleRects(), Is.EqualTo(3));
+    }
+
+    [Test]
+    public void RebuildRegisteredWallsFromHierarchy_ReplacesExistingHandleRects()
+    {
+        GameObject wall = CreateWallObject("Wall", wallRoot.transform);
+        ConfigureWall(
+            wall,
+            new Vector3(0f, 0f, 0f),
+            new Vector3(2f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            10,
+            11,
+            false,
+            false,
+            false,
+            false);
+        object handleManager = CreateHandleManager();
+        Type handleManagerType = GetAssemblyType("HandleManager");
+
+        handleManagerType.GetMethod("RegisterWall", BindingFlags.Public | BindingFlags.Instance)
+            ?.Invoke(handleManager, new object[] { wall });
+        Assert.That(CountHandleRects(), Is.EqualTo(2));
+
+        handleManagerType.GetMethod("RebuildRegisteredWallsFromHierarchy", BindingFlags.Public | BindingFlags.Instance)
+            ?.Invoke(handleManager, null);
+
+        Assert.That(CountHandleRects(), Is.EqualTo(2));
+    }
+
     private static object Load(object state, Transform wallRoot, object roomManager, Transform furnitureRoot, object furnitureCatalog)
     {
         Type loaderType = GetAssemblyType("LhWorkStateLoader");
         MethodInfo method = loaderType.GetMethod("Load", BindingFlags.Public | BindingFlags.Static);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(null, new[] { state, wallRoot, roomManager, furnitureRoot, furnitureCatalog });
+    }
+
+    private static object Load(object state, Transform wallRoot, object roomManager, Transform furnitureRoot, object furnitureCatalog, object services)
+    {
+        Type loaderType = GetAssemblyType("LhWorkStateLoader");
+        MethodInfo method = loaderType.GetMethod(
+            "Load",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[]
+            {
+                GetAssemblyType("LhWorkStateDto"),
+                typeof(Transform),
+                GetAssemblyType("RoomManager"),
+                typeof(Transform),
+                GetAssemblyType("FurnitureCatalog"),
+                GetAssemblyType("LhWorkStateLoadServices"),
+            },
+            null);
+        Assert.That(method, Is.Not.Null);
+        return method.Invoke(null, new[] { state, wallRoot, roomManager, furnitureRoot, furnitureCatalog, services });
     }
 
     private static object CreateState()
@@ -463,6 +560,52 @@ public class LhWorkStateLoaderTests
         return roomManagerObject.AddComponent(roomManagerType);
     }
 
+    private object CreateHandleManager()
+    {
+        Type handleManagerType = GetAssemblyType("HandleManager");
+        handleManagerObject = new GameObject("HandleManager");
+        Component handleManager = handleManagerObject.AddComponent(handleManagerType);
+
+        handleCanvasObject = new GameObject("_Handle");
+        Canvas canvas = handleCanvasObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        SetPrivateFieldValue(handleManager, "wallRoot", wallRoot.transform);
+        SetPrivateFieldValue(handleManager, "targetCanvas", canvas);
+        return handleManager;
+    }
+
+    private static object CreateLoadServices(object handleManager)
+    {
+        Type servicesType = GetAssemblyType("LhWorkStateLoadServices");
+        ConstructorInfo constructor = servicesType.GetConstructor(new[]
+        {
+            GetAssemblyType("HandleManager"),
+            GetAssemblyType("WallLengthDisplay"),
+            GetAssemblyType("WallOpeningPlacementManager"),
+            GetAssemblyType("FurniturePlacementManager"),
+            GetAssemblyType("DrawManager"),
+        });
+        Assert.That(constructor, Is.Not.Null);
+        return constructor.Invoke(new[] { handleManager, null, null, null, null });
+    }
+
+    private int CountHandleRects()
+    {
+        int count = 0;
+        Transform canvasTransform = handleCanvasObject.transform;
+        for (int i = 0; i < canvasTransform.childCount; i++)
+        {
+            Transform child = canvasTransform.GetChild(i);
+            if (child != null && child.name.StartsWith("Handle_Vertex_", StringComparison.Ordinal))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     private object CreateFurnitureCatalog(string code, GameObject prefab)
     {
         return CreateFurnitureCatalog(code, string.Empty, string.Empty, prefab);
@@ -546,6 +689,13 @@ public class LhWorkStateLoaderTests
     private static void SetFieldValue(object target, string fieldName, object value)
     {
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+        Assert.That(field, Is.Not.Null);
+        field.SetValue(target, value);
+    }
+
+    private static void SetPrivateFieldValue(object target, string fieldName, object value)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
     }
