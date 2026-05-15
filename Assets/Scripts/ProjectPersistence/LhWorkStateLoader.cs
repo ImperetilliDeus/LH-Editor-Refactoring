@@ -23,6 +23,26 @@ public sealed class LhWorkStateLoadResult
     }
 }
 
+public sealed class LhWorkStateLoadServices
+{
+    public HandleManager HandleManager { get; }
+    public WallLengthDisplay WallLengthDisplay { get; }
+    public WallOpeningPlacementManager WallOpeningPlacementManager { get; }
+    public FurniturePlacementManager FurniturePlacementManager { get; }
+
+    public LhWorkStateLoadServices(
+        HandleManager handleManager,
+        WallLengthDisplay wallLengthDisplay,
+        WallOpeningPlacementManager wallOpeningPlacementManager,
+        FurniturePlacementManager furniturePlacementManager)
+    {
+        HandleManager = handleManager;
+        WallLengthDisplay = wallLengthDisplay;
+        WallOpeningPlacementManager = wallOpeningPlacementManager;
+        FurniturePlacementManager = furniturePlacementManager;
+    }
+}
+
 public static class LhWorkStateLoader
 {
     private const float MinimumWallLength = 0.01f;
@@ -33,6 +53,17 @@ public static class LhWorkStateLoader
         RoomManager roomManager,
         Transform furnitureRoot,
         FurnitureCatalog furnitureCatalog)
+    {
+        return Load(state, wallRoot, roomManager, furnitureRoot, furnitureCatalog, null);
+    }
+
+    public static LhWorkStateLoadResult Load(
+        LhWorkStateDto state,
+        Transform wallRoot,
+        RoomManager roomManager,
+        Transform furnitureRoot,
+        FurnitureCatalog furnitureCatalog,
+        LhWorkStateLoadServices services)
     {
         LhWorkStateLoadResult validationResult = Validate(state, wallRoot, roomManager, furnitureRoot, furnitureCatalog);
         if (!validationResult.Success)
@@ -51,7 +82,7 @@ public static class LhWorkStateLoader
             ClearChildren(furnitureRoot);
         }
 
-        if (!RestoreWalls(state.walls, wallRoot, out Dictionary<string, Wall> wallsById))
+        if (!RestoreWalls(state.walls, wallRoot, services, out Dictionary<string, Wall> wallsById))
         {
             return LhWorkStateLoadResult.Fail("Failed to restore walls.");
         }
@@ -63,6 +94,7 @@ public static class LhWorkStateLoader
             roomManager.RebuildRoomLookupForWorkStateLoad();
         }
 
+        RefreshRestoredEditorState(wallRoot, services);
         RoomTopologyEvents.RequestRefreshAll();
         return LhWorkStateLoadResult.Ok();
     }
@@ -205,6 +237,7 @@ public static class LhWorkStateLoader
     private static bool RestoreWalls(
         IReadOnlyList<LhWorkWallDto> walls,
         Transform wallRoot,
+        LhWorkStateLoadServices services,
         out Dictionary<string, Wall> wallsById)
     {
         wallsById = new Dictionary<string, Wall>(System.StringComparer.Ordinal);
@@ -217,8 +250,8 @@ public static class LhWorkStateLoader
         {
             LhWorkWallDto wallDto = walls[i];
             Wall wall = HasOpenings(wallDto)
-                ? RestoreContainerWall(wallDto, wallRoot)
-                : RestoreStandaloneWall(wallDto, wallRoot);
+                ? RestoreContainerWall(wallDto, wallRoot, services)
+                : RestoreStandaloneWall(wallDto, wallRoot, services?.WallLengthDisplay);
             if (wall == null)
             {
                 return false;
@@ -233,7 +266,7 @@ public static class LhWorkStateLoader
         return true;
     }
 
-    private static Wall RestoreContainerWall(LhWorkWallDto wallDto, Transform wallRoot)
+    private static Wall RestoreContainerWall(LhWorkWallDto wallDto, Transform wallRoot, LhWorkStateLoadServices services)
     {
         string wallName = string.IsNullOrWhiteSpace(wallDto.name) ? "Wall" : wallDto.name;
         GameObject containerObject = new GameObject(wallName);
@@ -257,7 +290,7 @@ public static class LhWorkStateLoader
 
         for (int i = 0; i < wallDto.openings.Count; i++)
         {
-            RestoreOpening(container, wallDto.openings[i]);
+            RestoreOpening(container, wallDto.openings[i], services?.WallOpeningPlacementManager);
         }
 
         LhWorkWallDto baseWallDto = new LhWorkWallDto
@@ -278,10 +311,18 @@ public static class LhWorkStateLoader
             openings = new List<LhWorkOpeningDto>(),
         };
 
-        return RestoreStandaloneWall(baseWallDto, container.transform);
+        Wall wall = RestoreStandaloneWall(baseWallDto, container.transform, services?.WallLengthDisplay);
+        if (services?.WallOpeningPlacementManager != null)
+        {
+            services.WallOpeningPlacementManager.RebuildOpeningContainer(container);
+            services.WallOpeningPlacementManager.MarkMarkerVisualsDirty();
+            wall = ResolveRepresentativeWall(container, wallDto.id);
+        }
+
+        return wall;
     }
 
-    private static Wall RestoreStandaloneWall(LhWorkWallDto wallDto, Transform wallRoot)
+    private static Wall RestoreStandaloneWall(LhWorkWallDto wallDto, Transform wallRoot, WallLengthDisplay wallLengthDisplay)
     {
         string wallName = string.IsNullOrWhiteSpace(wallDto.name) ? "Wall" : wallDto.name;
         GameObject wallObject = WallObjectFactory.CreateWallObject(wallName, wallRoot, null, new WallVisualState());
@@ -305,7 +346,7 @@ public static class LhWorkStateLoader
             wallDto.startSplitPoint,
             wallDto.endSplitPoint,
             MinimumWallLength,
-            null,
+            wallLengthDisplay,
             false);
 
         if (!configured)
@@ -317,7 +358,10 @@ public static class LhWorkStateLoader
         return wallObject.GetComponent<Wall>();
     }
 
-    private static void RestoreOpening(WallOpeningContainer container, LhWorkOpeningDto openingDto)
+    private static void RestoreOpening(
+        WallOpeningContainer container,
+        LhWorkOpeningDto openingDto,
+        WallOpeningPlacementManager wallOpeningPlacementManager)
     {
         if (container == null || openingDto == null)
         {
@@ -336,7 +380,7 @@ public static class LhWorkStateLoader
 
         WallOpening opening = openingObject.AddComponent<WallOpening>();
         opening.Initialize(
-            null,
+            wallOpeningPlacementManager,
             container,
             openingType,
             openingDto.doorTypeKey,
@@ -348,6 +392,39 @@ public static class LhWorkStateLoader
             openingDto.height,
             openingDto.depth,
             openingDto.bottomY);
+    }
+
+    private static Wall ResolveRepresentativeWall(WallOpeningContainer container, string preferredWallId)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        if (walls == null || walls.Length == 0)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(preferredWallId))
+        {
+            for (int i = 0; i < walls.Length; i++)
+            {
+                Wall wall = walls[i];
+                if (wall != null && wall.Data != null && string.Equals(wall.Data.id, preferredWallId, System.StringComparison.Ordinal))
+                {
+                    return wall;
+                }
+            }
+
+            if (walls[0] != null && walls[0].Data != null)
+            {
+                walls[0].Data.id = preferredWallId;
+            }
+        }
+
+        return walls[0];
     }
 
     private static WallOpeningPlacementManager.OpeningPlacementType ResolveOpeningType(string value)
@@ -531,6 +608,32 @@ public static class LhWorkStateLoader
     private static bool HasOpenings(LhWorkWallDto wallDto)
     {
         return wallDto != null && wallDto.openings != null && wallDto.openings.Count > 0;
+    }
+
+    private static void RefreshRestoredEditorState(Transform wallRoot, LhWorkStateLoadServices services)
+    {
+        if (services == null)
+        {
+            return;
+        }
+
+        if (services.WallLengthDisplay != null && wallRoot != null)
+        {
+            List<Wall> walls = new List<Wall>();
+            WallHierarchyUtility.CollectWalls(wallRoot, walls, true);
+            for (int i = 0; i < walls.Count; i++)
+            {
+                Wall wall = walls[i];
+                if (wall != null && !WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+                {
+                    wall.RefreshLengthDisplay(services.WallLengthDisplay, false);
+                }
+            }
+        }
+
+        services.HandleManager?.RebuildRegisteredWallsFromHierarchy();
+        services.WallOpeningPlacementManager?.RefreshRestoredOpeningVisuals();
+        services.FurniturePlacementManager?.RefreshRestoredFurniture();
     }
 
     private static List<Vector3> ToVectors(IReadOnlyList<LhWorkVector3Dto> values)

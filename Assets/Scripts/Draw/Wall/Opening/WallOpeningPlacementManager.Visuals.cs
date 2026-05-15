@@ -23,6 +23,12 @@ public partial class WallOpeningPlacementManager
         markerVisualsDirty = true;
     }
 
+    public void RefreshRestoredOpeningVisuals()
+    {
+        MarkMarkerVisualsDirty();
+        RefreshOpeningMarkerVisuals();
+    }
+
     private void UpdateOpeningVisual(WallOpeningContainer container, WallOpening opening, int index, Transform segmentRoot)
     {
         Transform parent = segmentRoot != null ? segmentRoot : container.transform;

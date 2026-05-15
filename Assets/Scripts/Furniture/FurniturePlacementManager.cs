@@ -450,6 +450,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         activeInstance = instance;
         currentYaw = activeInstance.transform.eulerAngles.y;
         state = PlacementState.PlacedSelected;
+        CachePreviewRenderers(activeInstance.gameObject);
         ApplyPreviewTint(validTint);
     }
 
@@ -468,9 +469,24 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         activeItem = null;
         activeInstance = instance;
         currentYaw = activeInstance.transform.eulerAngles.y;
+        CachePreviewRenderers(activeInstance.gameObject);
         activeInstance.SetPlaced(false);
         state = PlacementState.PreviewFollowing;
         ApplyPreviewTransform(placementPoint, false);
+    }
+
+    public void RefreshRestoredFurniture()
+    {
+        ResolveReferences();
+        EnsureFurnitureRoot();
+        EnsureCameraCulling();
+        previewRenderers.Clear();
+        if (activeInstance != null)
+        {
+            activeInstance = null;
+            activeItem = null;
+            state = PlacementState.Idle;
+        }
     }
 
     private bool TryGetPlacementPoint(out Vector3 point, out Room room)

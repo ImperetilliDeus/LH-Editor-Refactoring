@@ -367,6 +367,22 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         SetHandlesVisible(isDefaultModeActive);
     }
 
+    public void RebuildRegisteredWallsFromHierarchy()
+    {
+        CancelInteractionState();
+        wallEntries.Clear();
+        groupsByVertexId.Clear();
+        vertexGroups.Clear();
+        RegisterExistingWalls();
+        RefreshWallEndCaps();
+        RefreshAllGroupWorldPoints();
+        UpdateHandlePositions();
+        handleLayoutDirty = false;
+        handlePositionsDirty = false;
+        SetHandlesVisible(isDefaultModeActive);
+        WallHierarchyChanged?.Invoke();
+    }
+
     public void RefreshHandleVisuals()
     {
         if (CleanupDestroyedWalls())
