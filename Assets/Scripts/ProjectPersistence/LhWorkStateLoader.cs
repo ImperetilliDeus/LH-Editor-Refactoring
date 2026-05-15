@@ -216,7 +216,9 @@ public static class LhWorkStateLoader
         for (int i = 0; i < walls.Count; i++)
         {
             LhWorkWallDto wallDto = walls[i];
-            Wall wall = RestoreStandaloneWall(wallDto, wallRoot);
+            Wall wall = HasOpenings(wallDto)
+                ? RestoreContainerWall(wallDto, wallRoot)
+                : RestoreStandaloneWall(wallDto, wallRoot);
             if (wall == null)
             {
                 return false;
@@ -229,6 +231,54 @@ public static class LhWorkStateLoader
         }
 
         return true;
+    }
+
+    private static Wall RestoreContainerWall(LhWorkWallDto wallDto, Transform wallRoot)
+    {
+        string wallName = string.IsNullOrWhiteSpace(wallDto.name) ? "Wall" : wallDto.name;
+        GameObject containerObject = new GameObject(wallName);
+        containerObject.transform.SetParent(wallRoot, false);
+        LayerUtility.ApplyLayer(containerObject, LayerUtility.WallLayerName, false);
+
+        WallOpeningContainer container = containerObject.AddComponent<WallOpeningContainer>();
+        container.Initialize(
+            wallDto.start.ToVector3(),
+            wallDto.end.ToVector3(),
+            wallDto.thickness,
+            wallDto.height,
+            wallDto.centerY,
+            new WallVisualState(),
+            wallDto.startVertexId,
+            wallDto.endVertexId,
+            wallDto.suppressStartHandle,
+            wallDto.suppressEndHandle,
+            wallDto.startSplitPoint,
+            wallDto.endSplitPoint);
+
+        for (int i = 0; i < wallDto.openings.Count; i++)
+        {
+            RestoreOpening(container, wallDto.openings[i]);
+        }
+
+        LhWorkWallDto baseWallDto = new LhWorkWallDto
+        {
+            id = wallDto.id,
+            name = wallName + "_Base",
+            start = wallDto.start,
+            end = wallDto.end,
+            thickness = wallDto.thickness,
+            height = wallDto.height,
+            centerY = wallDto.centerY,
+            startVertexId = wallDto.startVertexId,
+            endVertexId = wallDto.endVertexId,
+            suppressStartHandle = wallDto.suppressStartHandle,
+            suppressEndHandle = wallDto.suppressEndHandle,
+            startSplitPoint = wallDto.startSplitPoint,
+            endSplitPoint = wallDto.endSplitPoint,
+            openings = new List<LhWorkOpeningDto>(),
+        };
+
+        return RestoreStandaloneWall(baseWallDto, container.transform);
     }
 
     private static Wall RestoreStandaloneWall(LhWorkWallDto wallDto, Transform wallRoot)
@@ -265,6 +315,46 @@ public static class LhWorkStateLoader
         }
 
         return wallObject.GetComponent<Wall>();
+    }
+
+    private static void RestoreOpening(WallOpeningContainer container, LhWorkOpeningDto openingDto)
+    {
+        if (container == null || openingDto == null)
+        {
+            return;
+        }
+
+        WallOpeningPlacementManager.OpeningPlacementType openingType = ResolveOpeningType(openingDto.type);
+        GameObject openingObject = new GameObject(openingType == WallOpeningPlacementManager.OpeningPlacementType.Door ? "Door" : "Window");
+        openingObject.transform.SetParent(container.transform, false);
+        LayerUtility.ApplyLayer(
+            openingObject,
+            openingType == WallOpeningPlacementManager.OpeningPlacementType.Door
+                ? LayerUtility.DoorLayerName
+                : LayerUtility.WindowLayerName,
+            false);
+
+        WallOpening opening = openingObject.AddComponent<WallOpening>();
+        opening.Initialize(
+            null,
+            container,
+            openingType,
+            openingDto.doorTypeKey,
+            openingDto.windowTypeKey,
+            openingDto.doorOpensRight,
+            openingDto.doorVerticalFlip,
+            openingDto.centerDistance,
+            openingDto.width,
+            openingDto.height,
+            openingDto.depth,
+            openingDto.bottomY);
+    }
+
+    private static WallOpeningPlacementManager.OpeningPlacementType ResolveOpeningType(string value)
+    {
+        return string.Equals(value, WallOpeningPlacementManager.OpeningPlacementType.Window.ToString(), System.StringComparison.Ordinal)
+            ? WallOpeningPlacementManager.OpeningPlacementType.Window
+            : WallOpeningPlacementManager.OpeningPlacementType.Door;
     }
 
     private static Dictionary<string, Room> RestoreRooms(
@@ -436,6 +526,11 @@ public static class LhWorkStateLoader
         Vector3 delta = wallDto.end.ToVector3() - wallDto.start.ToVector3();
         delta.y = 0f;
         return delta.magnitude >= MinimumWallLength;
+    }
+
+    private static bool HasOpenings(LhWorkWallDto wallDto)
+    {
+        return wallDto != null && wallDto.openings != null && wallDto.openings.Count > 0;
     }
 
     private static List<Vector3> ToVectors(IReadOnlyList<LhWorkVector3Dto> values)
