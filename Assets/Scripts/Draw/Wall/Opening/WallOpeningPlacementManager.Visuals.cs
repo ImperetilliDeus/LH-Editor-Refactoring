@@ -23,6 +23,12 @@ public partial class WallOpeningPlacementManager
         markerVisualsDirty = true;
     }
 
+    public void RefreshRestoredOpeningVisuals()
+    {
+        MarkMarkerVisualsDirty();
+        RefreshOpeningMarkerVisuals();
+    }
+
     private void UpdateOpeningVisual(WallOpeningContainer container, WallOpening opening, int index, Transform segmentRoot)
     {
         Transform parent = segmentRoot != null ? segmentRoot : container.transform;
@@ -81,9 +87,22 @@ public partial class WallOpeningPlacementManager
             renderer = opening.gameObject.AddComponent<MeshRenderer>();
         }
 
-        renderer.enabled = true;
-        renderer.sharedMaterial = GetOpeningMaterial(opening.Type);
-        opening.ClearModelPrefab();
+        bool hasModelPrefab = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null;
+        bool hidePlaceholderVisual = opening.Type == OpeningPlacementType.Door && hasModelPrefab;
+        renderer.enabled = !hidePlaceholderVisual;
+        renderer.sharedMaterial = hidePlaceholderVisual ? null : GetOpeningMaterial(opening.Type);
+        if (hasModelPrefab)
+        {
+            opening.ApplyModelPrefab(
+                definition.ModelPrefab,
+                definition.ModelLocalPosition,
+                definition.ModelLocalEulerAngles,
+                definition.ModelScaleMultiplier);
+        }
+        else
+        {
+            opening.ClearModelPrefab();
+        }
 
         CreateFillerSegment(parent, $"{opening.name}_BottomFill", container, opening, opening.BottomY - container.WallBottomY, container.WallBottomY);
         CreateFillerSegment(

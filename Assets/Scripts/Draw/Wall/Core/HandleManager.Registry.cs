@@ -38,6 +38,25 @@ public partial class HandleManager
         wall.SetVertexIds(startId, endId);
     }
 
+    private bool HasValidWallHandleGeometry(Wall wall)
+    {
+        if (wall == null || wall.Data == null)
+        {
+            return false;
+        }
+
+        Vector3 startPoint = wall.Data.startPoint;
+        Vector3 endPoint = wall.Data.endPoint;
+        if (!IsValidHandleWorldPoint(startPoint) || !IsValidHandleWorldPoint(endPoint))
+        {
+            return false;
+        }
+
+        Vector3 delta = endPoint - startPoint;
+        delta.y = 0f;
+        return delta.sqrMagnitude >= minimumWallLength * minimumWallLength;
+    }
+
     private int FindNearestVertexId(Vector3 point)
     {
         float thresholdSqr = endpointMergeThreshold * endpointMergeThreshold;
@@ -90,6 +109,10 @@ public partial class HandleManager
         }
 
         Vector3 point = isStart ? entry.wallComponent.Data.startPoint : entry.wallComponent.Data.endPoint;
+        if (!IsValidHandleWorldPoint(point))
+        {
+            return;
+        }
 
         VertexGroup group = GetOrCreateGroup(vertexId, point);
         group.endpoints.Add(new EndpointRef
@@ -110,7 +133,7 @@ public partial class HandleManager
         }
 
         EnsureCanvas();
-        RectTransform rect = CreateHandleRect($"Handle_Vertex_{vertexId}", out Image image);
+        RectTransform rect = CreateHandleRect($"{HandleObjectNamePrefix}{vertexId}", out Image image);
 
         VertexGroup group = new VertexGroup
         {
@@ -152,10 +175,7 @@ public partial class HandleManager
                 continue;
             }
 
-            if (group.handleRect != null)
-            {
-                Destroy(group.handleRect.gameObject);
-            }
+            DestroyHandleRect(group.handleRect);
 
             groupsByVertexId.Remove(group.vertexId);
             vertexGroups.RemoveAt(i);
@@ -183,6 +203,10 @@ public partial class HandleManager
             Vector3 point = endpointRef.isStart
                 ? endpointRef.entry.wallComponent.Data.startPoint
                 : endpointRef.entry.wallComponent.Data.endPoint;
+            if (!IsValidHandleWorldPoint(point))
+            {
+                continue;
+            }
 
             sum += point;
             count++;
@@ -203,6 +227,39 @@ public partial class HandleManager
         {
             UpdateGroupWorldPoint(vertexGroups[i]);
         }
+
+        PruneInvalidVertexGroups();
+    }
+
+    private void PruneInvalidVertexGroups()
+    {
+        for (int i = vertexGroups.Count - 1; i >= 0; i--)
+        {
+            VertexGroup group = vertexGroups[i];
+            if (group != null && group.endpoints.Count > 0 && IsValidHandleWorldPoint(group.worldPoint))
+            {
+                continue;
+            }
+
+            DestroyHandleRect(group?.handleRect);
+
+            if (group != null)
+            {
+                groupsByVertexId.Remove(group.vertexId);
+            }
+
+            vertexGroups.RemoveAt(i);
+        }
+    }
+
+    private static bool IsValidHandleWorldPoint(Vector3 point)
+    {
+        return IsFinite(point.x) && IsFinite(point.y) && IsFinite(point.z);
+    }
+
+    private static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     private VertexGroup TryMergeDraggedGroupToNearby(VertexGroup source)
@@ -302,21 +359,14 @@ public partial class HandleManager
 
     private void RebuildGroupsFromEntries()
     {
-        for (int i = 0; i < vertexGroups.Count; i++)
-        {
-            if (vertexGroups[i]?.handleRect != null)
-            {
-                Destroy(vertexGroups[i].handleRect.gameObject);
-            }
-        }
-
+        DestroyAllHandleRects();
         groupsByVertexId.Clear();
         vertexGroups.Clear();
 
         foreach (KeyValuePair<int, WallHandleEntry> pair in wallEntries)
         {
             WallHandleEntry entry = pair.Value;
-            if (entry?.wallComponent == null)
+            if (entry?.wallComponent == null || !entry.wallComponent.gameObject.activeInHierarchy)
             {
                 continue;
             }
@@ -328,6 +378,56 @@ public partial class HandleManager
         RefreshAllGroupWorldPoints();
     }
 
+    private void DestroyAllHandleRects()
+    {
+        HashSet<GameObject> destroyedObjects = new HashSet<GameObject>();
+        for (int i = 0; i < vertexGroups.Count; i++)
+        {
+            DestroyHandleObject(vertexGroups[i]?.handleRect != null ? vertexGroups[i].handleRect.gameObject : null, destroyedObjects);
+        }
+
+        if (targetCanvas == null)
+        {
+            return;
+        }
+
+        for (int i = targetCanvas.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = targetCanvas.transform.GetChild(i);
+            if (child != null && child.name.StartsWith(HandleObjectNamePrefix, System.StringComparison.Ordinal))
+            {
+                DestroyHandleObject(child.gameObject, destroyedObjects);
+            }
+        }
+    }
+
+    private void DestroyHandleRect(RectTransform handleRect)
+    {
+        DestroyHandleObject(handleRect != null ? handleRect.gameObject : null, null);
+    }
+
+    private void DestroyHandleObject(GameObject handleObject, HashSet<GameObject> destroyedObjects)
+    {
+        if (handleObject == null)
+        {
+            return;
+        }
+
+        if (destroyedObjects != null && !destroyedObjects.Add(handleObject))
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(handleObject);
+        }
+        else
+        {
+            DestroyImmediate(handleObject);
+        }
+    }
+
     private void RemoveGroupById(int vertexId)
     {
         if (!groupsByVertexId.TryGetValue(vertexId, out VertexGroup group))
@@ -335,10 +435,7 @@ public partial class HandleManager
             return;
         }
 
-        if (group.handleRect != null)
-        {
-            Destroy(group.handleRect.gameObject);
-        }
+        DestroyHandleRect(group.handleRect);
 
         groupsByVertexId.Remove(vertexId);
         vertexGroups.Remove(group);

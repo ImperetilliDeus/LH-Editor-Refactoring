@@ -80,7 +80,7 @@ public partial class WallOpeningPlacementManager
         }
         else
         {
-            RebuildContainer(container);
+            RebuildContainer(container, false);
             RefreshSelectedWallForContainer(container, container.WallLength * 0.5f);
             afterSnapshot = CaptureLayoutSnapshot(container);
         }

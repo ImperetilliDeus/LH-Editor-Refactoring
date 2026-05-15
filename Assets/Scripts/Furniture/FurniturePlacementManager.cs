@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -37,7 +38,10 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     private readonly List<Renderer> previewRenderers = new List<Renderer>();
     private readonly List<Collider> currentColliders = new List<Collider>();
+    private readonly List<Room> cachedRooms = new List<Room>();
     private MaterialPropertyBlock propertyBlock;
+    private RaycastHit[] placementHitsBuffer = new RaycastHit[16];
+    private Collider[] overlapResultsBuffer = new Collider[16];
 
     private PlacementState state;
     private FurnitureCatalogItem activeItem;
@@ -67,7 +71,6 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     private void Update()
     {
-        EnsureCameraCulling();
         if (!isFurniturePlaceModeActive)
         {
             if (state != PlacementState.Idle)
@@ -379,10 +382,28 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
         // Renderer.bounds is already a world-space AABB. Applying the furniture rotation again
         // inflates the overlap volume and causes false wall hits near angled boundaries.
-        Collider[] overlaps = Physics.OverlapBox(bounds.center, halfExtents, Quaternion.identity, queryMask, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < overlaps.Length; i++)
+        int overlapCount = Physics.OverlapBoxNonAlloc(
+            bounds.center,
+            halfExtents,
+            overlapResultsBuffer,
+            Quaternion.identity,
+            queryMask,
+            QueryTriggerInteraction.Ignore);
+        while (overlapCount == overlapResultsBuffer.Length)
         {
-            Collider current = overlaps[i];
+            Array.Resize(ref overlapResultsBuffer, overlapResultsBuffer.Length * 2);
+            overlapCount = Physics.OverlapBoxNonAlloc(
+                bounds.center,
+                halfExtents,
+                overlapResultsBuffer,
+                Quaternion.identity,
+                queryMask,
+                QueryTriggerInteraction.Ignore);
+        }
+
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider current = overlapResultsBuffer[i];
             if (current == null)
             {
                 continue;
@@ -429,6 +450,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         activeInstance = instance;
         currentYaw = activeInstance.transform.eulerAngles.y;
         state = PlacementState.PlacedSelected;
+        CachePreviewRenderers(activeInstance.gameObject);
         ApplyPreviewTint(validTint);
     }
 
@@ -447,9 +469,24 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         activeItem = null;
         activeInstance = instance;
         currentYaw = activeInstance.transform.eulerAngles.y;
+        CachePreviewRenderers(activeInstance.gameObject);
         activeInstance.SetPlaced(false);
         state = PlacementState.PreviewFollowing;
         ApplyPreviewTransform(placementPoint, false);
+    }
+
+    public void RefreshRestoredFurniture()
+    {
+        ResolveReferences();
+        EnsureFurnitureRoot();
+        EnsureCameraCulling();
+        previewRenderers.Clear();
+        if (activeInstance != null)
+        {
+            activeInstance = null;
+            activeItem = null;
+            state = PlacementState.Idle;
+        }
     }
 
     private bool TryGetPlacementPoint(out Vector3 point, out Room room)
@@ -463,14 +500,30 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
-        RaycastHit[] hits = Physics.RaycastAll(ray, float.MaxValue, placementSurfaceMask.value, QueryTriggerInteraction.Ignore);
-        if (hits != null && hits.Length > 0)
+        int hitCount = Physics.RaycastNonAlloc(
+            ray,
+            placementHitsBuffer,
+            float.MaxValue,
+            placementSurfaceMask.value,
+            QueryTriggerInteraction.Ignore);
+        while (hitCount == placementHitsBuffer.Length)
+        {
+            Array.Resize(ref placementHitsBuffer, placementHitsBuffer.Length * 2);
+            hitCount = Physics.RaycastNonAlloc(
+                ray,
+                placementHitsBuffer,
+                float.MaxValue,
+                placementSurfaceMask.value,
+                QueryTriggerInteraction.Ignore);
+        }
+
+        if (hitCount > 0)
         {
             bool found = false;
             RaycastHit bestHit = default;
-            for (int i = 0; i < hits.Length; i++)
+            for (int i = 0; i < hitCount; i++)
             {
-                RaycastHit currentHit = hits[i];
+                RaycastHit currentHit = placementHitsBuffer[i];
                 if (!found ||
                     currentHit.point.y < bestHit.point.y ||
                     (Mathf.Approximately(currentHit.point.y, bestHit.point.y) && currentHit.distance < bestHit.distance))
@@ -506,17 +559,17 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return null;
         }
 
-        List<Room> rooms = roomManager.GetAllRooms();
-        for (int i = 0; i < rooms.Count; i++)
+        roomManager.GetAllRooms(cachedRooms);
+        for (int i = 0; i < cachedRooms.Count; i++)
         {
-            Room room = rooms[i];
+            Room room = cachedRooms[i];
             if (room == null)
             {
                 continue;
             }
 
-            List<Vector3> vertices = new List<Vector3>();
-            if (!room.TryGetOrderedVertices(vertices))
+            IReadOnlyList<Vector3> vertices = room.BoundaryVertices;
+            if (vertices == null || vertices.Count < 3)
             {
                 continue;
             }
@@ -537,17 +590,17 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return null;
         }
 
-        List<Room> rooms = roomManager.GetAllRooms();
-        for (int i = 0; i < rooms.Count; i++)
+        roomManager.GetAllRooms(cachedRooms);
+        for (int i = 0; i < cachedRooms.Count; i++)
         {
-            Room room = rooms[i];
+            Room room = cachedRooms[i];
             if (room == null)
             {
                 continue;
             }
 
-            List<Vector3> vertices = new List<Vector3>();
-            if (!room.TryGetOrderedVertices(vertices))
+            IReadOnlyList<Vector3> vertices = room.BoundaryVertices;
+            if (vertices == null || vertices.Count < 3)
             {
                 continue;
             }
@@ -561,7 +614,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         return null;
     }
 
-    private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> polygon)
+    private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<Vector3> polygon)
     {
         if (polygon == null || polygon.Count < 3)
         {
@@ -588,7 +641,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         return inside;
     }
 
-    private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, List<Vector3> polygon)
+    private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, IReadOnlyList<Vector3> polygon)
     {
         if (polygon == null || polygon.Count < 3)
         {
@@ -764,6 +817,11 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     private void HandleModeChanged(EditorMode mode)
     {
         isFurniturePlaceModeActive = mode == EditorMode.FurniturePlace;
+        if (isFurniturePlaceModeActive)
+        {
+            EnsureCameraCulling();
+        }
+
         enabled = isFurniturePlaceModeActive || state != PlacementState.Idle;
     }
 

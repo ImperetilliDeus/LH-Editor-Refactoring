@@ -47,6 +47,27 @@ public partial class HandleManager
             return false;
         }
 
+        UndoRedoManager.OpeningLayoutSnapshot containerSnapshot =
+            wallOpeningPlacementManager != null
+                ? wallOpeningPlacementManager.CaptureLayoutSnapshot(container)
+                : default;
+        if (wallOpeningPlacementManager == null || !containerSnapshot.hasContainer)
+        {
+            return false;
+        }
+
+        if (TryApplyContainerOuterLinearChainDrag(container, group.vertexId, newPoint, out _))
+        {
+            if (draggingGroup == group &&
+                group.vertexId > 0 &&
+                groupsByVertexId.TryGetValue(group.vertexId, out VertexGroup rebuiltDraggingGroup))
+            {
+                draggingGroup = rebuiltDraggingGroup;
+            }
+
+            return true;
+        }
+
         if (!TryGetContainerOuterWalls(container, out Wall startWall, out Wall endWall))
         {
             return false;
@@ -78,81 +99,246 @@ public partial class HandleManager
         }
 
         newDirection /= newLength;
+
+        float minimumContainerLength = GetMinimumContainerLengthForEndpointDrag(
+            container,
+            isDraggingStart,
+            oldStart,
+            oldEnd,
+            oldDirection);
+        if (newLength < minimumContainerLength)
+        {
+            newLength = minimumContainerLength;
+            movedPoint = isDraggingStart
+                ? fixedPoint - newDirection * newLength
+                : fixedPoint + newDirection * newLength;
+        }
+
         Vector3 newStart = isDraggingStart ? movedPoint : fixedPoint;
         Vector3 newEnd = isDraggingStart ? fixedPoint : movedPoint;
-        container.SetWallSpan(newStart, newEnd);
-
-        Transform segmentParent = GetContainerSegmentParent(container);
-        containerChildren.Clear();
-        for (int i = 0; i < segmentParent.childCount; i++)
+        wallOpeningPlacementManager.ApplyContainerSpanFromExternalDrag(container, newStart, newEnd, containerSnapshot);
+        if (draggingGroup == group &&
+            group.vertexId > 0 &&
+            groupsByVertexId.TryGetValue(group.vertexId, out VertexGroup rebuiltGroup))
         {
-            Transform child = segmentParent.GetChild(i);
-            if (child != null)
-            {
-                containerChildren.Add(child);
-            }
+            draggingGroup = rebuiltGroup;
+            group = rebuiltGroup;
         }
 
-        for (int i = 0; i < containerChildren.Count; i++)
-        {
-            Transform child = containerChildren[i];
-            if (child == null)
-            {
-                continue;
-            }
+        Vector3 appliedOuterPoint = isDraggingStart ? newStart : newEnd;
 
-            if (!TryGetContainerChildReferenceCenter(child, out Vector3 childCenter))
-            {
-                continue;
-            }
-
-            float projectedCenter = Vector3.Dot(childCenter - oldStart, oldDirection);
-            float distanceFromStart = projectedCenter;
-            float distanceFromEnd = oldLength - projectedCenter;
-            float newProjectedCenter = isDraggingStart
-                ? newLength - distanceFromEnd
-                : distanceFromStart;
-
-            Vector3 nextCenter = newStart + newDirection * newProjectedCenter;
-            nextCenter.y = childCenter.y;
-            ApplyContainerChildTransform(
-                child,
-                container,
-                isDraggingStart,
-                oldStart,
-                oldEnd,
-                newStart,
-                newEnd,
-                oldDirection,
-                newDirection,
-                nextCenter);
-        }
-
+        affectedOpeningContainers.Clear();
         affectedWallComponents.Clear();
         for (int i = 0; i < group.endpoints.Count; i++)
         {
             EndpointRef endpointRef = group.endpoints[i];
             Wall wall = endpointRef?.entry?.wallComponent;
-            if (wall == null || wall.GetComponentInParent<WallOpeningContainer>() == container)
+            if (wall == null)
             {
                 continue;
             }
 
-            affectedWallComponents.Add(wall);
+            WallOpeningContainer connectedContainer = wall.GetComponentInParent<WallOpeningContainer>();
+            if (connectedContainer == container)
+            {
+                continue;
+            }
+
+            if (connectedContainer != null)
+            {
+                affectedOpeningContainers.Add(connectedContainer);
+                continue;
+            }
+
+            if (!affectedWallComponents.Contains(wall))
+            {
+                affectedWallComponents.Add(wall);
+            }
         }
 
-        if (affectedWallComponents.Count > 0)
+        foreach (WallOpeningContainer affectedContainer in affectedOpeningContainers)
+        {
+            if (affectedContainer == null || wallOpeningPlacementManager == null)
+            {
+                continue;
+            }
+
+            UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(affectedContainer);
+            if (!snapshot.hasContainer)
+            {
+                continue;
+            }
+
+            Vector3 nextStart = snapshot.wallStart;
+            Vector3 nextEnd = snapshot.wallEnd;
+            if (group.vertexId == affectedContainer.OuterStartVertexId)
+            {
+                nextStart = appliedOuterPoint;
+            }
+
+            if (group.vertexId == affectedContainer.OuterEndVertexId)
+            {
+                nextEnd = appliedOuterPoint;
+            }
+
+            nextStart.y = dragPlaneHeight;
+            nextEnd.y = dragPlaneHeight;
+            wallOpeningPlacementManager.ApplyContainerSpanFromExternalDrag(affectedContainer, nextStart, nextEnd, snapshot);
+        }
+
+        if (affectedWallComponents.Count > 0 &&
+            !TryApplySplitPointChainEndpointDrag(group.vertexId, affectedWallComponents, appliedOuterPoint, out _))
         {
             WallGeometryService.ApplyVertexMove(
                 affectedWallComponents,
                 group.vertexId,
-                newPoint,
+                appliedOuterPoint,
                 dragPlaneHeight,
                 minimumWallLength,
                 wallLengthDisplay);
         }
 
         return true;
+    }
+
+    private bool TryApplyContainerOuterLinearChainDrag(
+        WallOpeningContainer container,
+        int draggedVertexId,
+        Vector3 draggedPoint,
+        out Vector3 appliedOuterPoint)
+    {
+        appliedOuterPoint = draggedPoint;
+        if (container == null || draggedVertexId <= 0)
+        {
+            return false;
+        }
+
+        int oppositeVertexId;
+        if (draggedVertexId == container.OuterStartVertexId)
+        {
+            oppositeVertexId = container.OuterEndVertexId;
+            if (!container.OuterEndSplitPoint)
+            {
+                return false;
+            }
+        }
+        else if (draggedVertexId == container.OuterEndVertexId)
+        {
+            oppositeVertexId = container.OuterStartVertexId;
+            if (!container.OuterStartSplitPoint)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        LinearChainElement containerElement = new LinearChainElement
+        {
+            container = container,
+            startVertexId = container.OuterStartVertexId,
+            endVertexId = container.OuterEndVertexId,
+            startPoint = container.WallStart,
+            endPoint = container.WallEnd,
+        };
+
+        if (!TryBuildLinearSplitChainFromElement(draggedVertexId, containerElement, splitChainElements, splitChainVertexIds, splitChainPoints))
+        {
+            return false;
+        }
+
+        if (!TryApplyLinearSplitChainKeepingDraggedEndpoint(splitChainElements, splitChainVertexIds, splitChainPoints, draggedPoint))
+        {
+            return false;
+        }
+
+        appliedOuterPoint = splitChainPoints.Count > 0 ? splitChainPoints[0] : draggedPoint;
+        return true;
+    }
+
+    private float GetMinimumContainerLengthForEndpointDrag(
+        WallOpeningContainer container,
+        bool isDraggingStart,
+        Vector3 oldStart,
+        Vector3 oldEnd,
+        Vector3 oldDirection)
+    {
+        if (container == null)
+        {
+            return minimumWallLength;
+        }
+
+        float requiredLength = minimumWallLength;
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (wall == null)
+            {
+                continue;
+            }
+
+            requiredLength = Mathf.Max(
+                requiredLength,
+                GetMinimumLengthForContainerPoint(
+                    wall.Data.startPoint,
+                    wall.StartVertexId,
+                    container,
+                    isDraggingStart,
+                    oldStart,
+                    oldEnd,
+                    oldDirection));
+            requiredLength = Mathf.Max(
+                requiredLength,
+                GetMinimumLengthForContainerPoint(
+                    wall.Data.endPoint,
+                    wall.EndVertexId,
+                    container,
+                    isDraggingStart,
+                    oldStart,
+                    oldEnd,
+                    oldDirection));
+        }
+
+        return requiredLength;
+    }
+
+    private float GetMinimumLengthForContainerPoint(
+        Vector3 point,
+        int vertexId,
+        WallOpeningContainer container,
+        bool isDraggingStart,
+        Vector3 oldStart,
+        Vector3 oldEnd,
+        Vector3 oldDirection)
+    {
+        point.y = dragPlaneHeight;
+
+        if (container == null)
+        {
+            return minimumWallLength;
+        }
+
+        if (isDraggingStart)
+        {
+            if (vertexId == container.OuterStartVertexId)
+            {
+                return minimumWallLength;
+            }
+
+            float distanceFromEnd = Vector3.Dot(oldEnd - point, oldDirection);
+            return distanceFromEnd + minimumWallLength;
+        }
+
+        if (vertexId == container.OuterEndVertexId)
+        {
+            return minimumWallLength;
+        }
+
+        float distanceFromStart = Vector3.Dot(point - oldStart, oldDirection);
+        return distanceFromStart + minimumWallLength;
     }
 
     private bool TryGetContainerOuterWalls(WallOpeningContainer container, out Wall startWall, out Wall endWall)

@@ -88,9 +88,12 @@ namespace LH.Export
             };
         }
 
-        private static List<LhFurnitureDto> BuildFurniture(Room room, BuildContext context)
+        private static List<T> BuildFurnitureList<T>(
+            Room room,
+            BuildContext context,
+            System.Func<FurnitureInstance, LhVector3Dto, LhVector3Dto, LhVector3Dto, T> factory)
         {
-            List<LhFurnitureDto> results = new List<LhFurnitureDto>();
+            var results = new List<T>();
             if (room == null ||
                 context == null ||
                 !context.furnitureByRoom.TryGetValue(room, out List<FurnitureInstance> furnitureInstances))
@@ -107,51 +110,36 @@ namespace LH.Export
                 }
 
                 FillRelativeTransform(room.transform, instance.transform, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                results.Add(new LhFurnitureDto
-                {
-                    name = instance.gameObject.name,
-                    code = instance.ExportCode ?? string.Empty,
-                    nativeCode = instance.NativeCode ?? string.Empty,
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                    defects = BuildFurnitureDefects(instance),
-                });
+                results.Add(factory(instance, position, angle, scale));
             }
 
             return results;
         }
 
+        private static List<LhFurnitureDto> BuildFurniture(Room room, BuildContext context)
+        {
+            return BuildFurnitureList(room, context, (instance, position, angle, scale) => new LhFurnitureDto
+            {
+                name = instance.gameObject.name,
+                code = instance.ExportCode ?? string.Empty,
+                nativeCode = instance.NativeCode ?? string.Empty,
+                position = position,
+                angle = angle,
+                scale = scale,
+                defects = BuildFurnitureDefects(instance),
+            });
+        }
+
         private static List<LhLegacyFurnitureDto> BuildLegacyFurniture(Room room, BuildContext context)
         {
-            List<LhLegacyFurnitureDto> results = new List<LhLegacyFurnitureDto>();
-            if (room == null ||
-                context == null ||
-                !context.furnitureByRoom.TryGetValue(room, out List<FurnitureInstance> furnitureInstances))
+            return BuildFurnitureList(room, context, (instance, position, angle, scale) => new LhLegacyFurnitureDto
             {
-                return results;
-            }
-
-            for (int i = 0; i < furnitureInstances.Count; i++)
-            {
-                FurnitureInstance instance = furnitureInstances[i];
-                if (instance == null || !instance.IsPlaced)
-                {
-                    continue;
-                }
-
-                FillRelativeTransform(room.transform, instance.transform, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                results.Add(new LhLegacyFurnitureDto
-                {
-                    code = instance.ExportCode ?? string.Empty,
-                    position = position,
-                    angle = angle,
-                    scale = scale,
-                    defects = BuildFurnitureDefects(instance),
-                });
-            }
-
-            return results;
+                code = instance.ExportCode ?? string.Empty,
+                position = position,
+                angle = angle,
+                scale = scale,
+                defects = BuildFurnitureDefects(instance),
+            });
         }
 
         private static List<Room> CollectRooms(IEnumerable<Room> rooms)

@@ -27,13 +27,25 @@ public class RoomManager : MonoBehaviour
                 return 0;
             }
 
-            int hash = 17;
+            int xorHash = 0;
+            int sumHash = 0;
+            int count = 0;
             foreach (Wall wall in wallSet)
             {
-                hash = hash * 31 + (wall != null ? wall.GetHashCode() : 0);
+                int wallHash = wall != null ? wall.GetHashCode() : 0;
+                xorHash ^= wallHash;
+                sumHash += wallHash;
+                count++;
             }
 
-            return hash;
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + count;
+                hash = hash * 31 + xorHash;
+                hash = hash * 31 + sumHash;
+                return hash;
+            }
         }
     }
 
@@ -53,8 +65,6 @@ public class RoomManager : MonoBehaviour
     [SerializeField, HideInInspector] private List<Material> ceilingMaterials = new List<Material>();
     [SerializeField] private Color roomColor = new Color(0.2f, 0.8f, 0.2f, 0.3f);
     [SerializeField] private float wallConnectionThreshold = 0.1f;
-    [SerializeField] private float roomFaceAreaThreshold = 0.01f;
-    [SerializeField] private float roomMatchDistanceThreshold = 0.5f;
     [SerializeField] private Vector3 roomSpawnLocalOffset = new Vector3(0f, 0.01f, 0f);
     [SerializeField] private bool allowAutomaticRoomGeneration = false;
 
@@ -296,6 +306,21 @@ public class RoomManager : MonoBehaviour
         return room;
     }
 
+    public Room CreateRoomForWorkStateLoad(List<Vector3> polygonVertices, HashSet<Wall> wallSet, bool isManualRoom)
+    {
+        List<Vector3> sanitizedPolygonVertices = PolygonUtility.CreateSanitizedPolygonCopy(polygonVertices);
+        if (!RoomPolygonValidationUtility.IsValidPolygon(sanitizedPolygonVertices))
+        {
+            Debug.LogWarning("Cannot restore room: polygon is invalid");
+            return null;
+        }
+
+        Room room = CreateRoomObject(wallSet ?? new HashSet<Wall>(), sanitizedPolygonVertices, isManualRoom);
+        allRooms.Add(room);
+        RoomsChanged?.Invoke();
+        return room;
+    }
+
     public bool UpdateRoomPolygon(Room room, IReadOnlyList<Vector3> polygonVertices, bool clearWallSet = false)
     {
         if (room == null)
@@ -421,6 +446,37 @@ public class RoomManager : MonoBehaviour
         RoomsChanged?.Invoke();
     }
 
+    public void ClearAllRoomsForWorkStateLoad()
+    {
+        for (int i = allRooms.Count - 1; i >= 0; i--)
+        {
+            Room room = allRooms[i];
+            if (room != null)
+            {
+                if (Application.isPlaying)
+                {
+                    room.gameObject.SetActive(false);
+                    Destroy(room.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(room.gameObject);
+                }
+            }
+        }
+
+        allRooms.Clear();
+        roomsByWalls.Clear();
+        MarkGraphDirty();
+        RoomsChanged?.Invoke();
+    }
+
+    public void RebuildRoomLookupForWorkStateLoad()
+    {
+        RebuildRoomLookup();
+        MarkGraphDirty();
+    }
+
     public List<Room> GetAllRooms()
     {
         return new List<Room>(allRooms);
@@ -440,6 +496,12 @@ public class RoomManager : MonoBehaviour
     public void RefreshAllRooms()
     {
         EnsureRoomRoot();
+        if (!allowAutomaticRoomGeneration)
+        {
+            RemoveAutomaticRooms();
+            return;
+        }
+
         RebuildGraphIfNeeded();
         if (cachedGraph == null)
         {
@@ -475,21 +537,7 @@ public class RoomManager : MonoBehaviour
         for (int i = 0; i < cachedGraph.Faces.Count; i++)
         {
             RoomPlanarGraph.Face face = cachedGraph.Faces[i];
-            if (face == null || face.Vertices.Count < 3 || Mathf.Abs(face.SignedArea) <= roomFaceAreaThreshold)
-            {
-                continue;
-            }
-
-            Room matchedRoom = FindBestMatchingRoom(cachedAvailableRooms, face.Centroid);
-            if (matchedRoom != null)
-            {
-                matchedRoom.UpdateGeometry(face.Vertices, face.Walls, face.VirtualBoundaries);
-                cachedAvailableRooms.Remove(matchedRoom);
-                nextRooms.Add(matchedRoom);
-                continue;
-            }
-
-            if (!allowAutomaticRoomGeneration)
+            if (face == null || face.Vertices.Count < 3)
             {
                 continue;
             }
@@ -568,32 +616,6 @@ public class RoomManager : MonoBehaviour
 
             roomsByWalls[room.WallSet] = room;
         }
-    }
-
-    private Room FindBestMatchingRoom(List<Room> availableRooms, Vector3 faceCentroid)
-    {
-        Room bestMatch = null;
-        float bestDistanceSqr = roomMatchDistanceThreshold * roomMatchDistanceThreshold;
-
-        for (int i = 0; i < availableRooms.Count; i++)
-        {
-            Room room = availableRooms[i];
-            if (room == null)
-            {
-                continue;
-            }
-
-            float distanceSqr = (room.Centroid - faceCentroid).sqrMagnitude;
-            if (distanceSqr >= bestDistanceSqr)
-            {
-                continue;
-            }
-
-            bestDistanceSqr = distanceSqr;
-            bestMatch = room;
-        }
-
-        return bestMatch;
     }
 
     private Room CreateRoomFromFace(RoomPlanarGraph.Face face)
@@ -729,11 +751,41 @@ public class RoomManager : MonoBehaviour
         return fallbackRoomMaterial;
     }
 
+    private void RemoveAutomaticRooms()
+    {
+        bool changed = false;
+        for (int i = allRooms.Count - 1; i >= 0; i--)
+        {
+            Room room = allRooms[i];
+            if (room == null)
+            {
+                allRooms.RemoveAt(i);
+                changed = true;
+                continue;
+            }
+
+            if (room.IsManualRoom)
+            {
+                continue;
+            }
+
+            Destroy(room.gameObject);
+            allRooms.RemoveAt(i);
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        RebuildRoomLookup();
+        RoomsChanged?.Invoke();
+    }
+
     private void ValidateConfiguration()
     {
         Debug.Assert(wallRoot != null, $"{nameof(RoomManager)} requires {nameof(wallRoot)} or a scene Walls root.", this);
-        roomFaceAreaThreshold = Mathf.Max(0.0001f, roomFaceAreaThreshold);
-        roomMatchDistanceThreshold = Mathf.Max(0.01f, roomMatchDistanceThreshold);
     }
 
     private void HandleRefreshAllRequested()

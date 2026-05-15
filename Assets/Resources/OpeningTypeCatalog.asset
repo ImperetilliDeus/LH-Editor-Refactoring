@@ -16,9 +16,6 @@ MonoBehaviour:
   - openingType: 0
     typeKey: E001
     displayName: "\uD604\uAD00"
-    markerPrefab: {fileID: 6600269071673938050, guid: 3a511475dd1f0f84ea0d8b1f7ec59d61, type: 3}
-    markerScaleMultiplier: {x: 1, y: 1}
-    markerPlacementMode: 1
     modelPrefab: {fileID: 569507486651759752, guid: acca1e657e3c79a4aa2de6a289f5713a, type: 3}
     modelLocalPosition: {x: 0, y: 0, z: 0}
     modelLocalEulerAngles: {x: 0, y: 0, z: 0}
@@ -26,9 +23,6 @@ MonoBehaviour:
   - openingType: 0
     typeKey: F001
     displayName: "\uC5EC\uB2EB\uC774\uBB38"
-    markerPrefab: {fileID: 6600269071673938050, guid: 58fd7205fa0997246a245548c6cd1071, type: 3}
-    markerScaleMultiplier: {x: 1, y: 1}
-    markerPlacementMode: 0
     modelPrefab: {fileID: 8098451665189820380, guid: 3b8b4c52a73d33d4d80b00de508e3992, type: 3}
     modelLocalPosition: {x: 0, y: 0, z: 0}
     modelLocalEulerAngles: {x: 0, y: 0, z: 0}

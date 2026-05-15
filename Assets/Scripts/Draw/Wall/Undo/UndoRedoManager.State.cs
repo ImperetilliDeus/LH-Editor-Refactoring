@@ -194,6 +194,8 @@ public partial class UndoRedoManager
         public int outerEndVertexId;
         public bool suppressOuterStartHandle;
         public bool suppressOuterEndHandle;
+        public bool outerStartSplitPoint;
+        public bool outerEndSplitPoint;
         public OpeningStateSnapshot[] openings;
 
         public static bool HasMeaningfulDelta(OpeningLayoutSnapshot before, OpeningLayoutSnapshot after)
@@ -220,7 +222,9 @@ public partial class UndoRedoManager
                 before.outerStartVertexId != after.outerStartVertexId ||
                 before.outerEndVertexId != after.outerEndVertexId ||
                 before.suppressOuterStartHandle != after.suppressOuterStartHandle ||
-                before.suppressOuterEndHandle != after.suppressOuterEndHandle)
+                before.suppressOuterEndHandle != after.suppressOuterEndHandle ||
+                before.outerStartSplitPoint != after.outerStartSplitPoint ||
+                before.outerEndSplitPoint != after.outerEndSplitPoint)
             {
                 return true;
             }

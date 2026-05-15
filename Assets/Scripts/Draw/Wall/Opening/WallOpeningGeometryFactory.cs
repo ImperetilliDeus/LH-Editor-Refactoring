@@ -20,8 +20,9 @@ internal sealed class WallOpeningGeometryFactory
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        WallVisualState visualState,
-        float minimumWallSegmentLength)
+        WallVisualState visualState, // No change here
+        float minimumWallSegmentLength,
+        bool isDragging = false) // Added isDragging
     {
         Vector3 direction = endPoint - startPoint;
         direction.y = 0f;
@@ -54,7 +55,10 @@ internal sealed class WallOpeningGeometryFactory
             return null;
         }
 
-        handleManager?.RegisterWall(wallObject);
+        if (!isDragging) // Only register if not dragging
+        {
+            handleManager?.RegisterWall(wallObject);
+        }
         return wallObject;
     }
 
@@ -67,7 +71,7 @@ internal sealed class WallOpeningGeometryFactory
         float segmentHeight,
         float segmentBottomY)
     {
-        if (segmentHeight <= 0.01f || parent == null || cubeMesh == null || container == null || opening == null)
+        if (segmentHeight <= 0.01f || parent == null || container == null || opening == null)
         {
             return;
         }
@@ -123,7 +127,7 @@ internal sealed class WallOpeningGeometryFactory
         MeshFilter meshFilter = cubeObject.GetComponent<MeshFilter>();
         if (meshFilter != null)
         {
-            meshFilter.sharedMesh = cubeMesh;
+            meshFilter.sharedMesh = cubeMesh != null ? cubeMesh : WallMeshReferenceUtility.GetSharedCubeMesh();
         }
 
         if (withCollider)

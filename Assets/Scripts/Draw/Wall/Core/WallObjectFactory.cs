@@ -17,9 +17,9 @@ public static class WallObjectFactory
         LayerUtility.ApplyLayer(wallObject, LayerUtility.WallLayerName, false);
 
         MeshFilter filter = wallObject.GetComponent<MeshFilter>();
-        if (filter != null && mesh != null)
+        if (filter != null)
         {
-            filter.sharedMesh = mesh;
+            filter.sharedMesh = mesh != null ? mesh : WallMeshReferenceUtility.GetSharedCubeMesh();
         }
 
         MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();

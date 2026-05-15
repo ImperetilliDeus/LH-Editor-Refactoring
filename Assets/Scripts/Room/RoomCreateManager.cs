@@ -26,17 +26,11 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     [SerializeField] private RoomCreationShapeMode creationShapeMode = RoomCreationShapeMode.RectangleDrag;
     [SerializeField] private float minimumRoomWidth = 0.1f;
     [SerializeField] private float minimumRoomHeight = 0.1f;
+    [SerializeField] private float doubleClickThreshold = 0.25f;
     [SerializeField] private float clickToSelectThresholdPixels = 6f;
     [SerializeField] private float polygonCloseDistance = 0.2f;
     [SerializeField] private float polygonCloseDistancePixels = 18f;
     [SerializeField] private float minimumPolygonEdgeLength = 0.1f;
-
-    [Header("Auto Wall Match")]
-    [SerializeField] private float autoWallMatchMaxAngleDegrees = 5f;
-    [SerializeField] private float autoWallMatchDistanceThreshold = 0.08f;
-    [SerializeField] private float autoWallMatchMinOverlapRatio = 0.6f;
-    [SerializeField] private float autoWallMatchMinOverlapLength = 0.1f;
-    [SerializeField] private float autoWallBroadPhasePadding = 0.05f;
 
     [Header("Preview")]
     [SerializeField] private float previewBoxHeight = 0.04f;
@@ -74,6 +68,8 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     private EditorInputFrame lastInputFrame;
     private Vector3 polygonHoverPoint;
     private bool hasPolygonHoverPoint;
+    private float lastLeftClickTime = -1f;
+    private Vector2 lastLeftClickPosition;
 
     private void Reset()
     {
@@ -115,18 +111,13 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
 
         List<Room> createdRooms = new List<Room>();
         List<Room> deletedRooms = new List<Room>();
+        Room createdRoom = roomManager != null
+            ? roomManager.CreateRoomFromPolygon(polygonVertices)
+            : null;
 
-        if (!TrySplitContainingRoom(roomBounds, createdRooms, deletedRooms))
+        if (createdRoom != null)
         {
-            HashSet<Wall> relatedWalls = CollectWallsMatchingPolygon(polygonVertices);
-            Room createdRoom = roomManager != null
-                ? roomManager.CreateRoomFromPolygon(polygonVertices, relatedWalls.Count > 0 ? relatedWalls : null)
-                : null;
-
-            if (createdRoom != null)
-            {
-                createdRooms.Add(createdRoom);
-            }
+            createdRooms.Add(createdRoom);
         }
 
         if (undoRedoManager != null)
@@ -174,9 +165,8 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
             return;
         }
 
-        HashSet<Wall> relatedWalls = CollectWallsMatchingPolygon(finalizedVertices);
         Room createdRoom = roomManager != null
-            ? roomManager.CreateRoomFromPolygon(finalizedVertices, relatedWalls.Count > 0 ? relatedWalls : null)
+            ? roomManager.CreateRoomFromPolygon(finalizedVertices)
             : null;
 
         if (createdRoom != null)
@@ -871,141 +861,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         }
     }
 
-    private HashSet<Wall> CollectWallsMatchingPolygon(IReadOnlyList<Vector3> polygonVertices)
-    {
-        HashSet<Wall> results = new HashSet<Wall>();
-        if (polygonVertices == null || polygonVertices.Count < 3)
-        {
-            return results;
-        }
-
-        if (wallRoot == null)
-        {
-            wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
-        }
-
-        if (wallRoot == null)
-        {
-            return results;
-        }
-
-        Bounds polygonBounds = CalculatePolygonBounds(polygonVertices, autoWallBroadPhasePadding);
-        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls);
-        for (int i = 0; i < cachedWalls.Count; i++)
-        {
-            Wall wall = cachedWalls[i];
-            if (wall == null || !wall.gameObject.activeInHierarchy || wall.Data == null)
-            {
-                continue;
-            }
-
-            Vector3 wallStart = wall.Data.startPoint;
-            Vector3 wallEnd = wall.Data.endPoint;
-            if (!RoomCreateGeometryService.ContainsPointXZ(polygonBounds, wallStart) &&
-                !RoomCreateGeometryService.ContainsPointXZ(polygonBounds, wallEnd) &&
-                !RoomCreateGeometryService.SegmentIntersectsBoundsXZ(polygonBounds, wallStart, wallEnd))
-            {
-                continue;
-            }
-
-            if (DoesWallMatchRoomBoundary(wallStart, wallEnd, polygonVertices))
-            {
-                results.Add(wall);
-            }
-        }
-
-        return results;
-    }
-
-    private bool TrySplitContainingRoom(Bounds innerBounds, List<Room> createdRooms, List<Room> deletedRooms)
-    {
-        if (roomManager == null)
-        {
-            return false;
-        }
-
-        Room containingRoom = FindSmallestContainingRectRoom(innerBounds, out Bounds outerBounds);
-        if (containingRoom == null)
-        {
-            return false;
-        }
-
-        if (RoomCreateGeometryService.AreBoundsNearlyEqual(innerBounds, outerBounds))
-        {
-            return false;
-        }
-
-        List<Bounds> splitBounds = RoomCreateGeometryService.BuildSplitBounds(
-            outerBounds,
-            innerBounds,
-            minimumRoomWidth,
-            minimumRoomHeight);
-        if (splitBounds.Count == 0)
-        {
-            return false;
-        }
-
-        deletedRooms.Add(containingRoom);
-        roomManager.DeleteRoom(containingRoom);
-
-        for (int i = 0; i < splitBounds.Count; i++)
-        {
-            List<Vector3> polygon = RoomCreateGeometryService.BuildPolygonFromBounds(splitBounds[i], innerBounds.center.y);
-            HashSet<Wall> walls = CollectWallsMatchingPolygon(polygon);
-            Room room = roomManager.CreateRoomFromPolygon(polygon, walls.Count > 0 ? walls : null);
-            if (room != null)
-            {
-                createdRooms.Add(room);
-            }
-        }
-
-        return createdRooms.Count > 0;
-    }
-
-    private Room FindSmallestContainingRectRoom(Bounds targetBounds, out Bounds containingBounds)
-    {
-        containingBounds = default;
-        if (roomManager == null)
-        {
-            return null;
-        }
-
-        cachedRooms.Clear();
-        cachedRooms.AddRange(roomManager.GetAllRooms());
-
-        Room bestRoom = null;
-        float bestArea = float.MaxValue;
-        for (int i = 0; i < cachedRooms.Count; i++)
-        {
-            Room room = cachedRooms[i];
-            if (!RoomCreateGeometryService.TryGetAxisAlignedRoomBounds(
-                    room != null ? room.ManualBoundaryVertices : null,
-                    minimumRoomWidth,
-                    minimumRoomHeight,
-                    out Bounds roomBounds))
-            {
-                continue;
-            }
-
-            if (!RoomCreateGeometryService.BoundsContainBoundsXZ(roomBounds, targetBounds))
-            {
-                continue;
-            }
-
-            float area = roomBounds.size.x * roomBounds.size.z;
-            if (area >= bestArea)
-            {
-                continue;
-            }
-
-            bestArea = area;
-            bestRoom = room;
-            containingBounds = roomBounds;
-        }
-
-        return bestRoom;
-    }
-
     private Room PickRoomAtWorldPoint(Vector3 worldPoint)
     {
         if (roomManager == null)
@@ -1042,111 +897,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         }
 
         return bestRoom;
-    }
-
-    private bool DoesWallMatchRoomBoundary(Vector3 wallStart, Vector3 wallEnd, IReadOnlyList<Vector3> polygonVertices)
-    {
-        Vector2 wallStart2 = new Vector2(wallStart.x, wallStart.z);
-        Vector2 wallEnd2 = new Vector2(wallEnd.x, wallEnd.z);
-        Vector2 wallVector = wallEnd2 - wallStart2;
-        float wallLength = wallVector.magnitude;
-        if (wallLength < 0.0001f)
-        {
-            return false;
-        }
-
-        Vector2 wallDirection = wallVector / wallLength;
-        float maxAngleCos = Mathf.Cos(Mathf.Deg2Rad * Mathf.Clamp(autoWallMatchMaxAngleDegrees, 0.1f, 45f));
-
-        for (int i = 0; i < polygonVertices.Count; i++)
-        {
-            Vector3 current = polygonVertices[i];
-            Vector3 next = polygonVertices[(i + 1) % polygonVertices.Count];
-            Vector2 edgeStart = new Vector2(current.x, current.z);
-            Vector2 edgeEnd = new Vector2(next.x, next.z);
-            Vector2 edgeVector = edgeEnd - edgeStart;
-            float edgeLength = edgeVector.magnitude;
-            if (edgeLength < 0.0001f)
-            {
-                continue;
-            }
-
-            Vector2 edgeDirection = edgeVector / edgeLength;
-            float alignment = Mathf.Abs(Vector2.Dot(wallDirection, edgeDirection));
-            if (alignment < maxAngleCos)
-            {
-                continue;
-            }
-
-            float startDistance = DistancePointToInfiniteLine(wallStart2, edgeStart, edgeDirection);
-            float endDistance = DistancePointToInfiniteLine(wallEnd2, edgeStart, edgeDirection);
-            float midpointDistance = DistancePointToInfiniteLine((wallStart2 + wallEnd2) * 0.5f, edgeStart, edgeDirection);
-            if (midpointDistance > autoWallMatchDistanceThreshold ||
-                Mathf.Min(startDistance, endDistance) > autoWallMatchDistanceThreshold * 1.5f)
-            {
-                continue;
-            }
-
-            float wallMin = Vector2.Dot(wallStart2 - edgeStart, edgeDirection);
-            float wallMax = Vector2.Dot(wallEnd2 - edgeStart, edgeDirection);
-            if (wallMin > wallMax)
-            {
-                float temp = wallMin;
-                wallMin = wallMax;
-                wallMax = temp;
-            }
-
-            float overlapLength = Mathf.Min(wallMax, edgeLength) - Mathf.Max(wallMin, 0f);
-            if (overlapLength <= 0f)
-            {
-                continue;
-            }
-
-            float shorterLength = Mathf.Min(wallLength, edgeLength);
-            float overlapRatio = shorterLength > 0.0001f ? overlapLength / shorterLength : 0f;
-            if (overlapLength >= autoWallMatchMinOverlapLength &&
-                overlapRatio >= autoWallMatchMinOverlapRatio)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static float DistancePointToInfiniteLine(Vector2 point, Vector2 lineOrigin, Vector2 lineDirection)
-    {
-        Vector2 offset = point - lineOrigin;
-        float projected = Vector2.Dot(offset, lineDirection);
-        Vector2 closestPoint = lineOrigin + lineDirection * projected;
-        return Vector2.Distance(point, closestPoint);
-    }
-
-    private static Bounds CalculatePolygonBounds(IReadOnlyList<Vector3> polygonVertices, float padding)
-    {
-        float minX = float.MaxValue;
-        float maxX = float.MinValue;
-        float minZ = float.MaxValue;
-        float maxZ = float.MinValue;
-        float y = polygonVertices[0].y;
-
-        for (int i = 0; i < polygonVertices.Count; i++)
-        {
-            Vector3 vertex = polygonVertices[i];
-            minX = Mathf.Min(minX, vertex.x);
-            maxX = Mathf.Max(maxX, vertex.x);
-            minZ = Mathf.Min(minZ, vertex.z);
-            maxZ = Mathf.Max(maxZ, vertex.z);
-        }
-
-        minX -= padding;
-        maxX += padding;
-        minZ -= padding;
-        maxZ += padding;
-
-        return new Bounds(
-            new Vector3((minX + maxX) * 0.5f, y, (minZ + maxZ) * 0.5f),
-            new Vector3(maxX - minX, 0.01f, maxZ - minZ));
     }
 
     private bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition)

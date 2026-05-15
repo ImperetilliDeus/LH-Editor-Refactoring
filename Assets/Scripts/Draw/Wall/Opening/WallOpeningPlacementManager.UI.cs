@@ -253,7 +253,7 @@ public partial class WallOpeningPlacementManager
         }
 
         UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(SelectedOpening.Container);
-        RebuildContainer(SelectedOpening.Container);
+        RebuildContainer(SelectedOpening.Container, false);
         RefreshSelectedWallForContainer(SelectedOpening.Container, SelectedOpening.CenterDistance);
         if (undoRedoManager != null)
         {

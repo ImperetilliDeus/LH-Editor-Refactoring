@@ -15,6 +15,7 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic, IPointerClickH
         public float dashLength;
         public float gapLength;
         public Wall wall;
+        public WallOpening opening;
     }
 
     private readonly List<SegmentData> segments = new List<SegmentData>();
@@ -143,7 +144,7 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic, IPointerClickH
         for (int i = 0; i < segments.Count; i++)
         {
             SegmentData segment = segments[i];
-            if (segment.wall == null)
+            if (segment.wall == null && segment.opening == null)
             {
                 continue;
             }

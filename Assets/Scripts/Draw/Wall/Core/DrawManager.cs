@@ -9,55 +9,57 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
 {
     private const string DefaultWallMaterialPath = "Assets/Prefabs/Furniture/Models/Materials/Wall/W001.mat";
 
-    [SerializeField] private Camera mainCamera;
-    [SerializeField] private GameObject grid;
-    [SerializeField] private Transform wallRoot;
-    [SerializeField] private SnapManager snapManager;
-    [SerializeField] private WallLengthDisplay wallLengthDisplay;
-    [SerializeField] private HandleManager handleManager;
-    [SerializeField] private WallSelectionManager wallSelectionManager;
-    [SerializeField] private UndoRedoManager undoRedoManager;
-    [SerializeField] private ModeManager modeManager;
+    [SerializeField] private Camera _mainCamera;
+    [SerializeField] private GameObject _grid;
+    [SerializeField] private Transform _wallRoot;
+    [SerializeField] private SnapManager _snapManager;
+    [SerializeField] private WallLengthDisplay _wallLengthDisplay;
+    [SerializeField] private HandleManager _handleManager;
+    [SerializeField] private WallSelectionManager _wallSelectionManager;
+    [SerializeField] private UndoRedoManager _undoRedoManager;
+    [SerializeField] private ModeManager _modeManager;
 
     [Header("Input")]
     [SerializeField] private float doubleClickThreshold = 0.25f;
 
     [Header("Wall Size")]
-    [SerializeField] private float wallHeight = 22f;
-    [SerializeField] private float wallThickness = 1.5f;
-    [SerializeField] private float wallSurfaceOffset = 0.01f;
+    [SerializeField] private float _wallHeight = 22f;
+    [SerializeField] private float _wallThickness = 1.5f;
+    [SerializeField] private float _wallSurfaceOffset = 0.01f;
 
     [Header("Preview")]
-    [SerializeField] private bool enablePreviewWall = true;
-    [SerializeField] private Color previewColor = new Color(0.2f, 0.8f, 1f, 0.45f);
-    [SerializeField] private Material wallMaterial;
-    [SerializeField] private Color wallColor = new Color(0.78f, 0.78f, 0.78f, 1f);
-    [SerializeField] private Material wallTopMaterial;
+    [SerializeField] private bool _enablePreviewWall = true;
+    [SerializeField] private Color _previewColor = new Color(0.2f, 0.8f, 1f, 0.45f);
+    [SerializeField] private Material _wallMaterial;
+    [SerializeField] private Color _wallColor = new Color(0.78f, 0.78f, 0.78f, 1f);
+    [SerializeField] private Material _wallTopMaterial;
 
-    private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
-    private IEditorInputProvider inputProvider;
-    private WallToolRuntime toolRuntime;
-    private WallToolController toolController;
-    private bool isDefaultModeActive = true;
+    private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>();
+    private IEditorInputProvider _inputProvider;
+    private WallToolRuntime _toolRuntime;
+    private WallToolController _toolController;
+    private bool _isDefaultModeActive = true;
 
-    public bool IsWallCreationMode => toolRuntime != null && toolRuntime.IsWallCreationMode;
-    public GameObject PreviewWall => toolRuntime != null ? toolRuntime.PreviewWall : null;
+    public bool IsWallCreationMode => _toolRuntime != null && _toolRuntime.IsWallCreationMode;
+    public GameObject PreviewWall => _toolRuntime != null ? _toolRuntime.PreviewWall : null;
+    public Material WallMaterial => _wallMaterial;
+    public Material WallTopMaterial => _wallTopMaterial;
 
     private void Reset()
     {
-        mainCamera = Camera.main;
+        _mainCamera = Camera.main;
         ResolveReferences();
         ApplyDefaultWallMaterialIfMissing();
     }
 
     private void Awake()
     {
-        if (mainCamera == null)
+        if (_mainCamera == null)
         {
-            mainCamera = Camera.main;
+            _mainCamera = Camera.main;
         }
 
-        inputProvider = EditorInputManager.Instance.InputProvider;
+        _inputProvider = EditorInputManager.Instance.InputProvider;
         ResolveReferences();
         EnsureWallRoot();
         InitializeToolRuntime();
@@ -71,14 +73,14 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     private void OnValidate()
     {
         doubleClickThreshold = Mathf.Max(0.05f, doubleClickThreshold);
-        wallHeight = Mathf.Max(0.1f, wallHeight);
-        wallThickness = Mathf.Max(0.1f, wallThickness);
-        wallSurfaceOffset = Mathf.Max(0f, wallSurfaceOffset);
+        _wallHeight = Mathf.Max(0.1f, _wallHeight);
+        _wallThickness = Mathf.Max(0.1f, _wallThickness);
+        _wallSurfaceOffset = Mathf.Max(0f, _wallSurfaceOffset);
         ApplyDefaultWallMaterialIfMissing();
 
-        if (!enablePreviewWall && toolRuntime != null)
+        if (!_enablePreviewWall && _toolRuntime != null)
         {
-            toolRuntime.DisablePreviewWall();
+            _toolRuntime.DisablePreviewWall();
         }
     }
 
@@ -90,44 +92,44 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
             EditorInputManager.Instance.UnregisterHandler(EditorMode.Default, this);
         }
 
-        toolRuntime?.Dispose();
-        toolRuntime = null;
+        _toolRuntime?.Dispose();
+        _toolRuntime = null;
     }
 
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
-        if (!isDefaultModeActive || mainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        if (!_isDefaultModeActive || _mainCamera == null || _inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
 
-        toolController?.HandleInput(BuildToolInputFrame(inputFrame));
+        _toolController?.HandleInput(BuildToolInputFrame(inputFrame));
     }
 
     private void BindModeEvents()
     {
-        if (modeManager == null)
+        if (_modeManager == null)
         {
             return;
         }
 
-        modeManager.ModeChanged -= HandleModeChanged;
-        modeManager.ModeChanged += HandleModeChanged;
+        _modeManager.ModeChanged -= HandleModeChanged;
+        _modeManager.ModeChanged += HandleModeChanged;
     }
 
     private void UnbindModeEvents()
     {
-        if (modeManager == null)
+        if (_modeManager == null)
         {
             return;
         }
 
-        modeManager.ModeChanged -= HandleModeChanged;
+        _modeManager.ModeChanged -= HandleModeChanged;
     }
 
     private void SyncModeState()
     {
-        HandleModeChanged(modeManager != null ? modeManager.CurrentMode : EditorMode.Default);
+        HandleModeChanged(_modeManager != null ? _modeManager.CurrentMode : EditorMode.Default);
     }
 
     private void HandleModeChanged(EditorMode mode)
@@ -135,16 +137,16 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
         bool shouldBeActive = mode == EditorMode.Default;
         if (!shouldBeActive && IsWallCreationMode)
         {
-            toolController?.ActivateEditTool();
+            _toolController?.ActivateEditTool();
         }
 
-        isDefaultModeActive = shouldBeActive;
+        _isDefaultModeActive = shouldBeActive;
         enabled = shouldBeActive;
     }
 
     private void EnsureWallRoot()
     {
-        if (wallRoot != null)
+        if (_wallRoot != null)
         {
             return;
         }
@@ -155,85 +157,85 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
             wallRootTransform = new GameObject(LayerUtility.DefaultWallRootName).transform;
         }
 
-        wallRoot = wallRootTransform;
+        _wallRoot = wallRootTransform;
     }
 
     private void ResolveReferences()
     {
-        if (snapManager == null)
+        if (_snapManager == null)
         {
-            LayerUtility.ResolveObject(ref snapManager);
+            LayerUtility.ResolveObject(ref _snapManager);
         }
 
-        if (wallLengthDisplay == null)
+        if (_wallLengthDisplay == null)
         {
-            LayerUtility.ResolveObject(ref wallLengthDisplay);
+            LayerUtility.ResolveObject(ref _wallLengthDisplay);
         }
 
-        if (handleManager == null)
+        if (_handleManager == null)
         {
-            LayerUtility.ResolveObject(ref handleManager);
+            LayerUtility.ResolveObject(ref _handleManager);
         }
 
-        if (wallSelectionManager == null)
+        if (_wallSelectionManager == null)
         {
-            LayerUtility.ResolveObject(ref wallSelectionManager);
+            LayerUtility.ResolveObject(ref _wallSelectionManager);
         }
 
-        if (undoRedoManager == null)
+        if (_undoRedoManager == null)
         {
-            LayerUtility.ResolveObject(ref undoRedoManager);
+            LayerUtility.ResolveObject(ref _undoRedoManager);
         }
 
-        if (modeManager == null)
+        if (_modeManager == null)
         {
-            LayerUtility.ResolveObject(ref modeManager);
+            LayerUtility.ResolveObject(ref _modeManager);
         }
     }
 
     private void ValidateConfiguration()
     {
-        Debug.Assert(mainCamera != null, $"{nameof(DrawManager)} requires {nameof(mainCamera)}.", this);
-        Debug.Assert(modeManager != null, $"{nameof(DrawManager)} requires {nameof(modeManager)}.", this);
-        Debug.Assert(handleManager != null, $"{nameof(DrawManager)} requires {nameof(handleManager)}.", this);
+        Debug.Assert(_mainCamera != null, $"{nameof(DrawManager)} requires a Main Camera.", this);
+        Debug.Assert(_modeManager != null, $"{nameof(DrawManager)} requires a Mode Manager.", this);
+        Debug.Assert(_handleManager != null, $"{nameof(DrawManager)} requires a Handle Manager.", this);
     }
 
     private void InitializeToolRuntime()
     {
-        toolRuntime = new WallToolRuntime(
-            mainCamera,
-            grid,
-            wallRoot,
-            snapManager,
-            wallLengthDisplay,
-            handleManager,
-            wallSelectionManager,
-            undoRedoManager,
-            inputProvider,
-            enablePreviewWall,
-            wallHeight,
-            wallThickness,
-            wallSurfaceOffset,
-            previewColor,
-            wallMaterial,
-            wallColor,
-            wallTopMaterial,
-            uiRaycastResults);
+        _toolRuntime = new WallToolRuntime(
+            _mainCamera,
+            _grid,
+            _wallRoot,
+            _snapManager,
+            _wallLengthDisplay,
+            _handleManager,
+            _wallSelectionManager,
+            _undoRedoManager,
+            _inputProvider,
+            _enablePreviewWall,
+            _wallHeight,
+            _wallThickness,
+            _wallSurfaceOffset,
+            _previewColor,
+            _wallMaterial,
+            _wallColor,
+            _wallTopMaterial,
+            _uiRaycastResults);
     }
 
     private void ApplyDefaultWallMaterialIfMissing()
     {
 #if UNITY_EDITOR
-        if (wallMaterial == null)
+        if (_wallMaterial == null)
         {
-            wallMaterial = AssetDatabase.LoadAssetAtPath<Material>(DefaultWallMaterialPath);
+            _wallMaterial = AssetDatabase.LoadAssetAtPath<Material>(DefaultWallMaterialPath);
         }
 #endif
     }
 
     private void InitializeToolController()
     {
-        toolController = new WallToolController(toolRuntime, doubleClickThreshold);
+        _toolController = new WallToolController(_toolRuntime, doubleClickThreshold);
     }
 
     private static WallToolInputFrame BuildToolInputFrame(EditorInputFrame inputFrame)

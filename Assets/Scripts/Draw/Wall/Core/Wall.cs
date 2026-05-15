@@ -282,13 +282,6 @@ public class Wall : MonoBehaviour
     {
         WallRegistry.Register(this);
         RefreshEndCapVisuals();
-
-        if (GetComponent<Collider>() == null || GetComponent<WallSelectionUIProxy>() != null)
-        {
-            return;
-        }
-
-        gameObject.AddComponent<WallSelectionUIProxy>();
     }
 
     private void OnDisable()

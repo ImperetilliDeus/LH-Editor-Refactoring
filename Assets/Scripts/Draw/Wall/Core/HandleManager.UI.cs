@@ -32,17 +32,24 @@ public partial class HandleManager
                 continue;
             }
 
+            if (group.endpoints.Count == 0 || !IsValidHandleWorldPoint(group.worldPoint))
+            {
+                group.handleRect.gameObject.SetActive(false);
+                continue;
+            }
+
             SetHandleScreenPosition(group.handleRect, group.worldPoint);
         }
     }
 
-    private void SetHandlesVisible(bool visible)
+    private void SetHandlesVisibleForActiveMode()
     {
         for (int i = 0; i < vertexGroups.Count; i++)
         {
-            if (vertexGroups[i]?.handleRect != null)
+            VertexGroup group = vertexGroups[i];
+            if (group?.handleRect != null)
             {
-                vertexGroups[i].handleRect.gameObject.SetActive(visible);
+                group.handleRect.gameObject.SetActive(IsHandleInteractionModeActive() && ShouldShowHandle(group));
             }
         }
     }
@@ -70,13 +77,22 @@ public partial class HandleManager
 
     private void SetHandleScreenPosition(RectTransform handleRect, Vector3 worldPoint)
     {
-        if (handleRect == null)
+        if (handleRect == null || mainCamera == null || !IsValidHandleWorldPoint(worldPoint))
         {
+            if (handleRect != null)
+            {
+                handleRect.gameObject.SetActive(false);
+            }
+
             return;
         }
 
         Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPoint);
-        bool visible = isDefaultModeActive && screenPosition.z > 0f;
+        VertexGroup group = FindGroupByHandleRect(handleRect);
+        bool visible = IsHandleInteractionModeActive() &&
+                       ShouldShowHandle(group) &&
+                       screenPosition.z > 0f &&
+                       IsValidScreenPoint(screenPosition);
         handleRect.gameObject.SetActive(visible);
         if (!visible)
         {
@@ -105,10 +121,20 @@ public partial class HandleManager
         }
     }
 
+    private static bool IsValidScreenPoint(Vector3 screenPosition)
+    {
+        return !float.IsNaN(screenPosition.x) &&
+               !float.IsNaN(screenPosition.y) &&
+               !float.IsNaN(screenPosition.z) &&
+               !float.IsInfinity(screenPosition.x) &&
+               !float.IsInfinity(screenPosition.y) &&
+               !float.IsInfinity(screenPosition.z);
+    }
+
     private RectTransform CreateHandleRect(string handleName, out Image image)
     {
         GameObject handleObject = new GameObject(handleName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        handleObject.SetActive(isDefaultModeActive);
+        handleObject.SetActive(IsHandleInteractionModeActive());
         RectTransform handleRect = handleObject.GetComponent<RectTransform>();
         handleRect.SetParent(targetCanvas.transform, false);
         handleRect.SetAsLastSibling();
@@ -213,7 +239,7 @@ public partial class HandleManager
         {
             if (vertexGroups[i]?.handleRect != null)
             {
-                Destroy(vertexGroups[i].handleRect.gameObject);
+                DestroyHandleRect(vertexGroups[i].handleRect);
             }
         }
 
@@ -232,5 +258,24 @@ public partial class HandleManager
         vertexGroups.Clear();
         groupsByVertexId.Clear();
         wallEntries.Clear();
+    }
+
+    private VertexGroup FindGroupByHandleRect(RectTransform handleRect)
+    {
+        if (handleRect == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < vertexGroups.Count; i++)
+        {
+            VertexGroup group = vertexGroups[i];
+            if (group != null && group.handleRect == handleRect)
+            {
+                return group;
+            }
+        }
+
+        return null;
     }
 }

@@ -74,15 +74,15 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private readonly List<Vector3> moveSnapCandidates = new List<Vector3>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Wall> rootWallsCache = new List<Wall>();
+    private readonly List<Transform> logicalWallRoots = new List<Transform>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
+    private readonly HashSet<GameObject> wallsInSelectionBounds = new HashSet<GameObject>();
+    private readonly HashSet<WallOpeningContainer> processedContainers = new HashSet<WallOpeningContainer>();
     private readonly WallSelectionPresentationController presentationController = new WallSelectionPresentationController();
-    private readonly WallSelectionQueryService queryService = new WallSelectionQueryService();
     private readonly WallSelectionDragController dragController = new WallSelectionDragController();
     private readonly WallSelectionDragState dragState = new WallSelectionDragState();
     private readonly WallSelectionInputController inputController = new WallSelectionInputController();
     private readonly WallSelectionInputState inputState = new WallSelectionInputState();
-    private readonly WallSelectionMutationService mutationService = new WallSelectionMutationService();
-    private readonly WallSelectionUndoRecorder undoRecorder = new WallSelectionUndoRecorder();
     private Mesh cachedCubeMesh;
     private bool rootWallsCacheDirty = true;
     private bool isShuttingDown;
@@ -109,6 +109,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         SelectWall(wall, false);
     }
 
+    public bool IsSelected(WallOpeningContainer container)
+    {
+        return selectionState.IsContainerSelected(container);
+    }
+
     public void SetSelectedWallPreservingOpeningSelection(GameObject wall)
     {
         SelectWall(wall, true);
@@ -121,7 +126,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     public void HandleWallUIClick(GameObject wallObject)
     {
-        if (wallObject == null)
+        if (wallObject == null || !IsWallUIInteractionEnabled)
         {
             return;
         }
@@ -131,7 +136,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             HandleDetailWallClick(wallObject, IsSelectionModifierPressed());
             return;
         }
-
         SelectWall(wallObject, false);
     }
 
@@ -347,7 +351,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             handleManager != null && handleManager.IsPointerOverHandle(pointerFrame.ScreenPosition),
             screenPosition =>
             {
-                bool success = queryService.TryGetWallFromMouseRay(mainCamera, wallRoot, screenPosition, out GameObject wall);
+                bool success = TryGetWallFromMouseRay(mainCamera, wallRoot, screenPosition, out GameObject wall);
                 return (success, wall);
             },
             screenPosition =>
@@ -394,13 +398,14 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void TryBeginDetailSelection(EditorPointerFrame pointerFrame)
     {
-        if (IsPointerOverUI(pointerFrame.ScreenPosition))
+        if (IsPointerOverUI(pointerFrame.ScreenPosition) ||
+            (handleManager != null && handleManager.IsPointerOverHandle(pointerFrame.ScreenPosition)))
         {
             return;
         }
 
         bool isModifierPressed = IsSelectionModifierPressed();
-        if (queryService.TryGetWallFromMouseRay(mainCamera, wallRoot, pointerFrame.ScreenPosition, out GameObject hitWall))
+        if (TryGetWallFromMouseRay(mainCamera, wallRoot, pointerFrame.ScreenPosition, out GameObject hitWall))
         {
             HandleDetailWallClick(hitWall, isModifierPressed);
             return;
@@ -473,7 +478,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             wallOpeningPlacementManager.ClearOpeningSelection();
         }
 
-        IReadOnlyCollection<GameObject> wallsInBounds = queryService.CollectWallsInSelectionBounds(
+        IReadOnlyCollection<GameObject> wallsInBounds = CollectWallsInSelectionBounds(
             multiSelectBoxCollider,
             wallRoot,
             GetRootWalls());
@@ -518,6 +523,12 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
+        if (wall.TryGetComponent(out WallOpeningContainer container))
+        {
+            selectionState.SetPrimarySelection(container);
+            return;
+        }
+
         if (!preserveOpeningSelection &&
             wallOpeningPlacementManager != null &&
             wallOpeningPlacementManager.IsOpeningDetailMenuVisible)
@@ -531,7 +542,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        selectionState.ClearDetailSelection();
+        selectionState.ClearAll();
         selectionState.SelectedWall = wall;
         RefreshSelectionVisuals();
     }
@@ -893,15 +904,24 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private void FinalizeMoveIfNeeded()
     {
-        undoRecorder.FinalizeMove(
-            isDraggingWall,
-            undoRedoManager,
-            dragState,
-            wallOpeningPlacementManager,
-            selectionState.SelectedWall,
-            moveStartWallPosition,
-            moveStartWallRotation,
-            moveStartWallScale);
+        if (!isDraggingWall || undoRedoManager == null)
+        {
+            return;
+        }
+
+        List<UndoRedoManager.OpeningLayoutChangeRecord> openingChanges =
+            BuildMoveOpeningChangeRecords(dragState, wallOpeningPlacementManager);
+        List<UndoRedoManager.WallStateChangeRecord> wallChanges =
+            BuildMoveWallStateChangeRecords(dragState, selectionState.SelectedWall, moveStartWallPosition, moveStartWallRotation, moveStartWallScale);
+
+        if (wallChanges.Count == 0 && openingChanges.Count == 0)
+        {
+            return;
+        }
+
+        undoRedoManager.ExecuteCommand(
+            new WallSelectionMoveCommand(wallChanges, openingChanges),
+            alreadyExecuted: true);
     }
 
     private void OnDestroy()
@@ -953,6 +973,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private void HandleWallHierarchyChanged()
     {
         rootWallsCacheDirty = true;
+        RefreshSelectionVisuals();
     }
 
     private void BindUIEvents()
@@ -980,11 +1001,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     {
         List<GameObject> selectedWalls = new List<GameObject>();
         GetSelectedWalls(selectedWalls);
-        if (!mutationService.TryDeleteSelectedWalls(
-                selectedWalls,
-                wallOpeningPlacementManager,
-                roomManager,
-                undoRedoManager))
+        if (!TryDeleteSelectedWalls(selectedWalls))
         {
             return;
         }
@@ -1009,5 +1026,477 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         WallHierarchyUtility.CollectWalls(wallRoot, rootWallsCache);
         rootWallsCacheDirty = false;
         return rootWallsCache;
+    }
+
+    private bool TryDeleteSelectedWalls(List<GameObject> selectedWalls)
+    {
+        if (wallOpeningPlacementManager == null || selectedWalls == null || selectedWalls.Count == 0)
+        {
+            return false;
+        }
+
+        List<UndoRedoManager.OpeningLayoutSnapshot> deletedLayouts = new List<UndoRedoManager.OpeningLayoutSnapshot>();
+        HashSet<string> processedLayoutKeys = new HashSet<string>();
+        HashSet<Wall> affectedWalls = new HashSet<Wall>();
+
+        for (int i = 0; i < selectedWalls.Count; i++)
+        {
+            GameObject wallObject = selectedWalls[i];
+            if (wallObject == null || !wallObject.TryGetComponent(out Wall wall))
+            {
+                continue;
+            }
+
+            UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(wall);
+            string key = snapshot.hasContainer
+                ? $"container:{snapshot.layoutName}"
+                : $"wall:{wallObject.GetInstanceID()}";
+            if (!processedLayoutKeys.Add(key))
+            {
+                continue;
+            }
+
+            deletedLayouts.Add(snapshot);
+            CollectAffectedWallsForDeletion(wall, snapshot, affectedWalls);
+        }
+
+        List<Room> affectedRooms = CollectAffectedRoomsForDeletion(affectedWalls);
+        undoRedoManager?.RecordDeletedLayouts(deletedLayouts, affectedRooms);
+
+        for (int i = 0; i < affectedRooms.Count; i++)
+        {
+            if (affectedRooms[i] != null)
+            {
+                roomManager.DeleteRoom(affectedRooms[i]);
+            }
+        }
+
+        for (int i = 0; i < deletedLayouts.Count; i++)
+        {
+            wallOpeningPlacementManager.ApplyLayoutSnapshot(default, deletedLayouts[i]);
+        }
+
+        return deletedLayouts.Count > 0 || affectedRooms.Count > 0;
+    }
+
+    private static void CollectAffectedWallsForDeletion(
+        Wall wall,
+        UndoRedoManager.OpeningLayoutSnapshot snapshot,
+        HashSet<Wall> affectedWalls)
+    {
+        if (wall == null)
+        {
+            return;
+        }
+
+        if (!snapshot.hasContainer)
+        {
+            affectedWalls.Add(wall);
+            return;
+        }
+
+        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+        if (container == null)
+        {
+            return;
+        }
+
+        Wall[] containerWalls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < containerWalls.Length; i++)
+        {
+            if (containerWalls[i] != null)
+            {
+                affectedWalls.Add(containerWalls[i]);
+            }
+        }
+    }
+
+    private List<Room> CollectAffectedRoomsForDeletion(HashSet<Wall> affectedWalls)
+    {
+        List<Room> affectedRooms = new List<Room>();
+        if (roomManager == null || affectedWalls == null || affectedWalls.Count == 0)
+        {
+            return affectedRooms;
+        }
+
+        List<Room> rooms = roomManager.GetAllRooms();
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            Room room = rooms[i];
+            if (room == null || room.WallSet == null)
+            {
+                continue;
+            }
+
+            foreach (Wall wall in affectedWalls)
+            {
+                if (wall != null && room.WallSet.Contains(wall))
+                {
+                    affectedRooms.Add(room);
+                    break;
+                }
+            }
+        }
+
+        return affectedRooms;
+    }
+
+    private bool TryGetWallFromMouseRay(
+        Camera camera,
+        Transform currentWallRoot,
+        Vector2 pointerScreenPosition,
+        out GameObject wall)
+    {
+        wall = null;
+        if (camera == null)
+        {
+            return false;
+        }
+
+        Ray ray = camera.ScreenPointToRay(pointerScreenPosition);
+        int wallMask = LayerUtility.GetMaskOrDefault(LayerUtility.WallLayerName);
+        if (!Physics.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity, wallMask))
+        {
+            return false;
+        }
+
+        GameObject hitObject = hitInfo.collider != null ? hitInfo.collider.gameObject : null;
+        if (hitObject == null)
+        {
+            return false;
+        }
+
+        GameObject wallObject = ResolveWallObject(hitObject, currentWallRoot);
+        if (wallObject == null)
+        {
+            return false;
+        }
+
+        wall = wallObject;
+        return true;
+    }
+
+    private IReadOnlyCollection<GameObject> CollectWallsInSelectionBounds(
+        BoxCollider selectionBoundsCollider,
+        Transform currentWallRoot,
+        List<Wall> rootWalls)
+    {
+        wallsInSelectionBounds.Clear();
+        processedContainers.Clear();
+
+        if (selectionBoundsCollider == null || currentWallRoot == null || rootWalls == null)
+        {
+            return wallsInSelectionBounds;
+        }
+
+        Bounds bounds = selectionBoundsCollider.bounds;
+        for (int i = 0; i < rootWalls.Count; i++)
+        {
+            Wall wall = rootWalls[i];
+            if (wall == null || !wall.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+            if (container != null)
+            {
+                if (!processedContainers.Add(container))
+                {
+                    continue;
+                }
+
+                if (TryGetSelectableWallFromContainerInBounds(container, bounds, out GameObject representativeWall))
+                {
+                    wallsInSelectionBounds.Add(representativeWall);
+                }
+
+                continue;
+            }
+
+            if (ContainsPointXZ(bounds, wall.Data.startPoint) && ContainsPointXZ(bounds, wall.Data.endPoint))
+            {
+                wallsInSelectionBounds.Add(wall.gameObject);
+            }
+        }
+
+        return wallsInSelectionBounds;
+    }
+
+    private static List<UndoRedoManager.OpeningLayoutChangeRecord> BuildMoveOpeningChangeRecords(
+        WallSelectionDragState currentDragState,
+        WallOpeningPlacementManager currentWallOpeningPlacementManager)
+    {
+        List<UndoRedoManager.OpeningLayoutChangeRecord> results = new List<UndoRedoManager.OpeningLayoutChangeRecord>();
+        if (currentDragState == null || currentWallOpeningPlacementManager == null)
+        {
+            return results;
+        }
+
+        if (currentDragState.SelectedOpeningContainer != null && currentDragState.HasMoveStartOpeningLayoutSnapshot)
+        {
+            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot =
+                currentWallOpeningPlacementManager.CaptureLayoutSnapshot(currentDragState.SelectedOpeningContainer);
+            if (UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(currentDragState.MoveStartOpeningLayoutSnapshot, afterSnapshot))
+            {
+                results.Add(new UndoRedoManager.OpeningLayoutChangeRecord
+                {
+                    before = currentDragState.MoveStartOpeningLayoutSnapshot,
+                    after = afterSnapshot,
+                });
+            }
+        }
+
+        foreach (KeyValuePair<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> pair in currentDragState.MoveStartConnectedOpeningSnapshots)
+        {
+            if (pair.Key == null)
+            {
+                continue;
+            }
+
+            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = currentWallOpeningPlacementManager.CaptureLayoutSnapshot(pair.Key);
+            if (!UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(pair.Value, afterSnapshot))
+            {
+                continue;
+            }
+
+            results.Add(new UndoRedoManager.OpeningLayoutChangeRecord
+            {
+                before = pair.Value,
+                after = afterSnapshot,
+            });
+        }
+
+        return results;
+    }
+
+    private static List<UndoRedoManager.WallStateChangeRecord> BuildMoveWallStateChangeRecords(
+        WallSelectionDragState currentDragState,
+        GameObject selectedWall,
+        Vector3 startWallPosition,
+        Quaternion startWallRotation,
+        Vector3 startWallScale)
+    {
+        List<UndoRedoManager.WallStateChangeRecord> results = new List<UndoRedoManager.WallStateChangeRecord>();
+        if (currentDragState == null)
+        {
+            return results;
+        }
+
+        if (currentDragState.MoveStartSnapshots.Count > 0)
+        {
+            foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in currentDragState.MoveStartSnapshots)
+            {
+                GameObject wallObject = pair.Key;
+                if (wallObject == null)
+                {
+                    continue;
+                }
+
+                UndoRedoManager.WallStateSnapshot startSnapshot = pair.Value;
+                UndoRedoManager.WallStateSnapshot endSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
+                if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(startSnapshot, endSnapshot))
+                {
+                    continue;
+                }
+
+                results.Add(new UndoRedoManager.WallStateChangeRecord
+                {
+                    before = startSnapshot,
+                    after = endSnapshot,
+                });
+            }
+
+            return results;
+        }
+
+        if (selectedWall == null)
+        {
+            return results;
+        }
+
+        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(
+            selectedWall,
+            startWallPosition,
+            startWallRotation,
+            startWallScale);
+        UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
+        if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
+        {
+            return results;
+        }
+
+        results.Add(new UndoRedoManager.WallStateChangeRecord
+        {
+            before = before,
+            after = after,
+        });
+        return results;
+    }
+
+    private bool ShouldDisplaySelectionProxyInternal(Wall wall)
+    {
+        if (wall == null)
+        {
+            return false;
+        }
+
+        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+        return container == null || GetRepresentativeWallForContainerInternal(container) == wall;
+    }
+
+    private Wall GetRepresentativeWallForContainerInternal(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        Wall representative = null;
+        float bestLengthSqr = float.MinValue;
+
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (wall == null || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            {
+                continue;
+            }
+
+            float lengthSqr = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
+            if (lengthSqr <= bestLengthSqr)
+            {
+                continue;
+            }
+
+            bestLengthSqr = lengthSqr;
+            representative = wall;
+        }
+
+        return representative;
+    }
+
+    private bool IsWallOrContainerSelectedInternal(Wall wall)
+    {
+        if (wall == null)
+        {
+            return false;
+        }
+
+        if (selectionState.IsSelected(wall.gameObject))
+        {
+            return true;
+        }
+
+        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+        if (container == null)
+        {
+            return false;
+        }
+
+        if (selectionState.SelectedWall != null && selectionState.SelectedWall.transform.IsChildOf(container.transform))
+        {
+            return true;
+        }
+
+        foreach (GameObject detailWall in selectionState.DetailSelectedWalls)
+        {
+            if (detailWall != null && detailWall.transform.IsChildOf(container.transform))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryGetSelectableWallFromContainerInBounds(WallOpeningContainer container, Bounds bounds, out GameObject representativeWall)
+    {
+        representativeWall = null;
+        if (container == null)
+        {
+            return false;
+        }
+
+        Wall[] containerWalls = container.GetComponentsInChildren<Wall>(true);
+        Wall bestWall = null;
+        float bestLength = float.MinValue;
+
+        for (int i = 0; i < containerWalls.Length; i++)
+        {
+            Wall wall = containerWalls[i];
+            if (wall == null || !wall.gameObject.activeInHierarchy || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            {
+                continue;
+            }
+
+            if (!ContainsPointXZ(bounds, wall.Data.startPoint) || !ContainsPointXZ(bounds, wall.Data.endPoint))
+            {
+                return false;
+            }
+
+            float length = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
+            if (length <= bestLength)
+            {
+                continue;
+            }
+
+            bestLength = length;
+            bestWall = wall;
+        }
+
+        if (bestWall == null)
+        {
+            return false;
+        }
+
+        representativeWall = bestWall.gameObject;
+        return true;
+    }
+
+    private bool IsWallObject(GameObject candidate, Transform currentWallRoot)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        if (LayerUtility.TryGetLayer(LayerUtility.WallLayerName, out int wallLayer) &&
+            candidate.layer != wallLayer)
+        {
+            return false;
+        }
+
+        if (currentWallRoot == null)
+        {
+            return true;
+        }
+
+        return candidate.transform.IsChildOf(currentWallRoot);
+    }
+
+    private GameObject ResolveWallObject(GameObject candidate, Transform currentWallRoot)
+    {
+        if (candidate == null)
+        {
+            return null;
+        }
+
+        Wall wall = candidate.GetComponentInParent<Wall>();
+        if (wall != null && IsWallObject(wall.gameObject, currentWallRoot))
+        {
+            return wall.gameObject;
+        }
+
+        return IsWallObject(candidate, currentWallRoot) ? candidate : null;
+    }
+
+    private static bool ContainsPointXZ(Bounds bounds, Vector3 point)
+    {
+        return point.x >= bounds.min.x &&
+               point.x <= bounds.max.x &&
+               point.z >= bounds.min.z &&
+               point.z <= bounds.max.z;
     }
 }

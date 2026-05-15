@@ -51,7 +51,8 @@ public class WallLengthDisplay : MonoBehaviour
             return;
         }
 
-        if (wallTransform.GetComponentInParent<WallOpeningContainer>() != null)
+        Wall wallComponent = wallTransform.GetComponent<Wall>();
+        if (wallComponent != null && WallHierarchyUtility.IsHiddenOpeningBaseSegment(wallComponent))
         {
             RemoveWallLabel(wallTransform);
             return;

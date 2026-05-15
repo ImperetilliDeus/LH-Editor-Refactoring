@@ -70,6 +70,11 @@ public sealed partial class RoomCreateManager
                     return;
                 }
 
+                if (!hasPointerPosition || !IsRoomCreateDoubleClick(pointerScreenPosition))
+                {
+                    return;
+                }
+
                 BeginRectangleDrag(startPoint);
             }
 
@@ -154,6 +159,11 @@ public sealed partial class RoomCreateManager
                 pendingSelectionStartMousePosition = hasPointerPosition ? pointerScreenPosition : Vector2.zero;
                 return;
             }
+        }
+
+        if (!hasPointerPosition || !IsRoomCreateDoubleClick(pointerScreenPosition))
+        {
+            return;
         }
 
         BeginPolygonDraw(startPoint);
@@ -241,5 +251,22 @@ public sealed partial class RoomCreateManager
         }
 
         BeginRectangleDrag(startPoint);
+    }
+
+    private bool IsRoomCreateDoubleClick(Vector2 pointerScreenPosition)
+    {
+        float currentTime = Time.unscaledTime;
+        float threshold = Mathf.Max(0.05f, doubleClickThreshold);
+        float distanceThreshold = Mathf.Max(0f, clickToSelectThresholdPixels);
+
+        bool isDoubleClick = lastLeftClickTime >= 0f &&
+                             currentTime - lastLeftClickTime <= threshold &&
+                             (pointerScreenPosition - lastLeftClickPosition).sqrMagnitude <=
+                             distanceThreshold * distanceThreshold;
+
+        lastLeftClickTime = currentTime;
+        lastLeftClickPosition = pointerScreenPosition;
+
+        return isDoubleClick;
     }
 }

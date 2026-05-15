@@ -3,6 +3,7 @@ using UnityEngine;
 
 internal sealed class WallSelectionState
 {
+    private readonly HashSet<WallOpeningContainer> detailSelectedContainers = new HashSet<WallOpeningContainer>();
     private readonly HashSet<GameObject> detailSelectedWalls = new HashSet<GameObject>();
     private GameObject selectedWall;
     private GameObject lastNotifiedSelectedWall;
@@ -13,9 +14,10 @@ internal sealed class WallSelectionState
         set => selectedWall = value;
     }
 
+    public HashSet<WallOpeningContainer> DetailSelectedContainers => detailSelectedContainers;
     public HashSet<GameObject> DetailSelectedWalls => detailSelectedWalls;
 
-    public int SelectedWallCount => (selectedWall != null ? 1 : 0) + detailSelectedWalls.Count;
+    public int SelectedWallCount => (selectedWall != null ? 1 : 0) + detailSelectedWalls.Count + detailSelectedContainers.Count;
 
     public void GetSelectedWalls(List<GameObject> result)
     {
@@ -37,11 +39,20 @@ internal sealed class WallSelectionState
                 result.Add(wall);
             }
         }
+
+        foreach (var container in detailSelectedContainers)
+        {
+            if (container != null)
+            {
+                result.Add(container.gameObject);
+            }
+        }
     }
 
     public void ClearDetailSelection()
     {
         detailSelectedWalls.Clear();
+        detailSelectedContainers.Clear();
     }
 
     public void ClearPrimarySelection()
@@ -53,6 +64,7 @@ internal sealed class WallSelectionState
     {
         selectedWall = null;
         detailSelectedWalls.Clear();
+        detailSelectedContainers.Clear();
     }
 
     public bool IsSelected(GameObject wallObject)
@@ -61,11 +73,28 @@ internal sealed class WallSelectionState
                (wallObject == selectedWall || detailSelectedWalls.Contains(wallObject));
     }
 
+    public bool IsContainerSelected(WallOpeningContainer container)
+    {
+        return container != null && detailSelectedContainers.Contains(container);
+    }
+
     public bool ToggleDetailSelection(GameObject wallObject)
     {
         if (wallObject == null)
         {
             return false;
+        }
+
+        if (wallObject.TryGetComponent(out WallOpeningContainer container))
+        {
+            if (detailSelectedContainers.Contains(container))
+            {
+                detailSelectedContainers.Remove(container);
+                return false;
+            }
+
+            detailSelectedContainers.Add(container);
+            return true;
         }
 
         if (detailSelectedWalls.Contains(wallObject))
@@ -105,6 +134,10 @@ internal sealed class WallSelectionState
             {
                 detailSelectedWalls.Add(wallObject);
             }
+            else if (wallObject.TryGetComponent(out WallOpeningContainer container))
+            {
+                detailSelectedContainers.Add(container);
+            }
         }
     }
 
@@ -118,5 +151,11 @@ internal sealed class WallSelectionState
 
         lastNotifiedSelectedWall = selectedWall;
         return true;
+    }
+
+    public void SetPrimarySelection(WallOpeningContainer container)
+    {
+        ClearAll();
+        detailSelectedContainers.Add(container);
     }
 }

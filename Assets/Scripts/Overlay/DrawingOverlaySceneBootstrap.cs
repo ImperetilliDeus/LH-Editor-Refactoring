@@ -501,7 +501,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
                 ImportPdf(path);
                 break;
             default:
-                overlayManager.ShowStatusOnly("筌왖?癒곕릭筌왖 ??낅뮉 ???뵬 ?類ㅻ뻼??낅빍??");
+                overlayManager.ShowStatusOnly("Unsupported file format.");
                 break;
         }
     }
@@ -515,7 +515,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
             if (!ImageConversion.LoadImage(texture, bytes, false))
             {
                 UnityEngine.Object.Destroy(texture);
-                overlayManager.ShowStatusOnly("???筌왖????? 筌륁궢六??щ빍??");
+                overlayManager.ShowStatusOnly("Failed to load the image file.");
                 return;
             }
 
@@ -525,7 +525,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
         catch (Exception exception)
         {
             UnityEngine.Debug.LogException(exception, this);
-            overlayManager.ShowStatusOnly("???筌왖 嚥≪뮆諭?餓???살첒揶쎛 獄쏆뮇源??됰뮸??덈뼄.");
+            overlayManager.ShowStatusOnly("An error occurred while importing the image.");
         }
     }
 
@@ -538,7 +538,7 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
             return;
         }
 
-        overlayManager.ShowStatusOnly($"PDF 沃섎챶?곮퉪?용┛??筌띾슢諭억쭪? 筌륁궢六??щ빍??\n{error}");
+        overlayManager.ShowStatusOnly($"Failed to create a PDF preview.\n{error}");
     }
 
     private static string ShowOpenFileDialog()
@@ -602,7 +602,7 @@ internal static class PdfThumbnailLoader
 
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
         {
-            error = "PDF ???뵬 野껋럥以덂첎? ?醫륁뒞??? ??녿뮸??덈뼄.";
+            error = "The PDF file could not be found.";
             return false;
         }
 
@@ -634,7 +634,7 @@ internal static class PdfThumbnailLoader
 
             if (hBitmap == IntPtr.Zero)
             {
-                error = "Windows Shell ?紐껉퐬??깆뱽 揶쎛?紐꾩궎筌왖 筌륁궢六??щ빍??";
+                error = "Windows Shell did not return a thumbnail image.";
                 return false;
             }
 
@@ -816,7 +816,7 @@ internal static class NativePdfThumbnail
         error = string.Empty;
         if (GetObject(hBitmap, Marshal.SizeOf<BITMAP>(), out BITMAP bitmap) == 0)
         {
-            error = "??쑵?껓쭕??類ｋ궖????? 筌륁궢六??щ빍??";
+            error = "Failed to read bitmap metadata.";
             return null;
         }
 
@@ -824,7 +824,7 @@ internal static class NativePdfThumbnail
         int height = bitmap.bmHeight;
         if (width <= 0 || height <= 0)
         {
-            error = "??쑵?껓쭕???由겼첎? ?醫륁뒞??? ??녿뮸??덈뼄.";
+            error = "The bitmap returned an invalid size.";
             return null;
         }
 
@@ -848,7 +848,7 @@ internal static class NativePdfThumbnail
         {
             if (GetDIBits(hdc, hBitmap, 0, (uint)height, bgra, ref info, DIB_RGB_COLORS) == 0)
             {
-                error = "??쑵?껓쭕????????? 筌륁궢六??щ빍??";
+                error = "Failed to copy bitmap pixel data.";
                 return null;
             }
         }
