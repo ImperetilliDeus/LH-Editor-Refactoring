@@ -76,13 +76,18 @@ public partial class HandleManager
 
     private void SetHandleScreenPosition(RectTransform handleRect, Vector3 worldPoint)
     {
-        if (handleRect == null)
+        if (handleRect == null || mainCamera == null || !IsValidHandleWorldPoint(worldPoint))
         {
+            if (handleRect != null)
+            {
+                handleRect.gameObject.SetActive(false);
+            }
+
             return;
         }
 
         Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPoint);
-        bool visible = isDefaultModeActive && screenPosition.z > 0f;
+        bool visible = isDefaultModeActive && screenPosition.z > 0f && IsValidScreenPoint(screenPosition);
         handleRect.gameObject.SetActive(visible);
         if (!visible)
         {
@@ -109,6 +114,16 @@ public partial class HandleManager
             handleRect.anchoredPosition = localPoint;
             handleRect.SetAsLastSibling();
         }
+    }
+
+    private static bool IsValidScreenPoint(Vector3 screenPosition)
+    {
+        return !float.IsNaN(screenPosition.x) &&
+               !float.IsNaN(screenPosition.y) &&
+               !float.IsNaN(screenPosition.z) &&
+               !float.IsInfinity(screenPosition.x) &&
+               !float.IsInfinity(screenPosition.y) &&
+               !float.IsInfinity(screenPosition.z);
     }
 
     private RectTransform CreateHandleRect(string handleName, out Image image)

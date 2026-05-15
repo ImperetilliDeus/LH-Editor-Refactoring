@@ -38,6 +38,25 @@ public partial class HandleManager
         wall.SetVertexIds(startId, endId);
     }
 
+    private bool HasValidWallHandleGeometry(Wall wall)
+    {
+        if (wall == null || wall.Data == null)
+        {
+            return false;
+        }
+
+        Vector3 startPoint = wall.Data.startPoint;
+        Vector3 endPoint = wall.Data.endPoint;
+        if (!IsValidHandleWorldPoint(startPoint) || !IsValidHandleWorldPoint(endPoint))
+        {
+            return false;
+        }
+
+        Vector3 delta = endPoint - startPoint;
+        delta.y = 0f;
+        return delta.sqrMagnitude >= minimumWallLength * minimumWallLength;
+    }
+
     private int FindNearestVertexId(Vector3 point)
     {
         float thresholdSqr = endpointMergeThreshold * endpointMergeThreshold;

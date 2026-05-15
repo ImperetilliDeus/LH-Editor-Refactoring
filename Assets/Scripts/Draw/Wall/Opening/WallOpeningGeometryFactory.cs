@@ -71,7 +71,7 @@ internal sealed class WallOpeningGeometryFactory
         float segmentHeight,
         float segmentBottomY)
     {
-        if (segmentHeight <= 0.01f || parent == null || cubeMesh == null || container == null || opening == null)
+        if (segmentHeight <= 0.01f || parent == null || container == null || opening == null)
         {
             return;
         }
@@ -127,7 +127,7 @@ internal sealed class WallOpeningGeometryFactory
         MeshFilter meshFilter = cubeObject.GetComponent<MeshFilter>();
         if (meshFilter != null)
         {
-            meshFilter.sharedMesh = cubeMesh;
+            meshFilter.sharedMesh = cubeMesh != null ? cubeMesh : WallMeshReferenceUtility.GetSharedCubeMesh();
         }
 
         if (withCollider)

@@ -217,6 +217,11 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
+        if (!HasValidWallHandleGeometry(wallComponent))
+        {
+            return;
+        }
+
         EnsureWallVertexIds(wallComponent);
 
         WallHandleEntry entry = new WallHandleEntry

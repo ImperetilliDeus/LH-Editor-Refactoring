@@ -9,8 +9,6 @@ public class WallVisualizer : MonoBehaviour
 
     [SerializeField] private float topFaceWorldOffset = Wall.DefaultTopFaceOffset;
 
-    private static Mesh sharedCubeMesh;
-
     private Transform startCapTransform;
     private Transform endCapTransform;
     private MeshRenderer startCapRenderer;
@@ -246,38 +244,12 @@ public class WallVisualizer : MonoBehaviour
             }
         }
 
-        meshFilter.sharedMesh = GetSharedCubeMesh();
+        meshFilter.sharedMesh = WallMeshReferenceUtility.GetSharedCubeMesh();
         meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         meshRenderer.receiveShadows = true;
         meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.BlendProbes;
         meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.BlendProbes;
         meshRenderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.Object;
-    }
-
-    private static Mesh GetSharedCubeMesh()
-    {
-        if (sharedCubeMesh != null)
-        {
-            return sharedCubeMesh;
-        }
-
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        MeshFilter meshFilter = cube.GetComponent<MeshFilter>();
-        if (meshFilter != null)
-        {
-            sharedCubeMesh = meshFilter.sharedMesh;
-        }
-
-        if (Application.isPlaying)
-        {
-            Destroy(cube);
-        }
-        else
-        {
-            DestroyImmediate(cube);
-        }
-
-        return sharedCubeMesh;
     }
 
     private static bool TryGetFlatGeometry(Vector3 start, Vector3 end, float minimumLength, out Vector3 flatDirection, out float length)
