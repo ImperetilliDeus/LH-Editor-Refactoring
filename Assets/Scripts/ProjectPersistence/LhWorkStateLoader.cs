@@ -63,7 +63,7 @@ public static class LhWorkStateLoader
             roomManager.RebuildRoomLookupForWorkStateLoad();
         }
 
-        RoomTopologyEvents.RequestRefreshForWallReplacement(System.Array.Empty<Wall>(), wallsById.Values);
+        RoomTopologyEvents.RequestRefreshAll();
         return LhWorkStateLoadResult.Ok();
     }
 
