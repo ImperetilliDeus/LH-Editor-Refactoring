@@ -93,18 +93,10 @@ public sealed class EditorViewModeManager : MonoBehaviour
         {
             topButton.onClick.AddListener(SetTopView);
         }
-        else
-        {
-            Debug.LogWarning($"{nameof(EditorViewModeManager)} is missing a top button reference.", this);
-        }
 
         if (perspectiveButton != null)
         {
             perspectiveButton.onClick.AddListener(SetPerspectiveView);
-        }
-        else
-        {
-            Debug.LogWarning($"{nameof(EditorViewModeManager)} is missing a perspective button reference.", this);
         }
 
         buttonsBound = true;
@@ -134,8 +126,8 @@ public sealed class EditorViewModeManager : MonoBehaviour
         SetEnabled(topCameraManager, topViewEnabled, nameof(topCameraManager));
         SetEnabled(perspectiveCameraManager, !topViewEnabled, nameof(perspectiveCameraManager));
         SetTopViewOnlyRootsActive(topViewEnabled);
-        SetInteractable(topButton, !topViewEnabled, nameof(topButton));
-        SetInteractable(perspectiveButton, topViewEnabled, nameof(perspectiveButton));
+        SetInteractable(topButton, !topViewEnabled);
+        SetInteractable(perspectiveButton, topViewEnabled);
     }
 
     private void SetTopViewOnlyRootsActive(bool active)
@@ -171,15 +163,11 @@ public sealed class EditorViewModeManager : MonoBehaviour
         }
     }
 
-    private void SetInteractable(Button button, bool interactable, string referenceName)
+    private void SetInteractable(Button button, bool interactable)
     {
         if (button != null)
         {
             button.interactable = interactable;
-        }
-        else
-        {
-            Debug.LogWarning($"{nameof(EditorViewModeManager)} is missing a {referenceName} reference.", this);
         }
     }
 }

@@ -105,9 +105,14 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         }
     }
 
+    private void OnDisable()
+    {
+        isPanning = false;
+    }
+
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
-        if (targetCamera == null || CameraTransform == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        if (!isActiveAndEnabled || targetCamera == null || CameraTransform == null || inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
