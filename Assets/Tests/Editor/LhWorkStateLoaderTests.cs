@@ -349,6 +349,38 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
+    public void Load_DoesNotClearCurrentWalls_WhenRoomReferencesMissingWall()
+    {
+        CreateExistingWall();
+        object state = CreateState();
+        AddRoom(
+            state,
+            "Living",
+            "living-type",
+            "RM-01",
+            "NATIVE-01",
+            "floor-a",
+            "ceiling-a",
+            false,
+            new[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                new Vector3(4f, 0f, 3f),
+                new Vector3(0f, 0f, 3f),
+            },
+            new[] { "missing-wall-id" },
+            true,
+            new[] { "missing-wall-id" });
+        object roomManager = CreateRoomManager();
+
+        object result = Load(state, wallRoot.transform, roomManager, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.False);
+        AssertExistingWallStillPresent();
+    }
+
+    [Test]
     public void Load_AssignsSingleHandleToSharedVertexCoordinates()
     {
         object state = CreateState();

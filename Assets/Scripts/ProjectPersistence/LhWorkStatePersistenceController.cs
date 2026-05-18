@@ -25,7 +25,7 @@ public class LhWorkStatePersistenceController : MonoBehaviour
     [SerializeField] private Button loadButton;
 
     [Header("Persistence")]
-    [SerializeField] private string defaultFilePath = "WorkStates/lh_work_state.json";
+    [SerializeField] private string defaultFilePath = "WorkStates/lh_work_state.lhscene";
     [SerializeField] private bool prettyPrint = true;
 
     private void Awake()

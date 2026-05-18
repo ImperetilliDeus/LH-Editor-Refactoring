@@ -132,7 +132,7 @@ public static class LhWorkStateLoader
             return wallResult;
         }
 
-        LhWorkStateLoadResult roomResult = ValidateRooms(state.rooms, roomManager);
+        LhWorkStateLoadResult roomResult = ValidateRooms(state.rooms, roomManager, state.walls);
         if (!roomResult.Success)
         {
             return roomResult;
@@ -171,7 +171,10 @@ public static class LhWorkStateLoader
         return LhWorkStateLoadResult.Ok();
     }
 
-    private static LhWorkStateLoadResult ValidateRooms(IReadOnlyList<LhWorkRoomDto> rooms, RoomManager roomManager)
+    private static LhWorkStateLoadResult ValidateRooms(
+        IReadOnlyList<LhWorkRoomDto> rooms,
+        RoomManager roomManager,
+        IReadOnlyList<LhWorkWallDto> walls)
     {
         if (rooms == null || rooms.Count == 0)
         {
@@ -183,6 +186,7 @@ public static class LhWorkStateLoader
             return LhWorkStateLoadResult.Fail("Room manager is required to load rooms.");
         }
 
+        HashSet<string> wallIds = CreateSavedWallIdSet(walls);
         for (int i = 0; i < rooms.Count; i++)
         {
             LhWorkRoomDto roomDto = rooms[i];
@@ -196,9 +200,77 @@ public static class LhWorkStateLoader
             {
                 return LhWorkStateLoadResult.Fail($"Room #{i} has invalid polygon.");
             }
+
+            LhWorkStateLoadResult wallReferenceResult = ValidateRoomWallReferences(roomDto, i, wallIds);
+            if (!wallReferenceResult.Success)
+            {
+                return wallReferenceResult;
+            }
         }
 
         return LhWorkStateLoadResult.Ok();
+    }
+
+    private static LhWorkStateLoadResult ValidateRoomWallReferences(
+        LhWorkRoomDto roomDto,
+        int roomIndex,
+        HashSet<string> savedWallIds)
+    {
+        LhWorkStateLoadResult wallIdsResult = ValidateWallIdReferences(roomDto.wallIds, roomIndex, "wall", savedWallIds);
+        if (!wallIdsResult.Success)
+        {
+            return wallIdsResult;
+        }
+
+        return ValidateWallIdReferences(roomDto.manualWallIds, roomIndex, "manual wall", savedWallIds);
+    }
+
+    private static LhWorkStateLoadResult ValidateWallIdReferences(
+        IReadOnlyList<string> references,
+        int roomIndex,
+        string label,
+        HashSet<string> savedWallIds)
+    {
+        if (references == null)
+        {
+            return LhWorkStateLoadResult.Ok();
+        }
+
+        for (int i = 0; i < references.Count; i++)
+        {
+            string wallId = references[i];
+            if (string.IsNullOrWhiteSpace(wallId))
+            {
+                continue;
+            }
+
+            if (savedWallIds == null || !savedWallIds.Contains(wallId))
+            {
+                return LhWorkStateLoadResult.Fail($"Room #{roomIndex} references missing {label} id '{wallId}'.");
+            }
+        }
+
+        return LhWorkStateLoadResult.Ok();
+    }
+
+    private static HashSet<string> CreateSavedWallIdSet(IReadOnlyList<LhWorkWallDto> walls)
+    {
+        HashSet<string> wallIds = new HashSet<string>(System.StringComparer.Ordinal);
+        if (walls == null)
+        {
+            return wallIds;
+        }
+
+        for (int i = 0; i < walls.Count; i++)
+        {
+            LhWorkWallDto wallDto = walls[i];
+            if (wallDto != null && !string.IsNullOrWhiteSpace(wallDto.id))
+            {
+                wallIds.Add(wallDto.id);
+            }
+        }
+
+        return wallIds;
     }
 
     private static LhWorkStateLoadResult ValidateFurniture(

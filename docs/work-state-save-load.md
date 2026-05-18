@@ -1,6 +1,6 @@
 # Work State Save/Load
 
-`LhWorkStatePersistenceController` saves the editable LH Editor work state to JSON and loads it by replacing the current editable state.
+`LhWorkStatePersistenceController` saves the editable LH Editor work state as a JSON-backed `.lhscene` file and loads it by replacing the current editable state.
 
 ## Saved State
 
@@ -19,7 +19,7 @@ Add `LhWorkStatePersistenceController` to a scene object and assign:
 - `Furniture Catalog`
 - Optional save/load buttons
 
-The default path is `WorkStates/lh_work_state.json` under the project root.
+The default path is `WorkStates/lh_work_state.lhscene` under the project root.
 
 ## Load Behavior
 

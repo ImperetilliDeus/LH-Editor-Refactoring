@@ -59,6 +59,18 @@ public class LhWorkStatePersistenceControllerTests
         }
     }
 
+    [Test]
+    public void ResolveDefaultPath_UsesWorkStateExtension()
+    {
+        Component controller = controllerObject.AddComponent(GetAssemblyType("LhWorkStatePersistenceController"));
+
+        string path = (string)controller.GetType()
+            .GetMethod("ResolveDefaultPath", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?.Invoke(controller, null);
+
+        Assert.That(Path.GetExtension(path), Is.EqualTo(".lhscene"));
+    }
+
     private static Type GetAssemblyType(string typeName)
     {
         Type type = Type.GetType($"{typeName}, Assembly-CSharp");
