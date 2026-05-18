@@ -10,6 +10,8 @@ MemoryCaptures/
 Recordings/
 _library_backups/
 WorkStates/
+.worktrees/
+.superpowers/
 tools/FurnitureAuthoringTool/artifacts/
 
 # Addressables / asset import artifacts
