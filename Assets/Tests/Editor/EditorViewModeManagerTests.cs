@@ -119,6 +119,40 @@ public class EditorViewModeManagerTests
         Assert.That(perspectiveButton.interactable, Is.True);
     }
 
+    [Test]
+    public void ToolbarButtons_SwitchViewModes()
+    {
+        Component manager = CreateManager(
+            out Camera topCamera,
+            out Camera perspectiveCamera,
+            out _,
+            out _,
+            out Button topButton,
+            out Button perspectiveButton);
+
+        perspectiveButton.onClick.Invoke();
+
+        Assert.That(GetCurrentViewModeName(manager), Is.EqualTo("Perspective3D"));
+        Assert.That(topCamera.enabled, Is.False);
+        Assert.That(perspectiveCamera.enabled, Is.True);
+
+        topButton.onClick.Invoke();
+
+        Assert.That(GetCurrentViewModeName(manager), Is.EqualTo("Top"));
+        Assert.That(topCamera.enabled, Is.True);
+        Assert.That(perspectiveCamera.enabled, Is.False);
+    }
+
+    [Test]
+    public void SetPerspectiveView_ToleratesMissingReferences()
+    {
+        managerObject = new GameObject("EditorViewModeManager");
+        Component manager = managerObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
+
+        Assert.DoesNotThrow(() => InvokePublic(manager, "SetPerspectiveView"));
+        Assert.That(GetCurrentViewModeName(manager), Is.EqualTo("Perspective3D"));
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,
