@@ -8,7 +8,7 @@ public static class WallRegistry
 
     public static void Register(Wall wall)
     {
-        if (wall == null)
+        if (wall == null || WallHierarchyUtility.IsPreviewWall(wall))
         {
             return;
         }
@@ -35,6 +35,12 @@ public static class WallRegistry
             return;
         }
 
+        if (WallHierarchyUtility.IsPreviewWall(wall))
+        {
+            activeWalls.Remove(wall);
+            return;
+        }
+
         RegistryChanged?.Invoke();
     }
 
@@ -49,6 +55,11 @@ public static class WallRegistry
         foreach (Wall wall in activeWalls)
         {
             if (wall == null)
+            {
+                continue;
+            }
+
+            if (WallHierarchyUtility.IsPreviewWall(wall))
             {
                 continue;
             }

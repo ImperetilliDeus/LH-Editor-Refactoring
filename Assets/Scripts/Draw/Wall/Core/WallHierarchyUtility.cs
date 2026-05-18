@@ -25,6 +25,11 @@ public static class WallHierarchyUtility
                 continue;
             }
 
+            if (IsPreviewWall(wall))
+            {
+                continue;
+            }
+
             if (!includeInactive && !wall.gameObject.activeInHierarchy)
             {
                 continue;
@@ -43,5 +48,28 @@ public static class WallHierarchyUtility
 
         MeshRenderer renderer = wall.GetComponent<MeshRenderer>();
         return renderer != null && !renderer.enabled;
+    }
+
+    public static bool IsPreviewWall(Wall wall)
+    {
+        return wall != null && IsPreviewWall(wall.transform);
+    }
+
+    public static bool IsPreviewWall(Transform wallTransform)
+    {
+        if (wallTransform == null)
+        {
+            return false;
+        }
+
+        Transform exportRoot = wallTransform;
+        WallOpeningContainer container = wallTransform.GetComponentInParent<WallOpeningContainer>();
+        if (container != null)
+        {
+            exportRoot = container.transform;
+        }
+
+        return string.Equals(exportRoot.name, "WallPreview", System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(wallTransform.name, "WallPreview", System.StringComparison.OrdinalIgnoreCase);
     }
 }

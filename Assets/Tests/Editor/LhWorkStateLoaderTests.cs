@@ -13,6 +13,8 @@ public class LhWorkStateLoaderTests
     private GameObject handleCanvasObject;
     private GameObject furniturePrefab;
     private UnityEngine.Object furnitureCatalog;
+    private GameObject sceneHierarchyObject;
+    private GameObject sceneHierarchyContentObject;
 
     [SetUp]
     public void SetUp()
@@ -31,6 +33,8 @@ public class LhWorkStateLoaderTests
         UnityEngine.Object.DestroyImmediate(handleCanvasObject);
         UnityEngine.Object.DestroyImmediate(furniturePrefab);
         UnityEngine.Object.DestroyImmediate(furnitureCatalog);
+        UnityEngine.Object.DestroyImmediate(sceneHierarchyObject);
+        UnityEngine.Object.DestroyImmediate(sceneHierarchyContentObject);
     }
 
     [Test]
@@ -88,6 +92,43 @@ public class LhWorkStateLoaderTests
         Assert.That(GetPropertyValue<bool>(wall, "SuppressEndHandle"), Is.False);
         Assert.That(GetPropertyValue<bool>(wall, "IsStartSplitPoint"), Is.False);
         Assert.That(GetPropertyValue<bool>(wall, "IsEndSplitPoint"), Is.True);
+    }
+
+    [Test]
+    public void Load_RefreshesInactiveSceneHierarchyTreeViewAfterRestore()
+    {
+        object state = CreateState();
+        AddWall(
+            state,
+            "saved-wall-id",
+            "SavedWall",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(5f, 0f, 0f),
+            0.25f,
+            3.2f,
+            1.6f,
+            10,
+            11,
+            false,
+            false,
+            false,
+            false);
+        sceneHierarchyContentObject = new GameObject("HierarchyContent", typeof(RectTransform));
+        sceneHierarchyObject = new GameObject("SceneHierarchyTreeView");
+        sceneHierarchyObject.SetActive(false);
+        Component treeView = sceneHierarchyObject.AddComponent(GetAssemblyType("SceneHierarchyTreeView"));
+        InvokeSetHierarchyReferencesForTests(
+            treeView,
+            wallRoot.transform,
+            CreateRoomList(),
+            sceneHierarchyContentObject.GetComponent<RectTransform>(),
+            null);
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(sceneHierarchyContentObject.transform.childCount, Is.EqualTo(1));
+        Assert.That(sceneHierarchyContentObject.transform.GetChild(0).name, Is.EqualTo("Wall_SavedWall"));
     }
 
     [Test]
@@ -382,7 +423,19 @@ public class LhWorkStateLoaderTests
     private static object Load(object state, Transform wallRoot, object roomManager, Transform furnitureRoot, object furnitureCatalog)
     {
         Type loaderType = GetAssemblyType("LhWorkStateLoader");
-        MethodInfo method = loaderType.GetMethod("Load", BindingFlags.Public | BindingFlags.Static);
+        MethodInfo method = loaderType.GetMethod(
+            "Load",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[]
+            {
+                GetAssemblyType("LhWorkStateDto"),
+                typeof(Transform),
+                GetAssemblyType("RoomManager"),
+                typeof(Transform),
+                GetAssemblyType("FurnitureCatalog"),
+            },
+            null);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(null, new[] { state, wallRoot, roomManager, furnitureRoot, furnitureCatalog });
     }
@@ -406,6 +459,30 @@ public class LhWorkStateLoaderTests
             null);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(null, new[] { state, wallRoot, roomManager, furnitureRoot, furnitureCatalog, services });
+    }
+
+    private static void InvokeSetHierarchyReferencesForTests(
+        Component treeView,
+        Transform testWallRoot,
+        object rooms,
+        RectTransform contentRoot,
+        Component selectionManager)
+    {
+        Type roomType = GetAssemblyType("Room");
+        Type selectionManagerType = GetAssemblyType("WallSelectionManager");
+        Type enumerableRoomType = typeof(System.Collections.Generic.IEnumerable<>).MakeGenericType(roomType);
+        MethodInfo method = treeView.GetType().GetMethod(
+            "SetReferencesForTests",
+            new[] { typeof(Transform), enumerableRoomType, typeof(RectTransform), selectionManagerType });
+        Assert.That(method, Is.Not.Null);
+        method.Invoke(treeView, new object[] { testWallRoot, rooms, contentRoot, selectionManager });
+    }
+
+    private static object CreateRoomList()
+    {
+        Type roomType = GetAssemblyType("Room");
+        Type listType = typeof(System.Collections.Generic.List<>).MakeGenericType(roomType);
+        return Activator.CreateInstance(listType);
     }
 
     private static object CreateState()

@@ -100,6 +100,7 @@ public static class LhWorkStateLoader
 
         RefreshRestoredEditorState(wallRoot, services);
         RoomTopologyEvents.RequestRefreshAll();
+        SceneHierarchyTreeView.RefreshAllInstances();
         return LhWorkStateLoadResult.Ok();
     }
 

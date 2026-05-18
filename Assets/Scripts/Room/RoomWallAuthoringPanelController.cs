@@ -421,7 +421,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
                     texts[1].text = item.metadata;
                 }
 
-                bool isSelected = AreAllIdsSelected(item.wallIds);
+                bool isSelected = HasAnyIdSelected(item.wallIds);
                 toggle.SetIsOnWithoutNotify(isSelected);
                 toggle.onValueChanged.AddListener(value => HandleWallToggleChanged(item, value));
                 item.visualState = BuildToggleVisualState(toggle, texts);
@@ -616,7 +616,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         if (item.visualState != null)
         {
-            item.visualState.isSelected = AreAllIdsSelected(item.wallIds);
+            item.visualState.isSelected = HasAnyIdSelected(item.wallIds);
             ApplyToggleVisualState(item.visualState);
         }
 
@@ -677,7 +677,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
                     continue;
                 }
 
-                bool isSelected = AreAllIdsSelected(item.wallIds);
+                bool isSelected = HasAnyIdSelected(item.wallIds);
                 item.toggle.SetIsOnWithoutNotify(isSelected);
                 if (item.visualState != null)
                 {
@@ -692,7 +692,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         }
     }
 
-    private bool AreAllIdsSelected(List<string> wallIds)
+    private bool HasAnyIdSelected(List<string> wallIds)
     {
         if (wallIds == null || wallIds.Count == 0)
         {
@@ -701,13 +701,13 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
 
         for (int i = 0; i < wallIds.Count; i++)
         {
-            if (!selectedWallIds.Contains(wallIds[i]))
+            if (selectedWallIds.Contains(wallIds[i]))
             {
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     private void UpdateHighlights()
@@ -740,7 +740,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
             return false;
         }
 
-        bool nextValue = !AreAllIdsSelected(item.wallIds);
+        bool nextValue = !HasAnyIdSelected(item.wallIds);
         if (item.toggle != null)
         {
             item.toggle.SetIsOnWithoutNotify(nextValue);
@@ -801,7 +801,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         int count = 0;
         for (int i = 0; i < wallItems.Count; i++)
         {
-            if (AreAllIdsSelected(wallItems[i].wallIds))
+            if (HasAnyIdSelected(wallItems[i].wallIds))
             {
                 count++;
             }
@@ -937,7 +937,27 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         }
 
         string wallId = wall.Data != null ? wall.Data.id : null;
-        return !string.IsNullOrWhiteSpace(wallId) && ids.Contains(wallId);
+        if (!string.IsNullOrWhiteSpace(wallId) && ids.Contains(wallId))
+        {
+            return true;
+        }
+
+        WallListItem item = FindWallItemForWall(wall);
+        if (item == null || item.wallIds == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < item.wallIds.Count; i++)
+        {
+            string itemWallId = item.wallIds[i];
+            if (!string.IsNullOrWhiteSpace(itemWallId) && ids.Contains(itemWallId))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void ApplyToggleVisualState(ToggleVisualState state)
