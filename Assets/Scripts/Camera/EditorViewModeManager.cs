@@ -24,6 +24,8 @@ public sealed class EditorViewModeManager : MonoBehaviour
     public event Action<EditorViewMode> ViewModeChanged;
 
     private bool buttonsBound;
+    private bool warnedMissingTopButton;
+    private bool warnedMissingPerspectiveButton;
 
     private void Awake()
     {
@@ -93,10 +95,18 @@ public sealed class EditorViewModeManager : MonoBehaviour
         {
             topButton.onClick.AddListener(SetTopView);
         }
+        else
+        {
+            WarnMissingOptionalButton(ref warnedMissingTopButton, nameof(topButton));
+        }
 
         if (perspectiveButton != null)
         {
             perspectiveButton.onClick.AddListener(SetPerspectiveView);
+        }
+        else
+        {
+            WarnMissingOptionalButton(ref warnedMissingPerspectiveButton, nameof(perspectiveButton));
         }
 
         buttonsBound = true;
@@ -169,5 +179,16 @@ public sealed class EditorViewModeManager : MonoBehaviour
         {
             button.interactable = interactable;
         }
+    }
+
+    private void WarnMissingOptionalButton(ref bool warned, string referenceName)
+    {
+        if (warned)
+        {
+            return;
+        }
+
+        Debug.LogWarning($"{nameof(EditorViewModeManager)} is missing optional {referenceName} reference.", this);
+        warned = true;
     }
 }
