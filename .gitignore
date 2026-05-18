@@ -9,6 +9,8 @@ UserSettings/
 MemoryCaptures/
 Recordings/
 _library_backups/
+WorkStates/
+tools/FurnitureAuthoringTool/artifacts/
 
 # Addressables / asset import artifacts
 Assets/AddressableAssetsData/*/*.bin*
