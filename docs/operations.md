@@ -48,3 +48,19 @@ Play Mode에서 빠르게 확인하는 수동 점검 체크리스트입니다.
 
 참고:
 - wall 계열 입력은 `IEditorInputProvider` 경로로 통일되어 있어, 입력 이상 시 provider 주입 상태를 먼저 확인합니다.
+
+## Top / 3D Perspective View Toggle
+
+`EditorViewModeManager` switches the same editable scene between Top View and 3D Perspective inspection.
+
+Scene wiring:
+
+- Add `EditorViewModeManager` to a scene object.
+- Assign the 2D orthographic Top camera to `Top Camera`.
+- Assign the Perspective camera to `Perspective Camera`.
+- Assign the existing `CameraManager` to `Top Camera Manager`.
+- Assign the existing `CameraManager_3D` to `Perspective Camera Manager`.
+- Add Top View-only roots such as `TopPlanContent`, `_Handle`, and other edit overlay roots to `Top View Only Roots`.
+- Assign toolbar buttons to `Top Button` and `Perspective Button`.
+
+The 3D Perspective view is inspection-only. It should not duplicate or rebuild walls, rooms, openings, or furniture.
