@@ -142,6 +142,7 @@ public sealed class EditorViewModeManager : MonoBehaviour
     {
         if (topViewOnlyRoots == null)
         {
+            Debug.LogWarning($"{nameof(EditorViewModeManager)} is missing top-view-only roots.", this);
             return;
         }
 
@@ -150,6 +151,10 @@ public sealed class EditorViewModeManager : MonoBehaviour
             if (root != null)
             {
                 root.SetActive(active);
+            }
+            else
+            {
+                Debug.LogWarning($"{nameof(EditorViewModeManager)} has a missing top-view-only root reference.", this);
             }
         }
     }
