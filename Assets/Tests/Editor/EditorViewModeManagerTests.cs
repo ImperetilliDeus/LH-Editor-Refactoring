@@ -239,6 +239,67 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void PerspectiveCameraManager_SyncsRotationStateFromCameraTransform()
+    {
+        GameObject cameraObject = new GameObject("PerspectiveCamera");
+        cameraObject.SetActive(false);
+
+        try
+        {
+            Camera perspectiveCamera = cameraObject.AddComponent<Camera>();
+            Component cameraManager = cameraObject.AddComponent(GetAssemblyType("CameraManager_3D"));
+            SetPrivateField(cameraManager, "targetCamera", perspectiveCamera);
+            perspectiveCamera.transform.rotation = Quaternion.Euler(35f, 125f, 0f);
+
+            InvokePublic(cameraManager, "SyncRotationFromCameraTransform");
+
+            Assert.That(GetPrivateField<float>(cameraManager, "yaw"), Is.EqualTo(125f).Within(0.001f));
+            Assert.That(GetPrivateField<float>(cameraManager, "pitch"), Is.EqualTo(35f).Within(0.001f));
+        }
+        finally
+        {
+            DestroyObject(cameraObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveFraming_SyncsSeparateCameraManagerAfterFrame()
+    {
+        GameObject cameraObject = new GameObject("PerspectiveCamera");
+        GameObject cameraManagerObject = new GameObject("PerspectiveCameraManager");
+        GameObject framingObject = new GameObject("PerspectiveCameraFramingController");
+        cameraManagerObject.SetActive(false);
+
+        try
+        {
+            Camera perspectiveCamera = cameraObject.AddComponent<Camera>();
+            Component cameraManager = cameraManagerObject.AddComponent(GetAssemblyType("CameraManager_3D"));
+            Component framingController = framingObject.AddComponent(GetAssemblyType("PerspectiveCameraFramingController"));
+
+            SetPrivateField(cameraManager, "targetCamera", perspectiveCamera);
+            SetPrivateField(framingController, "perspectiveCamera", perspectiveCamera);
+            SetPrivateField(framingController, "perspectiveCameraManager", cameraManager);
+            SetPrivateField(framingController, "defaultYaw", -35f);
+            SetPrivateField(framingController, "defaultPitch", 45f);
+
+            object result = InvokePublicWithResult(
+                framingController,
+                "FrameBounds",
+                new Bounds(Vector3.zero, new Vector3(10f, 3f, 8f)));
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(GetPrivateField<float>(cameraManager, "yaw"), Is.EqualTo(perspectiveCamera.transform.eulerAngles.y).Within(0.001f));
+            Assert.That(GetPrivateField<float>(cameraManager, "pitch"), Is.EqualTo(NormalizePitchForTest(perspectiveCamera.transform.eulerAngles.x)).Within(0.001f));
+        }
+        finally
+        {
+            DestroyObject(framingObject);
+            DestroyObject(cameraManagerObject);
+            DestroyObject(cameraObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveFraming_FitsWideBoundsForNarrowAspect()
     {
         GameObject cameraObject = new GameObject("PerspectiveCamera");
@@ -518,6 +579,18 @@ public class EditorViewModeManagerTests
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.That(field, Is.Not.Null, $"Expected private field {fieldName} on {target.GetType().Name}.");
         field.SetValue(target, value);
+    }
+
+    private static T GetPrivateField<T>(Component target, string fieldName)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(field, Is.Not.Null, $"Expected private field {fieldName} on {target.GetType().Name}.");
+        return (T)field.GetValue(target);
+    }
+
+    private static float NormalizePitchForTest(float eulerX)
+    {
+        return eulerX > 180f ? eulerX - 360f : eulerX;
     }
 
     private static void InvokePublic(Component manager, string methodName)

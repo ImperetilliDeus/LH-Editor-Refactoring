@@ -10,6 +10,7 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
 
     [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private Camera perspectiveCamera;
+    [SerializeField] private CameraManager_3D perspectiveCameraManager;
     [SerializeField] private Transform wallRoot;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
@@ -95,6 +96,7 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
 
         cameraTransform.position = center - forward * distance;
         cameraTransform.LookAt(center, Vector3.up);
+        SyncPerspectiveCameraManagerRotation();
         return true;
     }
 
@@ -165,6 +167,7 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
     {
         LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref perspectiveCamera);
+        ResolvePerspectiveCameraManager();
         LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallSelectionManager);
@@ -179,6 +182,27 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
                 gridObject = gridTransform.gameObject;
             }
         }
+    }
+
+    private void ResolvePerspectiveCameraManager()
+    {
+        if (perspectiveCameraManager != null)
+        {
+            return;
+        }
+
+        if (perspectiveCamera != null)
+        {
+            perspectiveCameraManager = perspectiveCamera.GetComponent<CameraManager_3D>();
+        }
+
+        LayerUtility.ResolveObject(ref perspectiveCameraManager);
+    }
+
+    private void SyncPerspectiveCameraManagerRotation()
+    {
+        ResolvePerspectiveCameraManager();
+        perspectiveCameraManager?.SyncRotationFromCameraTransform();
     }
 
     private void BindEvents()

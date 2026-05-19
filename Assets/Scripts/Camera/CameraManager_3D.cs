@@ -122,6 +122,19 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         HandleZoom(inputFrame);
     }
 
+    public void SyncRotationFromCameraTransform()
+    {
+        Transform cameraTransform = CameraTransform;
+        if (cameraTransform == null)
+        {
+            return;
+        }
+
+        Vector3 currentEuler = cameraTransform.eulerAngles;
+        yaw = currentEuler.y;
+        pitch = Mathf.Clamp(NormalizePitch(currentEuler.x), minPitch, maxPitch);
+    }
+
     private void HandlePan(EditorInputFrame inputFrame)
     {
         if (inputFrame.MiddlePressedThisFrame)
