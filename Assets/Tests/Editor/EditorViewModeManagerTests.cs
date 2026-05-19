@@ -305,6 +305,35 @@ public class EditorViewModeManagerTests
         }
     }
 
+    [Test]
+    public void PerspectiveHighlight_CreatesAndClearsTransientHighlight()
+    {
+        GameObject selectedObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", selectedObject);
+
+            Assert.That(created, Is.True);
+            Transform highlightRoot = controllerObject.transform.Find("PerspectiveSelectionHighlights");
+            Assert.That(highlightRoot, Is.Not.Null);
+            Assert.That(highlightRoot.Find("PerspectiveSelectionHighlight"), Is.Not.Null);
+            Assert.That(selectedObject.transform.Find("PerspectiveSelectionHighlight"), Is.Null);
+
+            InvokePublic(controller, "ClearHighlight");
+
+            Assert.That(controllerObject.transform.Find("PerspectiveSelectionHighlights"), Is.Null);
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(selectedObject);
+        }
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,

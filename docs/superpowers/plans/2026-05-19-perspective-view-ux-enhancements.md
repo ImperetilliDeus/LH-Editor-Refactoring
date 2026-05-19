@@ -618,7 +618,7 @@ git commit -m "Focus perspective camera on selection"
 - Create: `Assets/Scripts/Camera/PerspectiveSelectionHighlightController.cs`
 - Test: `Assets/Tests/Editor/EditorViewModeManagerTests.cs`
 
-- [ ] **Step 1: Add failing highlight tests**
+- [x] **Step 1: Add failing highlight tests**
 
 Append:
 
@@ -644,11 +644,11 @@ public void PerspectiveHighlight_CreatesAndClearsTransientHighlight()
 }
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 Expected: FAIL because `PerspectiveSelectionHighlightController` does not exist.
 
-- [ ] **Step 3: Implement highlight controller**
+- [x] **Step 3: Implement highlight controller**
 
 Create `Assets/Scripts/Camera/PerspectiveSelectionHighlightController.cs`:
 
@@ -894,11 +894,11 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 }
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run focused Unity command and inspect XML/logs.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```powershell
 git add -- 'Assets/Scripts/Camera/PerspectiveSelectionHighlightController.cs' 'Assets/Tests/Editor/EditorViewModeManagerTests.cs'
