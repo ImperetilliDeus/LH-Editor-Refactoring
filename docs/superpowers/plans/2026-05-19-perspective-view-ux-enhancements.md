@@ -912,7 +912,7 @@ git commit -m "Add read only perspective selection highlight"
 **Files:**
 - Modify: `docs/operations.md`
 
-- [ ] **Step 1: Update operations documentation**
+- [x] **Step 1: Update operations documentation**
 
 Append under the existing `Top / 3D Perspective View Toggle` section:
 
@@ -934,7 +934,7 @@ Manual QA:
 - Returning to Top clears transient 3D highlight and restores Top View overlays.
 ```
 
-- [ ] **Step 2: Commit Task 5**
+- [x] **Step 2: Commit Task 5**
 
 ```powershell
 git add -- 'docs/operations.md'

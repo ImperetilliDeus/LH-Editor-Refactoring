@@ -64,3 +64,18 @@ Scene wiring:
 - Assign toolbar buttons to `Top Button` and `Perspective Button`.
 
 The 3D Perspective view is inspection-only. It should not duplicate or rebuild walls, rooms, openings, or furniture.
+
+Additional 3D inspection wiring:
+
+- Add `EditorViewModeToolbarPresenter` and assign the same Top / 3D buttons plus optional icon/background images.
+- Add `PerspectiveCameraFramingController` and assign `Editor View Mode Manager`, `Perspective Camera`, `Walls`, `Room Manager`, `FurnitureRoot`, and optional `Grid`.
+- Add `PerspectiveSelectionHighlightController` and assign `Editor View Mode Manager`, `Wall Selection Manager`, `Room Authoring Panel Manager`, and optional highlight material.
+
+Manual QA:
+
+- Top / 3D buttons visibly show the active view.
+- Entering 3D with no selection frames the whole editable scene.
+- Entering 3D with a selected room frames that room.
+- Entering 3D with a selected wall frames that wall.
+- 3D selection highlight appears only in Perspective view.
+- Returning to Top clears transient 3D highlight and restores Top View overlays.
