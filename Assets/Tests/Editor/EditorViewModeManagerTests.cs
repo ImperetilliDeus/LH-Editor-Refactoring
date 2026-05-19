@@ -306,6 +306,75 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void PerspectiveFraming_IgnoresLargeGridWhenContentExists()
+    {
+        GameObject framingObject = new GameObject("PerspectiveCameraFramingController");
+        GameObject wallRootObject = new GameObject("Walls");
+        GameObject wallObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject gridObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+        try
+        {
+            wallObject.name = "Wall";
+            wallObject.transform.SetParent(wallRootObject.transform);
+            wallObject.transform.position = Vector3.zero;
+            wallObject.transform.localScale = new Vector3(10f, 3f, 8f);
+
+            gridObject.name = "Grid";
+            gridObject.transform.position = Vector3.zero;
+            gridObject.transform.localScale = new Vector3(5000f, 0.01f, 5000f);
+
+            Component framingController = framingObject.AddComponent(GetAssemblyType("PerspectiveCameraFramingController"));
+            SetPrivateField(framingController, "wallRoot", wallRootObject.transform);
+            SetPrivateField(framingController, "gridObject", gridObject);
+
+            object[] arguments = { null };
+            object result = InvokePublicWithResult(framingController, "TryGetSceneBounds", arguments);
+            Bounds sceneBounds = (Bounds)arguments[0];
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(sceneBounds.size.x, Is.LessThan(100f));
+            Assert.That(sceneBounds.size.z, Is.LessThan(100f));
+        }
+        finally
+        {
+            DestroyObject(gridObject);
+            DestroyObject(wallObject);
+            DestroyObject(wallRootObject);
+            DestroyObject(framingObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveFraming_UsesLimitedFallbackWhenOnlyGridExists()
+    {
+        GameObject framingObject = new GameObject("PerspectiveCameraFramingController");
+        GameObject gridObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+        try
+        {
+            gridObject.name = "Grid";
+            gridObject.transform.localScale = new Vector3(5000f, 0.01f, 5000f);
+
+            Component framingController = framingObject.AddComponent(GetAssemblyType("PerspectiveCameraFramingController"));
+            SetPrivateField(framingController, "gridObject", gridObject);
+            SetPrivateField(framingController, "emptySceneFallbackBoundsSize", new Vector3(100f, 10f, 100f));
+
+            object[] arguments = { null };
+            object result = InvokePublicWithResult(framingController, "TryGetSceneBounds", arguments);
+            Bounds sceneBounds = (Bounds)arguments[0];
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(sceneBounds.size, Is.EqualTo(new Vector3(100f, 10f, 100f)));
+        }
+        finally
+        {
+            DestroyObject(gridObject);
+            DestroyObject(framingObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlight_CreatesAndClearsTransientHighlight()
     {
         GameObject selectedObject = GameObject.CreatePrimitive(PrimitiveType.Cube);

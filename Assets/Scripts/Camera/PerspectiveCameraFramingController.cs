@@ -16,6 +16,9 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private Transform furnitureRoot;
     [SerializeField] private GameObject gridObject;
+    [SerializeField] private bool includeGridInSceneBounds;
+    [SerializeField] private Vector3 emptySceneFallbackBoundsCenter = Vector3.zero;
+    [SerializeField] private Vector3 emptySceneFallbackBoundsSize = new Vector3(100f, 10f, 100f);
     [SerializeField] private float defaultYaw = -35f;
     [SerializeField] private float defaultPitch = 45f;
     [SerializeField] private float distancePadding = 1.2f;
@@ -49,6 +52,10 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
         distancePadding = Mathf.Max(0.01f, distancePadding);
         minDistance = Mathf.Max(0.01f, minDistance);
         maxDistance = Mathf.Max(minDistance, maxDistance);
+        emptySceneFallbackBoundsSize = new Vector3(
+            Mathf.Max(0.01f, emptySceneFallbackBoundsSize.x),
+            Mathf.Max(0.01f, emptySceneFallbackBoundsSize.y),
+            Mathf.Max(0.01f, emptySceneFallbackBoundsSize.z));
     }
 
     public bool FocusCurrentSelectionOrScene()
@@ -99,9 +106,13 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
         EncapsulateHierarchyBounds(wallRoot, ref bounds, ref hasBounds);
         EncapsulateRoomBounds(ref bounds, ref hasBounds);
         EncapsulateHierarchyBounds(furnitureRoot, ref bounds, ref hasBounds);
-        EncapsulateGameObjectBounds(gridObject, ref bounds, ref hasBounds);
 
-        return hasBounds;
+        if (includeGridInSceneBounds)
+        {
+            EncapsulateGameObjectBounds(gridObject, ref bounds, ref hasBounds);
+        }
+
+        return hasBounds || TryGetEmptySceneFallbackBounds(out bounds);
     }
 
     public bool TryGetSelectionBounds(out Bounds bounds)
@@ -324,6 +335,12 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
                 EncapsulatePoint(cachedRoomVertices[j], ref bounds, ref hasBounds);
             }
         }
+    }
+
+    private bool TryGetEmptySceneFallbackBounds(out Bounds bounds)
+    {
+        bounds = new Bounds(emptySceneFallbackBoundsCenter, emptySceneFallbackBoundsSize);
+        return bounds.extents.sqrMagnitude > BoundsEpsilon * BoundsEpsilon;
     }
 
     private static void EncapsulateHierarchyBounds(Transform root, ref Bounds bounds, ref bool hasBounds)
