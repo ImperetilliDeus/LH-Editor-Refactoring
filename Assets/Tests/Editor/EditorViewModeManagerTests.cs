@@ -144,6 +144,57 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void ToolbarPresenter_UpdatesButtonColorsWhenViewChanges()
+    {
+        Component manager = CreateManager(
+            out _,
+            out _,
+            out _,
+            out _,
+            out Button topButton,
+            out Button perspectiveButton);
+        Image topImage = topButton.gameObject.AddComponent<Image>();
+        Image perspectiveImage = perspectiveButton.gameObject.AddComponent<Image>();
+        Color activeColor = Color.green;
+        Color inactiveColor = Color.gray;
+        GameObject presenterObject = new GameObject("ToolbarPresenter");
+        presenterObject.SetActive(false);
+
+        try
+        {
+            Component presenter = presenterObject.AddComponent(GetAssemblyType("EditorViewModeToolbarPresenter"));
+            SetPresenterReferences(
+                presenter,
+                manager,
+                topButton,
+                perspectiveButton,
+                topImage,
+                perspectiveImage,
+                activeColor,
+                inactiveColor);
+
+            presenterObject.SetActive(true);
+
+            Assert.That(topImage.color, Is.EqualTo(activeColor));
+            Assert.That(perspectiveImage.color, Is.EqualTo(inactiveColor));
+
+            InvokePublic(manager, "SetPerspectiveView");
+
+            Assert.That(topImage.color, Is.EqualTo(inactiveColor));
+            Assert.That(perspectiveImage.color, Is.EqualTo(activeColor));
+
+            DestroyObject(presenterObject);
+            presenterObject = null;
+
+            Assert.DoesNotThrow(() => InvokePublic(manager, "SetTopView"));
+        }
+        finally
+        {
+            DestroyObject(presenterObject);
+        }
+    }
+
+    [Test]
     public void SetPerspectiveView_ToleratesMissingReferences()
     {
         managerObject = new GameObject("EditorViewModeManager");
@@ -242,6 +293,32 @@ public class EditorViewModeManagerTests
                 topButton,
                 perspectiveButton,
             });
+    }
+
+    private static void SetPresenterReferences(
+        Component presenter,
+        Component manager,
+        Button topButton,
+        Button perspectiveButton,
+        Image topImage,
+        Image perspectiveImage,
+        Color activeColor,
+        Color inactiveColor)
+    {
+        SetPrivateField(presenter, "viewModeManager", manager);
+        SetPrivateField(presenter, "topButton", topButton);
+        SetPrivateField(presenter, "perspectiveButton", perspectiveButton);
+        SetPrivateField(presenter, "topButtonBackground", topImage);
+        SetPrivateField(presenter, "perspectiveButtonBackground", perspectiveImage);
+        SetPrivateField(presenter, "activeColor", activeColor);
+        SetPrivateField(presenter, "inactiveColor", inactiveColor);
+    }
+
+    private static void SetPrivateField(Component target, string fieldName, object value)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(field, Is.Not.Null, $"Expected private field {fieldName} on {target.GetType().Name}.");
+        field.SetValue(target, value);
     }
 
     private static void InvokePublic(Component manager, string methodName)

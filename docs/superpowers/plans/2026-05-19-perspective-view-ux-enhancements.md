@@ -37,7 +37,7 @@
 - Create: `Assets/Scripts/Camera/EditorViewModeToolbarPresenter.cs`
 - Test: `Assets/Tests/Editor/EditorViewModeManagerTests.cs`
 
-- [ ] **Step 1: Add failing presenter tests**
+- [x] **Step 1: Add failing presenter tests**
 
 Append these tests to `EditorViewModeManagerTests.cs`, using reflection helpers like the existing tests:
 
@@ -109,7 +109,7 @@ private static void SetPrivateField(Component target, string fieldName, object v
 }
 ```
 
-- [ ] **Step 2: Run the focused tests and verify they fail**
+- [x] **Step 2: Run the focused tests and verify they fail**
 
 Run:
 
@@ -119,7 +119,7 @@ Run:
 
 Expected: FAIL because `EditorViewModeToolbarPresenter` does not exist. In this environment Unity may exit `0` without producing XML; if that happens, inspect `Editor.log` for compiler errors.
 
-- [ ] **Step 3: Implement `EditorViewModeToolbarPresenter`**
+- [x] **Step 3: Implement `EditorViewModeToolbarPresenter`**
 
 Create `Assets/Scripts/Camera/EditorViewModeToolbarPresenter.cs`:
 
@@ -215,7 +215,7 @@ public sealed class EditorViewModeToolbarPresenter : MonoBehaviour
 }
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run the Unity command from Step 2.
 
