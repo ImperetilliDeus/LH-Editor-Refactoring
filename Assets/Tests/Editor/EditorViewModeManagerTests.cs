@@ -204,6 +204,71 @@ public class EditorViewModeManagerTests
         Assert.That(GetCurrentViewModeName(manager), Is.EqualTo("Perspective3D"));
     }
 
+    [Test]
+    public void PerspectiveFraming_FramesProvidedBounds()
+    {
+        GameObject cameraObject = new GameObject("PerspectiveCamera");
+        GameObject framingObject = new GameObject("PerspectiveCameraFramingController");
+
+        try
+        {
+            Camera perspectiveCamera = cameraObject.AddComponent<Camera>();
+            perspectiveCamera.fieldOfView = 60f;
+            Component framingController = framingObject.AddComponent(GetAssemblyType("PerspectiveCameraFramingController"));
+
+            SetPrivateField(framingController, "perspectiveCamera", perspectiveCamera);
+            SetPrivateField(framingController, "defaultYaw", -35f);
+            SetPrivateField(framingController, "defaultPitch", 45f);
+            SetPrivateField(framingController, "distancePadding", 1.2f);
+
+            object result = InvokePublicWithResult(
+                framingController,
+                "FrameBounds",
+                new Bounds(Vector3.zero, new Vector3(10f, 3f, 8f)));
+
+            Assert.That(result, Is.EqualTo(true));
+            Assert.That(perspectiveCamera.transform.position, Is.Not.EqualTo(Vector3.zero));
+            float centerDot = Vector3.Dot(perspectiveCamera.transform.forward, (Vector3.zero - perspectiveCamera.transform.position).normalized);
+            Assert.That(centerDot, Is.GreaterThan(0.98f));
+        }
+        finally
+        {
+            DestroyObject(framingObject);
+            DestroyObject(cameraObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveFraming_FitsWideBoundsForNarrowAspect()
+    {
+        GameObject cameraObject = new GameObject("PerspectiveCamera");
+        GameObject framingObject = new GameObject("PerspectiveCameraFramingController");
+
+        try
+        {
+            Camera perspectiveCamera = cameraObject.AddComponent<Camera>();
+            perspectiveCamera.fieldOfView = 60f;
+            perspectiveCamera.aspect = 0.5f;
+            Component framingController = framingObject.AddComponent(GetAssemblyType("PerspectiveCameraFramingController"));
+            Bounds wideBounds = new Bounds(Vector3.zero, new Vector3(30f, 2f, 2f));
+
+            SetPrivateField(framingController, "perspectiveCamera", perspectiveCamera);
+            SetPrivateField(framingController, "defaultYaw", 0f);
+            SetPrivateField(framingController, "defaultPitch", 30f);
+            SetPrivateField(framingController, "distancePadding", 1.2f);
+
+            object result = InvokePublicWithResult(framingController, "FrameBounds", wideBounds);
+
+            Assert.That(result, Is.EqualTo(true));
+            AssertBoundsVisible(perspectiveCamera, wideBounds);
+        }
+        finally
+        {
+            DestroyObject(framingObject);
+            DestroyObject(cameraObject);
+        }
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,
@@ -326,6 +391,38 @@ public class EditorViewModeManagerTests
         MethodInfo method = manager.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
         Assert.That(method, Is.Not.Null);
         method.Invoke(manager, Array.Empty<object>());
+    }
+
+    private static object InvokePublicWithResult(Component target, string methodName, params object[] arguments)
+    {
+        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(method, Is.Not.Null);
+        return method.Invoke(target, arguments);
+    }
+
+    private static void AssertBoundsVisible(Camera camera, Bounds bounds)
+    {
+        Vector3 min = bounds.min;
+        Vector3 max = bounds.max;
+        Vector3[] corners =
+        {
+            new Vector3(min.x, min.y, min.z),
+            new Vector3(min.x, min.y, max.z),
+            new Vector3(min.x, max.y, min.z),
+            new Vector3(min.x, max.y, max.z),
+            new Vector3(max.x, min.y, min.z),
+            new Vector3(max.x, min.y, max.z),
+            new Vector3(max.x, max.y, min.z),
+            new Vector3(max.x, max.y, max.z),
+        };
+
+        for (int i = 0; i < corners.Length; i++)
+        {
+            Vector3 viewportPoint = camera.WorldToViewportPoint(corners[i]);
+            Assert.That(viewportPoint.z, Is.GreaterThan(0f));
+            Assert.That(viewportPoint.x, Is.InRange(-0.001f, 1.001f));
+            Assert.That(viewportPoint.y, Is.InRange(-0.001f, 1.001f));
+        }
     }
 
     private static string GetCurrentViewModeName(Component manager)

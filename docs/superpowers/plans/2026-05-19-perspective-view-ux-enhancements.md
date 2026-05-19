@@ -236,7 +236,7 @@ git commit -m "Add view mode toolbar presenter"
 - Create: `Assets/Scripts/Camera/PerspectiveCameraFramingController.cs`
 - Test: `Assets/Tests/Editor/EditorViewModeManagerTests.cs`
 
-- [ ] **Step 1: Add failing framing tests**
+- [x] **Step 1: Add failing framing tests**
 
 Append:
 
@@ -279,13 +279,13 @@ private static object InvokePublicWithResult(Component target, string methodName
 }
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 Run the focused Unity command.
 
 Expected: FAIL because `PerspectiveCameraFramingController` does not exist.
 
-- [ ] **Step 3: Implement framing controller**
+- [x] **Step 3: Implement framing controller**
 
 Create `Assets/Scripts/Camera/PerspectiveCameraFramingController.cs`:
 
@@ -488,11 +488,11 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
 }
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run the focused Unity command and inspect XML or compiler log.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```powershell
 git add -- 'Assets/Scripts/Camera/PerspectiveCameraFramingController.cs' 'Assets/Tests/Editor/EditorViewModeManagerTests.cs'
