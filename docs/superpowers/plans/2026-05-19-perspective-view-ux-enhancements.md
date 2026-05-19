@@ -507,7 +507,7 @@ git commit -m "Frame perspective camera on view entry"
 - Modify: `Assets/Scripts/Camera/PerspectiveCameraFramingController.cs`
 - Test: `Assets/Tests/Editor/EditorViewModeManagerTests.cs`
 
-- [ ] **Step 1: Add failing selection priority test**
+- [x] **Step 1: Add failing selection priority test**
 
 Append:
 
@@ -533,11 +533,11 @@ public void PerspectiveFraming_UsesExplicitSelectionBoundsBeforeSceneBounds()
 }
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 Expected: FAIL because `FrameSelectionOrSceneBoundsForTests` does not exist.
 
-- [ ] **Step 3: Implement selection-aware focus**
+- [x] **Step 3: Implement selection-aware focus**
 
 Modify `PerspectiveCameraFramingController`:
 
@@ -599,11 +599,11 @@ public bool FrameSelectionOrSceneBoundsForTests(Bounds selectionBounds, bool has
 }
 ```
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run Unity command and inspect results/logs.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```powershell
 git add -- 'Assets/Scripts/Camera/PerspectiveCameraFramingController.cs' 'Assets/Tests/Editor/EditorViewModeManagerTests.cs'

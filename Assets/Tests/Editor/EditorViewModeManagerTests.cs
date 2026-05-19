@@ -269,6 +269,42 @@ public class EditorViewModeManagerTests
         }
     }
 
+    [Test]
+    public void PerspectiveFraming_UsesExplicitSelectionBoundsBeforeSceneBounds()
+    {
+        GameObject cameraObject = new GameObject("PerspectiveCamera");
+        GameObject framingObject = new GameObject("PerspectiveCameraFramingController");
+
+        try
+        {
+            Camera perspectiveCamera = cameraObject.AddComponent<Camera>();
+            perspectiveCamera.fieldOfView = 60f;
+            Component framingController = framingObject.AddComponent(GetAssemblyType("PerspectiveCameraFramingController"));
+            Bounds selectionBounds = new Bounds(new Vector3(20f, 0f, 0f), new Vector3(2f, 2f, 2f));
+            Bounds sceneBounds = new Bounds(Vector3.zero, new Vector3(30f, 2f, 30f));
+
+            SetPrivateField(framingController, "perspectiveCamera", perspectiveCamera);
+
+            object result = InvokePublicWithResult(
+                framingController,
+                "FrameSelectionOrSceneBoundsForTests",
+                selectionBounds,
+                true,
+                sceneBounds,
+                true);
+
+            Assert.That(result, Is.EqualTo(true));
+            Vector3 targetDirection = (selectionBounds.center - perspectiveCamera.transform.position).normalized;
+            float centerDot = Vector3.Dot(perspectiveCamera.transform.forward, targetDirection);
+            Assert.That(centerDot, Is.GreaterThan(0.98f));
+        }
+        finally
+        {
+            DestroyObject(framingObject);
+            DestroyObject(cameraObject);
+        }
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,
