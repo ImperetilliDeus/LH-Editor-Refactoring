@@ -11,6 +11,7 @@ public class FurnitureMenuController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private FurniturePlacementManager placementManager;
     [SerializeField] private FurnitureCatalog catalog;
     [SerializeField] private UiReferenceSettings uiReferenceSettings;
@@ -74,6 +75,12 @@ public class FurnitureMenuController : MonoBehaviour
             modeManager.ModeChanged -= HandleModeChanged;
             modeManager.ModeChanged += HandleModeChanged;
         }
+
+        if (viewModeManager != null)
+        {
+            viewModeManager.ViewModeChanged -= HandleViewModeChanged;
+            viewModeManager.ViewModeChanged += HandleViewModeChanged;
+        }
     }
 
     private void UnbindEvents()
@@ -81,6 +88,11 @@ public class FurnitureMenuController : MonoBehaviour
         if (modeManager != null)
         {
             modeManager.ModeChanged -= HandleModeChanged;
+        }
+
+        if (viewModeManager != null)
+        {
+            viewModeManager.ViewModeChanged -= HandleViewModeChanged;
         }
     }
 
@@ -91,6 +103,11 @@ public class FurnitureMenuController : MonoBehaviour
         {
             RebuildMenu();
         }
+    }
+
+    private void HandleViewModeChanged(EditorViewMode viewMode)
+    {
+        UpdateMenuVisibility();
     }
 
     private void UpdateMenuVisibility()
@@ -105,11 +122,18 @@ public class FurnitureMenuController : MonoBehaviour
             return;
         }
 
-        bool visible = modeManager != null && modeManager.IsMode(EditorMode.FurniturePlace);
+        bool visible = modeManager != null &&
+                       modeManager.IsMode(EditorMode.FurniturePlace) &&
+                       IsTopViewActive();
         if (furnitureMenuRoot.activeSelf != visible)
         {
             furnitureMenuRoot.SetActive(visible);
         }
+    }
+
+    private bool IsTopViewActive()
+    {
+        return viewModeManager == null || viewModeManager.CurrentViewMode == EditorViewMode.Top;
     }
 
     private void CreateButton(FurnitureCatalogItem item)
@@ -289,6 +313,11 @@ public class FurnitureMenuController : MonoBehaviour
         if (modeManager == null)
         {
             LayerUtility.ResolveObject(ref modeManager);
+        }
+
+        if (viewModeManager == null)
+        {
+            LayerUtility.ResolveObject(ref viewModeManager);
         }
 
         if (placementManager == null)

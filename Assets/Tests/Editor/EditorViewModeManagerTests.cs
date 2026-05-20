@@ -636,6 +636,91 @@ public class EditorViewModeManagerTests
         }
     }
 
+    [Test]
+    public void FurnitureMenu_IsVisibleOnlyInTopFurnitureMode()
+    {
+        GameObject modeObject = new GameObject("ModeManager");
+        GameObject viewModeObject = new GameObject("EditorViewModeManager");
+        GameObject menuRoot = new GameObject("_FurnishMenu");
+        GameObject controllerObject = new GameObject("FurnitureMenuController");
+        controllerObject.SetActive(false);
+
+        try
+        {
+            Component modeManager = modeObject.AddComponent(GetAssemblyType("ModeManager"));
+            Component viewModeManager = viewModeObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
+            Component controller = controllerObject.AddComponent(GetAssemblyType("FurnitureMenuController"));
+            SetPrivateField(controller, "modeManager", modeManager);
+            SetPrivateField(controller, "viewModeManager", viewModeManager);
+            SetPrivateField(controller, "furnitureMenuRoot", menuRoot);
+
+            controllerObject.SetActive(true);
+            SetEditorMode(modeManager, "FurniturePlace");
+
+            Assert.That(menuRoot.activeSelf, Is.True);
+
+            InvokePublic(viewModeManager, "SetPerspectiveView");
+
+            Assert.That(menuRoot.activeSelf, Is.False);
+
+            InvokePublic(viewModeManager, "SetTopView");
+
+            Assert.That(menuRoot.activeSelf, Is.True);
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(menuRoot);
+            DestroyObject(viewModeObject);
+            DestroyObject(modeObject);
+        }
+    }
+
+    [Test]
+    public void FurniturePlacement_BeginPlacementReturnsToTopView()
+    {
+        GameObject modeObject = new GameObject("ModeManager");
+        GameObject viewModeObject = new GameObject("EditorViewModeManager");
+        GameObject cameraObject = new GameObject("TopCamera");
+        GameObject prefabObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject placementObject = new GameObject("FurniturePlacementManager");
+        placementObject.SetActive(false);
+
+        try
+        {
+            Component modeManager = modeObject.AddComponent(GetAssemblyType("ModeManager"));
+            Component viewModeManager = viewModeObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
+            InvokePublic(viewModeManager, "SetPerspectiveView");
+
+            Camera camera = cameraObject.AddComponent<Camera>();
+            Component placementManager = placementObject.AddComponent(GetAssemblyType("FurniturePlacementManager"));
+            SetPrivateField(placementManager, "modeManager", modeManager);
+            SetPrivateField(placementManager, "viewModeManager", viewModeManager);
+            SetPrivateField(placementManager, "targetCamera", camera);
+            placementObject.SetActive(true);
+
+            object item = Activator.CreateInstance(GetAssemblyType("FurnitureCatalogItem"));
+            FieldInfo prefabField = item.GetType().GetField("prefab", BindingFlags.Instance | BindingFlags.Public);
+            Assert.That(prefabField, Is.Not.Null);
+            prefabField.SetValue(item, prefabObject);
+
+            InvokePublicWithResult(placementManager, "BeginPlacement", item);
+
+            Assert.That(GetCurrentViewModeName(viewModeManager), Is.EqualTo("Top"));
+            Assert.That(GetCurrentEditorModeName(modeManager), Is.EqualTo("FurniturePlace"));
+        }
+        finally
+        {
+            DestroyObject(placementObject);
+            DestroyObject(prefabObject);
+            DestroyObject(cameraObject);
+            DestroyObject(viewModeObject);
+            DestroyObject(modeObject);
+            DestroyObject(GameObject.Find("EditorInputManager"));
+            DestroyObject(GameObject.Find("FurnitureRoot"));
+        }
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,
@@ -698,6 +783,14 @@ public class EditorViewModeManagerTests
         MethodInfo method = manager.GetType().GetMethod("SetViewMode", BindingFlags.Instance | BindingFlags.Public);
         Assert.That(method, Is.Not.Null);
         object mode = Enum.Parse(GetAssemblyType("EditorViewMode"), modeName);
+        method.Invoke(manager, new[] { mode });
+    }
+
+    private static void SetEditorMode(Component manager, string modeName)
+    {
+        MethodInfo method = manager.GetType().GetMethod("SetMode", BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(method, Is.Not.Null);
+        object mode = Enum.Parse(GetAssemblyType("EditorMode"), modeName);
         method.Invoke(manager, new[] { mode });
     }
 
@@ -873,6 +966,13 @@ public class EditorViewModeManagerTests
     private static string GetCurrentViewModeName(Component manager)
     {
         PropertyInfo property = manager.GetType().GetProperty("CurrentViewMode", BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(property, Is.Not.Null);
+        return property.GetValue(manager)?.ToString();
+    }
+
+    private static string GetCurrentEditorModeName(Component manager)
+    {
+        PropertyInfo property = manager.GetType().GetProperty("CurrentMode", BindingFlags.Instance | BindingFlags.Public);
         Assert.That(property, Is.Not.Null);
         return property.GetValue(manager)?.ToString();
     }
