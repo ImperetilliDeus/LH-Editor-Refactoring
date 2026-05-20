@@ -249,6 +249,16 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
+        if (WallHierarchyUtility.IsPreviewWall(ownerWall))
+        {
+            Color previewFillColor = new Color(0.2f, 0.8f, 1f, 0.28f);
+            Color previewOutlineColor = new Color(0.2f, 0.9f, 1f, 0.95f);
+            rootImage.color = previewFillColor;
+            ApplyOutline(previewOutlineColor, new Vector2(2f, 2f));
+            ApplyEndCapStyle(previewOutlineColor, true);
+            return;
+        }
+
         if (hasTemporaryStyleOverride)
         {
             rootImage.color = temporaryFillColor;

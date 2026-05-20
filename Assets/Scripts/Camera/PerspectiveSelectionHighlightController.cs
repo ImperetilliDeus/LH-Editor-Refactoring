@@ -419,7 +419,9 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
         GameObject rootObject = new GameObject(HighlightRootName);
         rootObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
-        rootObject.transform.SetParent(transform, false);
+        rootObject.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        rootObject.transform.localScale = Vector3.one;
+        rootObject.transform.SetParent(transform, true);
         highlightRoot = rootObject.transform;
         return highlightRoot;
     }

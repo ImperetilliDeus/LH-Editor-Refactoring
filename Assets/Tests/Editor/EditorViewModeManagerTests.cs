@@ -607,6 +607,53 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void PerspectiveHighlight_KeepsWorldSpaceOverlayWhenControllerIsOffset()
+    {
+        GameObject roomObject = new GameObject("Room");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+        controllerObject.transform.position = new Vector3(624f, -8f, -157f);
+
+        try
+        {
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+            bool roomInitialized = (bool)InvokePublicWithResult(
+                room,
+                "SetManualBoundaryVertices",
+                new[]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(4f, 0f, 3f),
+                    new Vector3(0f, 0f, 3f),
+                },
+                false);
+            Assert.That(roomInitialized, Is.True);
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
+
+            Assert.That(created, Is.True);
+            Transform root = controllerObject.transform.Find("PerspectiveSelectionHighlights");
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.position.x, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(root.position.y, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(root.position.z, Is.EqualTo(0f).Within(0.001f));
+
+            Transform overlay = root.Find("PerspectiveSelectionRoomOverlay");
+            Assert.That(overlay, Is.Not.Null);
+            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
+            Assert.That(meshFilter, Is.Not.Null);
+            Assert.That(meshFilter.sharedMesh.bounds.center.x, Is.EqualTo(2f).Within(0.001f));
+            Assert.That(meshFilter.sharedMesh.bounds.center.z, Is.EqualTo(1.5f).Within(0.001f));
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(roomObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlight_UsesFocusedRoomFallback()
     {
         GameObject roomObject = new GameObject("Room");
