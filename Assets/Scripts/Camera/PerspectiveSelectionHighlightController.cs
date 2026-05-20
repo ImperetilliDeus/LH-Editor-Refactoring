@@ -9,8 +9,8 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     private const float BoundsEpsilon = 0.0001f;
     private const float MinimumHighlightSize = 0.01f;
     private const float MinimumHighlightAlpha = 0.9f;
-    private const float MinimumRoomOverlayAlpha = 0.28f;
-    private const float MaximumRoomOverlayAlpha = 0.45f;
+    private const float MinimumRoomOverlayAlpha = 0.4f;
+    private const float MaximumRoomOverlayAlpha = 0.55f;
     private const float MinimumLineWidth = 0.1f;
 
     [SerializeField] private EditorViewModeManager viewModeManager;
@@ -18,7 +18,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private Material highlightMaterial;
     [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 1f);
-    [SerializeField] private Color roomOverlayColor = new Color(0.1f, 0.85f, 1f, 0.32f);
+    [SerializeField] private Color roomOverlayColor = new Color(0.1f, 0.85f, 1f, 0.45f);
     [SerializeField] private float boundsPadding = 0.08f;
     [SerializeField] private float lineWidth = 0.12f;
     [SerializeField] private float roomOutlineYOffset = 0.05f;
@@ -33,7 +33,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     private Material runtimeHighlightMaterial;
     private Material runtimeHighlightSourceMaterial;
     private Material runtimeRoomOverlayMaterial;
-    private Material runtimeRoomOverlaySourceMaterial;
     private Transform highlightRoot;
     private bool eventsBound;
 
@@ -72,7 +71,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         {
             DestroyUnityObject(runtimeRoomOverlayMaterial);
             runtimeRoomOverlayMaterial = null;
-            runtimeRoomOverlaySourceMaterial = null;
         }
     }
 
@@ -668,36 +666,16 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
     private Material GetRoomOverlayMaterial()
     {
-        if (highlightMaterial != null)
-        {
-            if (runtimeRoomOverlayMaterial == null || runtimeRoomOverlaySourceMaterial != highlightMaterial)
-            {
-                if (runtimeRoomOverlayMaterial != null)
-                {
-                    DestroyUnityObject(runtimeRoomOverlayMaterial);
-                }
-
-                runtimeRoomOverlayMaterial = new Material(highlightMaterial)
-                {
-                    hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
-                };
-                runtimeRoomOverlaySourceMaterial = highlightMaterial;
-            }
-
-            ConfigureOverlayMaterial(runtimeRoomOverlayMaterial, roomOverlayColor);
-            return runtimeRoomOverlayMaterial;
-        }
-
         if (runtimeRoomOverlayMaterial != null)
         {
             ConfigureOverlayMaterial(runtimeRoomOverlayMaterial, roomOverlayColor);
             return runtimeRoomOverlayMaterial;
         }
 
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        Shader shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
         {
-            shader = Shader.Find("Unlit/Color");
+            shader = Shader.Find("Universal Render Pipeline/Unlit");
         }
 
         if (shader == null)
@@ -720,7 +698,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             color = roomOverlayColor,
             hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
         };
-        runtimeRoomOverlaySourceMaterial = null;
         ConfigureOverlayMaterial(runtimeRoomOverlayMaterial, roomOverlayColor);
         return runtimeRoomOverlayMaterial;
     }

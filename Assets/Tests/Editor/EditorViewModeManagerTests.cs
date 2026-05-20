@@ -593,7 +593,9 @@ public class EditorViewModeManagerTests
             Assert.That(meshRenderer, Is.Not.Null);
             Assert.That(meshFilter.sharedMesh.vertexCount, Is.EqualTo(4));
             Assert.That(meshFilter.sharedMesh.triangles.Length, Is.EqualTo(6));
-            Assert.That(meshRenderer.sharedMaterial.color.a, Is.GreaterThanOrEqualTo(0.28f));
+            Assert.That(meshRenderer.sharedMaterial.color.a, Is.GreaterThanOrEqualTo(0.4f));
+            Assert.That(meshRenderer.sharedMaterial.HasProperty("_ZTest"), Is.True);
+            Assert.That(meshRenderer.sharedMaterial.GetFloat("_ZTest"), Is.EqualTo((float)UnityEngine.Rendering.CompareFunction.Always));
             Assert.That(meshRenderer.sharedMaterial.renderQueue, Is.GreaterThanOrEqualTo((int)UnityEngine.Rendering.RenderQueue.Overlay));
             Assert.That(overlay.GetComponent<Collider>(), Is.Null);
         }
