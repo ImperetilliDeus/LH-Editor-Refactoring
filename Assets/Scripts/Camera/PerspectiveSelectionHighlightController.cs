@@ -4,11 +4,14 @@ using UnityEngine;
 public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 {
     private const string HighlightObjectName = "PerspectiveSelectionHighlight";
+    private const string WallOverlayObjectName = "PerspectiveSelectionWallOverlay";
     private const string RoomOverlayObjectName = "PerspectiveSelectionRoomOverlay";
     private const string HighlightRootName = "PerspectiveSelectionHighlights";
     private const float BoundsEpsilon = 0.0001f;
     private const float MinimumHighlightSize = 0.01f;
     private const float MinimumHighlightAlpha = 0.9f;
+    private const float MinimumWallOverlayAlpha = 0.4f;
+    private const float MaximumWallOverlayAlpha = 0.65f;
     private const float MinimumRoomOverlayAlpha = 0.4f;
     private const float MaximumRoomOverlayAlpha = 0.55f;
     private const float MinimumLineWidth = 0.1f;
@@ -19,6 +22,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private Material highlightMaterial;
     [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 1f);
+    [SerializeField] private Color wallOverlayColor = new Color(0.1f, 0.85f, 1f, 0.5f);
     [SerializeField] private Color roomOverlayColor = new Color(0.1f, 0.85f, 1f, 0.45f);
     [SerializeField] private float boundsPadding = 0.08f;
     [SerializeField] private float lineWidth = 0.12f;
@@ -33,6 +37,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     private readonly List<int> roomOverlayPolygonIndices = new List<int>();
     private Material runtimeHighlightMaterial;
     private Material runtimeHighlightSourceMaterial;
+    private Material runtimeWallOverlayMaterial;
     private Material runtimeRoomOverlayMaterial;
     private Transform highlightRoot;
     private bool eventsBound;
@@ -72,6 +77,12 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         {
             DestroyUnityObject(runtimeRoomOverlayMaterial);
             runtimeRoomOverlayMaterial = null;
+        }
+
+        if (runtimeWallOverlayMaterial != null)
+        {
+            DestroyUnityObject(runtimeWallOverlayMaterial);
+            runtimeWallOverlayMaterial = null;
         }
     }
 
@@ -127,7 +138,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return false;
         }
 
-        if (target.TryGetComponent(out Wall wall) && TryCreateWallOutline(wall, out GameObject wallHighlight))
+        if (target.TryGetComponent(out Wall wall) && TryCreateWallOverlay(wall, out GameObject wallHighlight))
         {
             TrackHighlight(wallHighlight);
             return true;
@@ -177,7 +188,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         return CreateLineHighlight(BuildBoxEdgePositions(corners), true);
     }
 
-    private bool TryCreateWallOutline(Wall wall, out GameObject highlightObject)
+    private bool TryCreateWallOverlay(Wall wall, out GameObject highlightObject)
     {
         highlightObject = null;
         if (wall == null || wall.Data == null)
@@ -215,8 +226,45 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             endCenter - side * halfThickness + Vector3.up * halfHeight,
         };
 
-        highlightObject = CreateLineHighlight(BuildBoxEdgePositions(corners), true);
+        highlightObject = CreateWallOverlay(corners);
         return true;
+    }
+
+    private GameObject CreateWallOverlay(Vector3[] corners)
+    {
+        Mesh overlayMesh = new Mesh
+        {
+            name = WallOverlayObjectName + "Mesh",
+            hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
+        };
+        overlayMesh.vertices = corners;
+        overlayMesh.triangles = new[]
+        {
+            0, 1, 2, 0, 2, 3,
+            4, 6, 5, 4, 7, 6,
+            0, 4, 5, 0, 5, 1,
+            1, 5, 6, 1, 6, 2,
+            2, 6, 7, 2, 7, 3,
+            3, 7, 4, 3, 4, 0,
+        };
+        overlayMesh.RecalculateNormals();
+        overlayMesh.RecalculateBounds();
+
+        GameObject overlayObject = new GameObject(WallOverlayObjectName);
+        overlayObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+        overlayObject.transform.SetParent(EnsureHighlightRoot(), false);
+
+        MeshFilter meshFilter = overlayObject.AddComponent<MeshFilter>();
+        meshFilter.sharedMesh = overlayMesh;
+
+        MeshRenderer meshRenderer = overlayObject.AddComponent<MeshRenderer>();
+        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        meshRenderer.receiveShadows = false;
+        meshRenderer.allowOcclusionWhenDynamic = false;
+        meshRenderer.sortingOrder = 1000;
+        meshRenderer.sharedMaterial = GetWallOverlayMaterial();
+
+        return overlayObject;
     }
 
     private bool TryCreateRoomHighlight(Room room, out GameObject highlightObject, out GameObject overlayObject)
@@ -580,7 +628,10 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     {
         while (candidate != null)
         {
-            if (candidate.name == HighlightObjectName)
+            if (candidate.name == HighlightObjectName ||
+                candidate.name == WallOverlayObjectName ||
+                candidate.name == RoomOverlayObjectName ||
+                candidate.name == HighlightRootName)
             {
                 return true;
             }
@@ -700,10 +751,20 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
     private Material GetRoomOverlayMaterial()
     {
-        if (runtimeRoomOverlayMaterial != null)
+        return GetOrCreateOverlayMaterial(ref runtimeRoomOverlayMaterial, roomOverlayColor);
+    }
+
+    private Material GetWallOverlayMaterial()
+    {
+        return GetOrCreateOverlayMaterial(ref runtimeWallOverlayMaterial, wallOverlayColor);
+    }
+
+    private static Material GetOrCreateOverlayMaterial(ref Material runtimeMaterial, Color color)
+    {
+        if (runtimeMaterial != null)
         {
-            ConfigureOverlayMaterial(runtimeRoomOverlayMaterial, roomOverlayColor);
-            return runtimeRoomOverlayMaterial;
+            ConfigureOverlayMaterial(runtimeMaterial, color);
+            return runtimeMaterial;
         }
 
         Shader shader = Shader.Find("Hidden/Internal-Colored");
@@ -727,13 +788,13 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return null;
         }
 
-        runtimeRoomOverlayMaterial = new Material(shader)
+        runtimeMaterial = new Material(shader)
         {
-            color = roomOverlayColor,
+            color = color,
             hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
         };
-        ConfigureOverlayMaterial(runtimeRoomOverlayMaterial, roomOverlayColor);
-        return runtimeRoomOverlayMaterial;
+        ConfigureOverlayMaterial(runtimeMaterial, color);
+        return runtimeMaterial;
     }
 
     private void NormalizeVisualSettings()
@@ -743,6 +804,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         roomOutlineYOffset = Mathf.Max(0f, roomOutlineYOffset);
         roomOverlayYOffset = Mathf.Max(0f, roomOverlayYOffset);
         highlightColor.a = Mathf.Max(MinimumHighlightAlpha, highlightColor.a);
+        wallOverlayColor.a = Mathf.Clamp(wallOverlayColor.a, MinimumWallOverlayAlpha, MaximumWallOverlayAlpha);
         roomOverlayColor.a = Mathf.Clamp(roomOverlayColor.a, MinimumRoomOverlayAlpha, MaximumRoomOverlayAlpha);
     }
 

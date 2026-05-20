@@ -485,7 +485,7 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_UsesWallDataOutlineForWall()
+    public void PerspectiveHighlight_UsesWallDataOverlayForWall()
     {
         GameObject wallObject = new GameObject("Wall");
         GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
@@ -506,11 +506,21 @@ public class EditorViewModeManagerTests
             bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", wallObject);
 
             Assert.That(created, Is.True);
-            Transform highlight = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionHighlight");
-            Assert.That(highlight, Is.Not.Null);
-            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
-            Assert.That(lineRenderer, Is.Not.Null);
-            Assert.That(lineRenderer.positionCount, Is.EqualTo(24));
+            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionWallOverlay");
+            Assert.That(overlay, Is.Not.Null);
+
+            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
+            MeshRenderer meshRenderer = overlay.GetComponent<MeshRenderer>();
+            Assert.That(meshFilter, Is.Not.Null);
+            Assert.That(meshRenderer, Is.Not.Null);
+            Assert.That(meshFilter.sharedMesh.vertexCount, Is.EqualTo(8));
+            Assert.That(meshFilter.sharedMesh.triangles.Length, Is.EqualTo(36));
+            Assert.That(meshRenderer.sharedMaterial.color.a, Is.GreaterThanOrEqualTo(0.4f));
+            Assert.That(meshRenderer.sharedMaterial.HasProperty("_ZTest"), Is.True);
+            Assert.That(meshRenderer.sharedMaterial.GetFloat("_ZTest"), Is.EqualTo((float)UnityEngine.Rendering.CompareFunction.Always));
+            Assert.That(meshRenderer.sharedMaterial.renderQueue, Is.GreaterThanOrEqualTo((int)UnityEngine.Rendering.RenderQueue.Overlay));
+            Assert.That(overlay.GetComponent<LineRenderer>(), Is.Null);
+            Assert.That(overlay.GetComponent<Collider>(), Is.Null);
         }
         finally
         {
