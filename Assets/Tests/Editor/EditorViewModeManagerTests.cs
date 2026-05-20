@@ -476,8 +476,15 @@ public class EditorViewModeManagerTests
 
         try
         {
-            Wall wall = wallObject.AddComponent<Wall>();
-            wall.Initialize(new WallData(new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.4f, 3f, 1.5f));
+            Component wall = wallObject.AddComponent(GetAssemblyType("Wall"));
+            object wallData = Activator.CreateInstance(
+                GetAssemblyType("WallData"),
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                0.4f,
+                3f,
+                1.5f);
+            InvokePublicWithResult(wall, "Initialize", wallData);
             Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
 
             bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", wallObject);
@@ -504,15 +511,18 @@ public class EditorViewModeManagerTests
 
         try
         {
-            Room room = roomObject.AddComponent<Room>();
-            bool roomInitialized = room.SetManualBoundaryVertices(
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+            bool roomInitialized = (bool)InvokePublicWithResult(
+                room,
+                "SetManualBoundaryVertices",
                 new[]
                 {
                     new Vector3(0f, 0f, 0f),
                     new Vector3(4f, 0f, 0f),
                     new Vector3(4f, 0f, 3f),
                     new Vector3(0f, 0f, 3f),
-                });
+                },
+                false);
             Assert.That(roomInitialized, Is.True);
             Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
 
