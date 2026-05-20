@@ -8527,11 +8527,14 @@ MonoBehaviour:
   viewModeManager: {fileID: 1299695794}
   wallSelectionManager: {fileID: 525080098}
   roomAuthoringPanelManager: {fileID: 480306210}
+  roomHandleManager: {fileID: 480306211}
   highlightMaterial: {fileID: 0}
   highlightColor: {r: 0.1, g: 0.85, b: 1, a: 1}
+  roomOverlayColor: {r: 0.1, g: 0.85, b: 1, a: 0.45}
   boundsPadding: 0.08
   lineWidth: 0.12
   roomOutlineYOffset: 0.05
+  roomOverlayYOffset: 0.02
 --- !u!114 &1299695796
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -118,6 +118,11 @@ public partial class TopViewRenderManager : MonoBehaviour
             return;
         }
 
+        if (drawManager != null && drawManager.PreviewWall != null && drawManager.PreviewWall.activeInHierarchy)
+        {
+            visualsDirty = true;
+        }
+
         if (visualsDirty || HasCameraStateChanged())
         {
             RefreshAllVisuals();
