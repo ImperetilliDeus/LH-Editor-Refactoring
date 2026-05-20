@@ -559,6 +559,51 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void PerspectiveHighlight_AddsWeakFloorTintForRoom()
+    {
+        GameObject roomObject = new GameObject("Room");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+            bool roomInitialized = (bool)InvokePublicWithResult(
+                room,
+                "SetManualBoundaryVertices",
+                new[]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(4f, 0f, 3f),
+                    new Vector3(0f, 0f, 3f),
+                },
+                false);
+            Assert.That(roomInitialized, Is.True);
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
+
+            Assert.That(created, Is.True);
+            Transform tint = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomTint");
+            Assert.That(tint, Is.Not.Null);
+
+            MeshFilter meshFilter = tint.GetComponent<MeshFilter>();
+            MeshRenderer meshRenderer = tint.GetComponent<MeshRenderer>();
+            Assert.That(meshFilter, Is.Not.Null);
+            Assert.That(meshRenderer, Is.Not.Null);
+            Assert.That(meshFilter.sharedMesh.vertexCount, Is.EqualTo(4));
+            Assert.That(meshFilter.sharedMesh.triangles.Length, Is.EqualTo(6));
+            Assert.That(meshRenderer.sharedMaterial.color.a, Is.LessThan(0.2f));
+            Assert.That(tint.GetComponent<Collider>(), Is.Null);
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(roomObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlight_DrawsRoomOutlineAboveEnclosingWalls()
     {
         GameObject roomObject = new GameObject("Room");
