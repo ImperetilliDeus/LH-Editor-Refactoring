@@ -452,7 +452,11 @@ public class EditorViewModeManagerTests
             Assert.That(highlightRoot, Is.Not.Null);
             Transform highlight = highlightRoot.Find("PerspectiveSelectionHighlight");
             Assert.That(highlight, Is.Not.Null);
-            Assert.That(highlight.GetComponent<LineRenderer>(), Is.Not.Null);
+            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
+            Assert.That(lineRenderer, Is.Not.Null);
+            Assert.That(lineRenderer.widthMultiplier, Is.GreaterThanOrEqualTo(0.1f));
+            Assert.That(lineRenderer.startColor.a, Is.GreaterThanOrEqualTo(0.9f));
+            Assert.That(lineRenderer.sortingOrder, Is.GreaterThanOrEqualTo(1000));
             Assert.That(highlight.GetComponent<MeshRenderer>(), Is.Null);
             Assert.That(highlight.GetComponent<Collider>(), Is.Null);
             Assert.That(selectedObject.transform.Find("PerspectiveSelectionHighlight"), Is.Null);

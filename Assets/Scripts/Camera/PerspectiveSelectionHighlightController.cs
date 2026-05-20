@@ -7,14 +7,16 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     private const string HighlightRootName = "PerspectiveSelectionHighlights";
     private const float BoundsEpsilon = 0.0001f;
     private const float MinimumHighlightSize = 0.01f;
+    private const float MinimumHighlightAlpha = 0.9f;
+    private const float MinimumLineWidth = 0.1f;
 
     [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private Material highlightMaterial;
-    [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 0.95f);
+    [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 1f);
     [SerializeField] private float boundsPadding = 0.08f;
-    [SerializeField] private float lineWidth = 0.06f;
+    [SerializeField] private float lineWidth = 0.12f;
     [SerializeField] private float roomOutlineYOffset = 0.05f;
 
     private readonly List<GameObject> selectedWalls = new List<GameObject>();
@@ -26,6 +28,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
     private void Awake()
     {
+        NormalizeVisualSettings();
         ResolveReferences();
     }
 
@@ -56,9 +59,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
     private void OnValidate()
     {
-        boundsPadding = Mathf.Max(0f, boundsPadding);
-        lineWidth = Mathf.Max(0.001f, lineWidth);
-        roomOutlineYOffset = Mathf.Max(0f, roomOutlineYOffset);
+        NormalizeVisualSettings();
     }
 
     public void RefreshHighlight()
@@ -232,14 +233,17 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         lineRenderer.loop = false;
         lineRenderer.positionCount = positions.Length;
         lineRenderer.SetPositions(positions);
-        lineRenderer.widthMultiplier = lineWidth;
+        lineRenderer.widthMultiplier = Mathf.Max(lineWidth, MinimumLineWidth);
         lineRenderer.numCornerVertices = edgePairs ? 0 : 2;
         lineRenderer.numCapVertices = 2;
         lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         lineRenderer.receiveShadows = false;
+        lineRenderer.allowOcclusionWhenDynamic = false;
+        lineRenderer.sortingOrder = 1000;
         lineRenderer.sharedMaterial = GetHighlightMaterial();
-        lineRenderer.startColor = highlightColor;
-        lineRenderer.endColor = highlightColor;
+        Color visibleHighlightColor = GetVisibleHighlightColor();
+        lineRenderer.startColor = visibleHighlightColor;
+        lineRenderer.endColor = visibleHighlightColor;
         return highlightObject;
     }
 
@@ -466,14 +470,17 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
     private Material GetHighlightMaterial()
     {
+        Color visibleHighlightColor = GetVisibleHighlightColor();
+
         if (highlightMaterial != null)
         {
+            ConfigureTransparentMaterial(highlightMaterial, visibleHighlightColor);
             return highlightMaterial;
         }
 
         if (runtimeHighlightMaterial != null)
         {
-            runtimeHighlightMaterial.color = highlightColor;
+            ConfigureTransparentMaterial(runtimeHighlightMaterial, visibleHighlightColor);
             return runtimeHighlightMaterial;
         }
 
@@ -500,10 +507,25 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
         runtimeHighlightMaterial = new Material(shader)
         {
-            color = highlightColor,
+            color = visibleHighlightColor,
         };
-        ConfigureTransparentMaterial(runtimeHighlightMaterial, highlightColor);
+        ConfigureTransparentMaterial(runtimeHighlightMaterial, visibleHighlightColor);
         return runtimeHighlightMaterial;
+    }
+
+    private void NormalizeVisualSettings()
+    {
+        boundsPadding = Mathf.Max(0f, boundsPadding);
+        lineWidth = Mathf.Max(MinimumLineWidth, lineWidth);
+        roomOutlineYOffset = Mathf.Max(0f, roomOutlineYOffset);
+        highlightColor.a = Mathf.Max(MinimumHighlightAlpha, highlightColor.a);
+    }
+
+    private Color GetVisibleHighlightColor()
+    {
+        Color visibleHighlightColor = highlightColor;
+        visibleHighlightColor.a = Mathf.Max(MinimumHighlightAlpha, visibleHighlightColor.a);
+        return visibleHighlightColor;
     }
 
     private static void ConfigureTransparentMaterial(Material material, Color color)
@@ -529,6 +551,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         SetMaterialFloatIfPresent(material, "_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
         SetMaterialFloatIfPresent(material, "_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
         SetMaterialFloatIfPresent(material, "_ZWrite", 0f);
+        SetMaterialFloatIfPresent(material, "_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
         material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         material.SetOverrideTag("RenderType", "Transparent");
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
