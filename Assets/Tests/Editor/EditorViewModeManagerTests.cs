@@ -721,6 +721,34 @@ public class EditorViewModeManagerTests
         }
     }
 
+    [Test]
+    public void FurniturePlacement_UsesPointerRoomBeforeStrictBoundsRoom()
+    {
+        GameObject placementObject = new GameObject("FurniturePlacementManager");
+        GameObject roomObject = new GameObject("Room");
+
+        try
+        {
+            Component placementManager = placementObject.AddComponent(GetAssemblyType("FurniturePlacementManager"));
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+
+            object result = InvokePrivateWithResult(
+                placementManager,
+                "ResolvePlacementRoom",
+                new Bounds(new Vector3(100f, 0f, 100f), Vector3.one),
+                room);
+
+            Assert.That(result, Is.EqualTo(room));
+        }
+        finally
+        {
+            DestroyObject(roomObject);
+            DestroyObject(placementObject);
+            DestroyObject(GameObject.Find("EditorInputManager"));
+            DestroyObject(GameObject.Find("FurnitureRoot"));
+        }
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,
@@ -875,6 +903,13 @@ public class EditorViewModeManagerTests
     private static object InvokePublicWithResult(Component target, string methodName, params object[] arguments)
     {
         MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(method, Is.Not.Null);
+        return method.Invoke(target, arguments);
+    }
+
+    private static object InvokePrivateWithResult(Component target, string methodName, params object[] arguments)
+    {
+        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(target, arguments);
     }

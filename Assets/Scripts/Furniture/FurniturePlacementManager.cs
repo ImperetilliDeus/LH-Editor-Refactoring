@@ -363,9 +363,9 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        bool hasSurface = TryGetPlacementPoint(out _, out _);
+        bool hasSurface = TryGetPlacementPoint(out _, out Room placementPointRoom);
         Bounds bounds = activeInstance.CalculateWorldBounds();
-        Room room = ResolveRoomForBounds(bounds);
+        Room room = ResolvePlacementRoom(bounds, placementPointRoom);
         bool overlaps = CheckOverlaps(activeInstance, bounds, out Collider blockingCollider);
         lastPlacementValidity = hasSurface && room != null && !overlaps;
         EmitValidationDebug(hasSurface, room, overlaps, blockingCollider, bounds);
@@ -618,6 +618,16 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         return null;
+    }
+
+    private Room ResolvePlacementRoom(Bounds bounds, Room placementPointRoom)
+    {
+        if (placementPointRoom != null)
+        {
+            return placementPointRoom;
+        }
+
+        return ResolveRoomForBounds(bounds);
     }
 
     private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<Vector3> polygon)
