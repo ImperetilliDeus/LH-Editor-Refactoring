@@ -230,7 +230,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return false;
         }
 
-        tintObject = CreateRoomTint(selectedRoomVertices);
+        tintObject = CreateRoomTint(selectedRoomVertices, ResolveRoomTintY(room));
 
         float outlineY = ResolveRoomOutlineY(room);
         Vector3[] positions = new Vector3[selectedRoomVertices.Count + 1];
@@ -247,13 +247,13 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         return true;
     }
 
-    private GameObject CreateRoomTint(List<Vector3> roomVertices)
+    private GameObject CreateRoomTint(List<Vector3> roomVertices, float tintY)
     {
         roomTintVertices.Clear();
         for (int i = 0; i < roomVertices.Count; i++)
         {
             Vector3 vertex = roomVertices[i];
-            vertex.y += roomTintYOffset;
+            vertex.y = tintY;
             roomTintVertices.Add(vertex);
         }
 
@@ -574,6 +574,34 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
         bounds.Encapsulate(candidate);
         return true;
+    }
+
+    private float ResolveRoomTintY(Room room)
+    {
+        float tintY = float.MinValue;
+        if (room != null && room.WallSet != null)
+        {
+            foreach (Wall wall in room.WallSet)
+            {
+                if (wall == null || wall.Data == null)
+                {
+                    continue;
+                }
+
+                WallData wallData = wall.Data;
+                float wallTopY = wallData.centerY + Mathf.Abs(wallData.height) * 0.5f;
+                tintY = Mathf.Max(tintY, wallTopY);
+            }
+        }
+
+        if (tintY > float.MinValue)
+        {
+            return tintY + roomTintYOffset;
+        }
+
+        return selectedRoomVertices.Count > 0
+            ? selectedRoomVertices[0].y + roomTintYOffset
+            : roomTintYOffset;
     }
 
     private Material GetHighlightMaterial()

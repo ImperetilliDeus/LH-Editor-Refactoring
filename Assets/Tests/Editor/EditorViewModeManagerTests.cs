@@ -559,7 +559,7 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_AddsWeakFloorTintForRoom()
+    public void PerspectiveHighlight_AddsWeakAreaTintForRoom()
     {
         GameObject roomObject = new GameObject("Room");
         GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
@@ -599,6 +599,54 @@ public class EditorViewModeManagerTests
         finally
         {
             DestroyObject(controllerObject);
+            DestroyObject(roomObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveHighlight_DrawsRoomTintAboveEnclosingWalls()
+    {
+        GameObject roomObject = new GameObject("Room");
+        GameObject firstWallObject = new GameObject("WallA");
+        GameObject secondWallObject = new GameObject("WallB");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+            bool roomInitialized = (bool)InvokePublicWithResult(
+                room,
+                "SetManualBoundaryVertices",
+                new[]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(4f, 0f, 3f),
+                    new Vector3(0f, 0f, 3f),
+                },
+                false);
+            Assert.That(roomInitialized, Is.True);
+
+            Component firstWall = CreateWall(firstWallObject, new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.4f, 3f, 1.5f);
+            Component secondWall = CreateWall(secondWallObject, new Vector3(4f, 0f, 0f), new Vector3(4f, 0f, 3f), 0.4f, 4f, 2f);
+            SetRoomWallSet(room, firstWall, secondWall);
+
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
+
+            Assert.That(created, Is.True);
+            Transform tint = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomTint");
+            Assert.That(tint, Is.Not.Null);
+            MeshFilter meshFilter = tint.GetComponent<MeshFilter>();
+            Assert.That(meshFilter, Is.Not.Null);
+            Assert.That(meshFilter.sharedMesh.vertices[0].y, Is.GreaterThan(4f));
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(secondWallObject);
+            DestroyObject(firstWallObject);
             DestroyObject(roomObject);
         }
     }
