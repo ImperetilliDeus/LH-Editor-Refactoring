@@ -12,11 +12,14 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private Material highlightMaterial;
-    [SerializeField] private Color highlightColor = new Color(0.25f, 0.65f, 1f, 0.22f);
+    [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 0.95f);
     [SerializeField] private float boundsPadding = 0.08f;
+    [SerializeField] private float lineWidth = 0.06f;
+    [SerializeField] private float roomOutlineYOffset = 0.05f;
 
     private readonly List<GameObject> selectedWalls = new List<GameObject>();
     private readonly List<GameObject> highlightObjects = new List<GameObject>();
+    private readonly List<Vector3> selectedRoomVertices = new List<Vector3>();
     private Material runtimeHighlightMaterial;
     private Transform highlightRoot;
     private bool eventsBound;
@@ -54,6 +57,8 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     private void OnValidate()
     {
         boundsPadding = Mathf.Max(0f, boundsPadding);
+        lineWidth = Mathf.Max(0.001f, lineWidth);
+        roomOutlineYOffset = Mathf.Max(0f, roomOutlineYOffset);
     }
 
     public void RefreshHighlight()
@@ -98,40 +103,171 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
     public bool ShowHighlightForTarget(GameObject target)
     {
-        if (target == null || !TryGetTargetBounds(target, out Bounds bounds))
+        if (target == null)
         {
             return false;
         }
 
+        if (target.TryGetComponent(out Wall wall) && TryCreateWallOutline(wall, out GameObject wallHighlight))
+        {
+            TrackHighlight(wallHighlight);
+            return true;
+        }
+
+        if (target.TryGetComponent(out Room room) && TryCreateRoomOutline(room, out GameObject roomHighlight))
+        {
+            TrackHighlight(roomHighlight);
+            return true;
+        }
+
+        if (!TryGetTargetBounds(target, out Bounds bounds))
+        {
+            return false;
+        }
+
+        GameObject boundsHighlight = CreateBoundsOutline(bounds);
+        TrackHighlight(boundsHighlight);
+        return true;
+    }
+
+    private GameObject CreateBoundsOutline(Bounds bounds)
+    {
         bounds.Expand(Vector3.one * boundsPadding);
         Vector3 size = bounds.size;
         size.x = Mathf.Max(size.x, MinimumHighlightSize);
         size.y = Mathf.Max(size.y, MinimumHighlightSize);
         size.z = Mathf.Max(size.z, MinimumHighlightSize);
+        bounds.size = size;
 
-        Transform root = EnsureHighlightRoot();
-        GameObject highlightObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        highlightObject.name = HighlightObjectName;
-        highlightObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
-        highlightObject.transform.SetParent(root, false);
-        highlightObject.transform.position = bounds.center;
-        highlightObject.transform.rotation = Quaternion.identity;
-        highlightObject.transform.localScale = size;
-
-        Collider collider = highlightObject.GetComponent<Collider>();
-        if (collider != null)
+        Vector3 min = bounds.min;
+        Vector3 max = bounds.max;
+        Vector3[] corners =
         {
-            DestroyUnityObject(collider);
+            new Vector3(min.x, min.y, min.z),
+            new Vector3(max.x, min.y, min.z),
+            new Vector3(max.x, min.y, max.z),
+            new Vector3(min.x, min.y, max.z),
+            new Vector3(min.x, max.y, min.z),
+            new Vector3(max.x, max.y, min.z),
+            new Vector3(max.x, max.y, max.z),
+            new Vector3(min.x, max.y, max.z),
+        };
+
+        return CreateLineHighlight(BuildBoxEdgePositions(corners), true);
+    }
+
+    private bool TryCreateWallOutline(Wall wall, out GameObject highlightObject)
+    {
+        highlightObject = null;
+        if (wall == null || wall.Data == null)
+        {
+            return false;
         }
 
-        Renderer renderer = highlightObject.GetComponent<Renderer>();
-        if (renderer != null)
+        WallData wallData = wall.Data;
+        Vector3 start = wallData.startPoint;
+        Vector3 end = wallData.endPoint;
+        Vector3 direction = end - start;
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= BoundsEpsilon * BoundsEpsilon)
         {
-            renderer.sharedMaterial = GetHighlightMaterial();
+            return false;
         }
 
-        highlightObjects.Add(highlightObject);
+        direction.Normalize();
+        Vector3 side = Vector3.Cross(Vector3.up, direction).normalized;
+        float halfThickness = Mathf.Max(Mathf.Abs(wallData.thickness), MinimumHighlightSize) * 0.5f + boundsPadding;
+        float halfHeight = Mathf.Max(Mathf.Abs(wallData.height), MinimumHighlightSize) * 0.5f + boundsPadding;
+        float centerY = wallData.centerY;
+        Vector3 startCenter = new Vector3(start.x, centerY, start.z);
+        Vector3 endCenter = new Vector3(end.x, centerY, end.z);
+
+        Vector3[] corners =
+        {
+            startCenter - side * halfThickness + Vector3.down * halfHeight,
+            startCenter + side * halfThickness + Vector3.down * halfHeight,
+            endCenter + side * halfThickness + Vector3.down * halfHeight,
+            endCenter - side * halfThickness + Vector3.down * halfHeight,
+            startCenter - side * halfThickness + Vector3.up * halfHeight,
+            startCenter + side * halfThickness + Vector3.up * halfHeight,
+            endCenter + side * halfThickness + Vector3.up * halfHeight,
+            endCenter - side * halfThickness + Vector3.up * halfHeight,
+        };
+
+        highlightObject = CreateLineHighlight(BuildBoxEdgePositions(corners), true);
         return true;
+    }
+
+    private bool TryCreateRoomOutline(Room room, out GameObject highlightObject)
+    {
+        highlightObject = null;
+        if (room == null || !room.TryGetOrderedVertices(selectedRoomVertices) || selectedRoomVertices.Count < 3)
+        {
+            selectedRoomVertices.Clear();
+            return false;
+        }
+
+        Vector3[] positions = new Vector3[selectedRoomVertices.Count + 1];
+        for (int i = 0; i < selectedRoomVertices.Count; i++)
+        {
+            Vector3 vertex = selectedRoomVertices[i];
+            vertex.y += roomOutlineYOffset;
+            positions[i] = vertex;
+        }
+
+        positions[positions.Length - 1] = positions[0];
+        selectedRoomVertices.Clear();
+        highlightObject = CreateLineHighlight(positions, false);
+        return true;
+    }
+
+    private GameObject CreateLineHighlight(Vector3[] positions, bool edgePairs)
+    {
+        GameObject highlightObject = new GameObject(HighlightObjectName);
+        highlightObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+        highlightObject.transform.SetParent(EnsureHighlightRoot(), false);
+
+        LineRenderer lineRenderer = highlightObject.AddComponent<LineRenderer>();
+        lineRenderer.useWorldSpace = true;
+        lineRenderer.loop = false;
+        lineRenderer.positionCount = positions.Length;
+        lineRenderer.SetPositions(positions);
+        lineRenderer.widthMultiplier = lineWidth;
+        lineRenderer.numCornerVertices = edgePairs ? 0 : 2;
+        lineRenderer.numCapVertices = 2;
+        lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lineRenderer.receiveShadows = false;
+        lineRenderer.sharedMaterial = GetHighlightMaterial();
+        lineRenderer.startColor = highlightColor;
+        lineRenderer.endColor = highlightColor;
+        return highlightObject;
+    }
+
+    private void TrackHighlight(GameObject highlightObject)
+    {
+        if (highlightObject != null)
+        {
+            highlightObjects.Add(highlightObject);
+        }
+    }
+
+    private static Vector3[] BuildBoxEdgePositions(Vector3[] corners)
+    {
+        return new[]
+        {
+            corners[0], corners[1],
+            corners[1], corners[2],
+            corners[2], corners[3],
+            corners[3], corners[0],
+            corners[4], corners[5],
+            corners[5], corners[6],
+            corners[6], corners[7],
+            corners[7], corners[4],
+            corners[0], corners[4],
+            corners[1], corners[5],
+            corners[2], corners[6],
+            corners[3], corners[7],
+        };
     }
 
     public void ClearHighlight()

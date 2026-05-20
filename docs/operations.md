@@ -70,7 +70,7 @@ Additional 3D inspection wiring:
 - Add `EditorViewModeToolbarPresenter` and assign the same Top / 3D buttons plus optional icon/background images.
 - Add `PerspectiveCameraFramingController` and assign `Editor View Mode Manager`, `Perspective Camera`, `Walls`, `Room Manager`, `FurnitureRoot`, and optional `Grid`.
 - `PerspectiveCameraFramingController` excludes `Grid` from Fit bounds by default. Keep `Include Grid In Scene Bounds` off when `Grid` is only a large drawing aid; empty scenes use `Empty Scene Fallback Bounds Size` instead.
-- Add `PerspectiveSelectionHighlightController` and assign `Editor View Mode Manager`, `Wall Selection Manager`, `Room Authoring Panel Manager`, and optional highlight material.
+- Add `PerspectiveSelectionHighlightController` and assign `Editor View Mode Manager`, `Wall Selection Manager`, `Room Authoring Panel Manager`, and optional outline material.
 
 Manual QA:
 
@@ -78,5 +78,5 @@ Manual QA:
 - Entering 3D with no selection frames the whole editable scene.
 - Entering 3D with a selected room frames that room.
 - Entering 3D with a selected wall frames that wall.
-- 3D selection highlight appears only in Perspective view.
-- Returning to Top clears transient 3D highlight and restores Top View overlays.
+- 3D selection outline appears only in Perspective view.
+- Returning to Top clears transient 3D outline and restores Top View overlays.

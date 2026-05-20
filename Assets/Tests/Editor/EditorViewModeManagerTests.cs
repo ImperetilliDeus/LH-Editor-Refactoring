@@ -450,7 +450,11 @@ public class EditorViewModeManagerTests
             Assert.That(created, Is.True);
             Transform highlightRoot = controllerObject.transform.Find("PerspectiveSelectionHighlights");
             Assert.That(highlightRoot, Is.Not.Null);
-            Assert.That(highlightRoot.Find("PerspectiveSelectionHighlight"), Is.Not.Null);
+            Transform highlight = highlightRoot.Find("PerspectiveSelectionHighlight");
+            Assert.That(highlight, Is.Not.Null);
+            Assert.That(highlight.GetComponent<LineRenderer>(), Is.Not.Null);
+            Assert.That(highlight.GetComponent<MeshRenderer>(), Is.Null);
+            Assert.That(highlight.GetComponent<Collider>(), Is.Null);
             Assert.That(selectedObject.transform.Find("PerspectiveSelectionHighlight"), Is.Null);
 
             InvokePublic(controller, "ClearHighlight");
@@ -461,6 +465,70 @@ public class EditorViewModeManagerTests
         {
             DestroyObject(controllerObject);
             DestroyObject(selectedObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveHighlight_UsesWallDataOutlineForWall()
+    {
+        GameObject wallObject = new GameObject("Wall");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Wall wall = wallObject.AddComponent<Wall>();
+            wall.Initialize(new WallData(new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.4f, 3f, 1.5f));
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", wallObject);
+
+            Assert.That(created, Is.True);
+            Transform highlight = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionHighlight");
+            Assert.That(highlight, Is.Not.Null);
+            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
+            Assert.That(lineRenderer, Is.Not.Null);
+            Assert.That(lineRenderer.positionCount, Is.EqualTo(24));
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(wallObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveHighlight_UsesPolygonOutlineForRoom()
+    {
+        GameObject roomObject = new GameObject("Room");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Room room = roomObject.AddComponent<Room>();
+            bool roomInitialized = room.SetManualBoundaryVertices(
+                new[]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(4f, 0f, 3f),
+                    new Vector3(0f, 0f, 3f),
+                });
+            Assert.That(roomInitialized, Is.True);
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
+
+            Assert.That(created, Is.True);
+            Transform highlight = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionHighlight");
+            Assert.That(highlight, Is.Not.Null);
+            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
+            Assert.That(lineRenderer, Is.Not.Null);
+            Assert.That(lineRenderer.positionCount, Is.EqualTo(5));
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(roomObject);
         }
     }
 
