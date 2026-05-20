@@ -559,7 +559,7 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_AddsWeakAreaTintForRoom()
+    public void PerspectiveHighlight_AddsVisibleOverlayForRoom()
     {
         GameObject roomObject = new GameObject("Room");
         GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
@@ -584,17 +584,18 @@ public class EditorViewModeManagerTests
             bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
 
             Assert.That(created, Is.True);
-            Transform tint = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomTint");
-            Assert.That(tint, Is.Not.Null);
+            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomOverlay");
+            Assert.That(overlay, Is.Not.Null);
 
-            MeshFilter meshFilter = tint.GetComponent<MeshFilter>();
-            MeshRenderer meshRenderer = tint.GetComponent<MeshRenderer>();
+            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
+            MeshRenderer meshRenderer = overlay.GetComponent<MeshRenderer>();
             Assert.That(meshFilter, Is.Not.Null);
             Assert.That(meshRenderer, Is.Not.Null);
             Assert.That(meshFilter.sharedMesh.vertexCount, Is.EqualTo(4));
             Assert.That(meshFilter.sharedMesh.triangles.Length, Is.EqualTo(6));
-            Assert.That(meshRenderer.sharedMaterial.color.a, Is.LessThan(0.2f));
-            Assert.That(tint.GetComponent<Collider>(), Is.Null);
+            Assert.That(meshRenderer.sharedMaterial.color.a, Is.GreaterThanOrEqualTo(0.28f));
+            Assert.That(meshRenderer.sharedMaterial.renderQueue, Is.GreaterThanOrEqualTo((int)UnityEngine.Rendering.RenderQueue.Overlay));
+            Assert.That(overlay.GetComponent<Collider>(), Is.Null);
         }
         finally
         {
@@ -604,7 +605,7 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_DrawsRoomTintAboveEnclosingWalls()
+    public void PerspectiveHighlight_DrawsRoomOverlayAboveEnclosingWalls()
     {
         GameObject roomObject = new GameObject("Room");
         GameObject firstWallObject = new GameObject("WallA");
@@ -636,9 +637,9 @@ public class EditorViewModeManagerTests
             bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
 
             Assert.That(created, Is.True);
-            Transform tint = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomTint");
-            Assert.That(tint, Is.Not.Null);
-            MeshFilter meshFilter = tint.GetComponent<MeshFilter>();
+            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomOverlay");
+            Assert.That(overlay, Is.Not.Null);
+            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
             Assert.That(meshFilter, Is.Not.Null);
             Assert.That(meshFilter.sharedMesh.vertices[0].y, Is.GreaterThan(4f));
         }
