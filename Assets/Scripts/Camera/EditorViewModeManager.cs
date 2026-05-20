@@ -23,6 +23,8 @@ public sealed class EditorViewModeManager : MonoBehaviour
 
     public event Action<EditorViewMode> ViewModeChanged;
 
+    private bool[] topViewRootActiveStates;
+    private bool hasCachedTopViewRootStates;
     private bool buttonsBound;
     private bool warnedMissingTopButton;
     private bool warnedMissingPerspectiveButton;
@@ -81,6 +83,8 @@ public sealed class EditorViewModeManager : MonoBehaviour
         this.topButton = topButton;
         this.perspectiveButton = perspectiveButton;
 
+        hasCachedTopViewRootStates = false;
+        topViewRootActiveStates = null;
         BindButtons();
     }
 
@@ -148,17 +152,64 @@ public sealed class EditorViewModeManager : MonoBehaviour
             return;
         }
 
+        if (!active)
+        {
+            if (!hasCachedTopViewRootStates)
+            {
+                CacheTopViewRootActiveStates();
+            }
+        }
+
         foreach (GameObject root in topViewOnlyRoots)
         {
             if (root != null)
             {
-                root.SetActive(active);
+                root.SetActive(active ? GetCachedTopViewRootActiveState(root) : false);
             }
             else
             {
                 Debug.LogWarning($"{nameof(EditorViewModeManager)} has a missing top-view-only root reference.", this);
             }
         }
+
+        if (active)
+        {
+            hasCachedTopViewRootStates = false;
+        }
+    }
+
+    private void CacheTopViewRootActiveStates()
+    {
+        if (topViewRootActiveStates == null || topViewRootActiveStates.Length != topViewOnlyRoots.Length)
+        {
+            topViewRootActiveStates = new bool[topViewOnlyRoots.Length];
+        }
+
+        for (int i = 0; i < topViewOnlyRoots.Length; i++)
+        {
+            GameObject root = topViewOnlyRoots[i];
+            topViewRootActiveStates[i] = root != null && root.activeSelf;
+        }
+
+        hasCachedTopViewRootStates = true;
+    }
+
+    private bool GetCachedTopViewRootActiveState(GameObject root)
+    {
+        if (!hasCachedTopViewRootStates || topViewRootActiveStates == null)
+        {
+            return root != null && root.activeSelf;
+        }
+
+        for (int i = 0; i < topViewOnlyRoots.Length && i < topViewRootActiveStates.Length; i++)
+        {
+            if (topViewOnlyRoots[i] == root)
+            {
+                return topViewRootActiveStates[i];
+            }
+        }
+
+        return root != null && root.activeSelf;
     }
 
     private void SetEnabled(Behaviour target, bool enabled, string referenceName)

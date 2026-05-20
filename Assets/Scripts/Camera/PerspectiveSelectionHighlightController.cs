@@ -23,6 +23,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     private readonly List<GameObject> highlightObjects = new List<GameObject>();
     private readonly List<Vector3> selectedRoomVertices = new List<Vector3>();
     private Material runtimeHighlightMaterial;
+    private Material runtimeHighlightSourceMaterial;
     private Transform highlightRoot;
     private bool eventsBound;
 
@@ -54,6 +55,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         {
             DestroyUnityObject(runtimeHighlightMaterial);
             runtimeHighlightMaterial = null;
+            runtimeHighlightSourceMaterial = null;
         }
     }
 
@@ -208,11 +210,12 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return false;
         }
 
+        float outlineY = ResolveRoomOutlineY(room);
         Vector3[] positions = new Vector3[selectedRoomVertices.Count + 1];
         for (int i = 0; i < selectedRoomVertices.Count; i++)
         {
             Vector3 vertex = selectedRoomVertices[i];
-            vertex.y += roomOutlineYOffset;
+            vertex.y = outlineY;
             positions[i] = vertex;
         }
 
@@ -220,6 +223,34 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         selectedRoomVertices.Clear();
         highlightObject = CreateLineHighlight(positions, false);
         return true;
+    }
+
+    private float ResolveRoomOutlineY(Room room)
+    {
+        float outlineY = float.MinValue;
+        if (room != null && room.WallSet != null)
+        {
+            foreach (Wall wall in room.WallSet)
+            {
+                if (wall == null || wall.Data == null)
+                {
+                    continue;
+                }
+
+                WallData wallData = wall.Data;
+                float wallTopY = wallData.centerY + Mathf.Abs(wallData.height) * 0.5f;
+                outlineY = Mathf.Max(outlineY, wallTopY);
+            }
+        }
+
+        if (outlineY > float.MinValue)
+        {
+            return outlineY + roomOutlineYOffset + boundsPadding;
+        }
+
+        return selectedRoomVertices.Count > 0
+            ? selectedRoomVertices[0].y + roomOutlineYOffset
+            : roomOutlineYOffset;
     }
 
     private GameObject CreateLineHighlight(Vector3[] positions, bool edgePairs)
@@ -474,8 +505,22 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 
         if (highlightMaterial != null)
         {
-            ConfigureTransparentMaterial(highlightMaterial, visibleHighlightColor);
-            return highlightMaterial;
+            if (runtimeHighlightMaterial == null || runtimeHighlightSourceMaterial != highlightMaterial)
+            {
+                if (runtimeHighlightMaterial != null)
+                {
+                    DestroyUnityObject(runtimeHighlightMaterial);
+                }
+
+                runtimeHighlightMaterial = new Material(highlightMaterial)
+                {
+                    hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
+                };
+                runtimeHighlightSourceMaterial = highlightMaterial;
+            }
+
+            ConfigureTransparentMaterial(runtimeHighlightMaterial, visibleHighlightColor);
+            return runtimeHighlightMaterial;
         }
 
         if (runtimeHighlightMaterial != null)
@@ -508,7 +553,9 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         runtimeHighlightMaterial = new Material(shader)
         {
             color = visibleHighlightColor,
+            hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
         };
+        runtimeHighlightSourceMaterial = null;
         ConfigureTransparentMaterial(runtimeHighlightMaterial, visibleHighlightColor);
         return runtimeHighlightMaterial;
     }

@@ -28,6 +28,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
     [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
     [SerializeField] private RoomManager roomManager;
 
@@ -252,6 +253,13 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
         lastInputFrame = inputFrame;
+        if (IsPerspectiveViewActive())
+        {
+            FinalizeMoveIfNeeded();
+            ResetDragState();
+            return;
+        }
+
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
         EditorPointerFrame pointerFrame = PointerInputFrameUtility.BuildPointerFrame(inputFrame);
 
@@ -682,8 +690,14 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         LayerUtility.ResolveObject(ref wallLengthDisplay);
         LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
         LayerUtility.ResolveObject(ref roomManager);
+    }
+
+    private bool IsPerspectiveViewActive()
+    {
+        return viewModeManager != null && viewModeManager.CurrentViewMode == EditorViewMode.Perspective3D;
     }
 
     private void RefreshDragPlane()

@@ -75,6 +75,18 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void SetTopView_RestoresOnlyPreviouslyActiveTopViewRoots()
+    {
+        Component manager = CreateManager(out _, out _, out _, out _, out _, out _);
+        topUiRoot.SetActive(false);
+
+        InvokePublic(manager, "SetPerspectiveView");
+        InvokePublic(manager, "SetTopView");
+
+        Assert.That(topUiRoot.activeSelf, Is.False);
+    }
+
+    [Test]
     public void SetViewMode_DoesNotRaiseDuplicateEventForSameMode()
     {
         Component manager = CreateManager(out _, out _, out _, out _, out _, out _);
@@ -546,6 +558,84 @@ public class EditorViewModeManagerTests
         }
     }
 
+    [Test]
+    public void PerspectiveHighlight_DrawsRoomOutlineAboveEnclosingWalls()
+    {
+        GameObject roomObject = new GameObject("Room");
+        GameObject firstWallObject = new GameObject("WallA");
+        GameObject secondWallObject = new GameObject("WallB");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+            bool roomInitialized = (bool)InvokePublicWithResult(
+                room,
+                "SetManualBoundaryVertices",
+                new[]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(4f, 0f, 3f),
+                    new Vector3(0f, 0f, 3f),
+                },
+                false);
+            Assert.That(roomInitialized, Is.True);
+
+            Component firstWall = CreateWall(firstWallObject, new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.4f, 3f, 1.5f);
+            Component secondWall = CreateWall(secondWallObject, new Vector3(4f, 0f, 0f), new Vector3(4f, 0f, 3f), 0.4f, 4f, 2f);
+            SetRoomWallSet(room, firstWall, secondWall);
+
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+
+            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
+
+            Assert.That(created, Is.True);
+            Transform highlight = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionHighlight");
+            Assert.That(highlight, Is.Not.Null);
+            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
+            Assert.That(lineRenderer, Is.Not.Null);
+            Assert.That(lineRenderer.GetPosition(0).y, Is.GreaterThan(4f));
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(secondWallObject);
+            DestroyObject(firstWallObject);
+            DestroyObject(roomObject);
+        }
+    }
+
+    [Test]
+    public void WallSelectionManager_IgnoresPerspectiveRightClick()
+    {
+        GameObject viewModeObject = new GameObject("EditorViewModeManager");
+        GameObject selectionObject = new GameObject("WallSelectionManager");
+        GameObject wallObject = new GameObject("SelectedWall");
+
+        try
+        {
+            Component viewModeManager = viewModeObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
+            InvokePublic(viewModeManager, "SetPerspectiveView");
+
+            Component selectionManager = selectionObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+            SetPrivateField(selectionManager, "viewModeManager", viewModeManager);
+            InvokePublicWithResult(selectionManager, "SetSelectedWall", wallObject);
+
+            object inputFrame = CreateEditorInputFrame(rightPressedThisFrame: true);
+            InvokePublicWithResult(selectionManager, "HandleEditorInput", inputFrame);
+
+            Assert.That(GetPublicProperty<GameObject>(selectionManager, "SelectedWall"), Is.EqualTo(wallObject));
+        }
+        finally
+        {
+            DestroyObject(wallObject);
+            DestroyObject(selectionObject);
+            DestroyObject(viewModeObject);
+            DestroyObject(GameObject.Find("EditorInputManager"));
+        }
+    }
+
     private Component CreateManager(
         out Camera topCamera,
         out Camera perspectiveCamera,
@@ -663,6 +753,13 @@ public class EditorViewModeManagerTests
         field.SetValue(target, value);
     }
 
+    private static T GetPublicProperty<T>(Component target, string propertyName)
+    {
+        PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(property, Is.Not.Null, $"Expected public property {propertyName} on {target.GetType().Name}.");
+        return (T)property.GetValue(target);
+    }
+
     private static T GetPrivateField<T>(Component target, string fieldName)
     {
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -687,6 +784,65 @@ public class EditorViewModeManagerTests
         MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(target, arguments);
+    }
+
+    private static Component CreateWall(GameObject wallObject, Vector3 start, Vector3 end, float thickness, float height, float centerY)
+    {
+        Component wall = wallObject.AddComponent(GetAssemblyType("Wall"));
+        object wallData = Activator.CreateInstance(
+            GetAssemblyType("WallData"),
+            start,
+            end,
+            thickness,
+            height,
+            centerY);
+        InvokePublicWithResult(wall, "Initialize", wallData);
+        return wall;
+    }
+
+    private static void SetRoomWallSet(Component room, params Component[] walls)
+    {
+        Type wallType = GetAssemblyType("Wall");
+        Type wallSetType = typeof(System.Collections.Generic.HashSet<>).MakeGenericType(wallType);
+        object wallSet = Activator.CreateInstance(wallSetType);
+        MethodInfo addMethod = wallSetType.GetMethod("Add", new[] { wallType });
+        Assert.That(addMethod, Is.Not.Null);
+
+        for (int i = 0; i < walls.Length; i++)
+        {
+            addMethod.Invoke(wallSet, new object[] { walls[i] });
+        }
+
+        PropertyInfo property = room.GetType().GetProperty("WallSet", BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(property, Is.Not.Null);
+        property.SetValue(room, wallSet);
+    }
+
+    private static object CreateEditorInputFrame(bool rightPressedThisFrame)
+    {
+        object defaultMode = Enum.Parse(GetAssemblyType("EditorMode"), "Default");
+        return Activator.CreateInstance(
+            GetAssemblyType("EditorInputFrame"),
+            defaultMode,
+            true,
+            Vector2.zero,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            rightPressedThisFrame,
+            rightPressedThisFrame,
+            Vector2.zero,
+            0f,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false);
     }
 
     private static void AssertBoundsVisible(Camera camera, Bounds bounds)
