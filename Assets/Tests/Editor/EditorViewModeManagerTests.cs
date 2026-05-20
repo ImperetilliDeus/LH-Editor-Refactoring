@@ -607,6 +607,54 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void PerspectiveHighlight_UsesFocusedRoomFallback()
+    {
+        GameObject roomObject = new GameObject("Room");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+        GameObject viewModeObject = new GameObject("EditorViewModeManager");
+        GameObject roomHandleObject = new GameObject("RoomHandleManager");
+
+        try
+        {
+            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
+            bool roomInitialized = (bool)InvokePublicWithResult(
+                room,
+                "SetManualBoundaryVertices",
+                new[]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(4f, 0f, 0f),
+                    new Vector3(4f, 0f, 3f),
+                    new Vector3(0f, 0f, 3f),
+                },
+                false);
+            Assert.That(roomInitialized, Is.True);
+
+            Component viewModeManager = viewModeObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
+            InvokePublic(viewModeManager, "SetPerspectiveView");
+
+            Component roomHandleManager = roomHandleObject.AddComponent(GetAssemblyType("RoomHandleManager"));
+            InvokePublicWithResult(roomHandleManager, "SetFocusedRoom", room);
+
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+            SetPrivateField(controller, "viewModeManager", viewModeManager);
+            SetPrivateField(controller, "roomHandleManager", roomHandleManager);
+
+            InvokePublic(controller, "RefreshHighlight");
+
+            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomOverlay");
+            Assert.That(overlay, Is.Not.Null);
+        }
+        finally
+        {
+            DestroyObject(roomHandleObject);
+            DestroyObject(viewModeObject);
+            DestroyObject(controllerObject);
+            DestroyObject(roomObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlight_DrawsRoomOverlayAboveEnclosingWalls()
     {
         GameObject roomObject = new GameObject("Room");
@@ -651,6 +699,36 @@ public class EditorViewModeManagerTests
             DestroyObject(secondWallObject);
             DestroyObject(firstWallObject);
             DestroyObject(roomObject);
+        }
+    }
+
+    [Test]
+    public void WallToolRuntime_CreatesPreviewMaterialWithBaseColorAlpha()
+    {
+        Type runtimeType = GetAssemblyType("WallToolRuntime");
+        MethodInfo method = runtimeType.GetMethod("CreateWallMaterial", BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.That(method, Is.Not.Null);
+
+        Color previewColor = new Color(0.2f, 0.8f, 1f, 0.45f);
+        Material material = (Material)method.Invoke(null, new object[] { previewColor, true });
+
+        try
+        {
+            Assert.That(material, Is.Not.Null);
+            Assert.That(material.color.a, Is.EqualTo(0.45f).Within(0.001f));
+            if (material.HasProperty("_BaseColor"))
+            {
+                Assert.That(material.GetColor("_BaseColor").a, Is.EqualTo(0.45f).Within(0.001f));
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                Assert.That(material.GetColor("_Color").a, Is.EqualTo(0.45f).Within(0.001f));
+            }
+        }
+        finally
+        {
+            DestroyObject(material);
         }
     }
 

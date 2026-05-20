@@ -16,6 +16,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
+    [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private Material highlightMaterial;
     [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 1f);
     [SerializeField] private Color roomOverlayColor = new Color(0.1f, 0.85f, 1f, 0.45f);
@@ -90,7 +91,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return;
         }
 
-        Room selectedRoom = roomAuthoringPanelManager != null ? roomAuthoringPanelManager.SelectedRoom : null;
+        Room selectedRoom = ResolveSelectedRoom();
         if (selectedRoom != null)
         {
             ShowHighlightForTarget(selectedRoom.gameObject);
@@ -406,6 +407,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref wallSelectionManager);
         LayerUtility.ResolveObject(ref roomAuthoringPanelManager);
+        LayerUtility.ResolveObject(ref roomHandleManager);
     }
 
     private Transform EnsureHighlightRoot()
@@ -445,6 +447,11 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             roomAuthoringPanelManager.SelectedRoomChanged += HandleSelectedRoomChanged;
         }
 
+        if (roomHandleManager != null)
+        {
+            roomHandleManager.FocusedRoomChanged += HandleFocusedRoomChanged;
+        }
+
         eventsBound = true;
     }
 
@@ -469,6 +476,11 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         if (roomAuthoringPanelManager != null)
         {
             roomAuthoringPanelManager.SelectedRoomChanged -= HandleSelectedRoomChanged;
+        }
+
+        if (roomHandleManager != null)
+        {
+            roomHandleManager.FocusedRoomChanged -= HandleFocusedRoomChanged;
         }
 
         eventsBound = false;
@@ -512,6 +524,26 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         }
 
         RefreshHighlight();
+    }
+
+    private void HandleFocusedRoomChanged(Room focusedRoom)
+    {
+        if (!isActiveAndEnabled)
+        {
+            return;
+        }
+
+        RefreshHighlight();
+    }
+
+    private Room ResolveSelectedRoom()
+    {
+        if (roomAuthoringPanelManager != null && roomAuthoringPanelManager.SelectedRoom != null)
+        {
+            return roomAuthoringPanelManager.SelectedRoom;
+        }
+
+        return roomHandleManager != null ? roomHandleManager.FocusedRoom : null;
     }
 
     private bool TryGetTargetBounds(GameObject target, out Bounds bounds)
