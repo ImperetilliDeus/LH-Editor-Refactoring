@@ -6,6 +6,11 @@ public sealed partial class RoomCreateManager
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
         lastInputFrame = inputFrame;
+        if (viewModeManager != null && viewModeManager.CurrentViewMode == EditorViewMode.Perspective3D)
+        {
+            return;
+        }
+
         if (mainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable || !isRoomCreateModeActive)
         {
             return;

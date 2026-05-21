@@ -13,6 +13,8 @@ WorkStates/
 .worktrees/
 .superpowers/
 tools/FurnitureAuthoringTool/artifacts/
+tools/FurnitureAuthoringTool/**/bin/
+tools/FurnitureAuthoringTool/**/obj/
 
 # Addressables / asset import artifacts
 Assets/AddressableAssetsData/*/*.bin*

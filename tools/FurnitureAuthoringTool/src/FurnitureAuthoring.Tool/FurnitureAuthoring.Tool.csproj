@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\FurnitureAuthoring.Application\FurnitureAuthoring.Application.csproj" />
     <ProjectReference Include="..\FurnitureAuthoring.Contracts\FurnitureAuthoring.Contracts.csproj" />
+    <ProjectReference Include="..\FurnitureAuthoring.Infrastructure\FurnitureAuthoring.Infrastructure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

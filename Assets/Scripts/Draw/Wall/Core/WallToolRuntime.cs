@@ -516,6 +516,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         {
             color = color,
         };
+        SetMaterialColor(material, color);
 
         if (!transparent)
         {
@@ -529,7 +530,27 @@ internal sealed class WallToolRuntime : IWallToolContext
         material.SetFloat("_ZWrite", 0f);
         material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        SetMaterialColor(material, color);
 
         return material;
+    }
+
+    private static void SetMaterialColor(Material material, Color color)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        material.color = color;
+        if (material.HasProperty("_BaseColor"))
+        {
+            material.SetColor("_BaseColor", color);
+        }
+
+        if (material.HasProperty("_Color"))
+        {
+            material.SetColor("_Color", color);
+        }
     }
 }

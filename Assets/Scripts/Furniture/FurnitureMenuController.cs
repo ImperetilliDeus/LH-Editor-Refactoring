@@ -11,6 +11,7 @@ public class FurnitureMenuController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private FurniturePlacementManager placementManager;
     [SerializeField] private FurnitureCatalog catalog;
     [SerializeField] private UiReferenceSettings uiReferenceSettings;
@@ -24,9 +25,30 @@ public class FurnitureMenuController : MonoBehaviour
     [SerializeField] private Vector2 buttonSize = new Vector2(120f, 120f);
 
     private bool built;
+    private bool eventsBound;
     private static readonly Dictionary<Texture2D, Sprite> ThumbnailSpriteCache = new Dictionary<Texture2D, Sprite>();
 
     private void Awake()
+    {
+        Initialize();
+    }
+
+    private void OnEnable()
+    {
+        Initialize();
+    }
+
+    private void OnDisable()
+    {
+        UnbindEvents();
+    }
+
+    private void OnDestroy()
+    {
+        UnbindEvents();
+    }
+
+    private void Initialize()
     {
         ResolveReferences();
         BindEvents();
@@ -38,9 +60,19 @@ public class FurnitureMenuController : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    public void SetReferencesForTests(
+        ModeManager modeManager,
+        EditorViewModeManager viewModeManager,
+        GameObject furnitureMenuRoot)
     {
         UnbindEvents();
+
+        this.modeManager = modeManager;
+        this.viewModeManager = viewModeManager;
+        this.furnitureMenuRoot = furnitureMenuRoot;
+
+        BindEvents();
+        UpdateMenuVisibility();
     }
 
     public void RebuildMenu()
@@ -69,19 +101,47 @@ public class FurnitureMenuController : MonoBehaviour
 
     private void BindEvents()
     {
+        if (eventsBound)
+        {
+            return;
+        }
+
+        bool boundAnyEvent = false;
         if (modeManager != null)
         {
             modeManager.ModeChanged -= HandleModeChanged;
             modeManager.ModeChanged += HandleModeChanged;
+            boundAnyEvent = true;
         }
+
+        if (viewModeManager != null)
+        {
+            viewModeManager.ViewModeChanged -= HandleViewModeChanged;
+            viewModeManager.ViewModeChanged += HandleViewModeChanged;
+            boundAnyEvent = true;
+        }
+
+        eventsBound = boundAnyEvent;
     }
 
     private void UnbindEvents()
     {
+        if (!eventsBound)
+        {
+            return;
+        }
+
         if (modeManager != null)
         {
             modeManager.ModeChanged -= HandleModeChanged;
         }
+
+        if (viewModeManager != null)
+        {
+            viewModeManager.ViewModeChanged -= HandleViewModeChanged;
+        }
+
+        eventsBound = false;
     }
 
     private void HandleModeChanged(EditorMode mode)
@@ -91,6 +151,16 @@ public class FurnitureMenuController : MonoBehaviour
         {
             RebuildMenu();
         }
+    }
+
+    private void HandleViewModeChanged(EditorViewMode viewMode)
+    {
+        UpdateMenuVisibility();
+    }
+
+    public void RefreshVisibility()
+    {
+        UpdateMenuVisibility();
     }
 
     private void UpdateMenuVisibility()
@@ -105,11 +175,18 @@ public class FurnitureMenuController : MonoBehaviour
             return;
         }
 
-        bool visible = modeManager != null && modeManager.IsMode(EditorMode.FurniturePlace);
+        bool visible = modeManager != null &&
+                       modeManager.IsMode(EditorMode.FurniturePlace) &&
+                       IsTopViewActive();
         if (furnitureMenuRoot.activeSelf != visible)
         {
             furnitureMenuRoot.SetActive(visible);
         }
+    }
+
+    private bool IsTopViewActive()
+    {
+        return viewModeManager == null || viewModeManager.CurrentViewMode == EditorViewMode.Top;
     }
 
     private void CreateButton(FurnitureCatalogItem item)
@@ -289,6 +366,11 @@ public class FurnitureMenuController : MonoBehaviour
         if (modeManager == null)
         {
             LayerUtility.ResolveObject(ref modeManager);
+        }
+
+        if (viewModeManager == null)
+        {
+            LayerUtility.ResolveObject(ref viewModeManager);
         }
 
         if (placementManager == null)
