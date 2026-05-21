@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FurnitureAuthoring.Application\FurnitureAuthoring.Application.csproj" />
+    <ProjectReference Include="..\..\src\FurnitureAuthoring.Contracts\FurnitureAuthoring.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\FurnitureAuthoring.Infrastructure\FurnitureAuthoring.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

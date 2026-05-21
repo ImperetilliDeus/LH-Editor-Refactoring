@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using FurnitureAuthoring.Application.Abstractions;
 using FurnitureAuthoring.Contracts.Models;
 using FurnitureAuthoring.Tool.Models;
 
@@ -23,9 +24,9 @@ public sealed class FurniturePatchBuildWorker
         WriteIndented = true
     };
 
-    private readonly JsonFurnitureManifestStore manifestStore;
+    private readonly IFurnitureManifestStore manifestStore;
 
-    public FurniturePatchBuildWorker(JsonFurnitureManifestStore manifestStore)
+    public FurniturePatchBuildWorker(IFurnitureManifestStore manifestStore)
     {
         this.manifestStore = manifestStore ?? throw new ArgumentNullException(nameof(manifestStore));
     }
