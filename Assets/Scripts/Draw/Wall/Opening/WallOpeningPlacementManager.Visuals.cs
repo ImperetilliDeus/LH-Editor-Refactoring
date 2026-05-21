@@ -135,13 +135,30 @@ public partial class WallOpeningPlacementManager
             cachedCubeMesh = cubeFilter.sharedMesh;
         }
 
-        Destroy(cube);
+        DestroyTemporaryObject(cube);
     }
 
     private Mesh GetCubeMesh()
     {
         EnsureCachedResources();
         return cachedCubeMesh;
+    }
+
+    private static void DestroyTemporaryObject(GameObject target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(target);
+        }
+        else
+        {
+            DestroyImmediate(target);
+        }
     }
 
     private Material GetOpeningMaterial(OpeningPlacementType type)
