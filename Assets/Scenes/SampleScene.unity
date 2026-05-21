@@ -3938,6 +3938,7 @@ MonoBehaviour:
   wallHandleManager: {fileID: 525080097}
   roomHandleManager: {fileID: 480306211}
   modeManager: {fileID: 1793356131}
+  viewModeManager: {fileID: 1299695794}
   undoRedoManager: {fileID: 1556874436}
   creationShapeMode: 1
   minimumRoomWidth: 0.1
@@ -4564,6 +4565,7 @@ MonoBehaviour:
   wallLengthDisplay: {fileID: 0}
   undoRedoManager: {fileID: 1556874436}
   modeManager: {fileID: 0}
+  viewModeManager: {fileID: 1299695794}
   wallOpeningPlacementManager: {fileID: 0}
   roomManager: {fileID: 0}
   wallSelectionCanvas: {fileID: 400122859}
@@ -6374,6 +6376,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   modeManager: {fileID: 1793356131}
+  viewModeManager: {fileID: 1299695794}
   placementManager: {fileID: 800067018}
   catalog: {fileID: 11400000, guid: 0e8a7fa637ab98840b835b646eda79df, type: 2}
   uiReferenceSettings: {fileID: 11400000, guid: 5711295a6e254661b3c829b8bc4f72a5, type: 2}
@@ -6396,6 +6399,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   modeManager: {fileID: 1793356131}
+  viewModeManager: {fileID: 1299695794}
   targetCamera: {fileID: 330585545}
   furnitureRoot: {fileID: 445327670}
   roomManager: {fileID: 480306209}

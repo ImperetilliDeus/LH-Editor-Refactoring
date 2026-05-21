@@ -152,7 +152,7 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return true;
         }
 
-        if (!TryGetTargetBounds(target, out Bounds bounds))
+        if (!PerspectiveHighlightBoundsUtility.TryGetTargetBounds(target, out Bounds bounds))
         {
             return false;
         }
@@ -196,35 +196,10 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return false;
         }
 
-        WallData wallData = wall.Data;
-        Vector3 start = wallData.startPoint;
-        Vector3 end = wallData.endPoint;
-        Vector3 direction = end - start;
-        direction.y = 0f;
-        if (direction.sqrMagnitude <= BoundsEpsilon * BoundsEpsilon)
+        if (!PerspectiveWallOverlayGeometryUtility.TryBuildCorners(wall.Data, boundsPadding, out Vector3[] corners))
         {
             return false;
         }
-
-        direction.Normalize();
-        Vector3 side = Vector3.Cross(Vector3.up, direction).normalized;
-        float halfThickness = Mathf.Max(Mathf.Abs(wallData.thickness), MinimumHighlightSize) * 0.5f + boundsPadding;
-        float halfHeight = Mathf.Max(Mathf.Abs(wallData.height), MinimumHighlightSize) * 0.5f + boundsPadding;
-        float centerY = wallData.centerY;
-        Vector3 startCenter = new Vector3(start.x, centerY, start.z);
-        Vector3 endCenter = new Vector3(end.x, centerY, end.z);
-
-        Vector3[] corners =
-        {
-            startCenter - side * halfThickness + Vector3.down * halfHeight,
-            startCenter + side * halfThickness + Vector3.down * halfHeight,
-            endCenter + side * halfThickness + Vector3.down * halfHeight,
-            endCenter - side * halfThickness + Vector3.down * halfHeight,
-            startCenter - side * halfThickness + Vector3.up * halfHeight,
-            startCenter + side * halfThickness + Vector3.up * halfHeight,
-            endCenter + side * halfThickness + Vector3.up * halfHeight,
-            endCenter - side * halfThickness + Vector3.up * halfHeight,
-        };
 
         highlightObject = CreateWallOverlay(corners);
         return true;
@@ -594,70 +569,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         }
 
         return roomHandleManager != null ? roomHandleManager.FocusedRoom : null;
-    }
-
-    private bool TryGetTargetBounds(GameObject target, out Bounds bounds)
-    {
-        bounds = default;
-        bool hasBounds = false;
-
-        Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            Renderer renderer = renderers[i];
-            if (renderer != null && !IsHighlightTransform(renderer.transform))
-            {
-                EncapsulateBounds(renderer.bounds, ref bounds, ref hasBounds);
-            }
-        }
-
-        Collider[] colliders = target.GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            Collider collider = colliders[i];
-            if (collider != null && !IsHighlightTransform(collider.transform))
-            {
-                EncapsulateBounds(collider.bounds, ref bounds, ref hasBounds);
-            }
-        }
-
-        return hasBounds;
-    }
-
-    private static bool IsHighlightTransform(Transform candidate)
-    {
-        while (candidate != null)
-        {
-            if (candidate.name == HighlightObjectName ||
-                candidate.name == WallOverlayObjectName ||
-                candidate.name == RoomOverlayObjectName ||
-                candidate.name == HighlightRootName)
-            {
-                return true;
-            }
-
-            candidate = candidate.parent;
-        }
-
-        return false;
-    }
-
-    private static bool EncapsulateBounds(Bounds candidate, ref Bounds bounds, ref bool hasBounds)
-    {
-        if (candidate.extents.sqrMagnitude <= BoundsEpsilon * BoundsEpsilon)
-        {
-            return false;
-        }
-
-        if (!hasBounds)
-        {
-            bounds = candidate;
-            hasBounds = true;
-            return true;
-        }
-
-        bounds.Encapsulate(candidate);
-        return true;
     }
 
     private float ResolveRoomOverlayY(Room room)

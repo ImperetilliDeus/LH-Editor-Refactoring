@@ -186,6 +186,7 @@ public class EditorViewModeManagerTests
                 inactiveColor);
 
             presenterObject.SetActive(true);
+            InvokePublic(presenter, "Refresh");
 
             Assert.That(topImage.color, Is.EqualTo(activeColor));
             Assert.That(perspectiveImage.color, Is.EqualTo(inactiveColor));
@@ -480,6 +481,36 @@ public class EditorViewModeManagerTests
         finally
         {
             DestroyObject(controllerObject);
+            DestroyObject(selectedObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveHighlightBoundsUtility_IgnoresExistingHighlightObjects()
+    {
+        GameObject selectedObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject highlightObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        highlightObject.name = "PerspectiveSelectionHighlight";
+        highlightObject.transform.SetParent(selectedObject.transform, true);
+        highlightObject.transform.position = new Vector3(100f, 0f, 0f);
+        highlightObject.transform.localScale = Vector3.one * 10f;
+
+        try
+        {
+            Type utilityType = GetAssemblyType("PerspectiveHighlightBoundsUtility");
+            MethodInfo method = utilityType.GetMethod("TryGetTargetBounds", BindingFlags.Static | BindingFlags.Public);
+            Assert.That(method, Is.Not.Null);
+            object[] arguments = { selectedObject, null };
+            bool hasBounds = (bool)method.Invoke(null, arguments);
+            Bounds bounds = (Bounds)arguments[1];
+
+            Assert.That(hasBounds, Is.True);
+            Assert.That(bounds.center.x, Is.LessThan(1f));
+            Assert.That(bounds.size.x, Is.LessThan(2f));
+        }
+        finally
+        {
+            DestroyObject(highlightObject);
             DestroyObject(selectedObject);
         }
     }
@@ -881,20 +912,26 @@ public class EditorViewModeManagerTests
             Component modeManager = modeObject.AddComponent(GetAssemblyType("ModeManager"));
             Component viewModeManager = viewModeObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
             Component controller = controllerObject.AddComponent(GetAssemblyType("FurnitureMenuController"));
-            SetPrivateField(controller, "modeManager", modeManager);
-            SetPrivateField(controller, "viewModeManager", viewModeManager);
-            SetPrivateField(controller, "furnitureMenuRoot", menuRoot);
 
             controllerObject.SetActive(true);
+            InvokePublicWithResult(
+                controller,
+                "SetReferencesForTests",
+                modeManager,
+                viewModeManager,
+                menuRoot);
             SetEditorMode(modeManager, "FurniturePlace");
+            InvokePublic(controller, "RefreshVisibility");
 
             Assert.That(menuRoot.activeSelf, Is.True);
 
             InvokePublic(viewModeManager, "SetPerspectiveView");
+            InvokePublic(controller, "RefreshVisibility");
 
             Assert.That(menuRoot.activeSelf, Is.False);
 
             InvokePublic(viewModeManager, "SetTopView");
+            InvokePublic(controller, "RefreshVisibility");
 
             Assert.That(menuRoot.activeSelf, Is.True);
         }
@@ -1089,13 +1126,16 @@ public class EditorViewModeManagerTests
         Color activeColor,
         Color inactiveColor)
     {
-        SetPrivateField(presenter, "viewModeManager", manager);
-        SetPrivateField(presenter, "topButton", topButton);
-        SetPrivateField(presenter, "perspectiveButton", perspectiveButton);
-        SetPrivateField(presenter, "topButtonBackground", topImage);
-        SetPrivateField(presenter, "perspectiveButtonBackground", perspectiveImage);
-        SetPrivateField(presenter, "activeColor", activeColor);
-        SetPrivateField(presenter, "inactiveColor", inactiveColor);
+        InvokePublicWithResult(
+            presenter,
+            "SetReferencesForTests",
+            manager,
+            topButton,
+            perspectiveButton,
+            topImage,
+            perspectiveImage,
+            activeColor,
+            inactiveColor);
     }
 
     private static void SetPrivateField(Component target, string fieldName, object value)

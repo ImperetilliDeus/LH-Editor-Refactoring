@@ -15,24 +15,78 @@ public sealed class EditorViewModeToolbarPresenter : MonoBehaviour
     [SerializeField] private Color activeIconColor = Color.black;
     [SerializeField] private Color inactiveIconColor = new Color(0f, 0f, 0f, 0.45f);
 
+    private bool eventsBound;
+
     private void Awake()
     {
-        LayerUtility.ResolveObject(ref viewModeManager);
+        Initialize();
+    }
 
-        if (viewModeManager != null)
-        {
-            viewModeManager.ViewModeChanged += HandleViewModeChanged;
-        }
+    private void OnEnable()
+    {
+        Initialize();
+    }
 
-        Refresh();
+    private void OnDisable()
+    {
+        UnbindEvents();
     }
 
     private void OnDestroy()
     {
-        if (viewModeManager != null)
+        UnbindEvents();
+    }
+
+    private void Initialize()
+    {
+        LayerUtility.ResolveObject(ref viewModeManager);
+        BindEvents();
+        Refresh();
+    }
+
+    public void SetReferencesForTests(
+        EditorViewModeManager viewModeManager,
+        Button topButton,
+        Button perspectiveButton,
+        Image topButtonBackground,
+        Image perspectiveButtonBackground,
+        Color activeColor,
+        Color inactiveColor)
+    {
+        UnbindEvents();
+
+        this.viewModeManager = viewModeManager;
+        this.topButton = topButton;
+        this.perspectiveButton = perspectiveButton;
+        this.topButtonBackground = topButtonBackground;
+        this.perspectiveButtonBackground = perspectiveButtonBackground;
+        this.activeColor = activeColor;
+        this.inactiveColor = inactiveColor;
+
+        BindEvents();
+        Refresh();
+    }
+
+    private void BindEvents()
+    {
+        if (eventsBound || viewModeManager == null)
         {
-            viewModeManager.ViewModeChanged -= HandleViewModeChanged;
+            return;
         }
+
+        viewModeManager.ViewModeChanged += HandleViewModeChanged;
+        eventsBound = true;
+    }
+
+    private void UnbindEvents()
+    {
+        if (!eventsBound || viewModeManager == null)
+        {
+            return;
+        }
+
+        viewModeManager.ViewModeChanged -= HandleViewModeChanged;
+        eventsBound = false;
     }
 
     public void Refresh()
