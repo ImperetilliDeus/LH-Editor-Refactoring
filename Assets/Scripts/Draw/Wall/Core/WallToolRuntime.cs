@@ -93,19 +93,19 @@ internal sealed class WallToolRuntime : IWallToolContext
 
         if (previewWall != null)
         {
-            Object.Destroy(previewWall);
+            DestroyObject(previewWall);
             previewWall = null;
         }
 
         if (previewMaterial != null)
         {
-            Object.Destroy(previewMaterial);
+            DestroyObject(previewMaterial);
             previewMaterial = null;
         }
 
         if (ownsWallMaterial && wallMaterial != null)
         {
-            Object.Destroy(wallMaterial);
+            DestroyObject(wallMaterial);
             wallMaterial = null;
         }
     }
@@ -365,6 +365,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         if (!TryGetMouseWorldPoint(out Vector3 currentPoint))
         {
             previewWall.SetActive(false);
+            EditorVisualEvents.RequestTopViewRefresh();
             return;
         }
 
@@ -372,10 +373,13 @@ internal sealed class WallToolRuntime : IWallToolContext
         {
             ClearPreviewWallDisplay();
             previewWall.SetActive(false);
+            EditorVisualEvents.RequestTopViewRefresh();
             return;
         }
 
+        SetPreviewWorldRenderersEnabled(previewWall, false);
         previewWall.SetActive(true);
+        EditorVisualEvents.RequestTopViewRefresh();
     }
 
     private void ExitWallCreationMode()
@@ -386,6 +390,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         if (previewWall != null)
         {
             previewWall.SetActive(false);
+            EditorVisualEvents.RequestTopViewRefresh();
         }
     }
 
@@ -414,7 +419,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         {
             wallComponent?.ClearLengthDisplay(wallLengthDisplay);
             handleManager?.UnregisterWall(wallObject);
-            Object.Destroy(wallObject);
+            DestroyObject(wallObject);
         }
         else if (isPreview)
         {
@@ -437,7 +442,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         Collider previewCollider = previewWall.GetComponent<Collider>();
         if (previewCollider != null)
         {
-            Object.Destroy(previewCollider);
+            DestroyObject(previewCollider);
         }
 
         MeshRenderer previewRenderer = previewWall.GetComponent<MeshRenderer>();
@@ -453,7 +458,25 @@ internal sealed class WallToolRuntime : IWallToolContext
             previewWallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
         }
 
+        SetPreviewWorldRenderersEnabled(previewWall, false);
         previewWall.SetActive(false);
+    }
+
+    private static void SetPreviewWorldRenderersEnabled(GameObject previewObject, bool enabled)
+    {
+        if (previewObject == null)
+        {
+            return;
+        }
+
+        MeshRenderer[] renderers = previewObject.GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                renderers[i].enabled = enabled;
+            }
+        }
     }
 
     private void ClearPreviewWallDisplay()
@@ -496,7 +519,24 @@ internal sealed class WallToolRuntime : IWallToolContext
             cachedCubeMesh = filter.sharedMesh;
         }
 
-        Object.Destroy(cube);
+        DestroyObject(cube);
+    }
+
+    private static void DestroyObject(Object target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Object.Destroy(target);
+        }
+        else
+        {
+            Object.DestroyImmediate(target);
+        }
     }
 
     private static Material CreateWallMaterial(Color color, bool transparent)

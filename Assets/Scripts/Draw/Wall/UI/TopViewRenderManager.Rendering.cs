@@ -48,7 +48,7 @@ public partial class TopViewRenderManager
         batchGraphic.raycastTarget = IsRoomWallAuthoringInteractionEnabled();
 
         cachedWallSegments.Clear();
-        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
+        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true, true);
 
         for (int i = 0; i < cachedWalls.Count; i++)
         {

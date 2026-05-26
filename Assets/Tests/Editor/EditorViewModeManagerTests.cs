@@ -821,6 +821,68 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void WallToolRuntime_HidesPreviewWorldRenderersForTopPlanOverlay()
+    {
+        GameObject cameraObject = new GameObject("PreviewCamera");
+        GameObject wallRootObject = new GameObject("WallRoot");
+        object runtime = null;
+
+        try
+        {
+            Camera camera = cameraObject.AddComponent<Camera>();
+            Type runtimeType = GetAssemblyType("WallToolRuntime");
+            runtime = Activator.CreateInstance(
+                runtimeType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new object[]
+                {
+                    camera,
+                    null,
+                    wallRootObject.transform,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    22f,
+                    1.5f,
+                    0.01f,
+                    new Color(0.2f, 0.8f, 1f, 0.45f),
+                    null,
+                    Color.gray,
+                    null,
+                    null,
+                },
+                null);
+
+            InvokePrivateObject(runtime, "EnsurePreviewWall");
+
+            GameObject previewWall = GetPublicObjectProperty<GameObject>(runtime, "PreviewWall");
+            Assert.That(previewWall, Is.Not.Null);
+
+            MeshRenderer[] renderers = previewWall.GetComponentsInChildren<MeshRenderer>(true);
+            Assert.That(renderers.Length, Is.GreaterThan(0));
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Assert.That(renderers[i].enabled, Is.False, renderers[i].name);
+            }
+        }
+        finally
+        {
+            if (runtime != null)
+            {
+                InvokePublicObject(runtime, "Dispose");
+            }
+
+            DestroyObject(wallRootObject);
+            DestroyObject(cameraObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlight_DrawsRoomOutlineAboveEnclosingWalls()
     {
         GameObject roomObject = new GameObject("Room");
@@ -1169,6 +1231,27 @@ public class EditorViewModeManagerTests
         MethodInfo method = manager.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
         Assert.That(method, Is.Not.Null);
         method.Invoke(manager, Array.Empty<object>());
+    }
+
+    private static void InvokePublicObject(object target, string methodName)
+    {
+        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(method, Is.Not.Null);
+        method.Invoke(target, Array.Empty<object>());
+    }
+
+    private static void InvokePrivateObject(object target, string methodName)
+    {
+        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(method, Is.Not.Null);
+        method.Invoke(target, Array.Empty<object>());
+    }
+
+    private static T GetPublicObjectProperty<T>(object target, string propertyName)
+    {
+        PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        Assert.That(property, Is.Not.Null, $"Expected public property {propertyName} on {target.GetType().Name}.");
+        return (T)property.GetValue(target);
     }
 
     private static object InvokePublicWithResult(Component target, string methodName, params object[] arguments)

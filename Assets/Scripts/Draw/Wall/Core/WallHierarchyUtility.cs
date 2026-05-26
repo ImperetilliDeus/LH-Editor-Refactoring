@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class WallHierarchyUtility
 {
-    public static void CollectWalls(Transform root, List<Wall> results, bool includeInactive = false)
+    public static void CollectWalls(Transform root, List<Wall> results, bool includeInactive = false, bool includePreview = false)
     {
         if (results == null)
         {
@@ -25,7 +25,7 @@ public static class WallHierarchyUtility
                 continue;
             }
 
-            if (IsPreviewWall(wall))
+            if (!includePreview && IsPreviewWall(wall))
             {
                 continue;
             }
