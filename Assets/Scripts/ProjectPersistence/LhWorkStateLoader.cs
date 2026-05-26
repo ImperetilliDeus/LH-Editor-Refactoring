@@ -186,7 +186,6 @@ public static class LhWorkStateLoader
             return LhWorkStateLoadResult.Fail("Room manager is required to load rooms.");
         }
 
-        HashSet<string> wallIds = CreateSavedWallIdSet(walls);
         for (int i = 0; i < rooms.Count; i++)
         {
             LhWorkRoomDto roomDto = rooms[i];
@@ -200,77 +199,9 @@ public static class LhWorkStateLoader
             {
                 return LhWorkStateLoadResult.Fail($"Room #{i} has invalid polygon.");
             }
-
-            LhWorkStateLoadResult wallReferenceResult = ValidateRoomWallReferences(roomDto, i, wallIds);
-            if (!wallReferenceResult.Success)
-            {
-                return wallReferenceResult;
-            }
         }
 
         return LhWorkStateLoadResult.Ok();
-    }
-
-    private static LhWorkStateLoadResult ValidateRoomWallReferences(
-        LhWorkRoomDto roomDto,
-        int roomIndex,
-        HashSet<string> savedWallIds)
-    {
-        LhWorkStateLoadResult wallIdsResult = ValidateWallIdReferences(roomDto.wallIds, roomIndex, "wall", savedWallIds);
-        if (!wallIdsResult.Success)
-        {
-            return wallIdsResult;
-        }
-
-        return ValidateWallIdReferences(roomDto.manualWallIds, roomIndex, "manual wall", savedWallIds);
-    }
-
-    private static LhWorkStateLoadResult ValidateWallIdReferences(
-        IReadOnlyList<string> references,
-        int roomIndex,
-        string label,
-        HashSet<string> savedWallIds)
-    {
-        if (references == null)
-        {
-            return LhWorkStateLoadResult.Ok();
-        }
-
-        for (int i = 0; i < references.Count; i++)
-        {
-            string wallId = references[i];
-            if (string.IsNullOrWhiteSpace(wallId))
-            {
-                continue;
-            }
-
-            if (savedWallIds == null || !savedWallIds.Contains(wallId))
-            {
-                return LhWorkStateLoadResult.Fail($"Room #{roomIndex} references missing {label} id '{wallId}'.");
-            }
-        }
-
-        return LhWorkStateLoadResult.Ok();
-    }
-
-    private static HashSet<string> CreateSavedWallIdSet(IReadOnlyList<LhWorkWallDto> walls)
-    {
-        HashSet<string> wallIds = new HashSet<string>(System.StringComparer.Ordinal);
-        if (walls == null)
-        {
-            return wallIds;
-        }
-
-        for (int i = 0; i < walls.Count; i++)
-        {
-            LhWorkWallDto wallDto = walls[i];
-            if (wallDto != null && !string.IsNullOrWhiteSpace(wallDto.id))
-            {
-                wallIds.Add(wallDto.id);
-            }
-        }
-
-        return wallIds;
     }
 
     private static LhWorkStateLoadResult ValidateFurniture(
@@ -364,6 +295,7 @@ public static class LhWorkStateLoader
             wallDto.suppressEndHandle,
             wallDto.startSplitPoint,
             wallDto.endSplitPoint);
+        container.SetPersistentWallId(wallDto.id);
 
         for (int i = 0; i < wallDto.openings.Count; i++)
         {
@@ -588,7 +520,10 @@ public static class LhWorkStateLoader
                 roomDto.roomNativeCode,
                 roomDto.floorTextureCode,
                 roomDto.ceilingTextureCode);
-            roomManager.UpdateRoomWallSelection(room, roomDto.manualWallIds, roomDto.manualWallSelectionEnabled);
+            roomManager.UpdateRoomWallSelection(
+                room,
+                FilterResolvableWallIds(roomDto.manualWallIds, wallsById),
+                roomDto.manualWallSelectionEnabled);
             AddRoomAlias(roomsByName, roomDto.name, room);
             AddRoomAlias(roomsByName, room.RoomName, room);
             AddRoomAlias(roomsByName, room.name, room);
@@ -697,6 +632,29 @@ public static class LhWorkStateLoader
         }
 
         return wallSet;
+    }
+
+    private static List<string> FilterResolvableWallIds(IReadOnlyList<string> wallIds, Dictionary<string, Wall> wallsById)
+    {
+        List<string> results = new List<string>();
+        if (wallIds == null || wallsById == null)
+        {
+            return results;
+        }
+
+        HashSet<string> seenIds = new HashSet<string>(System.StringComparer.Ordinal);
+        for (int i = 0; i < wallIds.Count; i++)
+        {
+            string wallId = wallIds[i];
+            if (!string.IsNullOrWhiteSpace(wallId) &&
+                wallsById.ContainsKey(wallId) &&
+                seenIds.Add(wallId))
+            {
+                results.Add(wallId);
+            }
+        }
+
+        return results;
     }
 
     private static void AddRoomAlias(Dictionary<string, Room> roomsByName, string roomName, Room room)

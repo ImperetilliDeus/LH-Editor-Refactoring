@@ -10,6 +10,7 @@ public class WallOpeningContainer : MonoBehaviour
     [SerializeField] private float wallBottomY;
     [SerializeField] private float wallTopY;
     [SerializeField] private WallVisualState visualState;
+    [SerializeField] private string persistentWallId = string.Empty;
     [SerializeField] private int outerStartVertexId;
     [SerializeField] private int outerEndVertexId;
     [SerializeField] private bool suppressOuterStartHandle;
@@ -28,6 +29,7 @@ public class WallOpeningContainer : MonoBehaviour
     public Material WallMaterial => visualState.wallMaterial;
     public Material WallTopMaterial => visualState.topMaterial;
     public WallVisualState VisualState => visualState;
+    public string PersistentWallId => persistentWallId ?? string.Empty;
     public bool SuppressOuterStartHandle => suppressOuterStartHandle;
     public bool SuppressOuterEndHandle => suppressOuterEndHandle;
     public bool OuterStartSplitPoint => outerStartSplitPoint;
@@ -90,6 +92,11 @@ public class WallOpeningContainer : MonoBehaviour
     {
         outerStartVertexId = startVertexId;
         outerEndVertexId = endVertexId;
+    }
+
+    public void SetPersistentWallId(string wallId)
+    {
+        persistentWallId = wallId ?? string.Empty;
     }
 
     public void SetOuterSplitPointFlags(bool startSplitPoint, bool endSplitPoint)

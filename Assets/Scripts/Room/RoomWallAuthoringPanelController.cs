@@ -484,6 +484,12 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
                 };
                 itemsByRoot.Add(exportRoot, item);
                 wallItems.Add(item);
+
+                WallOpeningContainer container = exportRoot.GetComponent<WallOpeningContainer>();
+                if (container != null && !string.IsNullOrWhiteSpace(container.PersistentWallId))
+                {
+                    item.wallIds.Add(container.PersistentWallId);
+                }
             }
 
             if (!item.walls.Contains(wall))

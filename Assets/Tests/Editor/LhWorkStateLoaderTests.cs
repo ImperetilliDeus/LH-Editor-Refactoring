@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -349,10 +350,25 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
-    public void Load_DoesNotClearCurrentWalls_WhenRoomReferencesMissingWall()
+    public void Load_FiltersMissingRoomWallReferences()
     {
         CreateExistingWall();
         object state = CreateState();
+        AddWall(
+            state,
+            "wall-a",
+            "WallA",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
         AddRoom(
             state,
             "Living",
@@ -369,15 +385,21 @@ public class LhWorkStateLoaderTests
                 new Vector3(4f, 0f, 3f),
                 new Vector3(0f, 0f, 3f),
             },
-            new[] { "missing-wall-id" },
+            new[] { "wall-a", "missing-wall-id" },
             true,
-            new[] { "missing-wall-id" });
+            new[] { "wall-a", "missing-wall-id" });
         object roomManager = CreateRoomManager();
 
         object result = Load(state, wallRoot.transform, roomManager, null, null);
 
-        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.False);
-        AssertExistingWallStillPresent();
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        IList rooms = (IList)roomManager.GetType()
+            .GetMethod("GetAllRooms", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null)
+            ?.Invoke(roomManager, null);
+        Assert.That(rooms, Has.Count.EqualTo(1));
+        object room = rooms[0];
+        CollectionAssert.AreEqual(new[] { "wall-a" }, ToStringArray(GetPropertyValue<IReadOnlyList<string>>(room, "AutomaticWallIds")));
+        CollectionAssert.AreEqual(new[] { "wall-a" }, ToStringArray(GetPropertyValue<IReadOnlyList<string>>(room, "ManualWallIds")));
     }
 
     [Test]
@@ -814,5 +836,16 @@ public class LhWorkStateLoaderTests
         PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
         Assert.That(property, Is.Not.Null);
         return (T)property.GetValue(target);
+    }
+
+    private static string[] ToStringArray(IReadOnlyList<string> values)
+    {
+        string[] results = new string[values.Count];
+        for (int i = 0; i < values.Count; i++)
+        {
+            results[i] = values[i];
+        }
+
+        return results;
     }
 }
