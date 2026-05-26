@@ -308,6 +308,21 @@ public class SceneHierarchyTreeView : MonoBehaviour
             scrollRect = contentRoot.GetComponentInParent<ScrollRect>(true);
         }
 
+        if (scrollRect != null && scrollRect.transform == contentRoot)
+        {
+            RemoveMisplacedScrollRect(scrollRect);
+            scrollRect = null;
+        }
+
+        if (scrollRect == null && contentRoot.parent is RectTransform parentRect)
+        {
+            scrollRect = parentRect.GetComponent<ScrollRect>();
+            if (scrollRect == null)
+            {
+                scrollRect = parentRect.gameObject.AddComponent<ScrollRect>();
+            }
+        }
+
         if (scrollRect == null)
         {
             return;
@@ -317,9 +332,31 @@ public class SceneHierarchyTreeView : MonoBehaviour
         contentRoot.anchorMax = new Vector2(1f, 1f);
         contentRoot.pivot = new Vector2(0.5f, 1f);
         scrollRect.content = contentRoot;
+        if (scrollRect.viewport == null || scrollRect.viewport == contentRoot)
+        {
+            scrollRect.viewport = scrollRect.transform as RectTransform;
+        }
+
         scrollRect.vertical = true;
         scrollRect.horizontal = false;
         scrollRect.movementType = ScrollRect.MovementType.Clamped;
+    }
+
+    private static void RemoveMisplacedScrollRect(ScrollRect misplacedScrollRect)
+    {
+        if (misplacedScrollRect == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(misplacedScrollRect);
+        }
+        else
+        {
+            DestroyImmediate(misplacedScrollRect);
+        }
     }
 
     private void ApplyLabelIndent(RectTransform labelRect, int depth)

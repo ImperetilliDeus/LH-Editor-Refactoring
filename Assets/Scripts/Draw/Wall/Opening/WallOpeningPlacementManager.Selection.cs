@@ -15,6 +15,12 @@ public partial class WallOpeningPlacementManager
 
     public void SelectOpening(WallOpening opening)
     {
+        if (!CanEditOpenings())
+        {
+            ClearOpeningSelection();
+            return;
+        }
+
         if (SelectedOpening == opening)
         {
             SetOpeningDetailMenuVisible(opening != null);

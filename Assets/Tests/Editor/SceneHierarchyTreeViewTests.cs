@@ -71,6 +71,27 @@ public class SceneHierarchyTreeViewTests
     }
 
     [Test]
+    public void RebuildNow_MovesMisplacedContentScrollRectToParent()
+    {
+        Transform wallRoot = CreateObject("Walls").transform;
+        CreateWall("Wall_001", "wall-a", wallRoot);
+        RectTransform panelRoot = CreateRectObject("HierarchyPanel");
+        RectTransform contentRoot = CreateRectObject("Content");
+        contentRoot.SetParent(panelRoot, false);
+        contentRoot.gameObject.AddComponent<ScrollRect>();
+        Component treeView = CreateComponent("TreeView", GetAssemblyType("SceneHierarchyTreeView"));
+        InvokeSetReferencesForTests(treeView, wallRoot, CreateRoomList(), contentRoot, null);
+
+        treeView.GetType().GetMethod("RebuildNow")?.Invoke(treeView, null);
+
+        ScrollRect panelScrollRect = panelRoot.GetComponent<ScrollRect>();
+        Assert.That(panelScrollRect, Is.Not.Null);
+        Assert.That(panelScrollRect.content, Is.EqualTo(contentRoot));
+        Assert.That(panelScrollRect.viewport, Is.EqualTo(panelRoot));
+        Assert.That(contentRoot.GetComponent<ScrollRect>(), Is.Null);
+    }
+
+    [Test]
     public void WallButtonClick_SelectsRepresentativeWall()
     {
         Transform wallRoot = CreateObject("Walls").transform;
@@ -120,6 +141,38 @@ public class SceneHierarchyTreeViewTests
         Component firstSegment = CreateWall("Segment_A", "collapsed-wall-id", containerObject.transform);
         Component secondSegment = CreateWall("Segment_B", "segment-b", containerObject.transform);
         Component room = CreateRoom("LoadedRoom", "Loaded", firstSegment);
+        RectTransform toggleContainer = CreateRectObject("ToggleContainer");
+        Toggle template = CreateToggle("_WallToggleTemplate");
+        template.transform.SetParent(toggleContainer, false);
+        template.gameObject.SetActive(false);
+        Component controller = CreateComponent("RoomWallAuthoringPanel", GetAssemblyType("RoomWallAuthoringPanelController"));
+        SetField(controller, "wallRoot", wallRoot);
+        SetField(controller, "wallToggleContainer", toggleContainer);
+        SetField(controller, "wallToggleTemplate", template);
+
+        controller.GetType().GetMethod("HandleSelectedRoomChanged", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?.Invoke(controller, new object[] { room });
+
+        Assert.That((bool)controller.GetType().GetMethod("IsWallSelectedForAuthoring")
+            ?.Invoke(controller, new object[] { firstSegment }), Is.True);
+        Assert.That((bool)controller.GetType().GetMethod("IsWallSelectedForAuthoring")
+            ?.Invoke(controller, new object[] { secondSegment }), Is.True);
+    }
+
+    [Test]
+    public void RoomWallAuthoringPanel_TreatsPersistentContainerIdAsSelectingGeneratedSegments()
+    {
+        Transform wallRoot = CreateObject("Walls").transform;
+        GameObject containerObject = CreateObject("Wall_With_Opening");
+        containerObject.transform.SetParent(wallRoot, false);
+        Component container = containerObject.AddComponent(GetAssemblyType("WallOpeningContainer"));
+        container.GetType().GetMethod("SetPersistentWallId")
+            ?.Invoke(container, new object[] { "collapsed-wall-id" });
+        Component firstSegment = CreateWall("Segment_A", "generated-a", containerObject.transform);
+        Component secondSegment = CreateWall("Segment_B", "generated-b", containerObject.transform);
+        Component room = CreateRoom("LoadedRoom", "Loaded", firstSegment);
+        room.GetType().GetMethod("SetManualWallIds")
+            ?.Invoke(room, new object[] { new[] { "collapsed-wall-id" } });
         RectTransform toggleContainer = CreateRectObject("ToggleContainer");
         Toggle template = CreateToggle("_WallToggleTemplate");
         template.transform.SetParent(toggleContainer, false);

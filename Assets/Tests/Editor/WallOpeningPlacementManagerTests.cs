@@ -261,6 +261,26 @@ public class WallOpeningPlacementManagerTests
         Assert.That(restoredPrefabRenderer.sharedMaterial, Is.SameAs(prefabMaterial));
     }
 
+    [Test]
+    public void SelectOpening_IgnoresOpening_WhenNotInDetailEditMode()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type modeManagerType = GetAssemblyType("ModeManager");
+        Type openingType = GetAssemblyType("WallOpening");
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component modeManager = CreateComponent("ModeManager", modeManagerType);
+        modeManagerType.GetMethod("SetMode")?.Invoke(modeManager, new object[] { Enum.Parse(GetAssemblyType("EditorMode"), "RoomCreate") });
+        SetPrivateField(manager, "modeManager", modeManager);
+
+        Component opening = AddComponent(CreateGameObject("Door"), openingType);
+
+        managerType.GetMethod("SelectOpening")?.Invoke(manager, new object[] { opening });
+
+        object selectedOpening = managerType.GetProperty("SelectedOpening")?.GetValue(manager);
+        Assert.That(selectedOpening, Is.Null);
+    }
+
     private Component CreateComponent(string name, Type componentType)
     {
         return AddComponent(CreateGameObject(name), componentType);
