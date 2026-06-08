@@ -56,7 +56,7 @@ namespace LH.Export
                     scale = scale,
                     walls = BuildRoomWallReferences(room, roomData, room.WallSet, context),
                     floor = BuildSurface(room, roomData, roomPosition, LegacyFloorWorldY, ResolveFloorTextureCode(room, roomData), true, false),
-                    ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(roomData, context), ResolveCeilingTextureCode(room, roomData), true, true),
+                    ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(room, roomData, context), ResolveCeilingTextureCode(room, roomData), true, true),
                     furnish = BuildLegacyFurniture(room, context),
                 });
             }
@@ -83,7 +83,7 @@ namespace LH.Export
                 scale = scale,
                 walls = BuildRoomWallReferences(room, roomData, room.WallSet, context),
                 floor = BuildSurface(room, roomData, roomPosition, DefaultFloorWorldY, ResolveFloorTextureCode(room, roomData), false, false),
-                ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(roomData, context), ResolveCeilingTextureCode(room, roomData), false, false),
+                ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(room, roomData, context), ResolveCeilingTextureCode(room, roomData), false, false),
                 furnish = BuildFurniture(room, context),
             };
         }

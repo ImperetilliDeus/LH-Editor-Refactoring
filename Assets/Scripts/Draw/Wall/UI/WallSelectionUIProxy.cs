@@ -108,7 +108,7 @@ public class WallSelectionUIProxy : MonoBehaviour
     {
         EnsureReferences();
         EnsureUI();
-        if (ownerWall == null || selectionManager == null || rootRect == null || rootImage == null || targetCanvas == null)
+        if (ownerWall == null || selectionManager == null || rootRect == null || targetCanvas == null)
         {
             return;
         }
@@ -154,8 +154,12 @@ public class WallSelectionUIProxy : MonoBehaviour
         float thickness = Mathf.Max(selectionManager.WallUIThicknessPixels, selectionManager.WallUIThicknessPixels * thicknessMultiplier);
         rootRect.sizeDelta = new Vector2(width, thickness);
         rootRect.localScale = Vector3.one;
-        rootRect.SetAsLastSibling();
-        rootImage.raycastTarget = selectionManager.IsWallUIInteractionEnabled;
+        WallSelectionCanvasOrderingUtility.PlaceBelowSelectableControls(rootRect, targetCanvas.transform);
+        if (rootImage != null)
+        {
+            rootImage.raycastTarget = selectionManager.IsWallUIInteractionEnabled;
+        }
+
         UpdateEndCaps(width, thickness);
         ApplyCurrentStyle();
     }
@@ -218,7 +222,10 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
-        GameObject rootObject = new GameObject(GetWallUIObjectName(), typeof(RectTransform), typeof(Image), typeof(Outline));
+        bool isPreviewWall = WallHierarchyUtility.IsPreviewWall(ownerWall);
+        GameObject rootObject = isPreviewWall
+            ? new GameObject(GetWallUIObjectName(), typeof(RectTransform))
+            : new GameObject(GetWallUIObjectName(), typeof(RectTransform), typeof(Image), typeof(Outline));
         rootObject.transform.SetParent(targetCanvas.transform, false);
         LayerUtility.ApplyLayer(rootObject, LayerUtility.WallUILayerName, false);
 
@@ -227,11 +234,14 @@ public class WallSelectionUIProxy : MonoBehaviour
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot = new Vector2(0.5f, 0.5f);
 
-        rootImage = rootObject.GetComponent<Image>();
-        rootImage.color = selectionManager != null ? selectionManager.WallUINormalColor : new Color(1f, 1f, 1f, 0.04f);
-        rootImage.raycastTarget = true;
-        rootOutline = rootObject.GetComponent<Outline>();
-        rootOutline.useGraphicAlpha = true;
+        if (!isPreviewWall)
+        {
+            rootImage = rootObject.GetComponent<Image>();
+            rootImage.color = selectionManager != null ? selectionManager.WallUINormalColor : new Color(1f, 1f, 1f, 0.04f);
+            rootImage.raycastTarget = true;
+            rootOutline = rootObject.GetComponent<Outline>();
+            rootOutline.useGraphicAlpha = true;
+        }
 
         startCapRect = CreateEndCap("StartCap");
         endCapRect = CreateEndCap("EndCap");
@@ -244,6 +254,20 @@ public class WallSelectionUIProxy : MonoBehaviour
 
     private void ApplyCurrentStyle()
     {
+        if (WallHierarchyUtility.IsPreviewWall(ownerWall))
+        {
+            Color previewFillColor = new Color(0.2f, 0.8f, 1f, 0.28f);
+            Color previewOutlineColor = new Color(0.2f, 0.9f, 1f, 0.95f);
+            if (rootImage != null)
+            {
+                rootImage.color = previewFillColor;
+            }
+
+            ApplyOutline(previewOutlineColor, new Vector2(2f, 2f));
+            ApplyEndCapStyle(previewOutlineColor, true);
+            return;
+        }
+
         if (rootImage == null)
         {
             return;
@@ -314,7 +338,7 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
-        float capSize = Mathf.Max(8f, thickness + 4f);
+        float capSize = GetEndCapSize(thickness);
         startCapRect.anchorMin = new Vector2(0f, 0.5f);
         startCapRect.anchorMax = new Vector2(0f, 0.5f);
         endCapRect.anchorMin = new Vector2(1f, 0.5f);
@@ -323,6 +347,19 @@ public class WallSelectionUIProxy : MonoBehaviour
         endCapRect.anchoredPosition = Vector2.zero;
         startCapRect.sizeDelta = new Vector2(capSize, capSize);
         endCapRect.sizeDelta = new Vector2(capSize, capSize);
+    }
+
+    private float GetEndCapSize(float thickness)
+    {
+        if (WallHierarchyUtility.IsPreviewWall(ownerWall) && selectionManager != null)
+        {
+            float baseSize = Mathf.Max(
+                selectionManager.PreviewWallUIEndCapMinSize,
+                thickness + selectionManager.PreviewWallUIEndCapPadding);
+            return baseSize * selectionManager.PreviewWallUIEndCapSizeMultiplier;
+        }
+
+        return Mathf.Max(8f, thickness + 4f);
     }
 
     private void ApplyEndCapStyle(Color color, bool visible)

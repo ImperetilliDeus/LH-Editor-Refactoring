@@ -101,4 +101,21 @@ public sealed class RoomPlanarGraph
         faces.Add(created);
         return created;
     }
+
+    public void RemoveFace(Face face)
+    {
+        if (face == null)
+        {
+            return;
+        }
+
+        faces.Remove(face);
+        for (int i = 0; i < halfEdges.Count; i++)
+        {
+            if (halfEdges[i].Face == face)
+            {
+                halfEdges[i].Face = null;
+            }
+        }
+    }
 }

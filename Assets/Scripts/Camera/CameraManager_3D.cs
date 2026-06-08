@@ -105,9 +105,14 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         }
     }
 
+    private void OnDisable()
+    {
+        isPanning = false;
+    }
+
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
-        if (targetCamera == null || CameraTransform == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        if (!isActiveAndEnabled || targetCamera == null || CameraTransform == null || inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }
@@ -115,6 +120,19 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         HandlePan(inputFrame);
         HandleRotate(inputFrame);
         HandleZoom(inputFrame);
+    }
+
+    public void SyncRotationFromCameraTransform()
+    {
+        Transform cameraTransform = CameraTransform;
+        if (cameraTransform == null)
+        {
+            return;
+        }
+
+        Vector3 currentEuler = cameraTransform.eulerAngles;
+        yaw = currentEuler.y;
+        pitch = Mathf.Clamp(NormalizePitch(currentEuler.x), minPitch, maxPitch);
     }
 
     private void HandlePan(EditorInputFrame inputFrame)

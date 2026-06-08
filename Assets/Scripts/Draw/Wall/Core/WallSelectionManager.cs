@@ -28,6 +28,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
     [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
     [SerializeField] private RoomManager roomManager;
 
@@ -36,6 +37,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     [SerializeField] private Color wallUINormalColor = new Color(1f, 0.62f, 0.12f, 0.04f);
     [SerializeField] private Color wallUISelectedColor = new Color(1f, 0.62f, 0.12f, 0.28f);
     [SerializeField] private float wallUIThicknessPixels = 16f;
+
+    [Header("Preview Wall UI")]
+    [SerializeField, Min(0f)] private float previewWallUIEndCapMinSize = 3f;
+    [SerializeField, Min(0f)] private float previewWallUIEndCapPadding = 1f;
+    [SerializeField, Min(0f)] private float previewWallUIEndCapSizeMultiplier = 0.6f;
     [SerializeField] private float multiSelectDragThresholdPixels = 6f;
     [SerializeField] private float multiSelectBoxHeight = 1f;
     [SerializeField] private Color multiSelectBoxColor = new Color(1f, 0.62f, 0.12f, 0.14f);
@@ -95,6 +101,9 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     public Color WallUINormalColor => wallUINormalColor;
     public Color WallUISelectedColor => wallUISelectedColor;
     public float WallUIThicknessPixels => wallUIThicknessPixels;
+    public float PreviewWallUIEndCapMinSize => previewWallUIEndCapMinSize;
+    public float PreviewWallUIEndCapPadding => previewWallUIEndCapPadding;
+    public float PreviewWallUIEndCapSizeMultiplier => previewWallUIEndCapSizeMultiplier;
     public bool IsWallUIInteractionEnabled => modeManager != null &&
                                               modeManager.IsMode(EditorMode.DetailEdit) &&
                                               (wallOpeningPlacementManager == null || !wallOpeningPlacementManager.IsOpeningDetailMenuVisible);
@@ -252,6 +261,13 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
         lastInputFrame = inputFrame;
+        if (IsPerspectiveViewActive())
+        {
+            FinalizeMoveIfNeeded();
+            ResetDragState();
+            return;
+        }
+
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
         EditorPointerFrame pointerFrame = PointerInputFrameUtility.BuildPointerFrame(inputFrame);
 
@@ -671,7 +687,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+        wallRoot = LayerUtility.FindWallRoot(true);
     }
 
     private void ResolveReferences()
@@ -682,8 +698,14 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         LayerUtility.ResolveObject(ref wallLengthDisplay);
         LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
         LayerUtility.ResolveObject(ref roomManager);
+    }
+
+    private bool IsPerspectiveViewActive()
+    {
+        return viewModeManager != null && viewModeManager.CurrentViewMode == EditorViewMode.Perspective3D;
     }
 
     private void RefreshDragPlane()
@@ -910,9 +932,14 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         List<UndoRedoManager.OpeningLayoutChangeRecord> openingChanges =
-            BuildMoveOpeningChangeRecords(dragState, wallOpeningPlacementManager);
+            WallSelectionMoveChangeBuilder.BuildOpeningChangeRecords(dragState, wallOpeningPlacementManager);
         List<UndoRedoManager.WallStateChangeRecord> wallChanges =
-            BuildMoveWallStateChangeRecords(dragState, selectionState.SelectedWall, moveStartWallPosition, moveStartWallRotation, moveStartWallScale);
+            WallSelectionMoveChangeBuilder.BuildWallStateChangeRecords(
+                dragState,
+                selectionState.SelectedWall,
+                moveStartWallPosition,
+                moveStartWallRotation,
+                moveStartWallScale);
 
         if (wallChanges.Count == 0 && openingChanges.Count == 0)
         {
@@ -1221,117 +1248,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         return wallsInSelectionBounds;
-    }
-
-    private static List<UndoRedoManager.OpeningLayoutChangeRecord> BuildMoveOpeningChangeRecords(
-        WallSelectionDragState currentDragState,
-        WallOpeningPlacementManager currentWallOpeningPlacementManager)
-    {
-        List<UndoRedoManager.OpeningLayoutChangeRecord> results = new List<UndoRedoManager.OpeningLayoutChangeRecord>();
-        if (currentDragState == null || currentWallOpeningPlacementManager == null)
-        {
-            return results;
-        }
-
-        if (currentDragState.SelectedOpeningContainer != null && currentDragState.HasMoveStartOpeningLayoutSnapshot)
-        {
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot =
-                currentWallOpeningPlacementManager.CaptureLayoutSnapshot(currentDragState.SelectedOpeningContainer);
-            if (UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(currentDragState.MoveStartOpeningLayoutSnapshot, afterSnapshot))
-            {
-                results.Add(new UndoRedoManager.OpeningLayoutChangeRecord
-                {
-                    before = currentDragState.MoveStartOpeningLayoutSnapshot,
-                    after = afterSnapshot,
-                });
-            }
-        }
-
-        foreach (KeyValuePair<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> pair in currentDragState.MoveStartConnectedOpeningSnapshots)
-        {
-            if (pair.Key == null)
-            {
-                continue;
-            }
-
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = currentWallOpeningPlacementManager.CaptureLayoutSnapshot(pair.Key);
-            if (!UndoRedoManager.OpeningLayoutSnapshot.HasMeaningfulDelta(pair.Value, afterSnapshot))
-            {
-                continue;
-            }
-
-            results.Add(new UndoRedoManager.OpeningLayoutChangeRecord
-            {
-                before = pair.Value,
-                after = afterSnapshot,
-            });
-        }
-
-        return results;
-    }
-
-    private static List<UndoRedoManager.WallStateChangeRecord> BuildMoveWallStateChangeRecords(
-        WallSelectionDragState currentDragState,
-        GameObject selectedWall,
-        Vector3 startWallPosition,
-        Quaternion startWallRotation,
-        Vector3 startWallScale)
-    {
-        List<UndoRedoManager.WallStateChangeRecord> results = new List<UndoRedoManager.WallStateChangeRecord>();
-        if (currentDragState == null)
-        {
-            return results;
-        }
-
-        if (currentDragState.MoveStartSnapshots.Count > 0)
-        {
-            foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in currentDragState.MoveStartSnapshots)
-            {
-                GameObject wallObject = pair.Key;
-                if (wallObject == null)
-                {
-                    continue;
-                }
-
-                UndoRedoManager.WallStateSnapshot startSnapshot = pair.Value;
-                UndoRedoManager.WallStateSnapshot endSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-                if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(startSnapshot, endSnapshot))
-                {
-                    continue;
-                }
-
-                results.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = startSnapshot,
-                    after = endSnapshot,
-                });
-            }
-
-            return results;
-        }
-
-        if (selectedWall == null)
-        {
-            return results;
-        }
-
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(
-            selectedWall,
-            startWallPosition,
-            startWallRotation,
-            startWallScale);
-        UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
-        if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
-        {
-            return results;
-        }
-
-        results.Add(new UndoRedoManager.WallStateChangeRecord
-        {
-            before = before,
-            after = after,
-        });
-        return results;
     }
 
     private bool ShouldDisplaySelectionProxyInternal(Wall wall)

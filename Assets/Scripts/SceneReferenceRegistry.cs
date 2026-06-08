@@ -60,9 +60,25 @@ public sealed class SceneReferenceRegistry : MonoBehaviour
         }
     }
 
+    private static SceneReferenceRegistry ResolveInstance()
+    {
+        if (Instance != null)
+        {
+            return Instance;
+        }
+
+        SceneReferenceRegistry registry = FindFirstObjectByType<SceneReferenceRegistry>(FindObjectsInactive.Include);
+        if (registry != null)
+        {
+            registry.RegisterInstance();
+        }
+
+        return Instance;
+    }
+
     public static bool TryResolve<T>(out T reference) where T : Object
     {
-        SceneReferenceRegistry registry = Instance;
+        SceneReferenceRegistry registry = ResolveInstance();
         if (registry == null)
         {
             reference = null;
@@ -76,17 +92,13 @@ public sealed class SceneReferenceRegistry : MonoBehaviour
     public static bool TryResolveTransform(string objectName, out Transform reference)
     {
         reference = null;
-        SceneReferenceRegistry registry = Instance;
+        SceneReferenceRegistry registry = ResolveInstance();
         if (registry == null || string.IsNullOrWhiteSpace(objectName))
         {
             return false;
         }
 
-        if (objectName == LayerUtility.DefaultWallRootName)
-        {
-            reference = registry.wallRoot;
-        }
-        else if (objectName == LayerUtility.DefaultGridName)
+        if (objectName == LayerUtility.DefaultGridName)
         {
             reference = registry.grid != null ? registry.grid.transform : null;
         }
@@ -98,10 +110,23 @@ public sealed class SceneReferenceRegistry : MonoBehaviour
         return reference != null;
     }
 
+    public static bool TryResolveWallRoot(out Transform reference)
+    {
+        reference = null;
+        SceneReferenceRegistry registry = ResolveInstance();
+        if (registry == null)
+        {
+            return false;
+        }
+
+        reference = registry.wallRoot;
+        return reference != null;
+    }
+
     public static bool TryResolveCanvas(string canvasName, out Canvas reference)
     {
         reference = null;
-        SceneReferenceRegistry registry = Instance;
+        SceneReferenceRegistry registry = ResolveInstance();
         if (registry == null)
         {
             return false;

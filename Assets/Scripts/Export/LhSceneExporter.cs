@@ -102,7 +102,7 @@ namespace LH.Export
 
             if (wallRoot == null)
             {
-                Transform existing = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+                Transform existing = LayerUtility.FindWallRoot(true);
                 if (existing != null)
                 {
                     wallRoot = existing;

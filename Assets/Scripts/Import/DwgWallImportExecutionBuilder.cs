@@ -34,18 +34,8 @@ internal sealed class DwgWallImportExecutionBuilder
 
     public Transform EnsureWallRoot(Transform wallRoot)
     {
-        if (wallRoot != null)
-        {
-            return wallRoot;
-        }
-
-        Transform resolvedWallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
-        if (resolvedWallRoot != null)
-        {
-            return resolvedWallRoot;
-        }
-
-        return new GameObject(LayerUtility.DefaultWallRootName).transform;
+        LayerUtility.ResolveWallRoot(ref wallRoot, true, true);
+        return wallRoot;
     }
 
     public Mesh EnsureCachedCubeMesh(Mesh cachedCubeMesh, Action<UnityEngine.Object> destroyObject)

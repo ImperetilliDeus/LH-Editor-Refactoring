@@ -715,7 +715,7 @@ public class RoomManager : MonoBehaviour
             return;
         }
 
-        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+        Transform wallRootTransform = LayerUtility.FindWallRoot(true);
         if (wallRootTransform != null)
         {
             wallRoot = wallRootTransform;
@@ -785,7 +785,7 @@ public class RoomManager : MonoBehaviour
 
     private void ValidateConfiguration()
     {
-        Debug.Assert(wallRoot != null, $"{nameof(RoomManager)} requires {nameof(wallRoot)} or a scene Walls root.", this);
+        Debug.Assert(wallRoot != null, $"{nameof(RoomManager)} requires {nameof(wallRoot)}, {nameof(SceneReferenceRegistry)}, or {nameof(WallRootMarker)}.", this);
     }
 
     private void HandleRefreshAllRequested()

@@ -176,7 +176,7 @@ public class LhWorkStateBuilderTests
         IList rooms = GetFieldValue<IList>(state, "rooms");
         Assert.That(rooms, Has.Count.EqualTo(1));
         object room = rooms[0];
-        CollectionAssert.AreEqual(new[] { "segment-a", "external-wall" }, ToStringArray(GetFieldValue<IList>(room, "wallIds")));
+        CollectionAssert.AreEqual(new[] { "segment-a" }, ToStringArray(GetFieldValue<IList>(room, "wallIds")));
         CollectionAssert.AreEqual(new[] { "segment-a" }, ToStringArray(GetFieldValue<IList>(room, "manualWallIds")));
     }
 

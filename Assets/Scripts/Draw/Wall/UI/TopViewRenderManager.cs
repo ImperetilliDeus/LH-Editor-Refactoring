@@ -25,6 +25,9 @@ public partial class TopViewRenderManager : MonoBehaviour
     [Header("Visibility")]
     [SerializeField] private bool showOnlyInDetailEdit = false;
 
+    [Header("Preview")]
+    [SerializeField, Min(0.01f)] private float previewWallThicknessMultiplier = 0.55f;
+
     [Header("Colors")]
     [SerializeField] private Color floorColor = new Color(0.34f, 0.86f, 0.58f, 0.22f);
     [SerializeField] private Color selectedFloorColor = new Color(0.28f, 0.6f, 1f, 0.35f);
@@ -116,6 +119,11 @@ public partial class TopViewRenderManager : MonoBehaviour
         if (!isTopViewVisible)
         {
             return;
+        }
+
+        if (drawManager != null && drawManager.PreviewWall != null && drawManager.PreviewWall.activeInHierarchy)
+        {
+            visualsDirty = true;
         }
 
         if (visualsDirty || HasCameraStateChanged())
@@ -415,6 +423,7 @@ public partial class TopViewRenderManager : MonoBehaviour
         LayerUtility.ApplyLayer(contentRoot.gameObject, LayerUtility.TopPlanUILayerName, true);
         NormalizeRectTransform(contentRoot, true);
         contentRoot.SetAsLastSibling();
+        WallSelectionCanvasOrderingUtility.PlaceBelowSelectableControls(contentRoot, targetCanvas.transform);
     }
 
     private void NormalizeRectTransform(RectTransform rectTransform, bool stretchToParent)
@@ -442,7 +451,7 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true);
     }
 
     private void CacheCameraState()

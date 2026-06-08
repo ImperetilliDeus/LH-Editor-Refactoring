@@ -45,6 +45,11 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     public Material WallMaterial => _wallMaterial;
     public Material WallTopMaterial => _wallTopMaterial;
 
+    public void SyncWallSequenceForWorkStateLoad()
+    {
+        _toolRuntime?.SyncWallSequenceFromHierarchy();
+    }
+
     private void Reset()
     {
         _mainCamera = Camera.main;
@@ -146,18 +151,7 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
 
     private void EnsureWallRoot()
     {
-        if (_wallRoot != null)
-        {
-            return;
-        }
-
-        Transform wallRootTransform = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
-        if (wallRootTransform == null)
-        {
-            wallRootTransform = new GameObject(LayerUtility.DefaultWallRootName).transform;
-        }
-
-        _wallRoot = wallRootTransform;
+        LayerUtility.ResolveWallRoot(ref _wallRoot, true, true);
     }
 
     private void ResolveReferences()

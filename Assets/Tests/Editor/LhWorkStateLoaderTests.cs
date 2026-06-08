@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class LhWorkStateLoaderTests
 {
@@ -11,8 +13,12 @@ public class LhWorkStateLoaderTests
     private GameObject roomManagerObject;
     private GameObject handleManagerObject;
     private GameObject handleCanvasObject;
+    private GameObject drawManagerObject;
+    private GameObject cameraObject;
     private GameObject furniturePrefab;
     private UnityEngine.Object furnitureCatalog;
+    private GameObject sceneHierarchyObject;
+    private GameObject sceneHierarchyContentObject;
 
     [SetUp]
     public void SetUp()
@@ -29,8 +35,12 @@ public class LhWorkStateLoaderTests
         UnityEngine.Object.DestroyImmediate(roomManagerObject);
         UnityEngine.Object.DestroyImmediate(handleManagerObject);
         UnityEngine.Object.DestroyImmediate(handleCanvasObject);
+        UnityEngine.Object.DestroyImmediate(drawManagerObject);
+        UnityEngine.Object.DestroyImmediate(cameraObject);
         UnityEngine.Object.DestroyImmediate(furniturePrefab);
         UnityEngine.Object.DestroyImmediate(furnitureCatalog);
+        UnityEngine.Object.DestroyImmediate(sceneHierarchyObject);
+        UnityEngine.Object.DestroyImmediate(sceneHierarchyContentObject);
     }
 
     [Test]
@@ -73,7 +83,7 @@ public class LhWorkStateLoaderTests
         Array walls = wallRoot.GetComponentsInChildren(GetAssemblyType("Wall"), true);
         Assert.That(walls, Has.Length.EqualTo(1));
         Component wall = (Component)walls.GetValue(0);
-        Assert.That(wall.name, Is.EqualTo("SavedWall"));
+        Assert.That(wall.name, Is.EqualTo("wall01"));
         object data = wall.GetType().GetProperty("Data", BindingFlags.Public | BindingFlags.Instance)?.GetValue(wall);
         Assert.That(data, Is.Not.Null);
         Assert.That(GetPropertyValue<string>(data, "id"), Is.EqualTo("saved-wall-id"));
@@ -88,6 +98,182 @@ public class LhWorkStateLoaderTests
         Assert.That(GetPropertyValue<bool>(wall, "SuppressEndHandle"), Is.False);
         Assert.That(GetPropertyValue<bool>(wall, "IsStartSplitPoint"), Is.False);
         Assert.That(GetPropertyValue<bool>(wall, "IsEndSplitPoint"), Is.True);
+    }
+
+    [Test]
+    public void Load_RenumbersRestoredWallsFromOneAfterReplacingImportedWalls()
+    {
+        for (int i = 0; i < 34; i++)
+        {
+            GameObject existingWall = CreateWallObject($"wall{(i + 1).ToString("00")}", wallRoot.transform);
+            ConfigureWall(
+                existingWall,
+                new Vector3(i * 2f, 0f, 0f),
+                new Vector3(i * 2f + 1f, 0f, 0f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 1,
+                i * 2 + 2,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        object state = CreateState();
+        for (int i = 0; i < 10; i++)
+        {
+            AddWall(
+                state,
+                $"saved-wall-{i}",
+                $"wall{(35 + i).ToString("00")}",
+                new Vector3(i * 2f, 0f, 3f),
+                new Vector3(i * 2f + 1f, 0f, 3f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 101,
+                i * 2 + 102,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        for (int i = 0; i < wallRoot.transform.childCount; i++)
+        {
+            Assert.That(wallRoot.transform.GetChild(i).name, Is.EqualTo($"wall{(i + 1).ToString("00")}"));
+        }
+    }
+
+    [Test]
+    public void NormalizeWallNames_IgnoresInactiveWallsPendingDestroyDuringPlayModeLoad()
+    {
+        for (int i = 0; i < 32; i++)
+        {
+            GameObject pendingDestroyWall = CreateWallObject($"wall{(i + 1).ToString("00")}", wallRoot.transform);
+            ConfigureWall(
+                pendingDestroyWall,
+                new Vector3(i * 2f, 0f, 0f),
+                new Vector3(i * 2f + 1f, 0f, 0f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 1,
+                i * 2 + 2,
+                false,
+                false,
+                false,
+                false);
+            pendingDestroyWall.SetActive(false);
+        }
+
+        List<GameObject> restoredWalls = new List<GameObject>();
+        for (int i = 0; i < 32; i++)
+        {
+            GameObject restoredWall = CreateWallObject($"wall{(i + 1).ToString("00")}", wallRoot.transform);
+            ConfigureWall(
+                restoredWall,
+                new Vector3(i * 2f, 0f, 3f),
+                new Vector3(i * 2f + 1f, 0f, 3f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 101,
+                i * 2 + 102,
+                false,
+                false,
+                false,
+                false);
+            restoredWalls.Add(restoredWall);
+        }
+
+        Type namingUtility = GetAssemblyType("WallNamingUtility");
+        MethodInfo normalizeMethod = namingUtility.GetMethod("NormalizeWallNames", BindingFlags.Public | BindingFlags.Static);
+        Assert.That(normalizeMethod, Is.Not.Null);
+        normalizeMethod.Invoke(null, new object[] { wallRoot.transform });
+
+        for (int i = 0; i < restoredWalls.Count; i++)
+        {
+            Assert.That(restoredWalls[i].name, Is.EqualTo($"wall{(i + 1).ToString("00")}"));
+        }
+    }
+
+    [Test]
+    public void Load_RenumbersRestoredWallsEvenWhenWallColliderMissing()
+    {
+        object state = CreateState();
+        AddWall(
+            state,
+            "saved-wall-id",
+            "wall33",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(1f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+        Collider collider = wallRoot.transform.GetChild(0).GetComponent<Collider>();
+        if (collider != null)
+        {
+            UnityEngine.Object.DestroyImmediate(collider);
+        }
+
+        Type namingUtility = GetAssemblyType("WallNamingUtility");
+        MethodInfo normalizeMethod = namingUtility.GetMethod("NormalizeWallNames", BindingFlags.Public | BindingFlags.Static);
+        Assert.That(normalizeMethod, Is.Not.Null);
+        normalizeMethod.Invoke(null, new object[] { wallRoot.transform });
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(wallRoot.transform.GetChild(0).name, Is.EqualTo("wall01"));
+    }
+
+    [Test]
+    public void Load_RefreshesInactiveSceneHierarchyTreeViewAfterRestore()
+    {
+        object state = CreateState();
+        AddWall(
+            state,
+            "saved-wall-id",
+            "SavedWall",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(5f, 0f, 0f),
+            0.25f,
+            3.2f,
+            1.6f,
+            10,
+            11,
+            false,
+            false,
+            false,
+            false);
+        sceneHierarchyContentObject = new GameObject("HierarchyContent", typeof(RectTransform));
+        sceneHierarchyObject = new GameObject("SceneHierarchyTreeView");
+        sceneHierarchyObject.SetActive(false);
+        Component treeView = sceneHierarchyObject.AddComponent(GetAssemblyType("SceneHierarchyTreeView"));
+        InvokeSetHierarchyReferencesForTests(
+            treeView,
+            wallRoot.transform,
+            CreateRoomList(),
+            sceneHierarchyContentObject.GetComponent<RectTransform>(),
+            null);
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(sceneHierarchyContentObject.transform.childCount, Is.EqualTo(1));
+        Assert.That(sceneHierarchyContentObject.transform.GetChild(0).name, Is.EqualTo("Wall_wall01"));
     }
 
     [Test]
@@ -308,6 +494,59 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
+    public void Load_FiltersMissingRoomWallReferences()
+    {
+        CreateExistingWall();
+        object state = CreateState();
+        AddWall(
+            state,
+            "wall-a",
+            "WallA",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+        AddRoom(
+            state,
+            "Living",
+            "living-type",
+            "RM-01",
+            "NATIVE-01",
+            "floor-a",
+            "ceiling-a",
+            false,
+            new[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                new Vector3(4f, 0f, 3f),
+                new Vector3(0f, 0f, 3f),
+            },
+            new[] { "wall-a", "missing-wall-id" },
+            true,
+            new[] { "wall-a", "missing-wall-id" });
+        object roomManager = CreateRoomManager();
+
+        object result = Load(state, wallRoot.transform, roomManager, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        IList rooms = (IList)roomManager.GetType()
+            .GetMethod("GetAllRooms", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null)
+            ?.Invoke(roomManager, null);
+        Assert.That(rooms, Has.Count.EqualTo(1));
+        object room = rooms[0];
+        CollectionAssert.AreEqual(new[] { "wall-a" }, ToStringArray(GetPropertyValue<IReadOnlyList<string>>(room, "AutomaticWallIds")));
+        CollectionAssert.AreEqual(new[] { "wall-a" }, ToStringArray(GetPropertyValue<IReadOnlyList<string>>(room, "ManualWallIds")));
+    }
+
+    [Test]
     public void Load_AssignsSingleHandleToSharedVertexCoordinates()
     {
         object state = CreateState();
@@ -350,6 +589,39 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
+    public void Load_SyncsDrawManagerWallSequenceToRestoredWalls()
+    {
+        object state = CreateState();
+        for (int i = 0; i < 10; i++)
+        {
+            AddWall(
+                state,
+                $"wall-{i}",
+                $"wall{(i + 1).ToString("00")}",
+                new Vector3(i * 2f, 0f, 0f),
+                new Vector3(i * 2f + 1f, 0f, 0f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 1,
+                i * 2 + 2,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        object runtime = CreateWallToolRuntime();
+        SetPrivateFieldValue(runtime, "wallSequence", 4);
+        object services = CreateLoadServices(null, CreateDrawManager(runtime));
+
+        object result = Load(state, wallRoot.transform, null, null, null, services);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(GetPrivateFieldValue<int>(runtime, "wallSequence"), Is.EqualTo(10));
+    }
+
+    [Test]
     public void RebuildRegisteredWallsFromHierarchy_ReplacesExistingHandleRects()
     {
         GameObject wall = CreateWallObject("Wall", wallRoot.transform);
@@ -382,7 +654,19 @@ public class LhWorkStateLoaderTests
     private static object Load(object state, Transform wallRoot, object roomManager, Transform furnitureRoot, object furnitureCatalog)
     {
         Type loaderType = GetAssemblyType("LhWorkStateLoader");
-        MethodInfo method = loaderType.GetMethod("Load", BindingFlags.Public | BindingFlags.Static);
+        MethodInfo method = loaderType.GetMethod(
+            "Load",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[]
+            {
+                GetAssemblyType("LhWorkStateDto"),
+                typeof(Transform),
+                GetAssemblyType("RoomManager"),
+                typeof(Transform),
+                GetAssemblyType("FurnitureCatalog"),
+            },
+            null);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(null, new[] { state, wallRoot, roomManager, furnitureRoot, furnitureCatalog });
     }
@@ -406,6 +690,30 @@ public class LhWorkStateLoaderTests
             null);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(null, new[] { state, wallRoot, roomManager, furnitureRoot, furnitureCatalog, services });
+    }
+
+    private static void InvokeSetHierarchyReferencesForTests(
+        Component treeView,
+        Transform testWallRoot,
+        object rooms,
+        RectTransform contentRoot,
+        Component selectionManager)
+    {
+        Type roomType = GetAssemblyType("Room");
+        Type selectionManagerType = GetAssemblyType("WallSelectionManager");
+        Type enumerableRoomType = typeof(System.Collections.Generic.IEnumerable<>).MakeGenericType(roomType);
+        MethodInfo method = treeView.GetType().GetMethod(
+            "SetReferencesForTests",
+            new[] { typeof(Transform), enumerableRoomType, typeof(RectTransform), selectionManagerType });
+        Assert.That(method, Is.Not.Null);
+        method.Invoke(treeView, new object[] { testWallRoot, rooms, contentRoot, selectionManager });
+    }
+
+    private static object CreateRoomList()
+    {
+        Type roomType = GetAssemblyType("Room");
+        Type listType = typeof(System.Collections.Generic.List<>).MakeGenericType(roomType);
+        return Activator.CreateInstance(listType);
     }
 
     private static object CreateState()
@@ -577,6 +885,11 @@ public class LhWorkStateLoaderTests
 
     private static object CreateLoadServices(object handleManager)
     {
+        return CreateLoadServices(handleManager, null);
+    }
+
+    private static object CreateLoadServices(object handleManager, object drawManager)
+    {
         Type servicesType = GetAssemblyType("LhWorkStateLoadServices");
         ConstructorInfo constructor = servicesType.GetConstructor(new[]
         {
@@ -587,7 +900,65 @@ public class LhWorkStateLoaderTests
             GetAssemblyType("DrawManager"),
         });
         Assert.That(constructor, Is.Not.Null);
-        return constructor.Invoke(new[] { handleManager, null, null, null, null });
+        return constructor.Invoke(new[] { handleManager, null, null, null, drawManager });
+    }
+
+    private object CreateDrawManager(object runtime)
+    {
+        drawManagerObject = new GameObject("DrawManager");
+        object drawManager = drawManagerObject.AddComponent(GetAssemblyType("DrawManager"));
+        SetPrivateFieldValue(drawManager, "_toolRuntime", runtime);
+        return drawManager;
+    }
+
+    private object CreateWallToolRuntime()
+    {
+        cameraObject = new GameObject("Main Camera");
+        Camera camera = cameraObject.AddComponent<Camera>();
+        Type runtimeType = GetAssemblyType("WallToolRuntime");
+        ConstructorInfo constructor = runtimeType.GetConstructor(new[]
+        {
+            typeof(Camera),
+            typeof(GameObject),
+            typeof(Transform),
+            GetAssemblyType("SnapManager"),
+            GetAssemblyType("WallLengthDisplay"),
+            GetAssemblyType("HandleManager"),
+            GetAssemblyType("WallSelectionManager"),
+            GetAssemblyType("UndoRedoManager"),
+            GetAssemblyType("IEditorInputProvider"),
+            typeof(bool),
+            typeof(float),
+            typeof(float),
+            typeof(float),
+            typeof(Color),
+            typeof(Material),
+            typeof(Color),
+            typeof(Material),
+            typeof(List<RaycastResult>),
+        });
+        Assert.That(constructor, Is.Not.Null);
+        return constructor.Invoke(new object[]
+        {
+            camera,
+            null,
+            wallRoot.transform,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            3f,
+            0.2f,
+            0f,
+            Color.cyan,
+            null,
+            Color.gray,
+            null,
+            new List<RaycastResult>(),
+        });
     }
 
     private int CountHandleRects()
@@ -700,10 +1071,28 @@ public class LhWorkStateLoaderTests
         field.SetValue(target, value);
     }
 
+    private static T GetPrivateFieldValue<T>(object target, string fieldName)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.That(field, Is.Not.Null);
+        return (T)field.GetValue(target);
+    }
+
     private static T GetPropertyValue<T>(object target, string propertyName)
     {
         PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
         Assert.That(property, Is.Not.Null);
         return (T)property.GetValue(target);
+    }
+
+    private static string[] ToStringArray(IReadOnlyList<string> values)
+    {
+        string[] results = new string[values.Count];
+        for (int i = 0; i < values.Count; i++)
+        {
+            results[i] = values[i];
+        }
+
+        return results;
     }
 }

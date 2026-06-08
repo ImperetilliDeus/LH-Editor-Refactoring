@@ -247,11 +247,10 @@ public static class LhWorkStateBuilder
         for (int i = 0; i < values.Count; i++)
         {
             string sourceId = values[i] ?? string.Empty;
-            string normalizedId = sourceId;
-            if (normalizedWallIdsBySourceId != null &&
-                normalizedWallIdsBySourceId.TryGetValue(sourceId, out string mappedId))
+            if (normalizedWallIdsBySourceId == null ||
+                !normalizedWallIdsBySourceId.TryGetValue(sourceId, out string normalizedId))
             {
-                normalizedId = mappedId ?? string.Empty;
+                continue;
             }
 
             if (seenIds.Add(normalizedId))
@@ -268,6 +267,11 @@ public static class LhWorkStateBuilder
         if (container == null)
         {
             return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(container.PersistentWallId))
+        {
+            return container.PersistentWallId;
         }
 
         Wall[] walls = container.GetComponentsInChildren<Wall>(true);
@@ -291,6 +295,11 @@ public static class LhWorkStateBuilder
         if (container == null || normalizedWallIdsBySourceId == null)
         {
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(container.PersistentWallId))
+        {
+            normalizedWallIdsBySourceId[container.PersistentWallId] = collapsedId ?? string.Empty;
         }
 
         Wall[] walls = container.GetComponentsInChildren<Wall>(true);

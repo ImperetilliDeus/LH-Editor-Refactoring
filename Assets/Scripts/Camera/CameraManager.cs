@@ -57,9 +57,14 @@ public class CameraManager : MonoBehaviour, IEditorModeInputHandler
         }
     }
 
+    private void OnDisable()
+    {
+        isPanning = false;
+    }
+
     public void HandleEditorInput(EditorInputFrame inputFrame)
     {
-        if (MainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
+        if (!isActiveAndEnabled || MainCamera == null || inputProvider == null || !inputFrame.IsPointerAvailable)
         {
             return;
         }

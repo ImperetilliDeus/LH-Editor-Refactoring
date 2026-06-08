@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -87,25 +88,30 @@ internal sealed class WallToolRuntime : IWallToolContext
     public bool IsWallCreationMode => isWallCreationMode;
     public GameObject PreviewWall => previewWall;
 
+    public void SyncWallSequenceFromHierarchy()
+    {
+        wallSequence = ResolveNextWallSequence(wallRoot);
+    }
+
     public void Dispose()
     {
         ClearPreviewWallDisplay();
 
         if (previewWall != null)
         {
-            Object.Destroy(previewWall);
+            DestroyObject(previewWall);
             previewWall = null;
         }
 
         if (previewMaterial != null)
         {
-            Object.Destroy(previewMaterial);
+            DestroyObject(previewMaterial);
             previewMaterial = null;
         }
 
         if (ownsWallMaterial && wallMaterial != null)
         {
-            Object.Destroy(wallMaterial);
+            DestroyObject(wallMaterial);
             wallMaterial = null;
         }
     }
@@ -365,6 +371,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         if (!TryGetMouseWorldPoint(out Vector3 currentPoint))
         {
             previewWall.SetActive(false);
+            EditorVisualEvents.RequestTopViewRefresh();
             return;
         }
 
@@ -372,10 +379,13 @@ internal sealed class WallToolRuntime : IWallToolContext
         {
             ClearPreviewWallDisplay();
             previewWall.SetActive(false);
+            EditorVisualEvents.RequestTopViewRefresh();
             return;
         }
 
+        DisablePreviewWorldVisuals(previewWall);
         previewWall.SetActive(true);
+        EditorVisualEvents.RequestTopViewRefresh();
     }
 
     private void ExitWallCreationMode()
@@ -386,6 +396,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         if (previewWall != null)
         {
             previewWall.SetActive(false);
+            EditorVisualEvents.RequestTopViewRefresh();
         }
     }
 
@@ -414,7 +425,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         {
             wallComponent?.ClearLengthDisplay(wallLengthDisplay);
             handleManager?.UnregisterWall(wallObject);
-            Object.Destroy(wallObject);
+            DestroyObject(wallObject);
         }
         else if (isPreview)
         {
@@ -437,23 +448,58 @@ internal sealed class WallToolRuntime : IWallToolContext
         Collider previewCollider = previewWall.GetComponent<Collider>();
         if (previewCollider != null)
         {
-            Object.Destroy(previewCollider);
+            DestroyObject(previewCollider);
         }
 
         MeshRenderer previewRenderer = previewWall.GetComponent<MeshRenderer>();
-        if (previewRenderer != null && previewMaterial != null)
+        if (previewRenderer != null)
         {
-            previewRenderer.sharedMaterial = previewMaterial;
+            previewRenderer.sharedMaterial = null;
         }
 
         Wall previewWallComponent = previewWall.GetComponent<Wall>();
         if (previewWallComponent != null)
         {
-            previewWallComponent.SetTopMaterial(previewMaterial);
+            previewWallComponent.SetTopMaterial(null);
             previewWallComponent.SetTopFaceOffset(Wall.DefaultTopFaceOffset);
         }
 
+        DisablePreviewWorldVisuals(previewWall);
         previewWall.SetActive(false);
+    }
+
+    private static void DisablePreviewWorldVisuals(GameObject previewObject)
+    {
+        if (previewObject == null)
+        {
+            return;
+        }
+
+        WallTopFaceVisual[] topFaceVisuals = previewObject.GetComponentsInChildren<WallTopFaceVisual>(true);
+        for (int i = 0; i < topFaceVisuals.Length; i++)
+        {
+            if (topFaceVisuals[i] != null)
+            {
+                topFaceVisuals[i].SetTopMaterial(null);
+            }
+        }
+
+        Renderer[] renderers = previewObject.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (renderer is MeshRenderer meshRenderer)
+            {
+                meshRenderer.sharedMaterial = null;
+            }
+
+            renderer.enabled = false;
+        }
     }
 
     private void ClearPreviewWallDisplay()
@@ -482,6 +528,91 @@ internal sealed class WallToolRuntime : IWallToolContext
             });
     }
 
+    private static int ResolveNextWallSequence(Transform root)
+    {
+        if (root == null)
+        {
+            return 0;
+        }
+
+        int nextSequence = 0;
+        int topLevelWallCount = 0;
+        bool foundNumberedWall = false;
+        ResolveNextWallSequenceRecursive(root, ref nextSequence, ref foundNumberedWall);
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child != null && !string.Equals(child.name, "WallPreview", System.StringComparison.Ordinal))
+            {
+                topLevelWallCount++;
+            }
+        }
+
+        return foundNumberedWall ? nextSequence : topLevelWallCount;
+    }
+
+    private static void ResolveNextWallSequenceRecursive(Transform root, ref int nextSequence, ref bool foundNumberedWall)
+    {
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child == null)
+            {
+                continue;
+            }
+
+            if (TryParseWallSequenceNextValue(child.name, out int nextValue))
+            {
+                nextSequence = Mathf.Max(nextSequence, nextValue);
+                foundNumberedWall = true;
+            }
+
+            ResolveNextWallSequenceRecursive(child, ref nextSequence, ref foundNumberedWall);
+        }
+    }
+
+    private static bool TryParseWallSequenceNextValue(string objectName, out int nextValue)
+    {
+        nextValue = 0;
+        if (TryParseWallSequenceNumber(objectName, "Wall_", out int zeroBasedSequence))
+        {
+            nextValue = zeroBasedSequence + 1;
+            return true;
+        }
+
+        if (TryParseWallSequenceNumber(objectName, "wall", out int oneBasedSequence))
+        {
+            nextValue = oneBasedSequence;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryParseWallSequenceNumber(string objectName, string prefix, out int sequence)
+    {
+        sequence = 0;
+        if (string.IsNullOrWhiteSpace(objectName) || string.IsNullOrEmpty(prefix) || !objectName.StartsWith(prefix, System.StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        int digitStart = prefix.Length;
+        int digitEnd = digitStart;
+        while (digitEnd < objectName.Length && char.IsDigit(objectName[digitEnd]))
+        {
+            digitEnd++;
+        }
+
+        return digitEnd > digitStart &&
+               int.TryParse(
+                   objectName.Substring(digitStart, digitEnd - digitStart),
+                   NumberStyles.None,
+                   CultureInfo.InvariantCulture,
+                   out sequence);
+    }
+
     private void EnsureCachedResources()
     {
         if (cachedCubeMesh != null)
@@ -496,7 +627,24 @@ internal sealed class WallToolRuntime : IWallToolContext
             cachedCubeMesh = filter.sharedMesh;
         }
 
-        Object.Destroy(cube);
+        DestroyObject(cube);
+    }
+
+    private static void DestroyObject(Object target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Object.Destroy(target);
+        }
+        else
+        {
+            Object.DestroyImmediate(target);
+        }
     }
 
     private static Material CreateWallMaterial(Color color, bool transparent)
@@ -516,6 +664,7 @@ internal sealed class WallToolRuntime : IWallToolContext
         {
             color = color,
         };
+        SetMaterialColor(material, color);
 
         if (!transparent)
         {
@@ -529,7 +678,27 @@ internal sealed class WallToolRuntime : IWallToolContext
         material.SetFloat("_ZWrite", 0f);
         material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        SetMaterialColor(material, color);
 
         return material;
+    }
+
+    private static void SetMaterialColor(Material material, Color color)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        material.color = color;
+        if (material.HasProperty("_BaseColor"))
+        {
+            material.SetColor("_BaseColor", color);
+        }
+
+        if (material.HasProperty("_Color"))
+        {
+            material.SetColor("_Color", color);
+        }
     }
 }

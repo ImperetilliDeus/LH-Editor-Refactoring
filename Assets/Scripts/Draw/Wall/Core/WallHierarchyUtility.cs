@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class WallHierarchyUtility
 {
-    public static void CollectWalls(Transform root, List<Wall> results, bool includeInactive = false)
+    public static void CollectWalls(Transform root, List<Wall> results, bool includeInactive = false, bool includePreview = false)
     {
         if (results == null)
         {
@@ -21,6 +21,11 @@ public static class WallHierarchyUtility
         {
             Wall wall = walls[i];
             if (wall == null)
+            {
+                continue;
+            }
+
+            if (!includePreview && IsPreviewWall(wall))
             {
                 continue;
             }
@@ -43,5 +48,28 @@ public static class WallHierarchyUtility
 
         MeshRenderer renderer = wall.GetComponent<MeshRenderer>();
         return renderer != null && !renderer.enabled;
+    }
+
+    public static bool IsPreviewWall(Wall wall)
+    {
+        return wall != null && IsPreviewWall(wall.transform);
+    }
+
+    public static bool IsPreviewWall(Transform wallTransform)
+    {
+        if (wallTransform == null)
+        {
+            return false;
+        }
+
+        Transform exportRoot = wallTransform;
+        WallOpeningContainer container = wallTransform.GetComponentInParent<WallOpeningContainer>();
+        if (container != null)
+        {
+            exportRoot = container.transform;
+        }
+
+        return string.Equals(exportRoot.name, "WallPreview", System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(wallTransform.name, "WallPreview", System.StringComparison.OrdinalIgnoreCase);
     }
 }

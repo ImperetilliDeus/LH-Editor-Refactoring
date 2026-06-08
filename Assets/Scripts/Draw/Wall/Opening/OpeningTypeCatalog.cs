@@ -18,6 +18,10 @@ public class OpeningTypeCatalogItem
     [SerializeField] private Vector3 modelLocalPosition = Vector3.zero;
     [SerializeField] private Vector3 modelLocalEulerAngles = Vector3.zero;
     [SerializeField] private Vector3 modelScaleMultiplier = Vector3.one;
+    [SerializeField] private Vector3 referenceSize = Vector3.one;
+    [SerializeField] private bool fitDepth = true;
+    [SerializeField] private bool fitHeight = true;
+    [SerializeField] private bool fitWidth = true;
 
     public WallOpeningPlacementManager.OpeningPlacementType OpeningType => openingType;
     public string TypeKey => typeKey;
@@ -26,4 +30,8 @@ public class OpeningTypeCatalogItem
     public Vector3 ModelLocalPosition => modelLocalPosition;
     public Vector3 ModelLocalEulerAngles => modelLocalEulerAngles;
     public Vector3 ModelScaleMultiplier => modelScaleMultiplier;
+    public Vector3 ReferenceSize => referenceSize;
+    public bool FitDepth => fitDepth;
+    public bool FitHeight => fitHeight;
+    public bool FitWidth => fitWidth;
 }

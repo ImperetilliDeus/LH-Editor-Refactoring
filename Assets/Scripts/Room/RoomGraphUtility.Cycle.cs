@@ -100,7 +100,36 @@ public static partial class RoomGraphUtility
             }
         }
 
+        RemoveExteriorFaceWhenSplitByVirtualBoundary(graph);
         return graph;
+    }
+
+    private static void RemoveExteriorFaceWhenSplitByVirtualBoundary(RoomPlanarGraph graph)
+    {
+        if (graph == null || graph.Faces.Count <= 1)
+        {
+            return;
+        }
+
+        RoomPlanarGraph.Face exteriorCandidate = null;
+        for (int i = 0; i < graph.Faces.Count; i++)
+        {
+            RoomPlanarGraph.Face face = graph.Faces[i];
+            if (face == null || face.VirtualBoundaries.Count > 0)
+            {
+                continue;
+            }
+
+            if (exteriorCandidate == null || face.SignedArea > exteriorCandidate.SignedArea)
+            {
+                exteriorCandidate = face;
+            }
+        }
+
+        if (exteriorCandidate != null)
+        {
+            graph.RemoveFace(exteriorCandidate);
+        }
     }
 
     private static void AddWallToAdjacency(Dictionary<int, List<Wall>> adjacency, int vertexId, Wall wall)

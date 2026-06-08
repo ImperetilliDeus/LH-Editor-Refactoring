@@ -374,7 +374,7 @@ public sealed class DwgWallImporter : MonoBehaviour
 
     private void ResolveReferences()
     {
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true, true);
         LayerUtility.ResolveObject(ref handleManager);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallLengthDisplay);

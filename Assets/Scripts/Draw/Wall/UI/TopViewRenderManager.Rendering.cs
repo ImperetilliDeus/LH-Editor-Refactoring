@@ -48,7 +48,7 @@ public partial class TopViewRenderManager
         batchGraphic.raycastTarget = IsRoomWallAuthoringInteractionEnabled();
 
         cachedWallSegments.Clear();
-        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true);
+        WallHierarchyUtility.CollectWalls(wallRoot, cachedWalls, true, true);
 
         for (int i = 0; i < cachedWalls.Count; i++)
         {
@@ -61,7 +61,7 @@ public partial class TopViewRenderManager
             if (TryBuildScreenSegmentData(
                     wall.Data.startPoint,
                     wall.Data.endPoint,
-                    wall.transform.localScale.x,
+                    GetTopPlanWallWorldThickness(wall),
                     GetTopPlanWallColor(wall),
                     wall,
                     null,
@@ -251,6 +251,22 @@ public partial class TopViewRenderManager
         }
 
         return IsWallSelectedInTopPlan(wall) ? selectedWallColor : wallColor;
+    }
+
+    private float GetTopPlanWallWorldThickness(Wall wall)
+    {
+        if (wall == null)
+        {
+            return 0f;
+        }
+
+        float worldThickness = wall.transform.localScale.x;
+        if (WallHierarchyUtility.IsPreviewWall(wall))
+        {
+            worldThickness *= Mathf.Max(0.01f, previewWallThicknessMultiplier);
+        }
+
+        return worldThickness;
     }
 
     private bool TryBuildOpeningSegmentData(WallOpening opening, out TopPlanSegmentBatchGraphic.SegmentData segment)

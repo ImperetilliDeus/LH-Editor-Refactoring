@@ -15,6 +15,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     [Header("References")]
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private Camera targetCamera;
     [SerializeField] private Transform furnitureRoot;
     [SerializeField] private RoomManager roomManager;
@@ -110,6 +111,11 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
+
+        if (viewModeManager != null && viewModeManager.CurrentViewMode != EditorViewMode.Top)
+        {
+            viewModeManager.SetTopView();
+        }
 
         if (modeManager != null && !modeManager.IsMode(EditorMode.FurniturePlace))
         {
@@ -357,9 +363,9 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        bool hasSurface = TryGetPlacementPoint(out _, out _);
+        bool hasSurface = TryGetPlacementPoint(out _, out Room placementPointRoom);
         Bounds bounds = activeInstance.CalculateWorldBounds();
-        Room room = ResolveRoomForBounds(bounds);
+        Room room = ResolvePlacementRoom(bounds, placementPointRoom);
         bool overlaps = CheckOverlaps(activeInstance, bounds, out Collider blockingCollider);
         lastPlacementValidity = hasSurface && room != null && !overlaps;
         EmitValidationDebug(hasSurface, room, overlaps, blockingCollider, bounds);
@@ -614,6 +620,16 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         return null;
     }
 
+    private Room ResolvePlacementRoom(Bounds bounds, Room placementPointRoom)
+    {
+        if (placementPointRoom != null)
+        {
+            return placementPointRoom;
+        }
+
+        return ResolveRoomForBounds(bounds);
+    }
+
     private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<Vector3> polygon)
     {
         if (polygon == null || polygon.Count < 3)
@@ -780,6 +796,11 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         if (modeManager == null)
         {
             LayerUtility.ResolveObject(ref modeManager);
+        }
+
+        if (viewModeManager == null)
+        {
+            LayerUtility.ResolveObject(ref viewModeManager);
         }
 
         if (targetCamera == null)

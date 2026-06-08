@@ -577,7 +577,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
     private void EnsureWallRoot()
     {
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true);
     }
 
     private void ResolveReferences()

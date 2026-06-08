@@ -91,6 +91,7 @@ public static class LhWorkStateLoader
             return LhWorkStateLoadResult.Fail("Failed to restore walls.");
         }
 
+        WallNamingUtility.NormalizeWallNames(wallRoot);
         Dictionary<string, Room> roomsByName = RestoreRooms(state.rooms, roomManager, wallsById);
         RestoreFurniture(state.furniture, furnitureRoot, furnitureCatalog, roomsByName);
         if (roomManager != null)
@@ -99,7 +100,9 @@ public static class LhWorkStateLoader
         }
 
         RefreshRestoredEditorState(wallRoot, services);
+        services?.DrawManager?.SyncWallSequenceForWorkStateLoad();
         RoomTopologyEvents.RequestRefreshAll();
+        SceneHierarchyTreeView.RefreshAllInstances();
         return LhWorkStateLoadResult.Ok();
     }
 
@@ -131,7 +134,7 @@ public static class LhWorkStateLoader
             return wallResult;
         }
 
-        LhWorkStateLoadResult roomResult = ValidateRooms(state.rooms, roomManager);
+        LhWorkStateLoadResult roomResult = ValidateRooms(state.rooms, roomManager, state.walls);
         if (!roomResult.Success)
         {
             return roomResult;
@@ -170,7 +173,10 @@ public static class LhWorkStateLoader
         return LhWorkStateLoadResult.Ok();
     }
 
-    private static LhWorkStateLoadResult ValidateRooms(IReadOnlyList<LhWorkRoomDto> rooms, RoomManager roomManager)
+    private static LhWorkStateLoadResult ValidateRooms(
+        IReadOnlyList<LhWorkRoomDto> rooms,
+        RoomManager roomManager,
+        IReadOnlyList<LhWorkWallDto> walls)
     {
         if (rooms == null || rooms.Count == 0)
         {
@@ -291,6 +297,7 @@ public static class LhWorkStateLoader
             wallDto.suppressEndHandle,
             wallDto.startSplitPoint,
             wallDto.endSplitPoint);
+        container.SetPersistentWallId(wallDto.id);
 
         for (int i = 0; i < wallDto.openings.Count; i++)
         {
@@ -515,7 +522,10 @@ public static class LhWorkStateLoader
                 roomDto.roomNativeCode,
                 roomDto.floorTextureCode,
                 roomDto.ceilingTextureCode);
-            roomManager.UpdateRoomWallSelection(room, roomDto.manualWallIds, roomDto.manualWallSelectionEnabled);
+            roomManager.UpdateRoomWallSelection(
+                room,
+                FilterResolvableWallIds(roomDto.manualWallIds, wallsById),
+                roomDto.manualWallSelectionEnabled);
             AddRoomAlias(roomsByName, roomDto.name, room);
             AddRoomAlias(roomsByName, room.RoomName, room);
             AddRoomAlias(roomsByName, room.name, room);
@@ -624,6 +634,29 @@ public static class LhWorkStateLoader
         }
 
         return wallSet;
+    }
+
+    private static List<string> FilterResolvableWallIds(IReadOnlyList<string> wallIds, Dictionary<string, Wall> wallsById)
+    {
+        List<string> results = new List<string>();
+        if (wallIds == null || wallsById == null)
+        {
+            return results;
+        }
+
+        HashSet<string> seenIds = new HashSet<string>(System.StringComparer.Ordinal);
+        for (int i = 0; i < wallIds.Count; i++)
+        {
+            string wallId = wallIds[i];
+            if (!string.IsNullOrWhiteSpace(wallId) &&
+                wallsById.ContainsKey(wallId) &&
+                seenIds.Add(wallId))
+            {
+                results.Add(wallId);
+            }
+        }
+
+        return results;
     }
 
     private static void AddRoomAlias(Dictionary<string, Room> roomsByName, string roomName, Room room)

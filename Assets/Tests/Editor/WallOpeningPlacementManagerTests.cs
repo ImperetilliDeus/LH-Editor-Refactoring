@@ -261,6 +261,278 @@ public class WallOpeningPlacementManagerTests
         Assert.That(restoredPrefabRenderer.sharedMaterial, Is.SameAs(prefabMaterial));
     }
 
+    [Test]
+    public void UpdateOpeningVisual_DoesNotOverlayWindowMaterial_WhenWindowPrefabExistsOnRotatedWall()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type catalogType = GetAssemblyType("OpeningTypeCatalog");
+        Type catalogItemType = GetAssemblyType("OpeningTypeCatalogItem");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 4f),
+                0.2f,
+                2.4f,
+                1.5f,
+                visualState,
+                1,
+                2,
+                false,
+                false,
+                false,
+                false,
+            });
+
+        Material prefabMaterial = new Material(Shader.Find("Standard"));
+        createdObjects.Add(prefabMaterial);
+        GameObject windowPrefab = CreateGameObject("WindowPrefab");
+        MeshRenderer prefabRenderer = windowPrefab.AddComponent<MeshRenderer>();
+        windowPrefab.AddComponent<MeshFilter>();
+        prefabRenderer.sharedMaterial = prefabMaterial;
+
+        ScriptableObject catalog = ScriptableObject.CreateInstance(catalogType);
+        createdObjects.Add(catalog);
+        object catalogItem = Activator.CreateInstance(catalogItemType);
+        object windowEnumValue = Enum.Parse(openingPlacementType, "Window");
+        SetPrivateField(catalogItem, "openingType", windowEnumValue);
+        SetPrivateField(catalogItem, "typeKey", "WindowA");
+        SetPrivateField(catalogItem, "displayName", "Window A");
+        SetPrivateField(catalogItem, "modelPrefab", windowPrefab);
+        GetPrivateField<System.Collections.IList>(catalog, "items").Add(catalogItem);
+        SetPrivateField(manager, "openingTypeCatalog", catalog);
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Window"), openingType);
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                windowEnumValue,
+                string.Empty,
+                "WindowA",
+                false,
+                false,
+                2f,
+                1f,
+                1.2f,
+                0.2f,
+                0.8f,
+            });
+
+        InvokePrivate(manager, "UpdateOpeningVisual", container, opening, 0, null);
+
+        MeshRenderer openingRenderer = ((Component)opening).GetComponent<MeshRenderer>();
+        MeshRenderer restoredPrefabRenderer = null;
+        MeshRenderer[] renderers = ((Component)opening).GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != openingRenderer)
+            {
+                restoredPrefabRenderer = renderers[i];
+                break;
+            }
+        }
+
+        Assert.That(openingRenderer.enabled, Is.False);
+        Assert.That(restoredPrefabRenderer, Is.Not.Null);
+        Assert.That(restoredPrefabRenderer.sharedMaterial, Is.SameAs(prefabMaterial));
+    }
+
+    [Test]
+    public void UpdateOpeningVisual_ScalesDoorModelFromReferenceSize()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type catalogType = GetAssemblyType("OpeningTypeCatalog");
+        Type catalogItemType = GetAssemblyType("OpeningTypeCatalogItem");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                0.2f,
+                2.4f,
+                1.5f,
+                visualState,
+                1,
+                2,
+                false,
+                false,
+                false,
+                false,
+            });
+
+        GameObject doorPrefab = CreateGameObject("DoorPrefab");
+        doorPrefab.AddComponent<MeshRenderer>();
+        doorPrefab.AddComponent<MeshFilter>();
+
+        ScriptableObject catalog = ScriptableObject.CreateInstance(catalogType);
+        createdObjects.Add(catalog);
+        object catalogItem = Activator.CreateInstance(catalogItemType);
+        object doorEnumValue = Enum.Parse(openingPlacementType, "Door");
+        SetPrivateField(catalogItem, "openingType", doorEnumValue);
+        SetPrivateField(catalogItem, "typeKey", "DoorA");
+        SetPrivateField(catalogItem, "displayName", "Door A");
+        SetPrivateField(catalogItem, "modelPrefab", doorPrefab);
+        SetPrivateField(catalogItem, "referenceSize", new Vector3(0.4f, 1.2f, 1f));
+        GetPrivateField<System.Collections.IList>(catalog, "items").Add(catalogItem);
+        SetPrivateField(manager, "openingTypeCatalog", catalog);
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Door"), openingType);
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                doorEnumValue,
+                "DoorA",
+                string.Empty,
+                false,
+                false,
+                2f,
+                2f,
+                2.4f,
+                0.2f,
+                0f,
+            });
+        Transform legacyModelRoot = CreateChildGameObject(((Component)opening).transform, "ModelRoot").transform;
+        CreateChildGameObject(legacyModelRoot, "ModelScaleRoot");
+
+        InvokePrivate(manager, "UpdateOpeningVisual", container, opening, 0, null);
+
+        Transform modelRotationRoot = ((Component)opening).transform.Find("ModelRoot/ModelRotationRoot");
+        Transform modelScaleRoot = modelRotationRoot != null ? modelRotationRoot.Find("ModelScaleRoot") : null;
+        Assert.That(modelRotationRoot, Is.Not.Null);
+        Assert.That(modelScaleRoot, Is.Not.Null);
+        Assert.That(modelScaleRoot.parent, Is.EqualTo(modelRotationRoot));
+        Assert.That(((Component)opening).transform.Find("ModelRoot/ModelScaleRoot"), Is.Null);
+        Assert.That(modelScaleRoot.localScale.x, Is.EqualTo(5f).Within(0.0001f));
+        Assert.That(modelScaleRoot.localScale.y, Is.EqualTo(2f).Within(0.0001f));
+        Assert.That(modelScaleRoot.localScale.z, Is.EqualTo(0.2f).Within(0.0001f));
+    }
+
+    [Test]
+    public void UpdateOpeningVisual_MapsModelWidthAxisAlongRotatedWall()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type catalogType = GetAssemblyType("OpeningTypeCatalog");
+        Type catalogItemType = GetAssemblyType("OpeningTypeCatalogItem");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 4f),
+                0.2f,
+                2.4f,
+                1.5f,
+                visualState,
+                1,
+                2,
+                false,
+                false,
+                false,
+                false,
+            });
+
+        GameObject doorPrefab = CreateGameObject("DoorPrefab");
+        Transform widthAxisProbe = CreateChildGameObject(doorPrefab.transform, "WidthAxisProbe").transform;
+        widthAxisProbe.localPosition = Vector3.right;
+
+        ScriptableObject catalog = ScriptableObject.CreateInstance(catalogType);
+        createdObjects.Add(catalog);
+        object catalogItem = Activator.CreateInstance(catalogItemType);
+        object doorEnumValue = Enum.Parse(openingPlacementType, "Door");
+        SetPrivateField(catalogItem, "openingType", doorEnumValue);
+        SetPrivateField(catalogItem, "typeKey", "DoorA");
+        SetPrivateField(catalogItem, "displayName", "Door A");
+        SetPrivateField(catalogItem, "modelPrefab", doorPrefab);
+        SetPrivateField(catalogItem, "referenceSize", new Vector3(1f, 1f, 1f));
+        GetPrivateField<System.Collections.IList>(catalog, "items").Add(catalogItem);
+        SetPrivateField(manager, "openingTypeCatalog", catalog);
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Door"), openingType);
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                doorEnumValue,
+                "DoorA",
+                string.Empty,
+                false,
+                false,
+                2f,
+                2f,
+                2.4f,
+                0.2f,
+                0f,
+            });
+
+        InvokePrivate(manager, "UpdateOpeningVisual", container, opening, 0, null);
+
+        Transform restoredProbe = ((Component)opening).transform.Find("ModelRoot/ModelRotationRoot/ModelScaleRoot/DoorPrefab/WidthAxisProbe");
+        Assert.That(restoredProbe, Is.Not.Null);
+
+        Vector3 widthDirection = restoredProbe.position - ((Component)opening).transform.position;
+        widthDirection.y = 0f;
+        widthDirection.Normalize();
+
+        Vector3 wallDirection = ((Component)container).GetType().GetProperty("WallDirection") != null
+            ? (Vector3)((Component)container).GetType().GetProperty("WallDirection").GetValue(container)
+            : Vector3.zero;
+        Assert.That(Vector3.Dot(widthDirection, wallDirection), Is.GreaterThan(0.99f));
+    }
+
+    [Test]
+    public void SelectOpening_IgnoresOpening_WhenNotInDetailEditMode()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type modeManagerType = GetAssemblyType("ModeManager");
+        Type openingType = GetAssemblyType("WallOpening");
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component modeManager = CreateComponent("ModeManager", modeManagerType);
+        modeManagerType.GetMethod("SetMode")?.Invoke(modeManager, new object[] { Enum.Parse(GetAssemblyType("EditorMode"), "RoomCreate") });
+        SetPrivateField(manager, "modeManager", modeManager);
+
+        Component opening = AddComponent(CreateGameObject("Door"), openingType);
+
+        managerType.GetMethod("SelectOpening")?.Invoke(manager, new object[] { opening });
+
+        object selectedOpening = managerType.GetProperty("SelectedOpening")?.GetValue(manager);
+        Assert.That(selectedOpening, Is.Null);
+    }
+
     private Component CreateComponent(string name, Type componentType)
     {
         return AddComponent(CreateGameObject(name), componentType);

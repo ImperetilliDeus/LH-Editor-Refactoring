@@ -62,7 +62,19 @@ public class LhWorkStateOpeningRestoreTests
     private static object Load(object state, Transform wallRoot)
     {
         Type loaderType = GetAssemblyType("LhWorkStateLoader");
-        MethodInfo method = loaderType.GetMethod("Load", BindingFlags.Public | BindingFlags.Static);
+        MethodInfo method = loaderType.GetMethod(
+            "Load",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[]
+            {
+                GetAssemblyType("LhWorkStateDto"),
+                typeof(Transform),
+                GetAssemblyType("RoomManager"),
+                typeof(Transform),
+                GetAssemblyType("FurnitureCatalog"),
+            },
+            null);
         Assert.That(method, Is.Not.Null);
         return method.Invoke(null, new object[] { state, wallRoot, null, null, null });
     }

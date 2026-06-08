@@ -20,6 +20,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     [SerializeField] private HandleManager wallHandleManager;
     [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private ModeManager modeManager;
+    [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private UndoRedoManager undoRedoManager;
 
     [Header("Input")]
@@ -563,6 +564,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         LayerUtility.ResolveObject(ref wallHandleManager);
         LayerUtility.ResolveObject(ref roomHandleManager);
         LayerUtility.ResolveObject(ref modeManager);
+        LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref undoRedoManager);
     }
 
@@ -835,7 +837,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         segments.Clear();
         if (wallRoot == null)
         {
-            wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+            wallRoot = LayerUtility.FindWallRoot(true);
         }
 
         if (wallRoot == null)

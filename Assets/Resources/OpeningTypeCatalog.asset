@@ -20,6 +20,10 @@ MonoBehaviour:
     modelLocalPosition: {x: 0, y: 0, z: 0}
     modelLocalEulerAngles: {x: 0, y: 0, z: 0}
     modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 0.52734995, y: 1, z: 1}
+    fitDepth: 1
+    fitHeight: 1
+    fitWidth: 1
   - openingType: 0
     typeKey: F001
     displayName: "\uC5EC\uB2EB\uC774\uBB38"
@@ -27,3 +31,29 @@ MonoBehaviour:
     modelLocalPosition: {x: 0, y: 0, z: 0}
     modelLocalEulerAngles: {x: 0, y: 0, z: 0}
     modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 9, y: 22, z: 0.21125029}
+    fitDepth: 1
+    fitHeight: 1
+    fitWidth: 1
+  - openingType: 1
+    typeKey: W001
+    displayName: "\uCC3D\uBB38"
+    modelPrefab: {fileID: 8283230652478690410, guid: a4bc47720fa69ad4d82a7de56bd6160b, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 1.0000001, y: 1, z: 1}
+    fitDepth: 1
+    fitHeight: 1
+    fitWidth: 1
+  - openingType: 0
+    typeKey: S001
+    displayName: "\uBBF8\uB2EB\uC774\uBB38"
+    modelPrefab: {fileID: 8283230652478690410, guid: 183af97433bed3f43b81315811ab62db, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 1, y: 1.0009999, z: 1.002}
+    fitDepth: 1
+    fitHeight: 1
+    fitWidth: 1

@@ -237,6 +237,10 @@ public partial class WallOpeningPlacementManager
             selectedWall.SuppressEndHandle,
             selectedWall.IsStartSplitPoint,
             selectedWall.IsEndSplitPoint);
+        if (selectedWall.Data != null)
+        {
+            container.SetPersistentWallId(selectedWall.Data.id);
+        }
 
         if (handleManager != null)
         {

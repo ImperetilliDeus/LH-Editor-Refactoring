@@ -5,7 +5,6 @@ public static class LayerUtility
     public const string DefaultCanvasName = "_Screen";
     public const string DefaultHandleCanvasName = "_Handle";
     public const string DefaultWallUICanvasName = "_WallUI";
-    public const string DefaultWallRootName = "Walls";
     public const string DefaultGridName = "Grid";
     public const string DefaultImportButtonName = "_ImportButton";
     public const string WallLayerName = "Wall";
@@ -152,6 +151,19 @@ public static class LayerUtility
         }
     }
 
+    public static void ResolveWallRoot(ref Transform reference, bool includeInactive = true, bool createIfMissing = false)
+    {
+        if (reference == null)
+        {
+            reference = FindWallRoot(includeInactive);
+        }
+
+        if (reference == null && createIfMissing)
+        {
+            reference = CreateWallRoot();
+        }
+    }
+
     public static void ResolveCanvasByNameOrFirst(ref Canvas reference, string preferredName = DefaultCanvasName)
     {
         if (reference == null)
@@ -184,6 +196,43 @@ public static class LayerUtility
         }
 
         return null;
+    }
+
+    public static Transform FindWallRoot(bool includeInactive = true)
+    {
+        if (SceneReferenceRegistry.TryResolveWallRoot(out Transform registeredWallRoot))
+        {
+            return registeredWallRoot;
+        }
+
+        FindObjectsInactive inactiveMode = includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;
+        WallRootMarker[] markers = Object.FindObjectsByType<WallRootMarker>(inactiveMode, FindObjectsSortMode.InstanceID);
+        WallRootMarker resolvedMarker = null;
+        for (int i = 0; i < markers.Length; i++)
+        {
+            WallRootMarker marker = markers[i];
+            if (marker == null)
+            {
+                continue;
+            }
+
+            if (resolvedMarker != null)
+            {
+                Debug.LogWarning($"Multiple {nameof(WallRootMarker)} components found. Using '{resolvedMarker.name}'.", resolvedMarker);
+                break;
+            }
+
+            resolvedMarker = marker;
+        }
+
+        return resolvedMarker != null ? resolvedMarker.transform : null;
+    }
+
+    public static Transform CreateWallRoot()
+    {
+        GameObject rootObject = new GameObject("WallRoot");
+        rootObject.AddComponent<WallRootMarker>();
+        return rootObject.transform;
     }
 
     public static Transform FindChildByName(Transform root, string childName)

@@ -48,12 +48,9 @@ public static class WallNamingUtility
 
     private static bool ShouldRename(Wall wall)
     {
-        if (wall == null)
-        {
-            return false;
-        }
-
-        return wall.GetComponent<Collider>() != null;
+        return wall != null &&
+               wall.gameObject.activeSelf &&
+               !WallHierarchyUtility.IsPreviewWall(wall);
     }
 
     private static bool IsGeneratedContainerSegment(Wall wall)
@@ -72,7 +69,7 @@ public static class WallNamingUtility
         for (int i = 0; i < wallRoot.childCount; i++)
         {
             Transform child = wallRoot.GetChild(i);
-            if (child == null)
+            if (child == null || !child.gameObject.activeSelf)
             {
                 continue;
             }

@@ -68,7 +68,37 @@ public class WallTopFaceVisual : MonoBehaviour
     private void OnValidate()
     {
         worldOffset = Mathf.Max(0f, worldOffset);
+        if (!TryCacheExistingOverlay())
+        {
+            return;
+        }
+
         Refresh();
+    }
+
+    private bool TryCacheExistingOverlay()
+    {
+        if (overlayTransform == null)
+        {
+            overlayTransform = transform.Find(OverlayObjectName);
+        }
+
+        if (overlayTransform == null)
+        {
+            return false;
+        }
+
+        if (overlayFilter == null)
+        {
+            overlayFilter = overlayTransform.GetComponent<MeshFilter>();
+        }
+
+        if (overlayRenderer == null)
+        {
+            overlayRenderer = overlayTransform.GetComponent<MeshRenderer>();
+        }
+
+        return overlayFilter != null && overlayRenderer != null;
     }
 
     private void EnsureOverlay()

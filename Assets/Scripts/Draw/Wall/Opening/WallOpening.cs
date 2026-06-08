@@ -3,6 +3,7 @@ using UnityEngine;
 public class WallOpening : MonoBehaviour
 {
     private const float MinimumModelBoundsSize = 0.0001f;
+    private static readonly Quaternion ModelToOpeningRotation = Quaternion.Euler(0f, -90f, 0f);
 
     [SerializeField] private WallOpeningPlacementManager.OpeningPlacementType type;
     [SerializeField] private string doorTypeKey;
@@ -155,7 +156,17 @@ public class WallOpening : MonoBehaviour
         endAnchor.localPosition = new Vector3(0f, 0f, 0.5f);
     }
 
-    public void ApplyModelPrefab(GameObject prefab, Vector3 localPosition, Vector3 localEulerAngles, Vector3 localScaleMultiplier)
+    public void ApplyModelPrefab(
+        GameObject prefab,
+        Vector3 localPosition,
+        Vector3 localEulerAngles,
+        Vector3 localScaleMultiplier,
+        Vector3 openingSize,
+        Vector3 modelTargetSize,
+        Vector3 referenceSize,
+        bool fitDepth,
+        bool fitHeight,
+        bool fitWidth)
     {
         if (prefab == null)
         {
@@ -169,7 +180,7 @@ public class WallOpening : MonoBehaviour
             return;
         }
 
-        bool instanceParentChanged = activeModelInstance != null && activeModelInstance.transform.parent != modelRotationRoot;
+        bool instanceParentChanged = activeModelInstance != null && activeModelInstance.transform.parent != modelScaleRoot;
         bool prefabChanged = activeModelPrefab != prefab || activeModelInstance == null || instanceParentChanged;
         if (prefabChanged)
         {
@@ -178,24 +189,30 @@ public class WallOpening : MonoBehaviour
                 Destroy(activeModelInstance);
             }
 
-            activeModelInstance = Instantiate(prefab, modelRotationRoot);
+            activeModelInstance = Instantiate(prefab, modelScaleRoot);
             activeModelInstance.name = prefab.name;
             activeModelPrefab = prefab;
         }
 
         modelRoot.localPosition = localPosition;
         modelRoot.localRotation = Quaternion.identity;
-        modelRoot.localScale = Vector3.one;
+        modelRoot.localScale = CalculateInverseOpeningScale(openingSize);
+
+        modelRotationRoot.localPosition = Vector3.zero;
+        modelRotationRoot.localRotation = Quaternion.Euler(localEulerAngles) * ModelToOpeningRotation;
+        modelRotationRoot.localScale = Vector3.one;
 
         modelScaleRoot.localPosition = Vector3.zero;
         modelScaleRoot.localRotation = Quaternion.identity;
         modelScaleRoot.localScale = Vector3.one;
 
-        modelRotationRoot.localPosition = Vector3.zero;
-        modelRotationRoot.localRotation = Quaternion.Euler(localEulerAngles);
-        modelRotationRoot.localScale = Vector3.one;
-
-        modelScaleRoot.localScale = CalculateNormalizedModelScale(localScaleMultiplier);
+        modelScaleRoot.localScale = CalculateReferenceModelScale(
+            localScaleMultiplier,
+            modelTargetSize,
+            referenceSize,
+            fitDepth,
+            fitHeight,
+            fitWidth);
         LayerUtility.ApplyLayer(
             modelRoot.gameObject,
             type == WallOpeningPlacementManager.OpeningPlacementType.Door
@@ -244,114 +261,88 @@ public class WallOpening : MonoBehaviour
             modelRoot.SetParent(transform, false);
         }
 
-        if (modelScaleRoot == null || modelScaleRoot.parent != modelRoot)
+        Transform legacyScaleRoot = modelRoot.Find("ModelScaleRoot");
+        if (legacyScaleRoot != null)
         {
-            Transform existing = modelRoot.Find("ModelScaleRoot");
-            modelScaleRoot = existing != null ? existing : new GameObject("ModelScaleRoot").transform;
-            modelScaleRoot.SetParent(modelRoot, false);
+            if (modelScaleRoot == legacyScaleRoot)
+            {
+                modelScaleRoot = null;
+            }
+
+            if (modelRotationRoot != null && modelRotationRoot.IsChildOf(legacyScaleRoot))
+            {
+                modelRotationRoot = null;
+            }
+
+            DestroyModelHierarchyObject(legacyScaleRoot.gameObject);
         }
 
-        if (modelRotationRoot == null || modelRotationRoot.parent != modelScaleRoot)
+        if (modelRotationRoot == null || modelRotationRoot.parent != modelRoot)
         {
-            Transform existing = modelScaleRoot.Find("ModelRotationRoot");
+            Transform existing = modelRoot.Find("ModelRotationRoot");
             modelRotationRoot = existing != null ? existing : new GameObject("ModelRotationRoot").transform;
-            modelRotationRoot.SetParent(modelScaleRoot, false);
+            modelRotationRoot.SetParent(modelRoot, false);
+        }
+
+        if (modelScaleRoot == null || modelScaleRoot.parent != modelRotationRoot)
+        {
+            Transform existing = modelRotationRoot.Find("ModelScaleRoot");
+            modelScaleRoot = existing != null ? existing : new GameObject("ModelScaleRoot").transform;
+            modelScaleRoot.SetParent(modelRotationRoot, false);
         }
     }
 
-    private Vector3 CalculateNormalizedModelScale(Vector3 localScaleMultiplier)
+    private static void DestroyModelHierarchyObject(GameObject target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(target);
+        }
+        else
+        {
+            DestroyImmediate(target);
+        }
+    }
+
+    private static Vector3 CalculateReferenceModelScale(
+        Vector3 localScaleMultiplier,
+        Vector3 modelTargetSize,
+        Vector3 referenceSize,
+        bool fitDepth,
+        bool fitHeight,
+        bool fitWidth)
     {
         Vector3 clampedMultiplier = new Vector3(
             Mathf.Max(MinimumModelBoundsSize, localScaleMultiplier.x),
             Mathf.Max(MinimumModelBoundsSize, localScaleMultiplier.y),
             Mathf.Max(MinimumModelBoundsSize, localScaleMultiplier.z));
 
-        if (!TryCalculateModelBoundsInOpeningSpace(out Bounds bounds))
-        {
-            return clampedMultiplier;
-        }
+        Vector3 clampedReferenceSize = new Vector3(
+            Mathf.Max(MinimumModelBoundsSize, referenceSize.x),
+            Mathf.Max(MinimumModelBoundsSize, referenceSize.y),
+            Mathf.Max(MinimumModelBoundsSize, referenceSize.z));
 
-        Vector3 size = bounds.size;
         return new Vector3(
-            NormalizeModelScaleAxis(clampedMultiplier.x, size.x),
-            NormalizeModelScaleAxis(clampedMultiplier.y, size.y),
-            NormalizeModelScaleAxis(clampedMultiplier.z, size.z));
+            fitWidth ? clampedMultiplier.x * modelTargetSize.x / clampedReferenceSize.x : clampedMultiplier.x,
+            fitHeight ? clampedMultiplier.y * modelTargetSize.y / clampedReferenceSize.y : clampedMultiplier.y,
+            fitDepth ? clampedMultiplier.z * modelTargetSize.z / clampedReferenceSize.z : clampedMultiplier.z);
     }
 
-    private static float NormalizeModelScaleAxis(float multiplier, float size)
+    private static Vector3 CalculateInverseOpeningScale(Vector3 targetSize)
     {
-        return size <= MinimumModelBoundsSize
-            ? multiplier
-            : multiplier / size;
+        return new Vector3(
+            InverseScaleAxis(targetSize.x),
+            InverseScaleAxis(targetSize.y),
+            InverseScaleAxis(targetSize.z));
     }
 
-    private bool TryCalculateModelBoundsInOpeningSpace(out Bounds bounds)
+    private static float InverseScaleAxis(float value)
     {
-        bounds = default;
-        if (activeModelInstance == null)
-        {
-            return false;
-        }
-
-        bool hasBounds = false;
-        Renderer[] renderers = activeModelInstance.GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            Renderer renderer = renderers[i];
-            if (renderer == null)
-            {
-                continue;
-            }
-
-            EncapsulateWorldBounds(renderer.bounds, ref hasBounds, ref bounds);
-        }
-
-        if (hasBounds)
-        {
-            return true;
-        }
-
-        Collider[] colliders = activeModelInstance.GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            Collider collider = colliders[i];
-            if (collider == null)
-            {
-                continue;
-            }
-
-            EncapsulateWorldBounds(collider.bounds, ref hasBounds, ref bounds);
-        }
-
-        return hasBounds;
-    }
-
-    private void EncapsulateWorldBounds(Bounds worldBounds, ref bool hasBounds, ref Bounds localBounds)
-    {
-        Vector3 min = worldBounds.min;
-        Vector3 max = worldBounds.max;
-
-        for (int x = 0; x < 2; x++)
-        {
-            float cornerX = x == 0 ? min.x : max.x;
-            for (int y = 0; y < 2; y++)
-            {
-                float cornerY = y == 0 ? min.y : max.y;
-                for (int z = 0; z < 2; z++)
-                {
-                    float cornerZ = z == 0 ? min.z : max.z;
-                    Vector3 localPoint = transform.InverseTransformPoint(new Vector3(cornerX, cornerY, cornerZ));
-                    if (!hasBounds)
-                    {
-                        localBounds = new Bounds(localPoint, Vector3.zero);
-                        hasBounds = true;
-                    }
-                    else
-                    {
-                        localBounds.Encapsulate(localPoint);
-                    }
-                }
-            }
-        }
+        return Mathf.Abs(value) > MinimumModelBoundsSize ? 1f / value : 1f;
     }
 }
