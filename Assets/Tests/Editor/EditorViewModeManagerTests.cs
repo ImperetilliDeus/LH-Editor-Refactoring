@@ -868,7 +868,12 @@ public class EditorViewModeManagerTests
             for (int i = 0; i < renderers.Length; i++)
             {
                 Assert.That(renderers[i].enabled, Is.False, renderers[i].name);
+                Assert.That(renderers[i].sharedMaterial, Is.Null, renderers[i].name);
             }
+
+            Component previewWallComponent = previewWall.GetComponent(GetAssemblyType("Wall"));
+            object topMaterial = InvokePublicWithResult(previewWallComponent, "GetTopMaterial");
+            Assert.That(topMaterial, Is.Null);
         }
         finally
         {
@@ -879,6 +884,111 @@ public class EditorViewModeManagerTests
 
             DestroyObject(wallRootObject);
             DestroyObject(cameraObject);
+        }
+    }
+
+    [Test]
+    public void TopViewRenderManager_AppliesPreviewWallThicknessMultiplierOnlyToPreviewWall()
+    {
+        GameObject managerObject = new GameObject("TopViewRenderManager");
+        GameObject previewWallObject = new GameObject("WallPreview");
+        GameObject normalWallObject = new GameObject("Wall_000");
+
+        try
+        {
+            Component manager = managerObject.AddComponent(GetAssemblyType("TopViewRenderManager"));
+            SetPrivateField(manager, "previewWallThicknessMultiplier", 0.5f);
+
+            Component previewWall = previewWallObject.AddComponent(GetAssemblyType("Wall"));
+            Component normalWall = normalWallObject.AddComponent(GetAssemblyType("Wall"));
+            previewWallObject.transform.localScale = new Vector3(2f, 3f, 4f);
+            normalWallObject.transform.localScale = new Vector3(2f, 3f, 4f);
+
+            float previewThickness = (float)InvokePrivateWithResult(
+                manager,
+                "GetTopPlanWallWorldThickness",
+                previewWall);
+            float normalThickness = (float)InvokePrivateWithResult(
+                manager,
+                "GetTopPlanWallWorldThickness",
+                normalWall);
+
+            Assert.That(previewThickness, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(normalThickness, Is.EqualTo(2f).Within(0.001f));
+        }
+        finally
+        {
+            DestroyObject(normalWallObject);
+            DestroyObject(previewWallObject);
+            DestroyObject(managerObject);
+        }
+    }
+
+    [Test]
+    public void WallSelectionUIProxy_UsesPreviewEndCapSettingsOnlyForPreviewWall()
+    {
+        GameObject selectionObject = new GameObject("WallSelectionManager");
+        GameObject previewWallObject = new GameObject("WallPreview");
+        GameObject normalWallObject = new GameObject("Wall_000");
+
+        try
+        {
+            Component selectionManager = selectionObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+            SetPrivateField(selectionManager, "previewWallUIEndCapMinSize", 3f);
+            SetPrivateField(selectionManager, "previewWallUIEndCapPadding", 1f);
+            SetPrivateField(selectionManager, "previewWallUIEndCapSizeMultiplier", 0.6f);
+
+            Component previewWall = previewWallObject.AddComponent(GetAssemblyType("Wall"));
+            Component normalWall = normalWallObject.AddComponent(GetAssemblyType("Wall"));
+            Component previewProxy = previewWallObject.AddComponent(GetAssemblyType("WallSelectionUIProxy"));
+            Component normalProxy = normalWallObject.AddComponent(GetAssemblyType("WallSelectionUIProxy"));
+            SetPrivateField(previewProxy, "ownerWall", previewWall);
+            SetPrivateField(previewProxy, "selectionManager", selectionManager);
+            SetPrivateField(normalProxy, "ownerWall", normalWall);
+            SetPrivateField(normalProxy, "selectionManager", selectionManager);
+
+            float previewCapSize = (float)InvokePrivateWithResult(previewProxy, "GetEndCapSize", 16f);
+            float normalCapSize = (float)InvokePrivateWithResult(normalProxy, "GetEndCapSize", 16f);
+
+            Assert.That(previewCapSize, Is.EqualTo(10.2f).Within(0.001f));
+            Assert.That(normalCapSize, Is.EqualTo(20f).Within(0.001f));
+        }
+        finally
+        {
+            DestroyObject(normalWallObject);
+            DestroyObject(previewWallObject);
+            DestroyObject(selectionObject);
+        }
+    }
+
+    [Test]
+    public void WallSelectionUIProxy_DoesNotCreateRootImageForPreviewWall()
+    {
+        GameObject canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
+        GameObject previewWallObject = new GameObject("WallPreview");
+
+        try
+        {
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            Component previewWall = previewWallObject.AddComponent(GetAssemblyType("Wall"));
+            Component previewProxy = previewWallObject.AddComponent(GetAssemblyType("WallSelectionUIProxy"));
+            SetPrivateField(previewProxy, "ownerWall", previewWall);
+            SetPrivateField(previewProxy, "targetCanvas", canvas);
+
+            InvokePrivateWithResult(previewProxy, "EnsureUI");
+
+            RectTransform rootRect = GetPrivateField<RectTransform>(previewProxy, "rootRect");
+            Assert.That(rootRect, Is.Not.Null);
+            Assert.That(rootRect.name, Is.EqualTo("WallPreview_ui"));
+            Assert.That(rootRect.GetComponent<Image>(), Is.Null);
+            Assert.That(rootRect.GetComponent<Outline>(), Is.Null);
+            Assert.That(rootRect.Find("StartCap")?.GetComponent<Image>(), Is.Not.Null);
+            Assert.That(rootRect.Find("EndCap")?.GetComponent<Image>(), Is.Not.Null);
+        }
+        finally
+        {
+            DestroyObject(previewWallObject);
+            DestroyObject(canvasObject);
         }
     }
 

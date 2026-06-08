@@ -28,7 +28,7 @@ public static class SceneReferenceRegistryInstaller
         SetIfNull(registry, "drawingOverlayManager", Object.FindFirstObjectByType<DrawingOverlayManager>(FindObjectsInactive.Include));
         SetIfNull(registry, "overlayCalibrationPanelController", Object.FindFirstObjectByType<OverlayCalibrationPanelController>(FindObjectsInactive.Include));
 
-        SetIfNull(registry, "wallRoot", LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true));
+        SetIfNull(registry, "wallRoot", LayerUtility.FindWallRoot(true));
         SetIfNull(registry, "grid", ResolveGridObject());
         SetIfNull(registry, "importButton", ResolveImportButton());
         SetIfNull(registry, "defaultCanvas", LayerUtility.FindCanvasByName(LayerUtility.DefaultCanvasName));

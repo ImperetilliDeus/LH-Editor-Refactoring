@@ -88,7 +88,7 @@ public partial class WallOpeningPlacementManager
         }
 
         bool hasModelPrefab = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null;
-        bool hidePlaceholderVisual = opening.Type == OpeningPlacementType.Door && hasModelPrefab;
+        bool hidePlaceholderVisual = hasModelPrefab;
         renderer.enabled = !hidePlaceholderVisual;
         renderer.sharedMaterial = hidePlaceholderVisual ? null : GetOpeningMaterial(opening.Type);
         if (hasModelPrefab)
@@ -97,7 +97,13 @@ public partial class WallOpeningPlacementManager
                 definition.ModelPrefab,
                 definition.ModelLocalPosition,
                 definition.ModelLocalEulerAngles,
-                definition.ModelScaleMultiplier);
+                definition.ModelScaleMultiplier,
+                new Vector3(opening.Depth, opening.Height, opening.Width),
+                new Vector3(opening.Width, opening.Height, opening.Depth),
+                definition.ReferenceSize,
+                definition.FitDepth,
+                definition.FitHeight,
+                definition.FitWidth);
         }
         else
         {

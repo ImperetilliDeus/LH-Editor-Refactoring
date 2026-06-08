@@ -837,7 +837,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         segments.Clear();
         if (wallRoot == null)
         {
-            wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+            wallRoot = LayerUtility.FindWallRoot(true);
         }
 
         if (wallRoot == null)

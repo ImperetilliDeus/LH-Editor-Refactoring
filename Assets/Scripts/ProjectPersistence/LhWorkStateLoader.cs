@@ -91,6 +91,7 @@ public static class LhWorkStateLoader
             return LhWorkStateLoadResult.Fail("Failed to restore walls.");
         }
 
+        WallNamingUtility.NormalizeWallNames(wallRoot);
         Dictionary<string, Room> roomsByName = RestoreRooms(state.rooms, roomManager, wallsById);
         RestoreFurniture(state.furniture, furnitureRoot, furnitureCatalog, roomsByName);
         if (roomManager != null)
@@ -99,6 +100,7 @@ public static class LhWorkStateLoader
         }
 
         RefreshRestoredEditorState(wallRoot, services);
+        services?.DrawManager?.SyncWallSequenceForWorkStateLoad();
         RoomTopologyEvents.RequestRefreshAll();
         SceneHierarchyTreeView.RefreshAllInstances();
         return LhWorkStateLoadResult.Ok();

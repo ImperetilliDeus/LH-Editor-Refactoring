@@ -6,6 +6,10 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class SceneHierarchyTreeView : MonoBehaviour
 {
+    private const string BackgroundName = "_Background";
+    private const string ScrollRootName = "HierarchyScroll";
+    private const string ViewportName = "Viewport";
+
     [Header("References")]
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
@@ -23,6 +27,12 @@ public class SceneHierarchyTreeView : MonoBehaviour
     [SerializeField] private float rowHeight = 28f;
     [SerializeField] private float childIndent = 18f;
     [SerializeField] private bool autoConfigureContentLayout = true;
+
+    [Header("Scroll")]
+    [SerializeField] private float scrollSensitivity = 96f;
+    [SerializeField] private bool smoothScrolling = true;
+    [SerializeField] private float scrollDecelerationRate = 0.12f;
+    [SerializeField] private float scrollSmoothingSpeed = 18f;
 
     [Header("Resize")]
     [SerializeField] private Button resizeDragHandle;
@@ -138,7 +148,7 @@ public class SceneHierarchyTreeView : MonoBehaviour
     {
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallSelectionManager);
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true);
 
         if (scrollRect == null && contentRoot != null)
         {
@@ -294,6 +304,15 @@ public class SceneHierarchyTreeView : MonoBehaviour
             return;
         }
 
+        RectTransform panelRoot = GetHierarchyPanelRoot();
+        if (panelRoot == null)
+        {
+            return;
+        }
+
+        EnsureBackground(panelRoot);
+        RemoveScrollRectIfPresent(contentRoot);
+
         ContentSizeFitter sizeFitter = contentRoot.GetComponent<ContentSizeFitter>();
         if (sizeFitter == null)
         {
@@ -303,43 +322,203 @@ public class SceneHierarchyTreeView : MonoBehaviour
         sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        if (scrollRect == null)
-        {
-            scrollRect = contentRoot.GetComponentInParent<ScrollRect>(true);
-        }
-
-        if (scrollRect != null && scrollRect.transform == contentRoot)
-        {
-            RemoveMisplacedScrollRect(scrollRect);
-            scrollRect = null;
-        }
-
-        if (scrollRect == null && contentRoot.parent is RectTransform parentRect)
-        {
-            scrollRect = parentRect.GetComponent<ScrollRect>();
-            if (scrollRect == null)
-            {
-                scrollRect = parentRect.gameObject.AddComponent<ScrollRect>();
-            }
-        }
-
-        if (scrollRect == null)
-        {
-            return;
-        }
-
+        RectTransform scrollRoot = EnsureScrollRoot(panelRoot);
+        RectTransform viewport = EnsureScrollViewport(scrollRoot, contentRoot);
         contentRoot.anchorMin = new Vector2(0f, 1f);
         contentRoot.anchorMax = new Vector2(1f, 1f);
         contentRoot.pivot = new Vector2(0.5f, 1f);
+        contentRoot.offsetMin = new Vector2(0f, contentRoot.offsetMin.y);
+        contentRoot.offsetMax = new Vector2(0f, contentRoot.offsetMax.y);
+
         scrollRect.content = contentRoot;
-        if (scrollRect.viewport == null || scrollRect.viewport == contentRoot)
-        {
-            scrollRect.viewport = scrollRect.transform as RectTransform;
-        }
+        scrollRect.viewport = viewport;
 
         scrollRect.vertical = true;
         scrollRect.horizontal = false;
         scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = Mathf.Max(1f, scrollSensitivity);
+        scrollRect.inertia = smoothScrolling;
+        scrollRect.decelerationRate = Mathf.Clamp(scrollDecelerationRate, 0.01f, 1f);
+        EnsureScrollHitTarget(viewport);
+        EnsureSmoothScrollHandler(viewport, scrollRect);
+    }
+
+    private RectTransform GetHierarchyPanelRoot()
+    {
+        RectTransform target = GetResizableTarget();
+        if (target != null)
+        {
+            return target;
+        }
+
+        return contentRoot != null ? contentRoot.parent as RectTransform : null;
+    }
+
+    private static void EnsureBackground(RectTransform panelRoot)
+    {
+        if (panelRoot == null)
+        {
+            return;
+        }
+
+        RectTransform background = panelRoot.Find(BackgroundName) as RectTransform;
+        if (background == null)
+        {
+            GameObject backgroundObject = new GameObject(BackgroundName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            background = backgroundObject.GetComponent<RectTransform>();
+            background.SetParent(panelRoot, false);
+            Image image = backgroundObject.GetComponent<Image>();
+            image.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+        }
+
+        background.anchorMin = Vector2.zero;
+        background.anchorMax = Vector2.one;
+        background.pivot = new Vector2(0.5f, 0.5f);
+        background.offsetMin = Vector2.zero;
+        background.offsetMax = Vector2.zero;
+        background.SetAsFirstSibling();
+    }
+
+    private RectTransform EnsureScrollRoot(RectTransform panelRoot)
+    {
+        RectTransform existingScrollRoot = scrollRect != null && scrollRect.transform != contentRoot
+            ? scrollRect.transform as RectTransform
+            : null;
+        if (existingScrollRoot != null)
+        {
+            ConfigureScrollRoot(existingScrollRoot);
+            return existingScrollRoot;
+        }
+
+        Transform existing = panelRoot.Find(ScrollRootName);
+        RectTransform scrollRoot = existing as RectTransform;
+        if (scrollRoot == null)
+        {
+            GameObject scrollObject = new GameObject(ScrollRootName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(ScrollRect));
+            scrollRoot = scrollObject.GetComponent<RectTransform>();
+            scrollRoot.SetParent(panelRoot, false);
+        }
+
+        ConfigureScrollRoot(scrollRoot);
+        if (scrollRoot.parent == panelRoot && panelRoot.childCount > 1)
+        {
+            scrollRoot.SetSiblingIndex(1);
+        }
+
+        scrollRect = scrollRoot.GetComponent<ScrollRect>();
+        if (scrollRect == null)
+        {
+            scrollRect = scrollRoot.gameObject.AddComponent<ScrollRect>();
+        }
+
+        return scrollRoot;
+    }
+
+    private static void ConfigureScrollRoot(RectTransform scrollRoot)
+    {
+        scrollRoot.anchorMin = Vector2.zero;
+        scrollRoot.anchorMax = Vector2.one;
+        scrollRoot.pivot = new Vector2(0.5f, 0.5f);
+        scrollRoot.offsetMin = Vector2.zero;
+        scrollRoot.offsetMax = Vector2.zero;
+
+        Graphic rootGraphic = scrollRoot.GetComponent<Graphic>();
+        if (rootGraphic != null)
+        {
+            rootGraphic.color = Color.clear;
+            rootGraphic.raycastTarget = false;
+        }
+    }
+
+    private static RectTransform EnsureScrollViewport(RectTransform scrollRoot, RectTransform targetContent)
+    {
+        Transform existing = scrollRoot.Find(ViewportName);
+        RectTransform viewport = existing as RectTransform;
+        if (viewport == null)
+        {
+            GameObject viewportObject = new GameObject(ViewportName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));
+            viewport = viewportObject.GetComponent<RectTransform>();
+            viewport.SetParent(scrollRoot, false);
+        }
+
+        viewport.anchorMin = Vector2.zero;
+        viewport.anchorMax = Vector2.one;
+        viewport.pivot = new Vector2(0.5f, 0.5f);
+        viewport.offsetMin = Vector2.zero;
+        viewport.offsetMax = Vector2.zero;
+
+        if (viewport.GetComponent<RectMask2D>() == null)
+        {
+            viewport.gameObject.AddComponent<RectMask2D>();
+        }
+
+        if (targetContent.parent != viewport)
+        {
+            targetContent.SetParent(viewport, false);
+        }
+
+        return viewport;
+    }
+
+    private static void RemoveScrollRectIfPresent(RectTransform target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        ScrollRect misplacedScrollRect = target.GetComponent<ScrollRect>();
+        if (misplacedScrollRect == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(misplacedScrollRect);
+        }
+        else
+        {
+            DestroyImmediate(misplacedScrollRect);
+        }
+    }
+    private static void EnsureScrollHitTarget(RectTransform target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Graphic hitTarget = target.GetComponent<Graphic>();
+        if (hitTarget == null)
+        {
+            Image image = target.gameObject.AddComponent<Image>();
+            image.color = Color.clear;
+            hitTarget = image;
+        }
+
+        hitTarget.color = Color.clear;
+        hitTarget.raycastTarget = true;
+    }
+
+    private void EnsureSmoothScrollHandler(RectTransform viewport, ScrollRect targetScrollRect)
+    {
+        if (viewport == null || targetScrollRect == null)
+        {
+            return;
+        }
+
+        SceneHierarchySmoothScrollHandler handler = viewport.GetComponent<SceneHierarchySmoothScrollHandler>();
+        if (handler == null)
+        {
+            handler = viewport.gameObject.AddComponent<SceneHierarchySmoothScrollHandler>();
+        }
+
+        handler.Initialize(
+            targetScrollRect,
+            Mathf.Max(1f, scrollSensitivity),
+            Mathf.Max(1f, scrollSmoothingSpeed),
+            smoothScrolling);
     }
 
     private static void RemoveMisplacedScrollRect(ScrollRect misplacedScrollRect)
@@ -452,7 +631,14 @@ public class SceneHierarchyTreeView : MonoBehaviour
         {
             if (spawnedRows[i] != null)
             {
-                DestroyImmediate(spawnedRows[i]);
+                if (Application.isPlaying)
+                {
+                    Destroy(spawnedRows[i]);
+                }
+                else
+                {
+                    DestroyImmediate(spawnedRows[i]);
+                }
             }
         }
 
@@ -491,5 +677,75 @@ public sealed class SceneHierarchyTreeResizeHandle : MonoBehaviour, IBeginDragHa
         {
             treeView.EndResizeDrag();
         }
+    }
+}
+
+public sealed class SceneHierarchySmoothScrollHandler : MonoBehaviour, IScrollHandler
+{
+    private ScrollRect scrollRect;
+    private float scrollSensitivity = 96f;
+    private float smoothingSpeed = 18f;
+    private bool smoothScrolling = true;
+    private float targetVerticalNormalizedPosition = 1f;
+    private bool hasTarget;
+
+    public void Initialize(ScrollRect targetScrollRect, float sensitivity, float speed, bool smooth)
+    {
+        scrollRect = targetScrollRect;
+        scrollSensitivity = Mathf.Max(1f, sensitivity);
+        smoothingSpeed = Mathf.Max(1f, speed);
+        smoothScrolling = smooth;
+        if (scrollRect != null)
+        {
+            targetVerticalNormalizedPosition = scrollRect.verticalNormalizedPosition;
+            hasTarget = true;
+        }
+    }
+
+    public void OnScroll(PointerEventData eventData)
+    {
+        if (scrollRect == null || scrollRect.content == null || scrollRect.viewport == null || eventData == null)
+        {
+            return;
+        }
+
+        float hiddenHeight = scrollRect.content.rect.height - scrollRect.viewport.rect.height;
+        if (hiddenHeight <= 0f)
+        {
+            return;
+        }
+
+        if (!hasTarget)
+        {
+            targetVerticalNormalizedPosition = scrollRect.verticalNormalizedPosition;
+            hasTarget = true;
+        }
+
+        targetVerticalNormalizedPosition = Mathf.Clamp01(
+            targetVerticalNormalizedPosition + (eventData.scrollDelta.y * scrollSensitivity / hiddenHeight));
+        if (!smoothScrolling)
+        {
+            scrollRect.verticalNormalizedPosition = targetVerticalNormalizedPosition;
+        }
+
+        eventData.Use();
+    }
+
+    private void Update()
+    {
+        if (!smoothScrolling || scrollRect == null || !hasTarget)
+        {
+            return;
+        }
+
+        float currentPosition = scrollRect.verticalNormalizedPosition;
+        float t = 1f - Mathf.Exp(-smoothingSpeed * Time.unscaledDeltaTime);
+        float nextPosition = Mathf.Lerp(currentPosition, targetVerticalNormalizedPosition, t);
+        if (Mathf.Abs(nextPosition - targetVerticalNormalizedPosition) < 0.001f)
+        {
+            nextPosition = targetVerticalNormalizedPosition;
+        }
+
+        scrollRect.verticalNormalizedPosition = nextPosition;
     }
 }

@@ -65,9 +65,65 @@ public class SceneHierarchyTreeViewTests
         Assert.That(scrollRect.vertical, Is.True);
         Assert.That(scrollRect.horizontal, Is.False);
         Assert.That(scrollRect.movementType, Is.EqualTo(ScrollRect.MovementType.Clamped));
+        Assert.That(scrollRect.scrollSensitivity, Is.EqualTo(96f));
+        Assert.That(scrollRect.inertia, Is.True);
+        Assert.That(scrollRect.decelerationRate, Is.EqualTo(0.12f));
+        Assert.That(scrollRect.viewport, Is.Not.Null);
+        Assert.That(scrollRect.viewport, Is.Not.EqualTo(contentRoot));
+        Assert.That(contentRoot.parent, Is.EqualTo(scrollRect.viewport));
+        Assert.That(scrollRect.viewport.GetComponent<RectMask2D>(), Is.Not.Null);
         ContentSizeFitter sizeFitter = contentRoot.GetComponent<ContentSizeFitter>();
         Assert.That(sizeFitter, Is.Not.Null);
         Assert.That(sizeFitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+    }
+
+    [Test]
+    public void RebuildNow_MakesScrollHostReceivePointerWheelEvents()
+    {
+        Transform wallRoot = CreateObject("Walls").transform;
+        CreateWall("Wall_001", "wall-a", wallRoot);
+        ScrollRect scrollRect = CreateScrollRect("HierarchyScroll");
+        RectTransform contentRoot = CreateRectObject("Content");
+        contentRoot.SetParent(scrollRect.transform, false);
+        Component treeView = CreateComponent("TreeView", GetAssemblyType("SceneHierarchyTreeView"));
+        SetField(treeView, "scrollRect", scrollRect);
+        InvokeSetReferencesForTests(treeView, wallRoot, CreateRoomList(), contentRoot, null);
+
+        treeView.GetType().GetMethod("RebuildNow")?.Invoke(treeView, null);
+
+        Graphic hitTarget = scrollRect.viewport.GetComponent<Graphic>();
+        Assert.That(hitTarget, Is.Not.Null);
+        Assert.That(hitTarget.raycastTarget, Is.True);
+        Assert.That(hitTarget.color.a, Is.EqualTo(0f));
+        Assert.That(scrollRect.viewport.GetComponent(GetAssemblyType("SceneHierarchySmoothScrollHandler")), Is.Not.Null);
+    }
+
+    [Test]
+    public void RebuildNow_BoundsBackgroundToHierarchyPanelWithoutDisablingNestedCanvas()
+    {
+        Transform wallRoot = CreateObject("Walls").transform;
+        CreateWall("Wall_001", "wall-a", wallRoot);
+        RectTransform parentCanvasRoot = CreateRectObject("ParentCanvas");
+        parentCanvasRoot.gameObject.AddComponent<Canvas>();
+        RectTransform panelRoot = CreateRectObject("_Hierachy");
+        panelRoot.SetParent(parentCanvasRoot, false);
+        Canvas nestedCanvas = panelRoot.gameObject.AddComponent<Canvas>();
+        RectTransform background = CreateRectObject("_Background");
+        background.SetParent(panelRoot, false);
+        RectTransform contentRoot = CreateRectObject("_Content");
+        contentRoot.SetParent(panelRoot, false);
+        Component treeView = CreateComponent("TreeView", GetAssemblyType("SceneHierarchyTreeView"));
+        InvokeSetReferencesForTests(treeView, wallRoot, CreateRoomList(), contentRoot, null);
+
+        treeView.GetType().GetMethod("RebuildNow")?.Invoke(treeView, null);
+
+        Assert.That(nestedCanvas.enabled, Is.True);
+        Assert.That(background.parent, Is.EqualTo(panelRoot));
+        Assert.That(background.anchorMin, Is.EqualTo(Vector2.zero));
+        Assert.That(background.anchorMax, Is.EqualTo(Vector2.one));
+        Assert.That(background.offsetMin, Is.EqualTo(Vector2.zero));
+        Assert.That(background.offsetMax, Is.EqualTo(Vector2.zero));
+        Assert.That(panelRoot.Find("HierarchyScroll"), Is.Not.Null);
     }
 
     [Test]
@@ -84,10 +140,15 @@ public class SceneHierarchyTreeViewTests
 
         treeView.GetType().GetMethod("RebuildNow")?.Invoke(treeView, null);
 
-        ScrollRect panelScrollRect = panelRoot.GetComponent<ScrollRect>();
+        RectTransform scrollRoot = panelRoot.Find("HierarchyScroll") as RectTransform;
+        Assert.That(scrollRoot, Is.Not.Null);
+        ScrollRect panelScrollRect = scrollRoot.GetComponent<ScrollRect>();
         Assert.That(panelScrollRect, Is.Not.Null);
         Assert.That(panelScrollRect.content, Is.EqualTo(contentRoot));
-        Assert.That(panelScrollRect.viewport, Is.EqualTo(panelRoot));
+        Assert.That(panelScrollRect.viewport, Is.Not.Null);
+        Assert.That(panelScrollRect.viewport.parent, Is.EqualTo(scrollRoot));
+        Assert.That(contentRoot.parent, Is.EqualTo(panelScrollRect.viewport));
+        Assert.That(panelScrollRect.viewport.GetComponent<RectMask2D>(), Is.Not.Null);
         Assert.That(contentRoot.GetComponent<ScrollRect>(), Is.Null);
     }
 

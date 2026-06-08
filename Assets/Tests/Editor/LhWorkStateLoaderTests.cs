@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class LhWorkStateLoaderTests
 {
@@ -12,6 +13,8 @@ public class LhWorkStateLoaderTests
     private GameObject roomManagerObject;
     private GameObject handleManagerObject;
     private GameObject handleCanvasObject;
+    private GameObject drawManagerObject;
+    private GameObject cameraObject;
     private GameObject furniturePrefab;
     private UnityEngine.Object furnitureCatalog;
     private GameObject sceneHierarchyObject;
@@ -32,6 +35,8 @@ public class LhWorkStateLoaderTests
         UnityEngine.Object.DestroyImmediate(roomManagerObject);
         UnityEngine.Object.DestroyImmediate(handleManagerObject);
         UnityEngine.Object.DestroyImmediate(handleCanvasObject);
+        UnityEngine.Object.DestroyImmediate(drawManagerObject);
+        UnityEngine.Object.DestroyImmediate(cameraObject);
         UnityEngine.Object.DestroyImmediate(furniturePrefab);
         UnityEngine.Object.DestroyImmediate(furnitureCatalog);
         UnityEngine.Object.DestroyImmediate(sceneHierarchyObject);
@@ -78,7 +83,7 @@ public class LhWorkStateLoaderTests
         Array walls = wallRoot.GetComponentsInChildren(GetAssemblyType("Wall"), true);
         Assert.That(walls, Has.Length.EqualTo(1));
         Component wall = (Component)walls.GetValue(0);
-        Assert.That(wall.name, Is.EqualTo("SavedWall"));
+        Assert.That(wall.name, Is.EqualTo("wall01"));
         object data = wall.GetType().GetProperty("Data", BindingFlags.Public | BindingFlags.Instance)?.GetValue(wall);
         Assert.That(data, Is.Not.Null);
         Assert.That(GetPropertyValue<string>(data, "id"), Is.EqualTo("saved-wall-id"));
@@ -93,6 +98,145 @@ public class LhWorkStateLoaderTests
         Assert.That(GetPropertyValue<bool>(wall, "SuppressEndHandle"), Is.False);
         Assert.That(GetPropertyValue<bool>(wall, "IsStartSplitPoint"), Is.False);
         Assert.That(GetPropertyValue<bool>(wall, "IsEndSplitPoint"), Is.True);
+    }
+
+    [Test]
+    public void Load_RenumbersRestoredWallsFromOneAfterReplacingImportedWalls()
+    {
+        for (int i = 0; i < 34; i++)
+        {
+            GameObject existingWall = CreateWallObject($"wall{(i + 1).ToString("00")}", wallRoot.transform);
+            ConfigureWall(
+                existingWall,
+                new Vector3(i * 2f, 0f, 0f),
+                new Vector3(i * 2f + 1f, 0f, 0f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 1,
+                i * 2 + 2,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        object state = CreateState();
+        for (int i = 0; i < 10; i++)
+        {
+            AddWall(
+                state,
+                $"saved-wall-{i}",
+                $"wall{(35 + i).ToString("00")}",
+                new Vector3(i * 2f, 0f, 3f),
+                new Vector3(i * 2f + 1f, 0f, 3f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 101,
+                i * 2 + 102,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        for (int i = 0; i < wallRoot.transform.childCount; i++)
+        {
+            Assert.That(wallRoot.transform.GetChild(i).name, Is.EqualTo($"wall{(i + 1).ToString("00")}"));
+        }
+    }
+
+    [Test]
+    public void NormalizeWallNames_IgnoresInactiveWallsPendingDestroyDuringPlayModeLoad()
+    {
+        for (int i = 0; i < 32; i++)
+        {
+            GameObject pendingDestroyWall = CreateWallObject($"wall{(i + 1).ToString("00")}", wallRoot.transform);
+            ConfigureWall(
+                pendingDestroyWall,
+                new Vector3(i * 2f, 0f, 0f),
+                new Vector3(i * 2f + 1f, 0f, 0f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 1,
+                i * 2 + 2,
+                false,
+                false,
+                false,
+                false);
+            pendingDestroyWall.SetActive(false);
+        }
+
+        List<GameObject> restoredWalls = new List<GameObject>();
+        for (int i = 0; i < 32; i++)
+        {
+            GameObject restoredWall = CreateWallObject($"wall{(i + 1).ToString("00")}", wallRoot.transform);
+            ConfigureWall(
+                restoredWall,
+                new Vector3(i * 2f, 0f, 3f),
+                new Vector3(i * 2f + 1f, 0f, 3f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 101,
+                i * 2 + 102,
+                false,
+                false,
+                false,
+                false);
+            restoredWalls.Add(restoredWall);
+        }
+
+        Type namingUtility = GetAssemblyType("WallNamingUtility");
+        MethodInfo normalizeMethod = namingUtility.GetMethod("NormalizeWallNames", BindingFlags.Public | BindingFlags.Static);
+        Assert.That(normalizeMethod, Is.Not.Null);
+        normalizeMethod.Invoke(null, new object[] { wallRoot.transform });
+
+        for (int i = 0; i < restoredWalls.Count; i++)
+        {
+            Assert.That(restoredWalls[i].name, Is.EqualTo($"wall{(i + 1).ToString("00")}"));
+        }
+    }
+
+    [Test]
+    public void Load_RenumbersRestoredWallsEvenWhenWallColliderMissing()
+    {
+        object state = CreateState();
+        AddWall(
+            state,
+            "saved-wall-id",
+            "wall33",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(1f, 0f, 0f),
+            0.2f,
+            3f,
+            1.5f,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+
+        object result = Load(state, wallRoot.transform, null, null, null);
+        Collider collider = wallRoot.transform.GetChild(0).GetComponent<Collider>();
+        if (collider != null)
+        {
+            UnityEngine.Object.DestroyImmediate(collider);
+        }
+
+        Type namingUtility = GetAssemblyType("WallNamingUtility");
+        MethodInfo normalizeMethod = namingUtility.GetMethod("NormalizeWallNames", BindingFlags.Public | BindingFlags.Static);
+        Assert.That(normalizeMethod, Is.Not.Null);
+        normalizeMethod.Invoke(null, new object[] { wallRoot.transform });
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(wallRoot.transform.GetChild(0).name, Is.EqualTo("wall01"));
     }
 
     [Test]
@@ -129,7 +273,7 @@ public class LhWorkStateLoaderTests
 
         Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
         Assert.That(sceneHierarchyContentObject.transform.childCount, Is.EqualTo(1));
-        Assert.That(sceneHierarchyContentObject.transform.GetChild(0).name, Is.EqualTo("Wall_SavedWall"));
+        Assert.That(sceneHierarchyContentObject.transform.GetChild(0).name, Is.EqualTo("Wall_wall01"));
     }
 
     [Test]
@@ -445,6 +589,39 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
+    public void Load_SyncsDrawManagerWallSequenceToRestoredWalls()
+    {
+        object state = CreateState();
+        for (int i = 0; i < 10; i++)
+        {
+            AddWall(
+                state,
+                $"wall-{i}",
+                $"wall{(i + 1).ToString("00")}",
+                new Vector3(i * 2f, 0f, 0f),
+                new Vector3(i * 2f + 1f, 0f, 0f),
+                0.2f,
+                3f,
+                1.5f,
+                i * 2 + 1,
+                i * 2 + 2,
+                false,
+                false,
+                false,
+                false);
+        }
+
+        object runtime = CreateWallToolRuntime();
+        SetPrivateFieldValue(runtime, "wallSequence", 4);
+        object services = CreateLoadServices(null, CreateDrawManager(runtime));
+
+        object result = Load(state, wallRoot.transform, null, null, null, services);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(GetPrivateFieldValue<int>(runtime, "wallSequence"), Is.EqualTo(10));
+    }
+
+    [Test]
     public void RebuildRegisteredWallsFromHierarchy_ReplacesExistingHandleRects()
     {
         GameObject wall = CreateWallObject("Wall", wallRoot.transform);
@@ -708,6 +885,11 @@ public class LhWorkStateLoaderTests
 
     private static object CreateLoadServices(object handleManager)
     {
+        return CreateLoadServices(handleManager, null);
+    }
+
+    private static object CreateLoadServices(object handleManager, object drawManager)
+    {
         Type servicesType = GetAssemblyType("LhWorkStateLoadServices");
         ConstructorInfo constructor = servicesType.GetConstructor(new[]
         {
@@ -718,7 +900,65 @@ public class LhWorkStateLoaderTests
             GetAssemblyType("DrawManager"),
         });
         Assert.That(constructor, Is.Not.Null);
-        return constructor.Invoke(new[] { handleManager, null, null, null, null });
+        return constructor.Invoke(new[] { handleManager, null, null, null, drawManager });
+    }
+
+    private object CreateDrawManager(object runtime)
+    {
+        drawManagerObject = new GameObject("DrawManager");
+        object drawManager = drawManagerObject.AddComponent(GetAssemblyType("DrawManager"));
+        SetPrivateFieldValue(drawManager, "_toolRuntime", runtime);
+        return drawManager;
+    }
+
+    private object CreateWallToolRuntime()
+    {
+        cameraObject = new GameObject("Main Camera");
+        Camera camera = cameraObject.AddComponent<Camera>();
+        Type runtimeType = GetAssemblyType("WallToolRuntime");
+        ConstructorInfo constructor = runtimeType.GetConstructor(new[]
+        {
+            typeof(Camera),
+            typeof(GameObject),
+            typeof(Transform),
+            GetAssemblyType("SnapManager"),
+            GetAssemblyType("WallLengthDisplay"),
+            GetAssemblyType("HandleManager"),
+            GetAssemblyType("WallSelectionManager"),
+            GetAssemblyType("UndoRedoManager"),
+            GetAssemblyType("IEditorInputProvider"),
+            typeof(bool),
+            typeof(float),
+            typeof(float),
+            typeof(float),
+            typeof(Color),
+            typeof(Material),
+            typeof(Color),
+            typeof(Material),
+            typeof(List<RaycastResult>),
+        });
+        Assert.That(constructor, Is.Not.Null);
+        return constructor.Invoke(new object[]
+        {
+            camera,
+            null,
+            wallRoot.transform,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            3f,
+            0.2f,
+            0f,
+            Color.cyan,
+            null,
+            Color.gray,
+            null,
+            new List<RaycastResult>(),
+        });
     }
 
     private int CountHandleRects()
@@ -829,6 +1069,13 @@ public class LhWorkStateLoaderTests
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
+    }
+
+    private static T GetPrivateFieldValue<T>(object target, string fieldName)
+    {
+        FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.That(field, Is.Not.Null);
+        return (T)field.GetValue(target);
     }
 
     private static T GetPropertyValue<T>(object target, string propertyName)

@@ -37,6 +37,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     [SerializeField] private Color wallUINormalColor = new Color(1f, 0.62f, 0.12f, 0.04f);
     [SerializeField] private Color wallUISelectedColor = new Color(1f, 0.62f, 0.12f, 0.28f);
     [SerializeField] private float wallUIThicknessPixels = 16f;
+
+    [Header("Preview Wall UI")]
+    [SerializeField, Min(0f)] private float previewWallUIEndCapMinSize = 3f;
+    [SerializeField, Min(0f)] private float previewWallUIEndCapPadding = 1f;
+    [SerializeField, Min(0f)] private float previewWallUIEndCapSizeMultiplier = 0.6f;
     [SerializeField] private float multiSelectDragThresholdPixels = 6f;
     [SerializeField] private float multiSelectBoxHeight = 1f;
     [SerializeField] private Color multiSelectBoxColor = new Color(1f, 0.62f, 0.12f, 0.14f);
@@ -96,6 +101,9 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     public Color WallUINormalColor => wallUINormalColor;
     public Color WallUISelectedColor => wallUISelectedColor;
     public float WallUIThicknessPixels => wallUIThicknessPixels;
+    public float PreviewWallUIEndCapMinSize => previewWallUIEndCapMinSize;
+    public float PreviewWallUIEndCapPadding => previewWallUIEndCapPadding;
+    public float PreviewWallUIEndCapSizeMultiplier => previewWallUIEndCapSizeMultiplier;
     public bool IsWallUIInteractionEnabled => modeManager != null &&
                                               modeManager.IsMode(EditorMode.DetailEdit) &&
                                               (wallOpeningPlacementManager == null || !wallOpeningPlacementManager.IsOpeningDetailMenuVisible);
@@ -679,7 +687,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return;
         }
 
-        wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+        wallRoot = LayerUtility.FindWallRoot(true);
     }
 
     private void ResolveReferences()

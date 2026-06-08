@@ -169,7 +169,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.122641504, g: 0.122641504, b: 0.122641504, a: 1}
+  m_Color: {r: 0.08627451, g: 0.08627451, b: 0.10980392, a: 0.8627451}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -569,6 +569,10 @@ MonoBehaviour:
   rowHeight: 35
   childIndent: 30
   autoConfigureContentLayout: 1
+  scrollSensitivity: 100
+  smoothScrolling: 1
+  scrollDecelerationRate: 0.05
+  scrollSmoothingSpeed: 30
   resizeDragHandle: {fileID: 1738224933}
   resizableTarget: {fileID: 1336729294}
   minWidth: 160
@@ -4572,6 +4576,9 @@ MonoBehaviour:
   wallUINormalColor: {r: 1, g: 0.62, b: 0.12, a: 0.04}
   wallUISelectedColor: {r: 1, g: 0.62, b: 0.12, a: 0.28}
   wallUIThicknessPixels: 20
+  previewWallUIEndCapMinSize: 3
+  previewWallUIEndCapPadding: 1
+  previewWallUIEndCapSizeMultiplier: 0.6
   multiSelectDragThresholdPixels: 6
   multiSelectBoxHeight: 1
   multiSelectBoxColor: {r: 1, g: 0.62, b: 0.12, a: 0.14}
@@ -8534,6 +8541,7 @@ MonoBehaviour:
   roomHandleManager: {fileID: 480306211}
   highlightMaterial: {fileID: 0}
   highlightColor: {r: 0.1, g: 0.85, b: 1, a: 1}
+  wallOverlayColor: {r: 0.1, g: 0.85, b: 1, a: 0.5}
   roomOverlayColor: {r: 0.1, g: 0.85, b: 1, a: 0.45}
   boundsPadding: 0.08
   lineWidth: 0.12
@@ -8553,12 +8561,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   viewModeManager: {fileID: 1299695794}
   perspectiveCamera: {fileID: 372474338}
+  perspectiveCameraManager: {fileID: 0}
   wallRoot: {fileID: 1525552874}
   roomManager: {fileID: 480306209}
   wallSelectionManager: {fileID: 525080098}
   roomAuthoringPanelManager: {fileID: 480306210}
   furnitureRoot: {fileID: 445327670}
   gridObject: {fileID: 481239205}
+  includeGridInSceneBounds: 0
+  emptySceneFallbackBoundsCenter: {x: 0, y: 0, z: 0}
+  emptySceneFallbackBoundsSize: {x: 100, y: 10, z: 100}
   defaultYaw: -35
   defaultPitch: 45
   distancePadding: 1.2
@@ -9755,6 +9767,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1525552874}
+  - component: {fileID: 1525552875}
   m_Layer: 0
   m_Name: _Walls
   m_TagString: Untagged
@@ -9777,6 +9790,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 513303896}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1525552875
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525552873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0bb7a16fef341448b06f5d3178c050c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1534630663
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13451,7 +13476,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 75}
+  m_SizeDelta: {x: 0, y: 80}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1919069573
 MonoBehaviour:
@@ -14459,6 +14484,7 @@ MonoBehaviour:
   roomHandleManager: {fileID: 0}
   modeManager: {fileID: 1793356131}
   showOnlyInDetailEdit: 0
+  previewWallThicknessMultiplier: 0.55
   floorColor: {r: 0.34, g: 0.86, b: 0.58, a: 0.22}
   selectedFloorColor: {r: 0.28, g: 0.6, b: 1, a: 0.35}
   wallColor: {r: 0.12, g: 0.12, b: 0.12, a: 0.92}
@@ -14471,7 +14497,7 @@ MonoBehaviour:
   windowColor: {r: 0.22, g: 0.62, b: 0.95, a: 0.95}
   selectedWindowColor: {r: 0.42, g: 0.84, b: 1, a: 1}
   virtualBoundaryColor: {r: 0.1, g: 0.82, b: 1, a: 0.95}
-  virtualBoundaryThickness: 2
+  virtualBoundaryThickness: 1
   virtualBoundaryDashLength: 14
   virtualBoundaryGapLength: 10
 --- !u!1001 &576871940971455558

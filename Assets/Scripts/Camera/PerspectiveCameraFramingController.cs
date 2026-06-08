@@ -168,7 +168,7 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
         LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref perspectiveCamera);
         ResolvePerspectiveCameraManager();
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallSelectionManager);
         LayerUtility.ResolveObject(ref roomAuthoringPanelManager);

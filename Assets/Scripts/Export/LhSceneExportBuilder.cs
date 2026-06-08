@@ -447,7 +447,7 @@ namespace LH.Export
             context.wallDataById[wallData.id] = wallData;
         }
 
-        private static float GetCeilingWorldY(RoomData roomData, BuildContext context)
+        private static float GetCeilingWorldY(Room room, RoomData roomData, BuildContext context)
         {
             float bestY = roomData != null ? roomData.Geometry.Center.y : 0f;
             if (roomData == null)
@@ -455,7 +455,8 @@ namespace LH.Export
                 return bestY;
             }
 
-            IReadOnlyList<string> wallIds = roomData.WallIds;
+            bool foundWallData = false;
+            IReadOnlyList<string> wallIds = room != null ? room.EffectiveWallIds : roomData.EffectiveWallIds;
             for (int i = 0; i < wallIds.Count; i++)
             {
                 string wallId = wallIds[i];
@@ -464,7 +465,27 @@ namespace LH.Export
                     continue;
                 }
 
+                foundWallData = true;
                 float wallTopY = wallData.centerY + wallData.height * 0.5f;
+                if (wallTopY > bestY)
+                {
+                    bestY = wallTopY;
+                }
+            }
+
+            if (foundWallData || room == null || room.WallSet == null)
+            {
+                return bestY;
+            }
+
+            foreach (Wall wall in room.WallSet)
+            {
+                if (wall == null || wall.Data == null)
+                {
+                    continue;
+                }
+
+                float wallTopY = wall.Data.centerY + wall.Data.height * 0.5f;
                 if (wallTopY > bestY)
                 {
                     bestY = wallTopY;

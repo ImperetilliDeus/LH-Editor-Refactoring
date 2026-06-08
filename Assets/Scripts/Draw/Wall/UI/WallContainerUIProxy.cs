@@ -91,11 +91,14 @@ public class WallContainerUIProxy : MonoBehaviour, IPointerClickHandler
 
         lineGraphic.rectTransform.sizeDelta = rectTransform.sizeDelta;
         lineGraphic.SetAllDirty();
+        WallSelectionCanvasOrderingUtility.PlaceBelowSelectableControls(rectTransform, canvas.transform);
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (selectionManager != null && selectionManager.IsWallUIInteractionEnabled)
+        if (selectionManager != null &&
+            selectionManager.IsWallUIInteractionEnabled &&
+            !selectionManager.IsPointerBlockedByNonWallUI(gameObject))
         {
             selectionManager.HandleWallUIClick(container.gameObject);
         }

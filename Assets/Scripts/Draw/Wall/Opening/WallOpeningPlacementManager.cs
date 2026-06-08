@@ -786,7 +786,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     private void EnsureWallRoot()
     {
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true);
     }
 
     private void ResolveReferences()

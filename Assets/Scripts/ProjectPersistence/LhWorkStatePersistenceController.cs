@@ -126,6 +126,7 @@ public class LhWorkStatePersistenceController : MonoBehaviour
             return result;
         }
 
+        NormalizeRestoredWallNames();
         Debug.Log($"Work state loaded: {path}", this);
         return result;
     }
@@ -158,7 +159,7 @@ public class LhWorkStatePersistenceController : MonoBehaviour
     {
         if (wallRoot == null)
         {
-            wallRoot = LayerUtility.FindTransformByName(LayerUtility.DefaultWallRootName, true);
+            wallRoot = LayerUtility.FindWallRoot(true);
         }
 
         if (roomManager == null)
@@ -240,6 +241,19 @@ public class LhWorkStatePersistenceController : MonoBehaviour
             wallOpeningPlacementManager,
             furniturePlacementManager,
             drawManager);
+    }
+
+    private void NormalizeRestoredWallNames()
+    {
+        if (wallRoot == null)
+        {
+            ResolveReferences();
+        }
+
+        WallNamingUtility.NormalizeWallNames(wallRoot);
+        handleManager?.RefreshRegisteredWalls();
+        drawManager?.SyncWallSequenceForWorkStateLoad();
+        SceneHierarchyTreeView.RefreshAllInstances();
     }
 
     private string ResolveDefaultPath()

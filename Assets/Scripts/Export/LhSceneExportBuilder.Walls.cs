@@ -544,13 +544,14 @@ namespace LH.Export
             Vector3 exportRootScale,
             bool legacyExact)
         {
+            string windowCode = ResolveWindowExportCode(opening.WindowTypeKey);
             if (legacyExact)
             {
                 LhDtoFactory.FillTransform(Vector3.zero, Vector3.zero, Vector3.one, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
                 return new LhWindowDto
                 {
                     isExist = true,
-                    code = string.IsNullOrWhiteSpace(opening.WindowTypeKey) ? "Window" : opening.WindowTypeKey,
+                    code = windowCode,
                     position = position,
                     angle = angle,
                     scale = scale,
@@ -570,11 +571,23 @@ namespace LH.Export
             return new LhWindowDto
             {
                 isExist = true,
-                code = string.IsNullOrWhiteSpace(opening.WindowTypeKey) ? "Window" : opening.WindowTypeKey,
+                code = windowCode,
                 position = relativePosition,
                 angle = relativeAngle,
                 scale = relativeScale,
             };
+        }
+
+        private static string ResolveWindowExportCode(string windowTypeKey)
+        {
+            if (string.IsNullOrWhiteSpace(windowTypeKey) ||
+                string.Equals(windowTypeKey, "Window", System.StringComparison.Ordinal) ||
+                string.Equals(windowTypeKey, "\uCC3D\uBB38", System.StringComparison.Ordinal))
+            {
+                return "W001";
+            }
+
+            return windowTypeKey;
         }
     }
 }

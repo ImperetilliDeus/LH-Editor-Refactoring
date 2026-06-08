@@ -132,7 +132,7 @@ public class RoomWallAuthoringPanelController : MonoBehaviour
         LayerUtility.ResolveObject(ref roomAuthoringPanelManager);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallSelectionManager);
-        LayerUtility.ResolveTransformByName(ref wallRoot, LayerUtility.DefaultWallRootName, true);
+        LayerUtility.ResolveWallRoot(ref wallRoot, true);
 
         if (menuRoot == null)
         {
