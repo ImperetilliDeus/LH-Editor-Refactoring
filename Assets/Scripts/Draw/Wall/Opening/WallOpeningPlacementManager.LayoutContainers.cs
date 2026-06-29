@@ -33,6 +33,7 @@ public partial class WallOpeningPlacementManager
                     }
                 }
 
+                container.gameObject.SetActive(false);
                 Destroy(container.gameObject);
             }
 
@@ -51,6 +52,7 @@ public partial class WallOpeningPlacementManager
         }
 
         wall.ClearLengthDisplay(wallLengthDisplay);
+        wall.gameObject.SetActive(false);
         Destroy(wall.gameObject);
     }
 
@@ -250,6 +252,7 @@ public partial class WallOpeningPlacementManager
         pendingRoomRefreshRemovedWalls.Add(selectedWall);
 
         selectedWall.ClearLengthDisplay(wallLengthDisplay);
+        selectedWall.gameObject.SetActive(false);
         Destroy(selectedWall.gameObject);
         return container.transform;
     }

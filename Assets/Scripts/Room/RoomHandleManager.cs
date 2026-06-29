@@ -58,6 +58,7 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
+    private Vector4 lastViewportSignature;
     private Room focusedRoom;
     private IEditorInputProvider inputProvider;
 
@@ -96,7 +97,7 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        if (HasCameraStateChanged())
+        if (HasCameraStateChanged() || HasViewportChanged())
         {
             handlePositionsDirty = true;
         }
@@ -116,6 +117,7 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         CacheCameraState();
+        CacheViewportState();
     }
 
     public void HandleEditorInput(EditorInputFrame inputFrame)
@@ -508,7 +510,9 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPoint);
+        Vector3 screenPosition = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            mainCamera,
+            mainCamera.WorldToScreenPoint(worldPoint));
         bool visible = screenPosition.z > 0f;
         handleRect.gameObject.SetActive(visible);
         if (!visible)
@@ -516,24 +520,18 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
-        {
-            handleRect.position = screenPosition;
-            return;
-        }
-
-        RectTransform canvasRect = targetCanvas.transform as RectTransform;
+        RectTransform canvasRect = handleRect.parent as RectTransform;
         if (canvasRect == null)
         {
             handleRect.position = screenPosition;
             return;
         }
 
-        Camera uiCamera = targetCanvas.worldCamera != null ? targetCanvas.worldCamera : mainCamera;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPosition, uiCamera, out Vector2 localPoint))
-        {
-            handleRect.anchoredPosition = localPoint;
-        }
+        handleRect.anchoredPosition = EditorScreenCoordinateUtility.ScreenPointToAnchoredPosition(
+            canvasRect,
+            targetCanvas,
+            screenPosition,
+            mainCamera);
     }
 
     private HandleGroup AcquireHandleGroup(string handleName)
@@ -741,7 +739,7 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray mouseRay = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, pointerScreenPosition);
         if (!dragPlane.Raycast(mouseRay, out float enter))
         {
             return false;
@@ -913,6 +911,18 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
         lastCameraPosition = mainCamera.transform.position;
         lastCameraRotation = mainCamera.transform.rotation;
         lastCameraOrthoSize = mainCamera.orthographicSize;
+    }
+
+    private void CacheViewportState()
+    {
+        lastViewportSignature = EditorScreenCoordinateUtility.GetViewportSignature(mainCamera);
+    }
+
+    private bool HasViewportChanged()
+    {
+        return EditorScreenCoordinateUtility.ViewportSignatureChanged(
+            lastViewportSignature,
+            EditorScreenCoordinateUtility.GetViewportSignature(mainCamera));
     }
 
     private void SyncModeState()

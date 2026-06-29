@@ -252,7 +252,9 @@ public class RoomAuthoringPanelManager : MonoBehaviour
 
         for (int i = 0; i < cachedRoomVertices.Count; i++)
         {
-            Vector3 screen = topCamera.WorldToScreenPoint(cachedRoomVertices[i]);
+            Vector3 screen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                topCamera,
+                topCamera.WorldToScreenPoint(cachedRoomVertices[i]));
             if (screen.z <= 0f)
             {
                 return false;

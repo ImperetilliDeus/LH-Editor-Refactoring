@@ -15,6 +15,9 @@ public class LhWorkStateLoaderTests
     private GameObject handleCanvasObject;
     private GameObject drawManagerObject;
     private GameObject cameraObject;
+    private GameObject drawingOverlayManagerObject;
+    private GameObject drawingOverlayRuntimeObject;
+    private Texture2D overlayTexture;
     private GameObject furniturePrefab;
     private UnityEngine.Object furnitureCatalog;
     private GameObject sceneHierarchyObject;
@@ -37,6 +40,9 @@ public class LhWorkStateLoaderTests
         UnityEngine.Object.DestroyImmediate(handleCanvasObject);
         UnityEngine.Object.DestroyImmediate(drawManagerObject);
         UnityEngine.Object.DestroyImmediate(cameraObject);
+        UnityEngine.Object.DestroyImmediate(drawingOverlayManagerObject);
+        UnityEngine.Object.DestroyImmediate(drawingOverlayRuntimeObject);
+        UnityEngine.Object.DestroyImmediate(overlayTexture);
         UnityEngine.Object.DestroyImmediate(furniturePrefab);
         UnityEngine.Object.DestroyImmediate(furnitureCatalog);
         UnityEngine.Object.DestroyImmediate(sceneHierarchyObject);
@@ -622,6 +628,28 @@ public class LhWorkStateLoaderTests
     }
 
     [Test]
+    public void Load_ClearsActiveDrawingOverlay()
+    {
+        object state = CreateState();
+        drawingOverlayRuntimeObject = new GameObject("DrawingOverlayRoot");
+        drawingOverlayManagerObject = new GameObject("DrawingOverlayManager");
+        object overlayManager = drawingOverlayManagerObject.AddComponent(GetAssemblyType("DrawingOverlayManager"));
+        SetPrivateFieldValue(overlayManager, "activeRuntime", drawingOverlayRuntimeObject.AddComponent(GetAssemblyType("DrawingOverlayRuntime")));
+        overlayTexture = new Texture2D(8, 8);
+        overlayManager.GetType().GetMethod("BeginCalibration")?.Invoke(
+            overlayManager,
+            new object[] { overlayTexture, "plan.png", GetEnumValue("OverlaySourceType", "Image"), 0 });
+        Assert.That(GetPropertyValue<object>(overlayManager, "ActiveDocument"), Is.Not.Null);
+
+        object services = CreateLoadServices(null, null, overlayManager);
+        object result = Load(state, wallRoot.transform, null, null, null, services);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Assert.That(GetPropertyValue<object>(overlayManager, "ActiveDocument"), Is.Null);
+        Assert.That(drawingOverlayRuntimeObject.activeSelf, Is.False);
+    }
+
+    [Test]
     public void RebuildRegisteredWallsFromHierarchy_ReplacesExistingHandleRects()
     {
         GameObject wall = CreateWallObject("Wall", wallRoot.transform);
@@ -890,17 +918,24 @@ public class LhWorkStateLoaderTests
 
     private static object CreateLoadServices(object handleManager, object drawManager)
     {
+        return CreateLoadServices(handleManager, drawManager, null);
+    }
+
+    private static object CreateLoadServices(object handleManager, object drawManager, object drawingOverlayManager)
+    {
         Type servicesType = GetAssemblyType("LhWorkStateLoadServices");
         ConstructorInfo constructor = servicesType.GetConstructor(new[]
         {
             GetAssemblyType("HandleManager"),
+            GetAssemblyType("WallSelectionManager"),
             GetAssemblyType("WallLengthDisplay"),
             GetAssemblyType("WallOpeningPlacementManager"),
             GetAssemblyType("FurniturePlacementManager"),
             GetAssemblyType("DrawManager"),
+            GetAssemblyType("DrawingOverlayManager"),
         });
         Assert.That(constructor, Is.Not.Null);
-        return constructor.Invoke(new[] { handleManager, null, null, null, drawManager });
+        return constructor.Invoke(new[] { handleManager, null, null, null, null, drawManager, drawingOverlayManager });
     }
 
     private object CreateDrawManager(object runtime)
@@ -1048,6 +1083,11 @@ public class LhWorkStateLoaderTests
         Type type = Type.GetType($"{typeName}, Assembly-CSharp");
         Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
         return type;
+    }
+
+    private static object GetEnumValue(string typeName, string valueName)
+    {
+        return Enum.Parse(GetAssemblyType(typeName), valueName);
     }
 
     private static T GetFieldValue<T>(object target, string fieldName)

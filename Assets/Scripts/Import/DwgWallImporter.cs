@@ -263,7 +263,9 @@ public sealed class DwgWallImporter : MonoBehaviour
     [Header("References")]
     [SerializeField] private Transform wallRoot;
     [SerializeField] private HandleManager handleManager;
+    [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private RoomManager roomManager;
+    [SerializeField] private DrawingOverlayManager drawingOverlayManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
     [SerializeField] private Button importButton;
 
@@ -376,7 +378,9 @@ public sealed class DwgWallImporter : MonoBehaviour
     {
         LayerUtility.ResolveWallRoot(ref wallRoot, true, true);
         LayerUtility.ResolveObject(ref handleManager);
+        LayerUtility.ResolveObject(ref wallSelectionManager);
         LayerUtility.ResolveObject(ref roomManager);
+        LayerUtility.ResolveObject(ref drawingOverlayManager);
         LayerUtility.ResolveObject(ref wallLengthDisplay);
         importButton = ResolveButton(importButton, LayerUtility.DefaultImportButtonName);
         LayerUtility.ResolveCanvasByNameOrFirst(ref importSettingsPopupCanvas, LayerUtility.DefaultCanvasName);
@@ -664,7 +668,9 @@ public sealed class DwgWallImporter : MonoBehaviour
             importerOwnershipId,
             wallRoot,
             handleManager,
+            wallSelectionManager,
             roomManager,
+            drawingOverlayManager,
             wallLengthDisplay,
             resolvedWallMaterial,
             resolvedTopMaterial,

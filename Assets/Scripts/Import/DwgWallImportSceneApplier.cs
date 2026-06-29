@@ -20,7 +20,9 @@ public sealed class DwgWallImportSceneApplyContext
     public string ImporterId { get; set; } = string.Empty;
     public Transform WallRoot { get; set; }
     public HandleManager HandleManager { get; set; }
+    public WallSelectionManager WallSelectionManager { get; set; }
     public RoomManager RoomManager { get; set; }
+    public DrawingOverlayManager DrawingOverlayManager { get; set; }
     public WallLengthDisplay WallLengthDisplay { get; set; }
     public Material WallMaterial { get; set; }
     public Material TopMaterial { get; set; }
@@ -68,15 +70,20 @@ public static class DwgWallImportSceneApplier
         }
 
         DwgWallImportSceneApplyResult result = new DwgWallImportSceneApplyResult();
+        context.DrawingOverlayManager?.ClearOverlay();
 
         if (context.ClearExistingWalls)
         {
-            result.RemovedWallCount = RemoveOwnedWalls(context);
+            context.WallSelectionManager?.ClearSelectionForSceneReset();
+            context.WallLengthDisplay?.ClearAllLabels();
+            result.RemovedWallCount = RemoveAllWalls(context);
+            context.WallSelectionManager?.ClearSelectionForSceneReset();
+            context.WallLengthDisplay?.ClearAllLabels();
         }
 
         if (context.ClearExistingRooms)
         {
-            result.RemovedRoomCount = RemoveAutomaticRooms(context);
+            result.RemovedRoomCount = RemoveAllRooms(context);
         }
 
         for (int i = 0; i < segments.Count; i++)
@@ -100,20 +107,14 @@ public static class DwgWallImportSceneApplier
         return result;
     }
 
-    private static int RemoveOwnedWalls(DwgWallImportSceneApplyContext context)
+    private static int RemoveAllWalls(DwgWallImportSceneApplyContext context)
     {
-        DwgImportedWallOwnership[] owners = context.WallRoot.GetComponentsInChildren<DwgImportedWallOwnership>(true);
         int removedCount = 0;
-        for (int i = 0; i < owners.Length; i++)
+        for (int i = context.WallRoot.childCount - 1; i >= 0; i--)
         {
-            DwgImportedWallOwnership ownership = owners[i];
-            if (ownership == null || !string.Equals(ownership.ImporterId, context.ImporterId, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            GameObject wallObject = ownership.gameObject;
-            context.HandleManager?.UnregisterWall(wallObject);
+            Transform child = context.WallRoot.GetChild(i);
+            GameObject wallObject = child != null ? child.gameObject : null;
+            UnregisterWallsInHierarchy(wallObject, context.HandleManager);
             context.DestroyObject(wallObject);
             removedCount++;
         }
@@ -121,7 +122,24 @@ public static class DwgWallImportSceneApplier
         return removedCount;
     }
 
-    private static int RemoveAutomaticRooms(DwgWallImportSceneApplyContext context)
+    private static void UnregisterWallsInHierarchy(GameObject root, HandleManager handleManager)
+    {
+        if (root == null || handleManager == null)
+        {
+            return;
+        }
+
+        Wall[] walls = root.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < walls.Length; i++)
+        {
+            if (walls[i] != null)
+            {
+                handleManager.UnregisterWall(walls[i].gameObject);
+            }
+        }
+    }
+
+    private static int RemoveAllRooms(DwgWallImportSceneApplyContext context)
     {
         if (context.RoomManager == null)
         {
@@ -129,19 +147,8 @@ public static class DwgWallImportSceneApplier
         }
 
         List<Room> rooms = context.RoomManager.GetAllRooms();
-        int removedCount = 0;
-        for (int i = 0; i < rooms.Count; i++)
-        {
-            Room room = rooms[i];
-            if (room == null || room.IsManualRoom)
-            {
-                continue;
-            }
-
-            context.RoomManager.DeleteRoom(room);
-            removedCount++;
-        }
-
+        int removedCount = rooms.Count;
+        context.RoomManager.ClearAllRoomsForWorkStateLoad();
         return removedCount;
     }
 

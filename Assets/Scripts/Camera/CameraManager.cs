@@ -174,7 +174,7 @@ public class CameraManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray mouseRay = MainCamera.ScreenPointToRay(mousePosition);
+        Ray mouseRay = EditorScreenCoordinateUtility.ScreenPointToRay(MainCamera, mousePosition);
         if (!gridPlane.Raycast(mouseRay, out float enter))
         {
             return false;

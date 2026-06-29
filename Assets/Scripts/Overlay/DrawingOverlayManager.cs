@@ -122,6 +122,22 @@ public sealed class DrawingOverlayManager : MonoBehaviour
         ActiveOverlayChanged?.Invoke(activeDocument);
     }
 
+    public void ClearOverlay()
+    {
+        activeDocument = null;
+        if (activeRuntime != null)
+        {
+            activeRuntime.ClearDocument();
+        }
+
+        if (calibrationPanel != null)
+        {
+            calibrationPanel.Close();
+        }
+
+        ActiveOverlayChanged?.Invoke(null);
+    }
+
     public void CompleteCalibration()
     {
         if (modeManager != null && modeManager.CurrentMode == EditorMode.DrawingOverlayCalibrate)

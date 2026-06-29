@@ -114,6 +114,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
+    private Vector4 lastViewportSignature;
     private EditorMode activeMode = EditorMode.Default;
 
     public bool IsDraggingHandle => draggingGroup != null;
@@ -168,7 +169,8 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         bool cameraChanged = HasCameraStateChanged();
-        if (cameraChanged)
+        bool viewportChanged = HasViewportChanged();
+        if (cameraChanged || viewportChanged)
         {
             handlePositionsDirty = true;
         }
@@ -187,6 +189,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         CacheCameraState();
+        CacheViewportState();
     }
 
     public void HandleEditorInput(EditorInputFrame inputFrame)
@@ -469,7 +472,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray ray = mainCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, pointerScreenPosition);
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return false;
@@ -722,6 +725,18 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         return cameraTransform.position != lastCameraPosition ||
                cameraTransform.rotation != lastCameraRotation ||
                !Mathf.Approximately(mainCamera.orthographicSize, lastCameraOrthoSize);
+    }
+
+    private void CacheViewportState()
+    {
+        lastViewportSignature = EditorScreenCoordinateUtility.GetViewportSignature(mainCamera);
+    }
+
+    private bool HasViewportChanged()
+    {
+        return EditorScreenCoordinateUtility.ViewportSignatureChanged(
+            lastViewportSignature,
+            EditorScreenCoordinateUtility.GetViewportSignature(mainCamera));
     }
 
     private void ResolveReferences()

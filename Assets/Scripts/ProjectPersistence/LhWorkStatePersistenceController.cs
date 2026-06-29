@@ -18,9 +18,11 @@ public class LhWorkStatePersistenceController : MonoBehaviour
     [SerializeField] private FurnitureCatalog furnitureCatalog;
     [SerializeField] private DrawManager drawManager;
     [SerializeField] private HandleManager handleManager;
+    [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
     [SerializeField] private FurniturePlacementManager furniturePlacementManager;
+    [SerializeField] private DrawingOverlayManager drawingOverlayManager;
     [SerializeField] private Button saveButton;
     [SerializeField] private Button loadButton;
 
@@ -182,6 +184,11 @@ public class LhWorkStatePersistenceController : MonoBehaviour
             LayerUtility.ResolveObject(ref drawManager);
         }
 
+        if (wallSelectionManager == null)
+        {
+            LayerUtility.ResolveObject(ref wallSelectionManager);
+        }
+
         if (wallLengthDisplay == null)
         {
             LayerUtility.ResolveObject(ref wallLengthDisplay);
@@ -195,6 +202,11 @@ public class LhWorkStatePersistenceController : MonoBehaviour
         if (furniturePlacementManager == null)
         {
             LayerUtility.ResolveObject(ref furniturePlacementManager);
+        }
+
+        if (drawingOverlayManager == null)
+        {
+            LayerUtility.ResolveObject(ref drawingOverlayManager);
         }
     }
 
@@ -237,10 +249,12 @@ public class LhWorkStatePersistenceController : MonoBehaviour
     {
         return new LhWorkStateLoadServices(
             handleManager,
+            wallSelectionManager,
             wallLengthDisplay,
             wallOpeningPlacementManager,
             furniturePlacementManager,
-            drawManager);
+            drawManager,
+            drawingOverlayManager);
     }
 
     private void NormalizeRestoredWallNames()

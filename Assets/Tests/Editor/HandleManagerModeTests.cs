@@ -103,6 +103,109 @@ public class HandleManagerModeTests
         AssertScreenPosition(endHandle.position, camera.WorldToScreenPoint(endPoint));
     }
 
+    [Test]
+    public void DefaultMode_RepositionsHandlesInCanvasLocalPixels_WhenCanvasHasParentTransform()
+    {
+        Camera camera = CreateCamera();
+        Canvas canvas = CreateCanvas();
+        GameObject parentObject = new GameObject("CanvasParent", typeof(RectTransform));
+        RectTransform parentRect = parentObject.GetComponent<RectTransform>();
+        parentRect.localScale = new Vector3(1.25f, 1.25f, 1f);
+        canvas.transform.SetParent(parentRect, false);
+
+        wallRootObject = new GameObject("WallRoot");
+        managerObject = new GameObject("HandleManager");
+        Component handleManager = managerObject.AddComponent(GetAssemblyType("HandleManager"));
+        SetPrivateField(handleManager, "mainCamera", camera);
+        SetPrivateField(handleManager, "targetCanvas", canvas);
+        SetPrivateField(handleManager, "wallRoot", wallRootObject.transform);
+
+        Vector3 startPoint = new Vector3(0f, 0f, 0f);
+        Vector3 endPoint = new Vector3(4f, 0f, 0f);
+        wallObject = CreateWallObject("ScaledCanvasWall", wallRootObject.transform);
+        ConfigureWall(
+            wallObject,
+            startPoint,
+            endPoint,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+
+        handleManager.GetType().GetMethod("RegisterWall", BindingFlags.Instance | BindingFlags.Public)
+            ?.Invoke(handleManager, new object[] { wallObject });
+
+        RectTransform startHandle = canvas.transform.Find("Handle_Vertex_1") as RectTransform;
+        RectTransform endHandle = canvas.transform.Find("Handle_Vertex_2") as RectTransform;
+
+        Assert.That(startHandle, Is.Not.Null);
+        Assert.That(endHandle, Is.Not.Null);
+        RectTransform canvasRect = canvas.transform as RectTransform;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            camera.WorldToScreenPoint(startPoint),
+            null,
+            out Vector2 expectedStart);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            camera.WorldToScreenPoint(endPoint),
+            null,
+            out Vector2 expectedEnd);
+        AssertScreenPosition(startHandle.anchoredPosition, expectedStart);
+        AssertScreenPosition(endHandle.anchoredPosition, expectedEnd);
+
+        DestroyObject(parentObject);
+    }
+
+    [Test]
+    public void PreviewWallSelectionUI_UsesCanvasLocalWidth_WhenCanvasIsScaled()
+    {
+        Camera camera = CreateCamera();
+        Canvas canvas = CreateCanvas();
+        RectTransform canvasRect = canvas.transform as RectTransform;
+        canvasRect.sizeDelta = new Vector2(1920f, 1080f);
+        canvasRect.localScale = new Vector3(0.75f, 0.75f, 1f);
+
+        wallRootObject = new GameObject("WallRoot");
+        managerObject = new GameObject("WallSelectionManager");
+        Component selectionManager = managerObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+        SetPrivateField(selectionManager, "mainCamera", camera);
+        SetPrivateField(selectionManager, "wallSelectionCanvas", canvas);
+
+        Vector3 startPoint = new Vector3(0f, 0f, 0f);
+        Vector3 endPoint = new Vector3(4f, 0f, 0f);
+        wallObject = CreateWallObject("WallPreview", wallRootObject.transform);
+        ConfigureWall(
+            wallObject,
+            startPoint,
+            endPoint,
+            1,
+            2,
+            false,
+            false,
+            false,
+            false);
+
+        Component proxy = wallObject.AddComponent(GetAssemblyType("WallSelectionUIProxy"));
+        proxy.GetType().GetMethod("Initialize", BindingFlags.Instance | BindingFlags.Public)
+            ?.Invoke(proxy, new object[] { selectionManager });
+        proxy.GetType().GetMethod("RefreshVisual", BindingFlags.Instance | BindingFlags.Public)
+            ?.Invoke(proxy, null);
+
+        RectTransform wallUi = canvas.transform.Find("WallPreview_ui") as RectTransform;
+        Assert.That(wallUi, Is.Not.Null);
+
+        Vector3 startScreen = camera.WorldToScreenPoint(startPoint);
+        Vector3 endScreen = camera.WorldToScreenPoint(endPoint);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, startScreen, null, out Vector2 startLocal);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, endScreen, null, out Vector2 endLocal);
+        float expectedWidth = Vector2.Distance(startLocal, endLocal);
+
+        Assert.That(wallUi.sizeDelta.x, Is.EqualTo(expectedWidth).Within(0.01f));
+    }
+
     private static GameObject CreateWallObject(string name, Transform parent)
     {
         System.Type factoryType = GetAssemblyType("WallObjectFactory");
@@ -185,6 +288,12 @@ public class HandleManagerModeTests
     }
 
     private static void AssertScreenPosition(Vector3 actual, Vector3 expected)
+    {
+        Assert.That(actual.x, Is.EqualTo(expected.x).Within(0.01f));
+        Assert.That(actual.y, Is.EqualTo(expected.y).Within(0.01f));
+    }
+
+    private static void AssertScreenPosition(Vector2 actual, Vector2 expected)
     {
         Assert.That(actual.x, Is.EqualTo(expected.x).Within(0.01f));
         Assert.That(actual.y, Is.EqualTo(expected.y).Within(0.01f));

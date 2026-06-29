@@ -45,6 +45,22 @@ public sealed class DrawingOverlayRuntime : MonoBehaviour
         UpdateVisual(planeY);
     }
 
+    public void ClearDocument()
+    {
+        Document = null;
+        DisplayTexture = null;
+        gameObject.SetActive(false);
+        if (meshRenderer != null)
+        {
+            meshRenderer.sharedMaterial = null;
+        }
+
+        if (meshFilter != null)
+        {
+            meshFilter.sharedMesh = null;
+        }
+    }
+
     public void UpdateVisual(float planeY)
     {
         if (Document == null || Document.source == null || Document.calibration == null || Document.solved == null)

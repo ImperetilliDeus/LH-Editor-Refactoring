@@ -410,7 +410,9 @@ public class SnapManager : MonoBehaviour
         bool useScreenDistance = useScreenPixelHandleSnap && camera != null;
         if (useScreenDistance)
         {
-            currentScreenPoint = camera.WorldToScreenPoint(currentPoint);
+            currentScreenPoint = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                camera,
+                camera.WorldToScreenPoint(currentPoint));
             if (currentScreenPoint.z <= 0f)
             {
                 useScreenDistance = false;
@@ -425,7 +427,9 @@ public class SnapManager : MonoBehaviour
 
             if (useScreenDistance)
             {
-                Vector3 candidateScreenPoint = camera.WorldToScreenPoint(candidate);
+                Vector3 candidateScreenPoint = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                    camera,
+                    camera.WorldToScreenPoint(candidate));
                 if (candidateScreenPoint.z <= 0f)
                 {
                     continue;
@@ -488,8 +492,12 @@ public class SnapManager : MonoBehaviour
     {
         if (useScreenPixelHandleSnap && camera != null)
         {
-            Vector3 currentScreen = camera.WorldToScreenPoint(currentPoint);
-            Vector3 candidateScreen = camera.WorldToScreenPoint(candidatePoint);
+            Vector3 currentScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                camera,
+                camera.WorldToScreenPoint(currentPoint));
+            Vector3 candidateScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                camera,
+                camera.WorldToScreenPoint(candidatePoint));
             if (currentScreen.z > 0f && candidateScreen.z > 0f)
             {
                 float dx = currentScreen.x - candidateScreen.x;

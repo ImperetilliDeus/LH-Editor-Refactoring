@@ -448,25 +448,19 @@ public class RoomManager : MonoBehaviour
 
     public void ClearAllRoomsForWorkStateLoad()
     {
+        EnsureRoomRoot();
         for (int i = allRooms.Count - 1; i >= 0; i--)
         {
             Room room = allRooms[i];
             if (room != null)
             {
-                if (Application.isPlaying)
-                {
-                    room.gameObject.SetActive(false);
-                    Destroy(room.gameObject);
-                }
-                else
-                {
-                    DestroyImmediate(room.gameObject);
-                }
+                DestroyRoomObject(room.gameObject);
             }
         }
 
         allRooms.Clear();
         roomsByWalls.Clear();
+        ClearRoomRootChildren();
         MarkGraphDirty();
         RoomsChanged?.Invoke();
     }
@@ -781,6 +775,41 @@ public class RoomManager : MonoBehaviour
 
         RebuildRoomLookup();
         RoomsChanged?.Invoke();
+    }
+
+    private void ClearRoomRootChildren()
+    {
+        if (roomRoot == null)
+        {
+            return;
+        }
+
+        for (int i = roomRoot.childCount - 1; i >= 0; i--)
+        {
+            Transform child = roomRoot.GetChild(i);
+            if (child != null)
+            {
+                DestroyRoomObject(child.gameObject);
+            }
+        }
+    }
+
+    private static void DestroyRoomObject(GameObject roomObject)
+    {
+        if (roomObject == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            roomObject.SetActive(false);
+            Destroy(roomObject);
+        }
+        else
+        {
+            DestroyImmediate(roomObject);
+        }
     }
 
     private void ValidateConfiguration()

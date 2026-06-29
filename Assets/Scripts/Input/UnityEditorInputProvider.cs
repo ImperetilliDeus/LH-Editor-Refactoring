@@ -16,7 +16,7 @@ public sealed class UnityEditorInputProvider : IEditorInputProvider
             return false;
         }
 
-        pointerScreenPosition = Mouse.current.position.ReadValue();
+        pointerScreenPosition = EditorScreenCoordinateUtility.NormalizePointerScreenPosition(Mouse.current.position.ReadValue());
         return true;
     }
 

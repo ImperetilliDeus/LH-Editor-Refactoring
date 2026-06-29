@@ -26,7 +26,6 @@ public class WallSelectionUIProxy : MonoBehaviour
 
     private RectTransform rootRect;
     private Image rootImage;
-    private Outline rootOutline;
     private RectTransform startCapRect;
     private RectTransform endCapRect;
     private Image startCapImage;
@@ -122,8 +121,12 @@ public class WallSelectionUIProxy : MonoBehaviour
         }
 
         GetVisualEndpoints(out Vector3 visualStart, out Vector3 visualEnd);
-        Vector3 startScreen = sourceCamera.WorldToScreenPoint(visualStart);
-        Vector3 endScreen = sourceCamera.WorldToScreenPoint(visualEnd);
+        Vector3 startScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            sourceCamera,
+            sourceCamera.WorldToScreenPoint(visualStart));
+        Vector3 endScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            sourceCamera,
+            sourceCamera.WorldToScreenPoint(visualEnd));
         bool visible = ownerWall.gameObject.activeInHierarchy && startScreen.z > 0f && endScreen.z > 0f;
         rootRect.gameObject.SetActive(visible);
         if (!visible)
@@ -131,26 +134,34 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
+        Camera uiCamera = targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay
+            ? null
+            : targetCanvas.worldCamera != null ? targetCanvas.worldCamera : sourceCamera;
+        RectTransform canvasRect = targetCanvas.transform as RectTransform;
         Vector2 startPoint = startScreen;
         Vector2 endPoint = endScreen;
-        Vector2 midpoint = (startPoint + endPoint) * 0.5f;
-        Vector2 delta = endPoint - startPoint;
-        float width = Mathf.Max(1f, delta.magnitude);
-        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
 
-        Camera uiCamera = targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : targetCanvas.worldCamera;
-        RectTransform canvasRect = targetCanvas.transform as RectTransform;
-        if (canvasRect != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, midpoint, uiCamera, out Vector2 localPoint))
+        if (canvasRect != null)
         {
-            rootRect.anchoredPosition = localPoint;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, startScreen, uiCamera, out startPoint) ||
+                !RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, endScreen, uiCamera, out endPoint))
+            {
+                rootRect.gameObject.SetActive(false);
+                return;
+            }
+
+            rootRect.anchoredPosition = (startPoint + endPoint) * 0.5f;
         }
         else
         {
-            rootRect.position = midpoint;
+            rootRect.position = (startPoint + endPoint) * 0.5f;
         }
 
+        Vector2 delta = endPoint - startPoint;
+        float width = Mathf.Max(1f, delta.magnitude);
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
         rootRect.localRotation = Quaternion.Euler(0f, 0f, angle);
-        float thicknessMultiplier = hasTemporaryStyleOverride ? temporaryThicknessMultiplier : (isSelected ? 1.15f : 1f);
+        float thicknessMultiplier = hasTemporaryStyleOverride ? temporaryThicknessMultiplier : 1f;
         float thickness = Mathf.Max(selectionManager.WallUIThicknessPixels, selectionManager.WallUIThicknessPixels * thicknessMultiplier);
         rootRect.sizeDelta = new Vector2(width, thickness);
         rootRect.localScale = Vector3.one;
@@ -168,10 +179,10 @@ public class WallSelectionUIProxy : MonoBehaviour
     {
         if (rootRect != null)
         {
+            rootRect.gameObject.SetActive(false);
             Destroy(rootRect.gameObject);
             rootRect = null;
             rootImage = null;
-            rootOutline = null;
             startCapRect = null;
             endCapRect = null;
             startCapImage = null;
@@ -225,7 +236,7 @@ public class WallSelectionUIProxy : MonoBehaviour
         bool isPreviewWall = WallHierarchyUtility.IsPreviewWall(ownerWall);
         GameObject rootObject = isPreviewWall
             ? new GameObject(GetWallUIObjectName(), typeof(RectTransform))
-            : new GameObject(GetWallUIObjectName(), typeof(RectTransform), typeof(Image), typeof(Outline));
+            : new GameObject(GetWallUIObjectName(), typeof(RectTransform), typeof(Image));
         rootObject.transform.SetParent(targetCanvas.transform, false);
         LayerUtility.ApplyLayer(rootObject, LayerUtility.WallUILayerName, false);
 
@@ -237,10 +248,8 @@ public class WallSelectionUIProxy : MonoBehaviour
         if (!isPreviewWall)
         {
             rootImage = rootObject.GetComponent<Image>();
-            rootImage.color = selectionManager != null ? selectionManager.WallUINormalColor : new Color(1f, 1f, 1f, 0.04f);
+            rootImage.color = Color.clear;
             rootImage.raycastTarget = true;
-            rootOutline = rootObject.GetComponent<Outline>();
-            rootOutline.useGraphicAlpha = true;
         }
 
         startCapRect = CreateEndCap("StartCap");
@@ -263,7 +272,6 @@ public class WallSelectionUIProxy : MonoBehaviour
                 rootImage.color = previewFillColor;
             }
 
-            ApplyOutline(previewOutlineColor, new Vector2(2f, 2f));
             ApplyEndCapStyle(previewOutlineColor, true);
             return;
         }
@@ -275,9 +283,8 @@ public class WallSelectionUIProxy : MonoBehaviour
 
         if (hasTemporaryStyleOverride)
         {
-            rootImage.color = temporaryFillColor;
-            ApplyOutline(temporaryOutlineColor, temporaryOutlineDistance);
-            ApplyEndCapStyle(temporaryOutlineColor, temporaryShowEndCaps);
+            rootImage.color = Color.clear;
+            ApplyEndCapStyle(Color.clear, false);
             return;
         }
 
@@ -286,30 +293,8 @@ public class WallSelectionUIProxy : MonoBehaviour
             return;
         }
 
-        Color baseColor = isSelected
-            ? selectionManager.WallUISelectedColor
-            : selectionManager.WallUINormalColor;
-        Color fillColor = baseColor;
-        fillColor.a = isSelected ? Mathf.Min(0.08f, baseColor.a) : Mathf.Min(0.02f, baseColor.a);
-        Color outlineColor = baseColor;
-        outlineColor.a = isSelected ? Mathf.Max(0.95f, baseColor.a) : Mathf.Max(0.18f, baseColor.a);
-
-        rootImage.color = fillColor;
-        ApplyOutline(outlineColor, isSelected ? new Vector2(2f, 2f) : new Vector2(1f, 1f));
-        ApplyEndCapStyle(outlineColor, isSelected);
-    }
-
-    private void ApplyOutline(Color outlineColor, Vector2 outlineDistance)
-    {
-        if (rootOutline == null)
-        {
-            return;
-        }
-
-        rootOutline.effectColor = outlineColor;
-        rootOutline.effectDistance = outlineDistance;
-        rootOutline.enabled = outlineColor.a > 0.0001f &&
-                              (Mathf.Abs(outlineDistance.x) > 0.0001f || Mathf.Abs(outlineDistance.y) > 0.0001f);
+        rootImage.color = Color.clear;
+        ApplyEndCapStyle(Color.clear, false);
     }
 
     private RectTransform CreateEndCap(string objectName)

@@ -26,10 +26,12 @@ public sealed class LhWorkStateLoadResult
 public sealed class LhWorkStateLoadServices
 {
     public HandleManager HandleManager { get; }
+    public WallSelectionManager WallSelectionManager { get; }
     public WallLengthDisplay WallLengthDisplay { get; }
     public WallOpeningPlacementManager WallOpeningPlacementManager { get; }
     public FurniturePlacementManager FurniturePlacementManager { get; }
     public DrawManager DrawManager { get; }
+    public DrawingOverlayManager DrawingOverlayManager { get; }
 
     public LhWorkStateLoadServices(
         HandleManager handleManager,
@@ -37,12 +39,33 @@ public sealed class LhWorkStateLoadServices
         WallOpeningPlacementManager wallOpeningPlacementManager,
         FurniturePlacementManager furniturePlacementManager,
         DrawManager drawManager = null)
+        : this(
+            handleManager,
+            null,
+            wallLengthDisplay,
+            wallOpeningPlacementManager,
+            furniturePlacementManager,
+            drawManager,
+            null)
+    {
+    }
+
+    public LhWorkStateLoadServices(
+        HandleManager handleManager,
+        WallSelectionManager wallSelectionManager,
+        WallLengthDisplay wallLengthDisplay,
+        WallOpeningPlacementManager wallOpeningPlacementManager,
+        FurniturePlacementManager furniturePlacementManager,
+        DrawManager drawManager,
+        DrawingOverlayManager drawingOverlayManager)
     {
         HandleManager = handleManager;
+        WallSelectionManager = wallSelectionManager;
         WallLengthDisplay = wallLengthDisplay;
         WallOpeningPlacementManager = wallOpeningPlacementManager;
         FurniturePlacementManager = furniturePlacementManager;
         DrawManager = drawManager;
+        DrawingOverlayManager = drawingOverlayManager;
     }
 }
 
@@ -74,6 +97,9 @@ public static class LhWorkStateLoader
             return validationResult;
         }
 
+        services?.DrawingOverlayManager?.ClearOverlay();
+        services?.WallSelectionManager?.ClearSelectionForSceneReset();
+        services?.WallLengthDisplay?.ClearAllLabels();
         ClearChildren(wallRoot);
         if (roomManager != null)
         {

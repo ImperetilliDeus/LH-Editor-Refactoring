@@ -34,8 +34,8 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     [Header("Selection Visual")]
     [SerializeField] private Canvas wallSelectionCanvas;
-    [SerializeField] private Color wallUINormalColor = new Color(1f, 0.62f, 0.12f, 0.04f);
-    [SerializeField] private Color wallUISelectedColor = new Color(1f, 0.62f, 0.12f, 0.28f);
+    [SerializeField] private Color wallUINormalColor = Color.clear;
+    [SerializeField] private Color wallUISelectedColor = Color.clear;
     [SerializeField] private float wallUIThicknessPixels = 16f;
 
     [Header("Preview Wall UI")]
@@ -133,6 +133,14 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         selectionState.GetSelectedWalls(result);
     }
 
+    public void ClearSelectionForSceneReset()
+    {
+        selectionState.ClearAll();
+        ResetDragState();
+        rootWallsCacheDirty = true;
+        RefreshSelectionVisuals();
+    }
+
     public void HandleWallUIClick(GameObject wallObject)
     {
         if (wallObject == null || !IsWallUIInteractionEnabled)
@@ -197,6 +205,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         if (wallOpeningPlacementManager != null && wallOpeningPlacementManager.SelectedOpening != null)
         {
             wallOpeningPlacementManager.DeleteSelectedOpening();
+            ClearDeleteButtonSelection();
             return;
         }
 
@@ -206,6 +215,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         DeleteSelectedWalls();
+        ClearDeleteButtonSelection();
     }
 
     private void Reset()
@@ -584,7 +594,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return false;
         }
 
-        Ray ray = mainCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, pointerScreenPosition);
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return false;
@@ -1037,6 +1047,20 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         ResetDragState();
     }
 
+    private void ClearDeleteButtonSelection()
+    {
+        if (deleteSelectionButton == null || EventSystem.current == null)
+        {
+            return;
+        }
+
+        GameObject deleteButtonObject = deleteSelectionButton.gameObject;
+        if (EventSystem.current.currentSelectedGameObject == deleteButtonObject)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
     private List<Wall> GetRootWalls()
     {
         if (wallRoot == null)
@@ -1180,7 +1204,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return false;
         }
 
-        Ray ray = camera.ScreenPointToRay(pointerScreenPosition);
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(camera, pointerScreenPosition);
         int wallMask = LayerUtility.GetMaskOrDefault(LayerUtility.WallLayerName);
         if (!Physics.Raycast(ray, out RaycastHit hitInfo, Mathf.Infinity, wallMask))
         {

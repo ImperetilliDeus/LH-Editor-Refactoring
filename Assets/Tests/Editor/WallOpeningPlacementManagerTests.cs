@@ -514,6 +514,80 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
+    public void UpdateOpeningVisual_ResetsImportedPivotYaw()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type catalogType = GetAssemblyType("OpeningTypeCatalog");
+        Type catalogItemType = GetAssemblyType("OpeningTypeCatalogItem");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(4f, 0f, 0f),
+                0.2f,
+                2.4f,
+                1.5f,
+                visualState,
+                1,
+                2,
+                false,
+                false,
+                false,
+                false,
+            });
+
+        GameObject doorPrefab = CreateGameObject("DoorPrefab");
+        Transform pivot = CreateChildGameObject(doorPrefab.transform, "Pivot").transform;
+        pivot.localRotation = Quaternion.Euler(0f, 9f, 0f);
+        CreateChildGameObject(pivot, "DoorPanel");
+
+        ScriptableObject catalog = ScriptableObject.CreateInstance(catalogType);
+        createdObjects.Add(catalog);
+        object catalogItem = Activator.CreateInstance(catalogItemType);
+        object doorEnumValue = Enum.Parse(openingPlacementType, "Door");
+        SetPrivateField(catalogItem, "openingType", doorEnumValue);
+        SetPrivateField(catalogItem, "typeKey", "DoorA");
+        SetPrivateField(catalogItem, "displayName", "Door A");
+        SetPrivateField(catalogItem, "modelPrefab", doorPrefab);
+        GetPrivateField<System.Collections.IList>(catalog, "items").Add(catalogItem);
+        SetPrivateField(manager, "openingTypeCatalog", catalog);
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Door"), openingType);
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                doorEnumValue,
+                "DoorA",
+                string.Empty,
+                false,
+                false,
+                2f,
+                2f,
+                2.4f,
+                0.2f,
+                0f,
+            });
+
+        InvokePrivate(manager, "UpdateOpeningVisual", container, opening, 0, null);
+
+        Transform restoredPivot = ((Component)opening).transform.Find("ModelRoot/ModelRotationRoot/ModelScaleRoot/DoorPrefab/Pivot");
+        Assert.That(restoredPivot, Is.Not.Null);
+        Assert.That(NormalizeAngle(restoredPivot.localEulerAngles.y), Is.EqualTo(0f).Within(0.0001f));
+    }
+
+    [Test]
     public void SelectOpening_IgnoresOpening_WhenNotInDetailEditMode()
     {
         Type managerType = GetAssemblyType("WallOpeningPlacementManager");
@@ -531,6 +605,42 @@ public class WallOpeningPlacementManagerTests
 
         object selectedOpening = managerType.GetProperty("SelectedOpening")?.GetValue(manager);
         Assert.That(selectedOpening, Is.Null);
+    }
+
+    [Test]
+    public void ApplyLayoutSnapshot_DeactivatesRemovedStandaloneWallImmediately()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type wallType = GetAssemblyType("Wall");
+        Type wallDataType = GetAssemblyType("WallData");
+        Type snapshotType = GetAssemblyType("UndoRedoManager+OpeningLayoutSnapshot");
+        Type sceneHierarchyModelType = GetAssemblyType("SceneHierarchyTreeModel");
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        GameObject wallRoot = CreateGameObject("WallRoot");
+        SetPrivateField(manager, "wallRoot", wallRoot.transform);
+
+        Component wall = AddComponent(CreateChildGameObject(wallRoot.transform, "wall04"), wallType);
+        object wallData = Activator.CreateInstance(
+            wallDataType,
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            0.2f,
+            2.4f,
+            1.2f);
+        wallType.GetMethod("Initialize")?.Invoke(wall, new[] { wallData });
+
+        object currentSnapshot = managerType.GetMethod("CaptureLayoutSnapshot", new[] { wallType })
+            ?.Invoke(manager, new object[] { wall });
+        object emptyTargetSnapshot = Activator.CreateInstance(snapshotType);
+
+        managerType.GetMethod("ApplyLayoutSnapshot")?.Invoke(manager, new[] { emptyTargetSnapshot, currentSnapshot });
+
+        Assert.That(wall.gameObject.activeInHierarchy, Is.False);
+
+        object hierarchyRows = sceneHierarchyModelType.GetMethod("BuildRows")
+            ?.Invoke(null, new object[] { wallRoot.transform, null });
+        Assert.That(((System.Collections.ICollection)hierarchyRows).Count, Is.EqualTo(0));
     }
 
     private Component CreateComponent(string name, Type componentType)
@@ -583,5 +693,20 @@ public class WallOpeningPlacementManagerTests
         Type type = Type.GetType($"{typeName}, Assembly-CSharp");
         Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
         return type;
+    }
+
+    private static float NormalizeAngle(float value)
+    {
+        while (value > 180f)
+        {
+            value -= 360f;
+        }
+
+        while (value < -180f)
+        {
+            value += 360f;
+        }
+
+        return value;
     }
 }

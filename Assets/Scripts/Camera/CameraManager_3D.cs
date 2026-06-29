@@ -317,13 +317,14 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         }
 
         Rect pixelRect = targetCamera.pixelRect;
+        Vector2 cameraScreenPosition = EditorScreenCoordinateUtility.ToCameraScreenPoint(targetCamera, screenPosition);
         if (pixelRect.width <= 0f || pixelRect.height <= 0f)
         {
             return false;
         }
 
-        float clampedX = Mathf.Clamp(screenPosition.x, pixelRect.xMin, pixelRect.xMax);
-        float clampedY = Mathf.Clamp(screenPosition.y, pixelRect.yMin, pixelRect.yMax);
+        float clampedX = Mathf.Clamp(cameraScreenPosition.x, pixelRect.xMin, pixelRect.xMax);
+        float clampedY = Mathf.Clamp(cameraScreenPosition.y, pixelRect.yMin, pixelRect.yMax);
         ray = targetCamera.ScreenPointToRay(new Vector2(clampedX, clampedY));
         return true;
     }

@@ -486,6 +486,62 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void PerspectiveHighlight_IgnoresSelectedWallAndOpening()
+    {
+        GameObject selectedWallObject = new GameObject("SelectedWall");
+        GameObject openingObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject selectionObject = new GameObject("WallSelectionManager");
+        GameObject placementObject = new GameObject("WallOpeningPlacementManager");
+        GameObject modeObject = new GameObject("ModeManager");
+        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
+
+        try
+        {
+            Component viewModeManager = CreateManager(out _, out _, out _, out _, out _, out _);
+            InvokePublic(viewModeManager, "SetPerspectiveView");
+
+            CreateWall(
+                selectedWallObject,
+                new Vector3(0f, 0f, 0f),
+                new Vector3(8f, 0f, 0f),
+                0.4f,
+                3f,
+                1.5f);
+            Component wallSelectionManager = selectionObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+            InvokePublicWithResult(wallSelectionManager, "SetSelectedWall", selectedWallObject);
+
+            Component modeManager = modeObject.AddComponent(GetAssemblyType("ModeManager"));
+            SetEditorMode(modeManager, "DetailEdit");
+            Component openingPlacementManager = placementObject.AddComponent(GetAssemblyType("WallOpeningPlacementManager"));
+            SetPrivateField(openingPlacementManager, "modeManager", modeManager);
+
+            openingObject.name = "Door_0";
+            openingObject.transform.position = new Vector3(20f, 1f, 0f);
+            openingObject.transform.localScale = new Vector3(1f, 2f, 3f);
+            Component opening = openingObject.AddComponent(GetAssemblyType("WallOpening"));
+            InvokePublicWithResult(openingPlacementManager, "SelectOpening", opening);
+
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
+            SetPrivateField(controller, "viewModeManager", viewModeManager);
+
+            InvokePublic(controller, "RefreshHighlight");
+
+            Assert.That(controllerObject.transform.Find("PerspectiveSelectionHighlights"), Is.Null);
+            Assert.That((bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", selectedWallObject), Is.False);
+            Assert.That((bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", openingObject), Is.False);
+        }
+        finally
+        {
+            DestroyObject(controllerObject);
+            DestroyObject(modeObject);
+            DestroyObject(placementObject);
+            DestroyObject(selectionObject);
+            DestroyObject(openingObject);
+            DestroyObject(selectedWallObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlightBoundsUtility_IgnoresExistingHighlightObjects()
     {
         GameObject selectedObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -516,7 +572,7 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_UsesWallDataOverlayForWall()
+    public void PerspectiveHighlight_DoesNotCreateWallOverlayForWall()
     {
         GameObject wallObject = new GameObject("Wall");
         GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
@@ -534,24 +590,8 @@ public class EditorViewModeManagerTests
             InvokePublicWithResult(wall, "Initialize", wallData);
             Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
 
-            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", wallObject);
-
-            Assert.That(created, Is.True);
-            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionWallOverlay");
-            Assert.That(overlay, Is.Not.Null);
-
-            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
-            MeshRenderer meshRenderer = overlay.GetComponent<MeshRenderer>();
-            Assert.That(meshFilter, Is.Not.Null);
-            Assert.That(meshRenderer, Is.Not.Null);
-            Assert.That(meshFilter.sharedMesh.vertexCount, Is.EqualTo(8));
-            Assert.That(meshFilter.sharedMesh.triangles.Length, Is.EqualTo(36));
-            Assert.That(meshRenderer.sharedMaterial.color.a, Is.GreaterThanOrEqualTo(0.4f));
-            Assert.That(meshRenderer.sharedMaterial.HasProperty("_ZTest"), Is.True);
-            Assert.That(meshRenderer.sharedMaterial.GetFloat("_ZTest"), Is.EqualTo((float)UnityEngine.Rendering.CompareFunction.Always));
-            Assert.That(meshRenderer.sharedMaterial.renderQueue, Is.GreaterThanOrEqualTo((int)UnityEngine.Rendering.RenderQueue.Overlay));
-            Assert.That(overlay.GetComponent<LineRenderer>(), Is.Null);
-            Assert.That(overlay.GetComponent<Collider>(), Is.Null);
+            Assert.That((bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", wallObject), Is.False);
+            Assert.That(controllerObject.transform.Find("PerspectiveSelectionHighlights"), Is.Null);
         }
         finally
         {
@@ -993,6 +1033,125 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
+    public void WallSelectionUIProxy_KeepsNormalWallSelectionHitTargetInvisible()
+    {
+        GameObject canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
+        GameObject selectionObject = new GameObject("WallSelectionManager");
+        GameObject wallObject = new GameObject("Wall_000");
+
+        try
+        {
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            Component selectionManager = selectionObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+            Color normalColor = new Color(0.1f, 0.45f, 1f, 0.35f);
+            Color selectedColor = new Color(1f, 0.55f, 0.05f, 0.85f);
+            SetPrivateField(selectionManager, "wallSelectionCanvas", canvas);
+            SetPrivateField(selectionManager, "wallUINormalColor", normalColor);
+            SetPrivateField(selectionManager, "wallUISelectedColor", selectedColor);
+
+            Component wall = wallObject.AddComponent(GetAssemblyType("Wall"));
+            Component proxy = wallObject.AddComponent(GetAssemblyType("WallSelectionUIProxy"));
+            SetPrivateField(proxy, "ownerWall", wall);
+            SetPrivateField(proxy, "selectionManager", selectionManager);
+            SetPrivateField(proxy, "targetCanvas", canvas);
+
+            InvokePrivateWithResult(proxy, "EnsureUI");
+            RectTransform rootRect = GetPrivateField<RectTransform>(proxy, "rootRect");
+            Image rootImage = rootRect.GetComponent<Image>();
+
+            Assert.That(rootRect.GetComponent<Outline>(), Is.Null);
+            Assert.That(rootImage.raycastTarget, Is.True);
+
+            InvokePublicWithResult(proxy, "SetSelected", false);
+            Assert.That(rootImage.color, Is.EqualTo(Color.clear));
+            Assert.That(rootRect.Find("StartCap")?.GetComponent<Image>().enabled, Is.False);
+            Assert.That(rootRect.Find("EndCap")?.GetComponent<Image>().enabled, Is.False);
+
+            InvokePublicWithResult(proxy, "SetSelected", true);
+            Assert.That(rootImage.color, Is.EqualTo(Color.clear));
+            Assert.That(rootRect.GetComponent<Outline>(), Is.Null);
+            Assert.That(rootRect.Find("StartCap")?.GetComponent<Image>().enabled, Is.False);
+            Assert.That(rootRect.Find("EndCap")?.GetComponent<Image>().enabled, Is.False);
+        }
+        finally
+        {
+            DestroyObject(wallObject);
+            DestroyObject(selectionObject);
+            DestroyObject(canvasObject);
+        }
+    }
+
+    [Test]
+    public void WallSelectionUIProxy_DoesNotChangeThicknessForNormalWallSelection()
+    {
+        GameObject cameraObject = new GameObject("Camera");
+        GameObject canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
+        GameObject selectionObject = new GameObject("WallSelectionManager");
+        GameObject wallObject = new GameObject("Wall_000");
+
+        try
+        {
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.transform.position = new Vector3(2f, 10f, 2f);
+            camera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            Component selectionManager = selectionObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+            SetPrivateField(selectionManager, "mainCamera", camera);
+            SetPrivateField(selectionManager, "wallSelectionCanvas", canvas);
+            SetPrivateField(selectionManager, "wallUIThicknessPixels", 16f);
+
+            CreateWall(wallObject, new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.2f, 3f, 1.5f);
+            Component proxy = wallObject.AddComponent(GetAssemblyType("WallSelectionUIProxy"));
+            InvokePublicWithResult(proxy, "Initialize", selectionManager);
+
+            InvokePublicWithResult(proxy, "SetSelected", true);
+            InvokePublic(proxy, "RefreshVisual");
+
+            RectTransform rootRect = GetPrivateField<RectTransform>(proxy, "rootRect");
+            Assert.That(rootRect.sizeDelta.y, Is.EqualTo(16f).Within(0.001f));
+        }
+        finally
+        {
+            DestroyObject(wallObject);
+            DestroyObject(selectionObject);
+            DestroyObject(canvasObject);
+            DestroyObject(cameraObject);
+        }
+    }
+
+    [Test]
+    public void TopViewRenderManager_UsesBlackWallColorAndOrangeSelectedWallColor()
+    {
+        GameObject managerObject = new GameObject("TopViewRenderManager");
+        GameObject selectionObject = new GameObject("WallSelectionManager");
+        GameObject wallObject = new GameObject("Wall_000");
+
+        try
+        {
+            Component manager = managerObject.AddComponent(GetAssemblyType("TopViewRenderManager"));
+            Component selectionManager = selectionObject.AddComponent(GetAssemblyType("WallSelectionManager"));
+            Component wall = CreateWall(wallObject, new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.2f, 3f, 1.5f);
+            SetPrivateField(manager, "wallSelectionManager", selectionManager);
+
+            Color defaultColor = (Color)InvokePrivateWithResult(manager, "GetTopPlanWallColor", wall);
+            InvokePublicWithResult(selectionManager, "SetSelectedWall", wallObject);
+            Color selectedColor = (Color)InvokePrivateWithResult(manager, "GetTopPlanWallColor", wall);
+
+            Assert.That(defaultColor, Is.EqualTo(Color.black));
+            Assert.That(selectedColor, Is.EqualTo(new Color(1f, 0.62f, 0.12f, 1f)));
+        }
+        finally
+        {
+            DestroyObject(wallObject);
+            DestroyObject(selectionObject);
+            DestroyObject(managerObject);
+        }
+    }
+
+    [Test]
     public void PerspectiveHighlight_DrawsRoomOutlineAboveEnclosingWalls()
     {
         GameObject roomObject = new GameObject("Room");
@@ -1113,6 +1272,55 @@ public class EditorViewModeManagerTests
             DestroyObject(menuRoot);
             DestroyObject(viewModeObject);
             DestroyObject(modeObject);
+        }
+    }
+
+    [Test]
+    public void PerspectiveUiAvailability_RestoresOriginalUiStatesWhenReturningToTop()
+    {
+        GameObject viewModeObject = new GameObject("EditorViewModeManager");
+        GameObject controllerObject = new GameObject("PerspectiveUiAvailabilityController");
+        GameObject hiddenRoot = new GameObject("HiddenInPerspective");
+        GameObject visibleRoot = new GameObject("VisibleInPerspective");
+        GameObject disabledButtonObject = new GameObject("DisabledInPerspective");
+        controllerObject.SetActive(false);
+
+        try
+        {
+            Component viewModeManager = viewModeObject.AddComponent(GetAssemblyType("EditorViewModeManager"));
+            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveUiAvailabilityController"));
+            Button disabledButton = disabledButtonObject.AddComponent<Button>();
+            visibleRoot.SetActive(false);
+            disabledButton.interactable = true;
+
+            InvokePublicWithResult(
+                controller,
+                "SetReferencesForTests",
+                viewModeManager,
+                new[] { hiddenRoot },
+                new[] { visibleRoot },
+                new Selectable[] { disabledButton });
+            controllerObject.SetActive(true);
+
+            InvokePublic(viewModeManager, "SetPerspectiveView");
+
+            Assert.That(hiddenRoot.activeSelf, Is.False);
+            Assert.That(visibleRoot.activeSelf, Is.True);
+            Assert.That(disabledButton.interactable, Is.False);
+
+            InvokePublic(viewModeManager, "SetTopView");
+
+            Assert.That(hiddenRoot.activeSelf, Is.True);
+            Assert.That(visibleRoot.activeSelf, Is.False);
+            Assert.That(disabledButton.interactable, Is.True);
+        }
+        finally
+        {
+            DestroyObject(disabledButtonObject);
+            DestroyObject(visibleRoot);
+            DestroyObject(hiddenRoot);
+            DestroyObject(controllerObject);
+            DestroyObject(viewModeObject);
         }
     }
 

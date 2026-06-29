@@ -31,8 +31,8 @@ public partial class TopViewRenderManager : MonoBehaviour
     [Header("Colors")]
     [SerializeField] private Color floorColor = new Color(0.34f, 0.86f, 0.58f, 0.22f);
     [SerializeField] private Color selectedFloorColor = new Color(0.28f, 0.6f, 1f, 0.35f);
-    [SerializeField] private Color wallColor = new Color(0.12f, 0.12f, 0.12f, 0.92f);
-    [SerializeField] private Color selectedWallColor = new Color(1f, 0.64f, 0.12f, 1f);
+    [SerializeField] private Color wallColor = Color.black;
+    [SerializeField] private Color selectedWallColor = new Color(1f, 0.62f, 0.12f, 1f);
     [SerializeField] private Color authoringHoveredWallColor = new Color(0.44f, 1f, 0.78f, 1f);
     [SerializeField] private Color authoringSelectedWallColor = new Color(1f, 0.84f, 0.22f, 1f);
     [SerializeField] private Color previewWallColor = new Color(0.2f, 0.8f, 1f, 0.45f);
@@ -61,6 +61,7 @@ public partial class TopViewRenderManager : MonoBehaviour
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
+    private Vector4 lastViewportSignature;
     private bool visualsDirty = true;
     private bool isTopViewVisible = true;
     private Room highlightedRoom;
@@ -126,13 +127,14 @@ public partial class TopViewRenderManager : MonoBehaviour
             visualsDirty = true;
         }
 
-        if (visualsDirty || HasCameraStateChanged())
+        if (visualsDirty || HasCameraStateChanged() || HasViewportChanged())
         {
             RefreshAllVisuals();
             visualsDirty = false;
         }
 
         CacheCameraState();
+        CacheViewportState();
     }
 
     public void MarkDirty()
@@ -478,5 +480,17 @@ public partial class TopViewRenderManager : MonoBehaviour
         return cameraTransform.position != lastCameraPosition ||
                cameraTransform.rotation != lastCameraRotation ||
                !Mathf.Approximately(topViewCamera.orthographicSize, lastCameraOrthoSize);
+    }
+
+    private void CacheViewportState()
+    {
+        lastViewportSignature = EditorScreenCoordinateUtility.GetViewportSignature(topViewCamera);
+    }
+
+    private bool HasViewportChanged()
+    {
+        return EditorScreenCoordinateUtility.ViewportSignatureChanged(
+            lastViewportSignature,
+            EditorScreenCoordinateUtility.GetViewportSignature(topViewCamera));
     }
 }
