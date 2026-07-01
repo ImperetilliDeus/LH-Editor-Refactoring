@@ -13,6 +13,7 @@ WorkStates/
 .worktrees/
 .superpowers/
 tools/FurnitureAuthoringTool/artifacts/
+tools/FurnitureAuthoringTool/*.log
 tools/FurnitureAuthoringTool/**/bin/
 tools/FurnitureAuthoringTool/**/obj/
 
