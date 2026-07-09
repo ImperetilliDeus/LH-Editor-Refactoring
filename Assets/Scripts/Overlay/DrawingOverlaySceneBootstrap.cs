@@ -15,6 +15,7 @@ using UnityEditor;
 public static class DrawingOverlaySceneBootstrap
 {
     private const string PanelRootName = "DrawingOverlayCalibrationPanel";
+    private const string ToolbarRootName = "DrawingOverlayToolbar";
     private const string ManagerRootName = "DrawingOverlayManager";
     private const string ImportControllerRootName = "DrawingOverlayImportController";
 
@@ -43,6 +44,7 @@ public static class DrawingOverlaySceneBootstrap
             modeManager,
             FindGridObject(),
             existingPanel);
+        EnsureToolbar(manager);
 
         DrawingOverlayImportController importController =
             UnityEngine.Object.FindFirstObjectByType<DrawingOverlayImportController>(FindObjectsInactive.Include);
@@ -88,7 +90,114 @@ public static class DrawingOverlaySceneBootstrap
         ConfigurePanelCanvas(panel, canvas);
         panel.Close();
         manager.SetCalibrationPanel(panel);
+        EnsureToolbar(manager);
         return panel;
+    }
+
+    internal static DrawingOverlayToolbarController EnsureToolbar(DrawingOverlayManager manager)
+    {
+        if (manager == null)
+        {
+            return null;
+        }
+
+        Canvas canvas = manager.ParentCanvas != null
+            ? manager.ParentCanvas
+            : LayerUtility.FindCanvasByNameOrFirst(LayerUtility.DefaultCanvasName);
+        if (canvas == null)
+        {
+            return null;
+        }
+
+        DrawingOverlayToolbarController toolbar =
+            UnityEngine.Object.FindFirstObjectByType<DrawingOverlayToolbarController>(FindObjectsInactive.Include);
+        if (toolbar == null)
+        {
+            toolbar = CreateToolbar(canvas, manager);
+        }
+
+        toolbar.SetManager(manager);
+        toolbar.RefreshVisibility();
+
+        int uiLayer = canvas.gameObject.layer;
+        SetLayerRecursively(toolbar.gameObject, uiLayer);
+        return toolbar;
+    }
+
+    private static DrawingOverlayToolbarController CreateToolbar(Canvas canvas, DrawingOverlayManager manager)
+    {
+        TMP_FontAsset tmpFont = manager != null ? manager.UiTmpFont : null;
+
+        GameObject root = CreateUIObject(ToolbarRootName, canvas.transform as RectTransform);
+        RectTransform rootRect = root.GetComponent<RectTransform>();
+        rootRect.anchorMin = rootRect.anchorMax = rootRect.pivot = new Vector2(0.5f, 0f);
+        rootRect.sizeDelta = new Vector2(340f, 126f);
+        rootRect.anchoredPosition = new Vector2(245f, 104f);
+
+        CreateButton("_DragButton", rootRect, string.Empty, new Color(0f, 0f, 0f, 0f), tmpFont, out RectTransform dragRect);
+        Stretch(dragRect, Vector2.zero, Vector2.zero);
+
+        GameObject collapsedRoot = CreateUIObject("CollapsedRoot", rootRect);
+        RectTransform collapsedRect = collapsedRoot.GetComponent<RectTransform>();
+        collapsedRect.anchorMin = collapsedRect.anchorMax = collapsedRect.pivot = new Vector2(0.5f, 0f);
+        collapsedRect.sizeDelta = new Vector2(168f, 42f);
+        collapsedRect.anchoredPosition = Vector2.zero;
+        Image collapsedImage = collapsedRoot.AddComponent<Image>();
+        collapsedImage.color = new Color32(67, 70, 78, 242);
+
+        Button expandButton = collapsedRoot.AddComponent<Button>();
+        TMP_Text collapsedText = CreateTmpText("CollapsedLabel", collapsedRect, "\uB3C4\uBA74 18%", 18, FontStyles.Bold, tmpFont);
+        collapsedText.alignment = TextAlignmentOptions.Center;
+        Stretch(collapsedText.rectTransform, new Vector2(12f, 0f), new Vector2(-28f, 0f));
+        TMP_Text expandText = CreateTmpText("ExpandGlyph", collapsedRect, "▴", 18, FontStyles.Bold, tmpFont);
+        expandText.alignment = TextAlignmentOptions.Center;
+        SetRightStretch(expandText.rectTransform, new Vector2(-12f, 0f), new Vector2(24f, 42f));
+
+        GameObject expandedRoot = CreateUIObject("ExpandedRoot", rootRect);
+        RectTransform expandedRect = expandedRoot.GetComponent<RectTransform>();
+        expandedRect.anchorMin = expandedRect.anchorMax = expandedRect.pivot = new Vector2(0.5f, 0f);
+        expandedRect.sizeDelta = new Vector2(340f, 126f);
+        expandedRect.anchoredPosition = Vector2.zero;
+        Image expandedImage = expandedRoot.AddComponent<Image>();
+        expandedImage.color = new Color32(67, 70, 78, 246);
+
+        TMP_Text title = CreateTmpText("Title", expandedRect, "\uB3C4\uBA74 \uD22C\uBA85\uB3C4", 17, FontStyles.Bold, tmpFont);
+        SetTopLeft(title.rectTransform, new Vector2(16f, -12f), new Vector2(180f, 28f));
+
+        Button collapseButton = CreateButton("CollapseButton", expandedRect, "▾", new Color(0f, 0f, 0f, 0f), tmpFont, out RectTransform collapseRect);
+        SetTopRight(collapseRect, new Vector2(-12f, -8f), new Vector2(32f, 32f));
+
+        Slider opacitySlider = CreateSlider("OpacitySlider", expandedRect, out RectTransform opacitySliderRect);
+        opacitySlider.minValue = 0f;
+        opacitySlider.maxValue = 1f;
+        opacitySlider.value = 0.18f;
+        SetTopLeft(opacitySliderRect, new Vector2(16f, -44f), new Vector2(235f, 40f));
+
+        TMP_Text percentText = CreateTmpText("PercentText", expandedRect, "18%", 20, FontStyles.Bold, tmpFont);
+        percentText.alignment = TextAlignmentOptions.Right;
+        SetTopRight(percentText.rectTransform, new Vector2(-16f, -48f), new Vector2(56f, 32f));
+
+        Button visibilityButton = CreateButton("VisibilityButton", expandedRect, "\uC228\uAE40", new Color32(52, 56, 75, 255), tmpFont, out RectTransform visibilityRect);
+        SetBottomLeft(visibilityRect, new Vector2(16f, 14f), new Vector2(82f, 34f));
+
+        Button lockButton = CreateButton("LockButton", expandedRect, "\uC7A0\uAE08", new Color32(52, 56, 75, 255), tmpFont, out RectTransform lockRect);
+        SetBottomLeft(lockRect, new Vector2(108f, 14f), new Vector2(82f, 34f));
+
+        root.AddComponent<UIDragManager>();
+
+        DrawingOverlayToolbarController controller = root.AddComponent<DrawingOverlayToolbarController>();
+        controller.Initialize(
+            manager,
+            collapsedRoot,
+            expandedRoot,
+            opacitySlider,
+            collapsedText,
+            percentText,
+            expandButton,
+            collapseButton,
+            visibilityButton,
+            lockButton);
+        return controller;
     }
 
     private static OverlayCalibrationPanelController CreatePanel(Canvas canvas, DrawingOverlayManager manager)
@@ -351,6 +460,33 @@ public static class DrawingOverlaySceneBootstrap
         rect.pivot = new Vector2(0f, 1f);
         rect.sizeDelta = size;
         rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static void SetTopRight(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static void SetRightStretch(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+    {
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 0.5f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = anchoredPosition;
+    }
+
+    private static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.offsetMin = offsetMin;
+        rect.offsetMax = offsetMax;
     }
 
     private static void SetBottomLeft(RectTransform rect, Vector2 anchoredPosition, Vector2 size)

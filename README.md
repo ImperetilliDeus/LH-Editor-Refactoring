@@ -1,121 +1,63 @@
 # LH Editor Refactoring
 
-Unity 기반 평면 / 벽 / room 편집기 리팩터링 프로젝트입니다.
+Unity 기반 실내 공간 편집기 프로젝트입니다. 사용자는 도면 또는 CAD 자료를 기준으로 벽과 방을 만들고, 문/창/가구를 배치한 뒤 작업 상태를 저장하거나 모바일 뷰어용 JSON으로 내보낼 수 있습니다.
 
-현재 편집 흐름은 `Default -> RoomCreate -> DetailEdit -> Export` 순서로 정리되어 있습니다.
-
-## Environment
+## 실행 환경
 
 - Unity Editor: `6000.0.66f2`
-- Main Scene: `Assets/Scenes/SampleScene.unity`
-- Script Root: `Assets/Scripts`
+- 주요 씬: `Assets/Scenes/SampleScene.unity`
+- 스크립트 루트: `Assets/Scripts`
+- 테스트 루트: `Assets/Tests/Editor`
+- 외부 도구: `tools/FurnitureAuthoringTool`
 
-## Modes
+## 핵심 편집 모드
 
-- `Default`
-  - 벽 생성
-  - 벽 endpoint handle 편집
-- `RoomCreate`
-  - 빈 공간 드래그로 room 생성
-  - room 선택 / 이동 / 크기 조정
-- `DetailEdit`
-  - 벽 선택
-  - 벽 길이 / 높이 / 두께 편집
-  - 문 / 창 배치
-  - 다중 선택 박스
-- `DoorInsert`
-- `WindowInsert`
-- `FurniturePlace`
+| 모드 | 값 | 목적 |
+|---|---:|---|
+| `Default` | 0 | 벽 작성, 벽 endpoint 편집 |
+| `RoomCreate` | 1 | 방 생성, 방 선택/이동/형상 편집 |
+| `DetailEdit` | 3 | 벽 상세 편집, 다중 선택, 문/창 편집 |
+| `DoorInsert` | 6 | 문 배치 |
+| `WindowInsert` | 7 | 창 배치 |
+| `FurniturePlace` | 9 | 가구 배치 |
+| `DrawingOverlayCalibrate` | 10 | 도면 오버레이 보정 |
 
-## Key Components
+View 모드는 `Top`과 `Perspective3D`로 나뉩니다. 현재 3D View는 편집보다는 검토와 확인 중심으로 동작합니다.
 
-- `ModeManager`
-  - 현재 편집 모드 상태 관리
-  - `ModeChanged` 이벤트 발행
-- `ModeButtonBinder`
-  - UI `Button`과 `EditorMode`를 연결
-  - 각 버튼이 스스로 `ModeManager`에 등록
-- `DrawManager`
-  - 기본 벽 생성과 preview wall 표시
-  - wall tool 전환은 `WallToolController`를 통해 처리
-- `HandleManager`
-  - 벽 endpoint handle 생성 / 드래그
-  - split point drag 처리
-- `SnapManager`
-  - grid / axis / handle / wall segment snap 관리
-- `WallSelectionManager`
-  - `DetailEdit` 벽 선택과 이동
-- `WallPropertyInputManager`
-  - 선택된 벽 길이 / 높이 / 두께 입력 반영
-- `RoomManager`
-  - room 생성 / 삭제 / 목록 관리
-- `RoomCreateManager`
-  - room 생성, 선택, 이동, 크기 조정
-- `RoomHandleManager`
-  - 선택된 room polygon handle 편집
-- `TopViewRenderManager`
-  - `_TopPlanContent` UI 렌더링
-- `WallOpeningPlacementManager`
-  - 문 / 창 배치와 opening container 관리
-- `UndoRedoManager`
-  - 편집 이력 관리
-- `LhSceneExporter`
-  - JSON export
+## 주요 기능 상태
 
-## Input Layer
+| 기능 | 상태 | 요약 |
+|---|---|---|
+| 벽 작성/편집 | 높음 | 생성, 선택, 이동, 길이/높이/두께 수정, 스냅, Undo/Redo, 문/창 opening 배치가 구현되어 있습니다. |
+| 방 생성/편집 | 중간 | 사각형/폴리곤 기반 수동 생성, 메타데이터, 재질 코드, 벽 연결 정보를 다룹니다. 자동 분할/병합은 보류 성격입니다. |
+| 도면 오버레이 | 중간 | PNG/JPG/PDF 첫 페이지를 불러와 보정하고 표시합니다. 보정 결과 저장/복원 정책은 확정이 필요합니다. |
+| DWG/DXF 가져오기 | 중간 | ACadSharp 기반 레이어 선택과 벽 생성 흐름이 있습니다. 좌표/중복/스케일 검증 보강이 필요합니다. |
+| 가구 배치 | 중간 | `FurnitureCatalog` 기반 프리팹 배치, 회전, 삭제, 방 귀속, defect tuple export가 가능합니다. 외부 패치 로더는 미완입니다. |
+| 저장/로드 | 높음 | `.lhscene`으로 벽, opening, 방, 가구를 저장/복원합니다. Overlay는 현재 저장 대상이 아닙니다. |
+| Export | 중간 | Legacy/Extended JSON DTO가 있습니다. `elements`, `defectCatalog`, golden fixture 검증은 후속 과제입니다. |
+| UI/씬 계층/뷰 전환 | 높음 | 모드 버튼, 씬 계층 트리, Top/3D 전환, 3D 하이라이트/프레이밍 테스트가 존재합니다. |
+| FurnitureAuthoringTool | 낮음 | manifest 작성/검증/WPF UI는 존재합니다. Unity Build Worker와 런타임 패치 로더가 핵심 미완 항목입니다. |
 
-- 공통 입력 추상화: `IEditorInputProvider`
-- 기본 구현: `UnityEditorInputProvider`
-- wall 계열 포인터 프레임 조립: `PointerInputFrameUtility`
+## 주요 문서
 
-이 구조로 `DrawManager`, `HandleManager`, `WallSelectionManager`, `SnapManager`가 더 이상 직접 static 입력 API에 강하게 묶이지 않도록 정리되어 있습니다.
+- [요구사항 정의서](docs/requirements.ko.md)
+- [시스템 아키텍처 설계서](docs/architecture.md)
+- [인터페이스 정의서](docs/interfaces.ko.md)
+- [기능별 분석 및 완성도](docs/features.ko.md)
+- [개선 방향 및 로드맵](docs/roadmap.ko.md)
 
-## SampleScene Notes
+## 코드 구조 요약
 
-- `ModeManager`는 버튼 필드를 직접 들고 있지 않습니다.
-- `_Button_Default`, `_Button_Room`, `_Button_EditDetail`, `_Button_EditFurnish`는 각각 `ModeButtonBinder`로 모드를 등록합니다.
-- 주요 root 오브젝트:
-  - `Managers`
-  - `_Screen`
-  - `_TopPlanContent`
-  - `_Walls`
-  - `_Rooms`
-  - `Grid`
+- `Assets/Scripts/Input`: Unity Input System을 편집 입력 프레임으로 변환합니다.
+- `Assets/Scripts/Draw/Wall`: 벽 작성/편집, 핸들, 스냅, opening, Undo/Redo를 담당합니다.
+- `Assets/Scripts/Room`: 방 생성, 방 그래프, 폴리곤 검증, 방 메타데이터를 담당합니다.
+- `Assets/Scripts/Overlay`: 이미지/PDF 도면 오버레이 import, 보정, 표시를 담당합니다.
+- `Assets/Scripts/Import`: DWG/DXF 파싱과 벽 오브젝트 생성을 담당합니다.
+- `Assets/Scripts/Furniture`: 가구 카탈로그, 배치, 인스턴스 메타데이터를 담당합니다.
+- `Assets/Scripts/ProjectPersistence`: `.lhscene` 작업 상태 저장/로드를 담당합니다.
+- `Assets/Scripts/Export`: 모바일 뷰어용 JSON export를 담당합니다.
+- `tools/FurnitureAuthoringTool`: 가구 manifest 작성과 향후 패치 빌드 파이프라인을 담당합니다.
 
-## Quick Start
+## 산출물 작성 기준
 
-1. Unity Editor `6000.0.66f2`로 프로젝트를 엽니다.
-2. `Assets/Scenes/SampleScene.unity`를 로드합니다.
-3. Play Mode에서 아래 흐름을 확인합니다.
-   - `Default`에서 벽 생성 / endpoint 편집
-   - `RoomCreate`에서 room 생성 / 선택 / 이동 / 크기 조정
-   - `DetailEdit`에서 벽 상세 편집과 문 / 창 배치
-4. 세부 체크는 `docs/operations.md`를 확인합니다.
-
-## Docs
-
-- `docs/architecture.md`
-  - 현재 구조와 매니저 책임
-- `docs/workflows.md`
-  - 기능별 동작 흐름
-- `docs/operations.md`
-  - 수동 점검 체크리스트
-- `docs/inspector-mapping.md`
-  - SampleScene 기준 Inspector 연결
-- `docs/scene-mapping.md`
-  - SampleScene 오브젝트 배치
-- `docs/conventions.md`
-  - 코드 / 문서 작성 규칙
-- `docs/export.md`
-  - export 경로와 확인 사항
-- `docs/next-steps.md`
-  - 후속 개선 과제
-
-## Reference Docs
-
-아래 문서는 현재 메인 구현 설명보다 설계 메모 / 참고 성격이 더 강합니다.
-
-- `docs/virtual-boundary-design.md`
-- `docs/space-cut-merge-spec.md`
-- `docs/scenes-and-references.md`
-- `docs/direct-connection-checklist.md`
+이 저장소의 장기 산출물은 한국어 문서를 기준으로 관리합니다. `docs/superpowers/specs`와 `docs/superpowers/plans`는 구현 전 설계 및 작업 계획 기록이며, 최종 산출물의 근거 자료로만 사용합니다.

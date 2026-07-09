@@ -96,6 +96,18 @@ public sealed class DrawingOverlayRuntime : MonoBehaviour
         meshFilter.sharedMesh = quadMesh;
     }
 
+    public void RefreshOpacity()
+    {
+        if (Document == null || Document.calibration == null || runtimeMaterial == null)
+        {
+            return;
+        }
+
+        Color color = runtimeMaterial.color;
+        color.a = Mathf.Clamp01(Document.calibration.opacity);
+        ApplyMaterialState(color, DisplayTexture);
+    }
+
     private void EnsureComponents()
     {
         if (meshFilter == null)
