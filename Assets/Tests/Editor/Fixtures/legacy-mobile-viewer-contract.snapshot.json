@@ -1,0 +1,15 @@
+{
+    "hasVersionField": false,
+    "wallCount": 4,
+    "roomCount": 1,
+    "firstRoomCode": "900",
+    "firstRoomWallCount": 4,
+    "firstRoomHasFloor": true,
+    "firstRoomHasCeil": true,
+    "firstRoomFurnishCount": 1,
+    "firstFurnitureCode": "SOFA_EXPORT",
+    "firstFurnitureDefectCount": 1,
+    "firstFurnitureFirstDefectMntnCd": "900",
+    "firstFurnitureFirstDefectLocCd": "2",
+    "firstFurnitureFirstDefectMtrlCd": "080"
+}

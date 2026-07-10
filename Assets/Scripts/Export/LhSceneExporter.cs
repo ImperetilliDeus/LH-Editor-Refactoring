@@ -78,9 +78,27 @@ namespace LH.Export
                 }
             }
 
-            object sceneDto = exportMode == LhSceneExportBuilder.ExportMode.LegacyExact
-                ? (object)LhSceneExportBuilder.BuildLegacy(startPoint, cachedWalls, rooms)
-                : LhSceneExportBuilder.Build(startPoint, cachedWalls, rooms);
+            object sceneDto;
+            if (exportMode == LhSceneExportBuilder.ExportMode.LegacyExact)
+            {
+                LhLegacySceneDto legacyScene = LhSceneExportBuilder.BuildLegacy(startPoint, cachedWalls, rooms);
+                LhSceneExportValidationResult validation = LhSceneExportValidator.ValidateLegacy(legacyScene);
+                if (!validation.IsValid)
+                {
+                    for (int i = 0; i < validation.Errors.Count; i++)
+                    {
+                        Debug.LogError($"LH legacy export validation failed: {validation.Errors[i]}", this);
+                    }
+
+                    return;
+                }
+
+                sceneDto = legacyScene;
+            }
+            else
+            {
+                sceneDto = LhSceneExportBuilder.Build(startPoint, cachedWalls, rooms);
+            }
 
             string directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory))
