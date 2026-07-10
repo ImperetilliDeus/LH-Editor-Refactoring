@@ -228,12 +228,15 @@ public static class DrawingOverlaySceneBootstrap
         TMP_Text titleText = CreateTmpText("Title", rootRect, "Overlay Calibration", 28, FontStyles.Bold, tmpFont);
         SetTopLeft(titleText.rectTransform, new Vector2(28f, -20f), new Vector2(340f, 44f));
 
+        Button closeButton = CreateButton("CloseButton", rootRect, "Close", new Color32(67, 72, 98, 255), tmpFont, out RectTransform closeRect);
+        SetTopRight(closeRect, new Vector2(-24f, -20f), new Vector2(96f, 40f));
+
         TMP_Text statusText = CreateTmpText("StatusText", rootRect, "Pick two anchors on the drawing, then enter the real-world distance.", 18, FontStyles.Normal, tmpFont);
         statusText.color = new Color32(204, 213, 255, 255);
         SetTopLeft(statusText.rectTransform, new Vector2(28f, -62f), new Vector2(460f, 34f));
 
-        TMP_Text scaleValue = CreateMetric(rootRect, "Scale", "-", new Vector2(415f, -28f), new Vector2(415f, -54f), tmpFont);
-        TMP_Text rotValue = CreateMetric(rootRect, "Total Rot", "-", new Vector2(535f, -28f), new Vector2(535f, -54f), tmpFont);
+        Text scaleValue = CreateLegacyMetric(rootRect, "Scale", "-", new Vector2(415f, -28f), new Vector2(415f, -54f), tmpFont, legacyFont);
+        Text rotValue = CreateLegacyMetric(rootRect, "Total Rot", "-", new Vector2(535f, -28f), new Vector2(535f, -54f), tmpFont, legacyFont);
         TMP_Text offXValue = CreateMetric(rootRect, "Offset X", "-", new Vector2(665f, -28f), new Vector2(665f, -54f), tmpFont);
         TMP_Text offYValue = CreateMetric(rootRect, "Offset Y", "-", new Vector2(665f, -92f), new Vector2(665f, -118f), tmpFont);
 
@@ -300,6 +303,7 @@ public static class DrawingOverlaySceneBootstrap
             applyButton,
             resetButton,
             completeButton,
+            closeButton,
             originButton,
             rotationGuideButton,
             rotationSlider,
@@ -321,6 +325,17 @@ public static class DrawingOverlaySceneBootstrap
         SetTopLeft(labelText.rectTransform, labelPos, new Vector2(150f, 22f));
 
         TMP_Text valueText = CreateTmpText(label.Replace(" ", string.Empty) + "_Value", parent, value, 28, FontStyles.Bold, font);
+        SetTopLeft(valueText.rectTransform, valuePos, new Vector2(120f, 34f));
+        return valueText;
+    }
+
+    private static Text CreateLegacyMetric(RectTransform parent, string label, string value, Vector2 labelPos, Vector2 valuePos, TMP_FontAsset labelFont, Font valueFont)
+    {
+        TMP_Text labelText = CreateTmpText(label.Replace(" ", string.Empty) + "_Label", parent, label, 15, FontStyles.Bold, labelFont);
+        labelText.color = new Color32(213, 218, 244, 255);
+        SetTopLeft(labelText.rectTransform, labelPos, new Vector2(150f, 22f));
+
+        Text valueText = CreateLegacyMetricValue(label.Replace(" ", string.Empty) + "_Value", parent, value, valueFont);
         SetTopLeft(valueText.rectTransform, valuePos, new Vector2(120f, 34f));
         return valueText;
     }
@@ -408,6 +423,21 @@ public static class DrawingOverlaySceneBootstrap
         rect.anchorMax = Vector2.one;
         rect.offsetMin = new Vector2(10f, 6f);
         rect.offsetMax = new Vector2(-10f, -6f);
+        return text;
+    }
+
+    private static Text CreateLegacyMetricValue(string name, RectTransform parent, string textValue, Font font)
+    {
+        GameObject obj = CreateUIObject(name, parent);
+        Text text = obj.AddComponent<Text>();
+        text.font = font;
+        text.fontSize = 28;
+        text.fontStyle = FontStyle.Bold;
+        text.alignment = TextAnchor.UpperLeft;
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
+        text.text = textValue;
+        text.color = Color.white;
         return text;
     }
 

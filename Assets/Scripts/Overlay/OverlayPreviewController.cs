@@ -253,7 +253,7 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
 
     private void RefreshGrid()
     {
-        if (viewportRect == null)
+        if (viewportRect == null || gridRoot == null || !gridRoot.gameObject.activeInHierarchy)
         {
             return;
         }
@@ -487,11 +487,21 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
 
         if (overlayRoot == null)
         {
+            overlayRoot = FindDirectChildRect(viewportRect, "PreviewOverlay");
+        }
+
+        if (overlayRoot == null)
+        {
             overlayRoot = CreateRect("PreviewOverlay", viewportRect);
             overlayRoot.anchorMin = Vector2.zero;
             overlayRoot.anchorMax = Vector2.one;
             overlayRoot.offsetMin = Vector2.zero;
             overlayRoot.offsetMax = Vector2.zero;
+        }
+
+        if (gridRoot == null)
+        {
+            gridRoot = FindDirectChildRect(overlayRoot, "GridRoot");
         }
 
         if (gridRoot == null)
@@ -505,6 +515,11 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
 
         if (guideRoot == null)
         {
+            guideRoot = FindDirectChildRect(overlayRoot, "GuideRoot");
+        }
+
+        if (guideRoot == null)
+        {
             guideRoot = CreateRect("GuideRoot", overlayRoot);
             guideRoot.anchorMin = Vector2.zero;
             guideRoot.anchorMax = Vector2.one;
@@ -512,16 +527,28 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
             guideRoot.offsetMax = Vector2.zero;
         }
 
-        for (int i = 0; i < gridLines.Length; i++)
+        if (gridRoot.gameObject.activeInHierarchy)
         {
-            if (gridLines[i] != null)
+            for (int i = 0; i < gridLines.Length; i++)
             {
-                continue;
-            }
+                if (gridLines[i] == null)
+                {
+                    Transform existingLine = gridRoot.Find($"GridLine_{i}");
+                    if (existingLine != null)
+                    {
+                        gridLines[i] = existingLine.GetComponent<Image>();
+                    }
+                }
 
-            Image line = CreateImage($"GridLine_{i}", gridRoot, new Color(0.31f, 0.42f, 0.72f, 0.18f));
-            line.raycastTarget = false;
-            gridLines[i] = line;
+                if (gridLines[i] != null)
+                {
+                    continue;
+                }
+
+                Image line = CreateImage($"GridLine_{i}", gridRoot, new Color(0.31f, 0.42f, 0.72f, 0.18f));
+                line.raycastTarget = false;
+                gridLines[i] = line;
+            }
         }
 
         anchorAMarker ??= CreateMarker("AnchorA", guideRoot, new Color32(255, 194, 83, 255));
@@ -543,18 +570,6 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
             anchorLineLabel.alignment = TextAlignmentOptions.Center;
         }
 
-        if (hintText == null)
-        {
-            hintText = CreateText("HintText", guideRoot, 18, FontStyles.Bold, tmpFontAsset);
-            hintText.color = new Color32(229, 233, 255, 255);
-            hintText.alignment = TextAlignmentOptions.TopLeft;
-            RectTransform rect = hintText.rectTransform;
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.sizeDelta = new Vector2(280f, 28f);
-            rect.anchoredPosition = new Vector2(14f, -14f);
-        }
     }
 
     private void EnsureViewportMask()
@@ -582,6 +597,17 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
         RectTransform rect = target.GetComponent<RectTransform>();
         rect.SetParent(parent, false);
         return rect;
+    }
+
+    private static RectTransform FindDirectChildRect(RectTransform parent, string name)
+    {
+        if (parent == null)
+        {
+            return null;
+        }
+
+        Transform child = parent.Find(name);
+        return child != null ? child as RectTransform : null;
     }
 
     private static Image CreateImage(string name, RectTransform parent, Color color)
