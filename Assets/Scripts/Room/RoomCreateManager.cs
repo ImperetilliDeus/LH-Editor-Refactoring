@@ -680,7 +680,9 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
             return false;
         }
 
-        Vector3 screenPoint = mainCamera.WorldToScreenPoint(polygonDraftVertices[0]);
+        Vector3 screenPoint = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            mainCamera,
+            mainCamera.WorldToScreenPoint(polygonDraftVertices[0]));
         if (screenPoint.z <= 0f)
         {
             return false;
@@ -780,7 +782,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray mouseRay = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, pointerScreenPosition);
         if (!drawingPlane.Raycast(mouseRay, out float enter))
         {
             return false;

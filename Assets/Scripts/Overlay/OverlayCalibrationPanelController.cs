@@ -16,13 +16,14 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
     [SerializeField] private Button applyScaleButton;
     [SerializeField] private Button resetButton;
     [SerializeField] private Button completeButton;
+    [SerializeField] private Button closeButton;
     [SerializeField] private Button pickOriginButton;
     [SerializeField] private Button pickRotationGuideButton;
     [SerializeField] private Slider fineRotationSlider;
     [SerializeField] private InputField distanceMetersInputField;
     [SerializeField] private InputField fineRotationInputField;
-    [SerializeField] private TMP_Text scaleValueText;
-    [SerializeField] private TMP_Text rotationValueText;
+    [SerializeField] private Text scaleValueText;
+    [SerializeField] private Text rotationValueText;
     [SerializeField] private TMP_Text offsetXValueText;
     [SerializeField] private TMP_Text offsetYValueText;
     [SerializeField] private TMP_Text statusText;
@@ -75,13 +76,14 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
         Button resolvedApplyScaleButton,
         Button resolvedResetButton,
         Button resolvedCompleteButton,
+        Button resolvedCloseButton,
         Button resolvedPickOriginButton,
         Button resolvedPickRotationGuideButton,
         Slider resolvedFineRotationSlider,
         InputField resolvedDistanceMetersInputField,
         InputField resolvedFineRotationInputField,
-        TMP_Text resolvedScaleValueText,
-        TMP_Text resolvedRotationValueText,
+        Text resolvedScaleValueText,
+        Text resolvedRotationValueText,
         TMP_Text resolvedOffsetXValueText,
         TMP_Text resolvedOffsetYValueText,
         TMP_Text resolvedStatusText)
@@ -99,6 +101,7 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
         applyScaleButton = resolvedApplyScaleButton;
         resetButton = resolvedResetButton;
         completeButton = resolvedCompleteButton;
+        closeButton = resolvedCloseButton;
         pickOriginButton = resolvedPickOriginButton;
         pickRotationGuideButton = resolvedPickRotationGuideButton;
         fineRotationSlider = resolvedFineRotationSlider;
@@ -164,6 +167,11 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
             completeButton.onClick.AddListener(HandleCompleteClicked);
         }
 
+        if (closeButton != null)
+        {
+            closeButton.onClick.AddListener(Close);
+        }
+
         if (fineRotationSlider != null)
         {
             fineRotationSlider.onValueChanged.AddListener(HandleFineRotationSliderChanged);
@@ -222,6 +230,11 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
         if (completeButton != null)
         {
             completeButton.onClick.RemoveAllListeners();
+        }
+
+        if (closeButton != null)
+        {
+            closeButton.onClick.RemoveAllListeners();
         }
 
         if (fineRotationSlider != null)
@@ -502,6 +515,14 @@ public sealed class OverlayCalibrationPanelController : MonoBehaviour
     }
 
     private static void SetMetricText(TMP_Text target, string value)
+    {
+        if (target != null)
+        {
+            target.text = value;
+        }
+    }
+
+    private static void SetMetricText(Text target, string value)
     {
         if (target != null)
         {

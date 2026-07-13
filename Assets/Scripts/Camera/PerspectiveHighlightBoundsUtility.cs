@@ -3,7 +3,6 @@ using UnityEngine;
 public static class PerspectiveHighlightBoundsUtility
 {
     private const string HighlightObjectName = "PerspectiveSelectionHighlight";
-    private const string WallOverlayObjectName = "PerspectiveSelectionWallOverlay";
     private const string RoomOverlayObjectName = "PerspectiveSelectionRoomOverlay";
     private const string HighlightRootName = "PerspectiveSelectionHighlights";
     private const float BoundsEpsilon = 0.0001f;
@@ -46,7 +45,6 @@ public static class PerspectiveHighlightBoundsUtility
         while (candidate != null)
         {
             if (candidate.name == HighlightObjectName ||
-                candidate.name == WallOverlayObjectName ||
                 candidate.name == RoomOverlayObjectName ||
                 candidate.name == HighlightRootName)
             {

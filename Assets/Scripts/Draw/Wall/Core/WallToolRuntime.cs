@@ -213,7 +213,7 @@ internal sealed class WallToolRuntime : IWallToolContext
             return false;
         }
 
-        Ray mouseRay = mainCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray mouseRay = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, pointerScreenPosition);
         if (!drawingPlane.Raycast(mouseRay, out float enter))
         {
             if (isWallCreationMode)

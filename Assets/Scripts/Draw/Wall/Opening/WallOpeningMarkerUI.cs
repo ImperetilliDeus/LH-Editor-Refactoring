@@ -192,8 +192,12 @@ public class WallOpeningMarkerUI : MonoBehaviour
             uiCamera = sourceCamera;
         }
 
-        Vector3 startScreen = sourceCamera.WorldToScreenPoint(startAnchor.position);
-        Vector3 endScreen = sourceCamera.WorldToScreenPoint(endAnchor.position);
+        Vector3 startScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            sourceCamera,
+            sourceCamera.WorldToScreenPoint(startAnchor.position));
+        Vector3 endScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            sourceCamera,
+            sourceCamera.WorldToScreenPoint(endAnchor.position));
         bool visible = startScreen.z > 0f && endScreen.z > 0f;
         markerRootRect.gameObject.SetActive(visible);
         if (!visible)
@@ -201,25 +205,22 @@ public class WallOpeningMarkerUI : MonoBehaviour
             return;
         }
 
-        Vector2 startPoint = startScreen;
-        Vector2 endPoint = endScreen;
-        Vector2 midpoint = (startPoint + endPoint) * 0.5f;
-        Vector2 delta = endPoint - startPoint;
-        float width = delta.magnitude;
-        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
         bool isSelected = placementManager != null && placementManager.SelectedOpening == ownerOpening;
         float thickness = isSelected ? SelectedMarkerThickness : MarkerThickness;
 
         RectTransform canvasRect = targetCanvas.transform as RectTransform;
-        if (canvasRect != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, midpoint, uiCamera, out Vector2 localPoint))
+        if (canvasRect == null ||
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, startScreen, uiCamera, out Vector2 startPoint) ||
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, endScreen, uiCamera, out Vector2 endPoint))
         {
-            markerRootRect.anchoredPosition = localPoint;
-        }
-        else
-        {
+            markerRootRect.gameObject.SetActive(false);
             return;
         }
 
+        Vector2 delta = endPoint - startPoint;
+        float width = delta.magnitude;
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        markerRootRect.anchoredPosition = (startPoint + endPoint) * 0.5f;
         markerRootRect.localRotation = Quaternion.Euler(0f, 0f, angle);
         markerRootRect.sizeDelta = new Vector2(width + thickness, thickness + MarkerHitPadding);
         markerRootRect.localScale = Vector3.one;

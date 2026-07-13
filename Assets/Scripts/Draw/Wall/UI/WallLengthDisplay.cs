@@ -35,6 +35,7 @@ public class WallLengthDisplay : MonoBehaviour
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
+    private Vector4 lastViewportSignature;
 
     private void OnValidate()
     {
@@ -95,10 +96,25 @@ public class WallLengthDisplay : MonoBehaviour
 
         if (entry.labelRect != null)
         {
-            Destroy(entry.labelRect.gameObject);
+            DestroyLabelObject(entry.labelRect.gameObject);
         }
 
         labelEntries.Remove(key);
+        labelPositionsDirty = true;
+    }
+
+    public void ClearAllLabels()
+    {
+        foreach (KeyValuePair<int, LabelEntry> pair in labelEntries)
+        {
+            LabelEntry entry = pair.Value;
+            if (entry != null && entry.labelRect != null)
+            {
+                DestroyLabelObject(entry.labelRect.gameObject);
+            }
+        }
+
+        labelEntries.Clear();
         labelPositionsDirty = true;
     }
 
@@ -120,7 +136,8 @@ public class WallLengthDisplay : MonoBehaviour
         }
 
         bool cameraChanged = HasCameraStateChanged();
-        if (!labelPositionsDirty && !cameraChanged)
+        bool viewportChanged = HasViewportChanged();
+        if (!labelPositionsDirty && !cameraChanged && !viewportChanged)
         {
             return;
         }
@@ -132,12 +149,19 @@ public class WallLengthDisplay : MonoBehaviour
             LabelEntry entry = pair.Value;
             if (entry == null || entry.wallTransform == null || entry.labelRect == null || entry.labelText == null)
             {
+                if (entry != null && entry.labelRect != null)
+                {
+                    DestroyLabelObject(entry.labelRect.gameObject);
+                }
+
                 removedLabelKeys.Add(pair.Key);
                 continue;
             }
 
             Vector3 worldLabelPosition = entry.wallTransform.position + Vector3.up * (entry.wallHeight * 0.5f + labelHeightOffset);
-            Vector3 screenPosition = targetCamera.WorldToScreenPoint(worldLabelPosition);
+            Vector3 screenPosition = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                targetCamera,
+                targetCamera.WorldToScreenPoint(worldLabelPosition));
             bool isVisible = screenPosition.z > 0f;
 
             if (entry.labelText.enabled != isVisible)
@@ -165,6 +189,7 @@ public class WallLengthDisplay : MonoBehaviour
 
         labelPositionsDirty = false;
         CacheCameraState();
+        CacheViewportState();
     }
 
     private LabelEntry GetOrCreateEntry(Transform wallTransform)
@@ -203,7 +228,7 @@ public class WallLengthDisplay : MonoBehaviour
             replacement.transform.SetParent(canvas.transform, false);
             if (existingLabel != null)
             {
-                Destroy(existingLabel.gameObject);
+                DestroyLabelObject(existingLabel.gameObject);
             }
 
             labelRect = replacement.GetComponent<RectTransform>();
@@ -306,16 +331,7 @@ public class WallLengthDisplay : MonoBehaviour
 
     private void OnDestroy()
     {
-        foreach (KeyValuePair<int, LabelEntry> pair in labelEntries)
-        {
-            LabelEntry entry = pair.Value;
-            if (entry != null && entry.labelRect != null)
-            {
-                Destroy(entry.labelRect.gameObject);
-            }
-        }
-
-        labelEntries.Clear();
+        ClearAllLabels();
     }
 
     private string FormatLength(float wallLengthUnits)
@@ -354,6 +370,35 @@ public class WallLengthDisplay : MonoBehaviour
         return cameraTransform.position != lastCameraPosition ||
                cameraTransform.rotation != lastCameraRotation ||
                !Mathf.Approximately(targetCamera.orthographicSize, lastCameraOrthoSize);
+    }
+
+    private void CacheViewportState()
+    {
+        lastViewportSignature = EditorScreenCoordinateUtility.GetViewportSignature(targetCamera);
+    }
+
+    private bool HasViewportChanged()
+    {
+        return EditorScreenCoordinateUtility.ViewportSignatureChanged(
+            lastViewportSignature,
+            EditorScreenCoordinateUtility.GetViewportSignature(targetCamera));
+    }
+
+    private static void DestroyLabelObject(GameObject labelObject)
+    {
+        if (labelObject == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(labelObject);
+        }
+        else
+        {
+            DestroyImmediate(labelObject);
+        }
     }
 
 }

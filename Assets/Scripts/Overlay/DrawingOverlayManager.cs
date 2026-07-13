@@ -25,14 +25,28 @@ public sealed class DrawingOverlayManager : MonoBehaviour
 
     [Header("State")]
     [SerializeField] private DrawingOverlayDocument activeDocument;
+    [SerializeField] private bool overlayVisible = true;
+    [SerializeField] private bool overlayLocked = true;
 
     private float drawingPlaneY;
+    private Texture2D activeDisplayTexture;
 
     public DrawingOverlayDocument ActiveDocument => activeDocument;
+    public float Opacity => activeDocument != null && activeDocument.calibration != null
+        ? Mathf.Clamp01(activeDocument.calibration.opacity)
+        : Mathf.Clamp01(defaultOpacity);
+    public bool OverlayVisible => overlayVisible;
+    public bool OverlayLocked => overlayLocked;
     public TMP_FontAsset UiTmpFont => tmpFontAsset;
     public Font UiLegacyFont => legacyFont;
     public OverlayCalibrationPanelController CalibrationPanelPrefab => calibrationPanelPrefab;
     public Canvas ParentCanvas => parentCanvas;
+    public bool IsCalibrating => modeManager != null && modeManager.CurrentMode == EditorMode.DrawingOverlayCalibrate;
+    public bool HasAppliedOverlay =>
+        activeDocument != null &&
+        activeDocument.solved != null &&
+        activeDocument.solved.unitPerPixel > 0f &&
+        (activeDisplayTexture != null || (activeRuntime != null && activeRuntime.DisplayTexture != null));
 
     public event Action<DrawingOverlayDocument> ActiveOverlayChanged;
 
@@ -66,6 +80,9 @@ public sealed class DrawingOverlayManager : MonoBehaviour
             },
             solved = new DrawingOverlayTransform(),
         };
+        activeDisplayTexture = texture;
+        overlayVisible = true;
+        overlayLocked = true;
 
         EnsureRuntime();
         if (calibrationPanel != null)
@@ -100,7 +117,11 @@ public sealed class DrawingOverlayManager : MonoBehaviour
         activeDocument.solved = solved;
         RefreshDrawingPlane();
         EnsureRuntime();
-        activeRuntime.SetDocument(activeDocument, calibrationPanel != null ? calibrationPanel.CurrentTexture : null, drawingPlaneY);
+        Texture2D displayTexture = calibrationPanel != null && calibrationPanel.CurrentTexture != null
+            ? calibrationPanel.CurrentTexture
+            : activeDisplayTexture;
+        activeDisplayTexture = displayTexture;
+        activeRuntime.SetDocument(activeDocument, displayTexture, drawingPlaneY);
         ActiveOverlayChanged?.Invoke(activeDocument);
         return true;
     }
@@ -122,6 +143,23 @@ public sealed class DrawingOverlayManager : MonoBehaviour
         ActiveOverlayChanged?.Invoke(activeDocument);
     }
 
+    public void ClearOverlay()
+    {
+        activeDocument = null;
+        activeDisplayTexture = null;
+        if (activeRuntime != null)
+        {
+            activeRuntime.ClearDocument();
+        }
+
+        if (calibrationPanel != null)
+        {
+            calibrationPanel.Close();
+        }
+
+        ActiveOverlayChanged?.Invoke(null);
+    }
+
     public void CompleteCalibration()
     {
         if (modeManager != null && modeManager.CurrentMode == EditorMode.DrawingOverlayCalibrate)
@@ -133,6 +171,8 @@ public sealed class DrawingOverlayManager : MonoBehaviour
         {
             calibrationPanel.Close();
         }
+
+        ActiveOverlayChanged?.Invoke(activeDocument);
     }
 
     public Vector2 PixelToWorld(Vector2 pixel)
@@ -147,6 +187,46 @@ public sealed class DrawingOverlayManager : MonoBehaviour
 
     public void NotifyDocumentChanged()
     {
+        ActiveOverlayChanged?.Invoke(activeDocument);
+    }
+
+    public void SetOpacity(float opacity)
+    {
+        float clampedOpacity = Mathf.Clamp01(opacity);
+        if (activeDocument != null && activeDocument.calibration != null)
+        {
+            activeDocument.calibration.opacity = clampedOpacity;
+        }
+
+        if (activeRuntime != null)
+        {
+            activeRuntime.RefreshOpacity();
+        }
+
+        ActiveOverlayChanged?.Invoke(activeDocument);
+    }
+
+    public void SetOverlayVisible(bool visible)
+    {
+        overlayVisible = visible;
+        if (activeRuntime != null)
+        {
+            if (visible)
+            {
+                activeRuntime.UpdateVisual(drawingPlaneY);
+            }
+            else
+            {
+                activeRuntime.gameObject.SetActive(false);
+            }
+        }
+
+        ActiveOverlayChanged?.Invoke(activeDocument);
+    }
+
+    public void SetOverlayLocked(bool locked)
+    {
+        overlayLocked = locked;
         ActiveOverlayChanged?.Invoke(activeDocument);
     }
 

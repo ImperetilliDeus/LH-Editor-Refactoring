@@ -49,7 +49,7 @@ internal sealed class DwgWallImportApplyService
 
         Debug.Log(
             $"[{nameof(DwgWallImporter)}] Imported {applyResult.CreatedWallCount} wall segments from '{resolvedPath}'. " +
-            $"Removed owned walls: {applyResult.RemovedWallCount}, removed auto rooms: {applyResult.RemovedRoomCount}.",
+            $"Removed walls: {applyResult.RemovedWallCount}, removed rooms: {applyResult.RemovedRoomCount}.",
             importer);
     }
 }

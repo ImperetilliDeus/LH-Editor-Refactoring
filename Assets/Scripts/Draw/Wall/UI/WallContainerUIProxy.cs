@@ -57,8 +57,12 @@ public class WallContainerUIProxy : MonoBehaviour, IPointerClickHandler
         Vector3 startWorld = container.WallStart;
         Vector3 endWorld = container.WallEnd;
 
-        Vector3 startScreen = worldCamera.WorldToScreenPoint(startWorld);
-        Vector3 endScreen = worldCamera.WorldToScreenPoint(endWorld);
+        Vector3 startScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            worldCamera,
+            worldCamera.WorldToScreenPoint(startWorld));
+        Vector3 endScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            worldCamera,
+            worldCamera.WorldToScreenPoint(endWorld));
 
         bool visible = startScreen.z > 0 && endScreen.z > 0;
         if (gameObject.activeSelf != visible)
@@ -108,6 +112,7 @@ public class WallContainerUIProxy : MonoBehaviour, IPointerClickHandler
     {
         if (this != null && gameObject != null)
         {
+            gameObject.SetActive(false);
             Destroy(gameObject);
         }
     }

@@ -194,6 +194,8 @@ public class WallOpening : MonoBehaviour
             activeModelPrefab = prefab;
         }
 
+        NormalizePrefabPivotRotations(activeModelInstance != null ? activeModelInstance.transform : null);
+
         modelRoot.localPosition = localPosition;
         modelRoot.localRotation = Quaternion.identity;
         modelRoot.localScale = CalculateInverseOpeningScale(openingSize);
@@ -306,6 +308,24 @@ public class WallOpening : MonoBehaviour
         else
         {
             DestroyImmediate(target);
+        }
+    }
+
+    private static void NormalizePrefabPivotRotations(Transform root)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            Transform child = children[i];
+            if (child != null && child.name == "Pivot")
+            {
+                child.localRotation = Quaternion.identity;
+            }
         }
     }
 

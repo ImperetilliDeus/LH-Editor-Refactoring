@@ -163,7 +163,9 @@ public partial class TopViewRenderManager
 
         for (int i = 0; i < worldVertices.Count; i++)
         {
-            Vector2 screenPoint = topViewCamera.WorldToScreenPoint(worldVertices[i]);
+            Vector2 screenPoint = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+                topViewCamera,
+                topViewCamera.WorldToScreenPoint(worldVertices[i]));
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(contentRoot, screenPoint, uiCamera, out Vector2 localPoint))
             {
                 cachedPolygonPoints.Add(localPoint);
@@ -393,8 +395,12 @@ public partial class TopViewRenderManager
             return false;
         }
 
-        Vector3 startScreenWorld = topViewCamera.WorldToScreenPoint(startWorld);
-        Vector3 endScreenWorld = topViewCamera.WorldToScreenPoint(endWorld);
+        Vector3 startScreenWorld = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            topViewCamera,
+            topViewCamera.WorldToScreenPoint(startWorld));
+        Vector3 endScreenWorld = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            topViewCamera,
+            topViewCamera.WorldToScreenPoint(endWorld));
         if (startScreenWorld.z <= 0f || endScreenWorld.z <= 0f)
         {
             return false;
@@ -417,9 +423,22 @@ public partial class TopViewRenderManager
         Vector3 midpoint = (startWorld + endWorld) * 0.5f;
         Vector3 normal = Vector3.Cross(Vector3.up, direction.normalized);
         Vector3 thicknessOffset = normal * (worldThickness * 0.5f);
-        Vector2 positiveThicknessScreen = topViewCamera.WorldToScreenPoint(midpoint + thicknessOffset);
-        Vector2 negativeThicknessScreen = topViewCamera.WorldToScreenPoint(midpoint - thicknessOffset);
-        float thickness = Mathf.Max(1f, Vector2.Distance(positiveThicknessScreen, negativeThicknessScreen));
+        Vector2 positiveThicknessScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            topViewCamera,
+            topViewCamera.WorldToScreenPoint(midpoint + thicknessOffset));
+        Vector2 negativeThicknessScreen = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            topViewCamera,
+            topViewCamera.WorldToScreenPoint(midpoint - thicknessOffset));
+        float thickness;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(contentRoot, positiveThicknessScreen, uiCamera, out Vector2 positiveThicknessLocal) &&
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(contentRoot, negativeThicknessScreen, uiCamera, out Vector2 negativeThicknessLocal))
+        {
+            thickness = Mathf.Max(1f, Vector2.Distance(positiveThicknessLocal, negativeThicknessLocal));
+        }
+        else
+        {
+            thickness = Mathf.Max(1f, Vector2.Distance(positiveThicknessScreen, negativeThicknessScreen));
+        }
 
         segment = new TopPlanSegmentBatchGraphic.SegmentData
         {

@@ -45,6 +45,22 @@ public sealed class DrawingOverlayRuntime : MonoBehaviour
         UpdateVisual(planeY);
     }
 
+    public void ClearDocument()
+    {
+        Document = null;
+        DisplayTexture = null;
+        gameObject.SetActive(false);
+        if (meshRenderer != null)
+        {
+            meshRenderer.sharedMaterial = null;
+        }
+
+        if (meshFilter != null)
+        {
+            meshFilter.sharedMesh = null;
+        }
+    }
+
     public void UpdateVisual(float planeY)
     {
         if (Document == null || Document.source == null || Document.calibration == null || Document.solved == null)
@@ -78,6 +94,18 @@ public sealed class DrawingOverlayRuntime : MonoBehaviour
         ApplyMaterialState(color, DisplayTexture);
         meshRenderer.sharedMaterial = runtimeMaterial;
         meshFilter.sharedMesh = quadMesh;
+    }
+
+    public void RefreshOpacity()
+    {
+        if (Document == null || Document.calibration == null || runtimeMaterial == null)
+        {
+            return;
+        }
+
+        Color color = runtimeMaterial.color;
+        color.a = Mathf.Clamp01(Document.calibration.opacity);
+        ApplyMaterialState(color, DisplayTexture);
     }
 
     private void EnsureComponents()

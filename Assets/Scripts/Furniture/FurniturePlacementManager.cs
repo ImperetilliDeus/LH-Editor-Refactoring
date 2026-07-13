@@ -435,7 +435,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(targetCamera, pointerScreenPosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue, furnitureSelectionMask.value, QueryTriggerInteraction.Ignore))
         {
             return false;
@@ -505,7 +505,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray ray = targetCamera.ScreenPointToRay(pointerScreenPosition);
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(targetCamera, pointerScreenPosition);
         int hitCount = Physics.RaycastNonAlloc(
             ray,
             placementHitsBuffer,

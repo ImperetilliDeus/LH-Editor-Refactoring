@@ -87,7 +87,9 @@ public partial class HandleManager
             return;
         }
 
-        Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPoint);
+        Vector3 screenPosition = EditorScreenCoordinateUtility.ToUnityScreenPoint(
+            mainCamera,
+            mainCamera.WorldToScreenPoint(worldPoint));
         VertexGroup group = FindGroupByHandleRect(handleRect);
         bool visible = IsHandleInteractionModeActive() &&
                        ShouldShowHandle(group) &&
@@ -99,26 +101,19 @@ public partial class HandleManager
             return;
         }
 
-        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
-        {
-            handleRect.position = screenPosition;
-            handleRect.SetAsLastSibling();
-            return;
-        }
-
-        RectTransform canvasRect = targetCanvas.transform as RectTransform;
+        RectTransform canvasRect = handleRect.parent as RectTransform;
         if (canvasRect == null)
         {
             handleRect.position = screenPosition;
             return;
         }
 
-        Camera uiCamera = targetCanvas.worldCamera != null ? targetCanvas.worldCamera : mainCamera;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPosition, uiCamera, out Vector2 localPoint))
-        {
-            handleRect.anchoredPosition = localPoint;
-            handleRect.SetAsLastSibling();
-        }
+        handleRect.anchoredPosition = EditorScreenCoordinateUtility.ScreenPointToAnchoredPosition(
+            canvasRect,
+            targetCanvas,
+            screenPosition,
+            mainCamera);
+        handleRect.SetAsLastSibling();
     }
 
     private static bool IsValidScreenPoint(Vector3 screenPosition)

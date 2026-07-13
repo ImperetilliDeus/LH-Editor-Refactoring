@@ -40,7 +40,7 @@ internal sealed class WallOpeningMarkerDragController
         }
 
         Plane dragPlane = new Plane(Vector3.up, new Vector3(0f, container.WallPlaneY, 0f));
-        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, screenPosition);
         if (!dragPlane.Raycast(ray, out float enter))
         {
             return;
