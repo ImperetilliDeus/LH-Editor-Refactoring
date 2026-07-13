@@ -7762,9 +7762,11 @@ MonoBehaviour:
   furnitureCatalog: {fileID: 11400000, guid: 0e8a7fa637ab98840b835b646eda79df, type: 2}
   drawManager: {fileID: 0}
   handleManager: {fileID: 0}
+  wallSelectionManager: {fileID: 0}
   wallLengthDisplay: {fileID: 0}
   wallOpeningPlacementManager: {fileID: 0}
   furniturePlacementManager: {fileID: 0}
+  drawingOverlayManager: {fileID: 0}
   saveButton: {fileID: 1733879839}
   loadButton: {fileID: 25376818}
   defaultFilePath: WorkStates/lh_work_state.json
@@ -15537,7 +15539,9 @@ MonoBehaviour:
   importerOwnershipId: 17117937380f4410a2f1e61849c899b3
   wallRoot: {fileID: 1525552874}
   handleManager: {fileID: 525080097}
+  wallSelectionManager: {fileID: 0}
   roomManager: {fileID: 480306209}
+  drawingOverlayManager: {fileID: 0}
   wallLengthDisplay: {fileID: 514454709}
   importButton: {fileID: 94555879}
   importSettingsPopupCanvas: {fileID: 1422295719}
@@ -17054,6 +17058,8 @@ MonoBehaviour:
       unitPerPixel: 0
       totalRotationDeg: 0
       worldOffsetXZ: {x: 0, y: 0}
+  overlayVisible: 1
+  overlayLocked: 1
 --- !u!1 &1919069571
 GameObject:
   m_ObjectHideFlags: 0
