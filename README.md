@@ -1,6 +1,7 @@
 # LH Editor Refactoring
 
-Unity 기반 실내 공간 편집기 프로젝트입니다. 사용자는 도면 또는 CAD 자료를 기준으로 벽과 방을 만들고, 문/창/가구를 배치한 뒤 작업 상태를 저장하거나 모바일 뷰어용 JSON으로 내보낼 수 있습니다.
+Unity 기반 실내 공간 편집기 프로젝트의 리팩토링 버전 입니다. 
+사용자는 도면 또는 CAD 자료를 기준으로 벽과 방을 만들고, 문/창/가구를 배치한 뒤 작업 상태를 저장하거나 모바일 뷰어용 JSON으로 내보낼 수 있습니다.
 
 ## 실행 환경
 
@@ -49,7 +50,7 @@ View 모드는 `Top`과 `Perspective3D`로 나뉩니다. 현재 3D View는 편�
 ## 코드 구조 요약
 
 - `Assets/Scripts/Input`: Unity Input System을 편집 입력 프레임으로 변환합니다.
-- `Assets/Scripts/Draw/Wall`: 벽 작성/편집, 핸들, 스냅, opening, Undo/Redo를 담당합니다.
+- `Assets/Scripts/Draw/Wall`: 벽 작성/편집, 핸들, 스냅, 문/창문(opening)을 담당합니다.
 - `Assets/Scripts/Room`: 방 생성, 방 그래프, 폴리곤 검증, 방 메타데이터를 담당합니다.
 - `Assets/Scripts/Overlay`: 이미지/PDF 도면 오버레이 import, 보정, 표시를 담당합니다.
 - `Assets/Scripts/Import`: DWG/DXF 파싱과 벽 오브젝트 생성을 담당합니다.
