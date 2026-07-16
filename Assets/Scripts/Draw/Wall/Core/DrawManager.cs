@@ -45,6 +45,17 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     public Material WallMaterial => _wallMaterial;
     public Material WallTopMaterial => _wallTopMaterial;
 
+    public void SetDefaultWallMaterial(Material material)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        _wallMaterial = material;
+        _toolRuntime?.SetWallMaterial(material);
+    }
+
     public void SyncWallSequenceForWorkStateLoad()
     {
         _toolRuntime?.SyncWallSequenceFromHierarchy();

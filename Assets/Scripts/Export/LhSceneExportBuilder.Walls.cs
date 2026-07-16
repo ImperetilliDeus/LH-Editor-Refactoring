@@ -51,6 +51,7 @@ namespace LH.Export
                     position = wall.position,
                     angle = wall.angle,
                     scale = wall.scale,
+                    texture = wall.texture,
                     segments = wall.segments,
                 });
             }
@@ -93,8 +94,42 @@ namespace LH.Export
                 position = position,
                 angle = angle,
                 scale = scale,
+                texture = ResolveWallTextureCode(root),
                 segments = segments,
             };
+        }
+
+        private static string ResolveWallTextureCode(Transform root)
+        {
+            string selectedCode = null;
+            if (root != null)
+            {
+                Wall rootWall = root.GetComponent<Wall>();
+                if (rootWall != null && rootWall.Data != null)
+                {
+                    selectedCode = rootWall.Data.TextureCode;
+                }
+
+                if (string.IsNullOrWhiteSpace(selectedCode))
+                {
+                    Wall[] walls = root.GetComponentsInChildren<Wall>(true);
+                    for (int i = 0; i < walls.Length; i++)
+                    {
+                        Wall wall = walls[i];
+                        if (wall == null || wall.Data == null || string.IsNullOrWhiteSpace(wall.Data.TextureCode))
+                        {
+                            continue;
+                        }
+
+                        selectedCode = wall.Data.TextureCode;
+                        break;
+                    }
+                }
+            }
+
+            return RoomManager.Instance != null
+                ? RoomManager.Instance.GetEffectiveWallTextureCode(selectedCode)
+                : selectedCode ?? string.Empty;
         }
 
         private static void BuildContainerSegments(
@@ -514,6 +549,12 @@ namespace LH.Export
                     position = position,
                     angle = angle,
                     scale = scale,
+                    parametricProfileKey = ResolveOpeningParametricProfile(opening),
+                    authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                    width = opening.Width,
+                    height = opening.Height,
+                    depth = opening.Depth,
+                    bottomY = opening.BottomY,
                 };
             }
 
@@ -534,6 +575,12 @@ namespace LH.Export
                 position = relativePosition,
                 angle = relativeAngle,
                 scale = relativeScale,
+                parametricProfileKey = ResolveOpeningParametricProfile(opening),
+                authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                width = opening.Width,
+                height = opening.Height,
+                depth = opening.Depth,
+                bottomY = opening.BottomY,
             };
         }
 
@@ -555,6 +602,12 @@ namespace LH.Export
                     position = position,
                     angle = angle,
                     scale = scale,
+                    parametricProfileKey = ResolveOpeningParametricProfile(opening),
+                    authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                    width = opening.Width,
+                    height = opening.Height,
+                    depth = opening.Depth,
+                    bottomY = opening.BottomY,
                 };
             }
 
@@ -575,7 +628,80 @@ namespace LH.Export
                 position = relativePosition,
                 angle = relativeAngle,
                 scale = relativeScale,
+                parametricProfileKey = ResolveOpeningParametricProfile(opening),
+                authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                width = opening.Width,
+                height = opening.Height,
+                depth = opening.Depth,
+                bottomY = opening.BottomY,
             };
+        }
+
+        private static string ResolveOpeningParametricProfile(WallOpening opening)
+        {
+            if (!TryResolveOpeningCatalogItem(opening, out OpeningTypeCatalogItem item) ||
+                item == null ||
+                !item.UseParametricModel)
+            {
+                return string.Empty;
+            }
+
+            return item.ParametricProfileKey ?? string.Empty;
+        }
+
+        private static Vector3 ResolveOpeningAuthoredSize(WallOpening opening)
+        {
+            if (TryResolveOpeningCatalogItem(opening, out OpeningTypeCatalogItem item) &&
+                item != null &&
+                item.UseParametricModel &&
+                item.AuthoredSize.x > 0f &&
+                item.AuthoredSize.y > 0f &&
+                item.AuthoredSize.z > 0f)
+            {
+                return item.AuthoredSize;
+            }
+
+            return Vector3.zero;
+        }
+
+        private static bool TryResolveOpeningCatalogItem(WallOpening opening, out OpeningTypeCatalogItem item)
+        {
+            item = null;
+            if (opening == null)
+            {
+                return false;
+            }
+
+            OpeningTypeCatalog catalog = Resources.Load<OpeningTypeCatalog>("OpeningTypeCatalog");
+            if (catalog == null || catalog.Items == null)
+            {
+                return false;
+            }
+
+            string key = opening.Type == WallOpeningPlacementManager.OpeningPlacementType.Door
+                ? opening.DoorTypeKey
+                : opening.WindowTypeKey;
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            IReadOnlyList<OpeningTypeCatalogItem> items = catalog.Items;
+            for (int i = 0; i < items.Count; i++)
+            {
+                OpeningTypeCatalogItem candidate = items[i];
+                if (candidate == null ||
+                    candidate.OpeningType != opening.Type ||
+                    !string.Equals(candidate.TypeKey, key, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                item = candidate;
+                return true;
+            }
+
+            return false;
         }
 
         private static string ResolveWindowExportCode(string windowTypeKey)

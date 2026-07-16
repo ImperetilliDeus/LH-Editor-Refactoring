@@ -30,6 +30,7 @@ public class WallContainerUIProxy : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        lineGraphic.raycastTarget = selectionManager.IsWallUIInteractionEnabled;
         Color color = isSelected ? selectionManager.WallUISelectedColor : selectionManager.WallUINormalColor;
         if (lineGraphic.color != color)
         {
@@ -53,6 +54,8 @@ public class WallContainerUIProxy : MonoBehaviour, IPointerClickHandler
             gameObject.SetActive(false);
             return;
         }
+
+        lineGraphic.raycastTarget = selectionManager.IsWallUIInteractionEnabled;
 
         Vector3 startWorld = container.WallStart;
         Vector3 endWorld = container.WallEnd;

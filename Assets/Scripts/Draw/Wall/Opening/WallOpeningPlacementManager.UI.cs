@@ -122,7 +122,6 @@ public partial class WallOpeningPlacementManager
         }
 
         float clampedMillimeters = Mathf.Min(millimeters, UnitsToMillimeters(SelectedOpening.Container.WallThickness));
-        updateDefaultValue?.Invoke(clampedMillimeters);
         SelectedOpening.SetDepth(MillimetersToUnits(clampedMillimeters));
         RebuildSelectedOpeningWithUndo();
     }
@@ -181,10 +180,9 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        updateDefaultValue?.Invoke(millimeters);
-
         if (SelectedOpening == null || (requiredType.HasValue && SelectedOpening.Type != requiredType.Value))
         {
+            updateDefaultValue?.Invoke(millimeters);
             RefreshOpeningDetailInputs(true);
             return;
         }
@@ -214,17 +212,17 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        if (requiredType == OpeningPlacementType.Door)
-        {
-            defaultDoorBottomOffsetMillimeters = millimeters;
-        }
-        else
-        {
-            defaultWindowBottomOffsetMillimeters = millimeters;
-        }
-
         if (SelectedOpening == null || SelectedOpening.Type != requiredType)
         {
+            if (requiredType == OpeningPlacementType.Door)
+            {
+                defaultDoorBottomOffsetMillimeters = millimeters;
+            }
+            else
+            {
+                defaultWindowBottomOffsetMillimeters = millimeters;
+            }
+
             RefreshOpeningDetailInputs(true);
             return;
         }

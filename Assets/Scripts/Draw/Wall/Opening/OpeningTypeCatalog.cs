@@ -22,6 +22,10 @@ public class OpeningTypeCatalogItem
     [SerializeField] private bool fitDepth = true;
     [SerializeField] private bool fitHeight = true;
     [SerializeField] private bool fitWidth = true;
+    [SerializeField] private bool useParametricModel;
+    [SerializeField] private string parametricProfileKey;
+    [SerializeField] private Vector3 authoredSize = Vector3.one;
+    [SerializeField] private bool usesBlenderLocalAxes;
 
     public WallOpeningPlacementManager.OpeningPlacementType OpeningType => openingType;
     public string TypeKey => typeKey;
@@ -34,4 +38,8 @@ public class OpeningTypeCatalogItem
     public bool FitDepth => fitDepth;
     public bool FitHeight => fitHeight;
     public bool FitWidth => fitWidth;
+    public bool UseParametricModel => useParametricModel;
+    public string ParametricProfileKey => parametricProfileKey;
+    public Vector3 AuthoredSize => authoredSize;
+    public bool UsesBlenderLocalAxes => usesBlenderLocalAxes;
 }

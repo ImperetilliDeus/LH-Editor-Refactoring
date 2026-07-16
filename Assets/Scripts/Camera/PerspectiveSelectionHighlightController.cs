@@ -4,12 +4,9 @@ using UnityEngine;
 public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
 {
     private const string HighlightObjectName = "PerspectiveSelectionHighlight";
-    private const string RoomOverlayObjectName = "PerspectiveSelectionRoomOverlay";
     private const string HighlightRootName = "PerspectiveSelectionHighlights";
     private const float MinimumHighlightSize = 0.01f;
     private const float MinimumHighlightAlpha = 0.9f;
-    private const float MinimumRoomOverlayAlpha = 0.4f;
-    private const float MaximumRoomOverlayAlpha = 0.55f;
     private const float MinimumLineWidth = 0.1f;
 
     [SerializeField] private EditorViewModeManager viewModeManager;
@@ -17,20 +14,12 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
     [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private Material highlightMaterial;
     [SerializeField] private Color highlightColor = new Color(0.1f, 0.85f, 1f, 1f);
-    [SerializeField] private Color roomOverlayColor = new Color(0.1f, 0.85f, 1f, 0.45f);
     [SerializeField] private float boundsPadding = 0.08f;
     [SerializeField] private float lineWidth = 0.12f;
-    [SerializeField] private float roomOutlineYOffset = 0.05f;
-    [SerializeField] private float roomOverlayYOffset = 0.02f;
 
     private readonly List<GameObject> highlightObjects = new List<GameObject>();
-    private readonly List<Vector3> selectedRoomVertices = new List<Vector3>();
-    private readonly List<Vector3> roomOverlayVertices = new List<Vector3>();
-    private readonly List<int> roomOverlayTriangles = new List<int>();
-    private readonly List<int> roomOverlayPolygonIndices = new List<int>();
     private Material runtimeHighlightMaterial;
     private Material runtimeHighlightSourceMaterial;
-    private Material runtimeRoomOverlayMaterial;
     private Transform highlightRoot;
     private bool eventsBound;
 
@@ -64,12 +53,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             runtimeHighlightMaterial = null;
             runtimeHighlightSourceMaterial = null;
         }
-
-        if (runtimeRoomOverlayMaterial != null)
-        {
-            DestroyUnityObject(runtimeRoomOverlayMaterial);
-            runtimeRoomOverlayMaterial = null;
-        }
     }
 
     private void OnValidate()
@@ -91,7 +74,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         Room selectedRoom = ResolveSelectedRoom();
         if (selectedRoom != null)
         {
-            ShowHighlightForTarget(selectedRoom.gameObject);
             return;
         }
     }
@@ -103,19 +85,12 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
             return false;
         }
 
-        if (target.TryGetComponent<Wall>(out _) ||
+        if (target.TryGetComponent<Room>(out _) ||
+            target.TryGetComponent<Wall>(out _) ||
             target.TryGetComponent<WallOpening>(out _) ||
             target.TryGetComponent<WallOpeningContainer>(out _))
         {
             return false;
-        }
-
-        if (target.TryGetComponent(out Room room) &&
-            TryCreateRoomHighlight(room, out GameObject roomHighlight, out GameObject roomOverlay))
-        {
-            TrackHighlight(roomOverlay);
-            TrackHighlight(roomHighlight);
-            return true;
         }
 
         if (!PerspectiveHighlightBoundsUtility.TryGetTargetBounds(target, out Bounds bounds))
@@ -152,117 +127,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         };
 
         return CreateLineHighlight(BuildBoxEdgePositions(corners), true);
-    }
-
-    private bool TryCreateRoomHighlight(Room room, out GameObject highlightObject, out GameObject overlayObject)
-    {
-        highlightObject = null;
-        overlayObject = null;
-        if (room == null || !room.TryGetOrderedVertices(selectedRoomVertices) || selectedRoomVertices.Count < 3)
-        {
-            selectedRoomVertices.Clear();
-            return false;
-        }
-
-        overlayObject = CreateRoomOverlay(selectedRoomVertices, ResolveRoomOverlayY(room));
-
-        float outlineY = ResolveRoomOutlineY(room);
-        Vector3[] positions = new Vector3[selectedRoomVertices.Count + 1];
-        for (int i = 0; i < selectedRoomVertices.Count; i++)
-        {
-            Vector3 vertex = selectedRoomVertices[i];
-            vertex.y = outlineY;
-            positions[i] = vertex;
-        }
-
-        positions[positions.Length - 1] = positions[0];
-        selectedRoomVertices.Clear();
-        highlightObject = CreateLineHighlight(positions, false);
-        return true;
-    }
-
-    private GameObject CreateRoomOverlay(List<Vector3> roomVertices, float overlayY)
-    {
-        roomOverlayVertices.Clear();
-        for (int i = 0; i < roomVertices.Count; i++)
-        {
-            Vector3 vertex = roomVertices[i];
-            vertex.y = overlayY;
-            roomOverlayVertices.Add(vertex);
-        }
-
-        PolygonUtility.SanitizePolygonVertices(roomOverlayVertices);
-        if (roomOverlayVertices.Count < 3)
-        {
-            return null;
-        }
-
-        roomOverlayTriangles.Clear();
-        if (!PolygonUtility.TryTriangulatePolygon(roomOverlayVertices, roomOverlayTriangles, roomOverlayPolygonIndices))
-        {
-            for (int i = 1; i < roomOverlayVertices.Count - 1; i++)
-            {
-                roomOverlayTriangles.Add(0);
-                roomOverlayTriangles.Add(i);
-                roomOverlayTriangles.Add(i + 1);
-            }
-        }
-
-        EnsureTrianglesFaceUp(roomOverlayVertices, roomOverlayTriangles);
-
-        Mesh overlayMesh = new Mesh
-        {
-            name = RoomOverlayObjectName + "Mesh",
-            hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
-        };
-        overlayMesh.SetVertices(roomOverlayVertices);
-        overlayMesh.SetTriangles(roomOverlayTriangles, 0);
-        overlayMesh.RecalculateNormals();
-        overlayMesh.RecalculateBounds();
-
-        GameObject overlayObject = new GameObject(RoomOverlayObjectName);
-        overlayObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
-        overlayObject.transform.SetParent(EnsureHighlightRoot(), false);
-
-        MeshFilter meshFilter = overlayObject.AddComponent<MeshFilter>();
-        meshFilter.sharedMesh = overlayMesh;
-
-        MeshRenderer meshRenderer = overlayObject.AddComponent<MeshRenderer>();
-        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        meshRenderer.receiveShadows = false;
-        meshRenderer.allowOcclusionWhenDynamic = false;
-        meshRenderer.sortingOrder = 1000;
-        meshRenderer.sharedMaterial = GetRoomOverlayMaterial();
-
-        return overlayObject;
-    }
-
-    private float ResolveRoomOutlineY(Room room)
-    {
-        float outlineY = float.MinValue;
-        if (room != null && room.WallSet != null)
-        {
-            foreach (Wall wall in room.WallSet)
-            {
-                if (wall == null || wall.Data == null)
-                {
-                    continue;
-                }
-
-                WallData wallData = wall.Data;
-                float wallTopY = wallData.centerY + Mathf.Abs(wallData.height) * 0.5f;
-                outlineY = Mathf.Max(outlineY, wallTopY);
-            }
-        }
-
-        if (outlineY > float.MinValue)
-        {
-            return outlineY + roomOutlineYOffset + boundsPadding;
-        }
-
-        return selectedRoomVertices.Count > 0
-            ? selectedRoomVertices[0].y + roomOutlineYOffset
-            : roomOutlineYOffset;
     }
 
     private GameObject CreateLineHighlight(Vector3[] positions, bool edgePairs)
@@ -450,34 +314,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         return roomHandleManager != null ? roomHandleManager.FocusedRoom : null;
     }
 
-    private float ResolveRoomOverlayY(Room room)
-    {
-        float overlayY = float.MinValue;
-        if (room != null && room.WallSet != null)
-        {
-            foreach (Wall wall in room.WallSet)
-            {
-                if (wall == null || wall.Data == null)
-                {
-                    continue;
-                }
-
-                WallData wallData = wall.Data;
-                float wallTopY = wallData.centerY + Mathf.Abs(wallData.height) * 0.5f;
-                overlayY = Mathf.Max(overlayY, wallTopY);
-            }
-        }
-
-        if (overlayY > float.MinValue)
-        {
-            return overlayY + roomOverlayYOffset;
-        }
-
-        return selectedRoomVertices.Count > 0
-            ? selectedRoomVertices[0].y + roomOverlayYOffset
-            : roomOverlayYOffset;
-    }
-
     private Material GetHighlightMaterial()
     {
         Color visibleHighlightColor = GetVisibleHighlightColor();
@@ -539,57 +375,11 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         return runtimeHighlightMaterial;
     }
 
-    private Material GetRoomOverlayMaterial()
-    {
-        return GetOrCreateOverlayMaterial(ref runtimeRoomOverlayMaterial, roomOverlayColor);
-    }
-
-    private static Material GetOrCreateOverlayMaterial(ref Material runtimeMaterial, Color color)
-    {
-        if (runtimeMaterial != null)
-        {
-            ConfigureOverlayMaterial(runtimeMaterial, color);
-            return runtimeMaterial;
-        }
-
-        Shader shader = Shader.Find("Hidden/Internal-Colored");
-        if (shader == null)
-        {
-            shader = Shader.Find("Universal Render Pipeline/Unlit");
-        }
-
-        if (shader == null)
-        {
-            shader = Shader.Find("Sprites/Default");
-        }
-
-        if (shader == null)
-        {
-            shader = Shader.Find("Standard");
-        }
-
-        if (shader == null)
-        {
-            return null;
-        }
-
-        runtimeMaterial = new Material(shader)
-        {
-            color = color,
-            hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
-        };
-        ConfigureOverlayMaterial(runtimeMaterial, color);
-        return runtimeMaterial;
-    }
-
     private void NormalizeVisualSettings()
     {
         boundsPadding = Mathf.Max(0f, boundsPadding);
         lineWidth = Mathf.Max(MinimumLineWidth, lineWidth);
-        roomOutlineYOffset = Mathf.Max(0f, roomOutlineYOffset);
-        roomOverlayYOffset = Mathf.Max(0f, roomOverlayYOffset);
         highlightColor.a = Mathf.Max(MinimumHighlightAlpha, highlightColor.a);
-        roomOverlayColor.a = Mathf.Clamp(roomOverlayColor.a, MinimumRoomOverlayAlpha, MaximumRoomOverlayAlpha);
     }
 
     private Color GetVisibleHighlightColor()
@@ -627,15 +417,6 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         material.SetOverrideTag("RenderType", "Transparent");
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-    }
-
-    private static void ConfigureOverlayMaterial(Material material, Color color)
-    {
-        ConfigureTransparentMaterial(material, color);
-        if (material != null)
-        {
-            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Overlay;
-        }
     }
 
     private static void SetMaterialFloatIfPresent(Material material, string propertyName, float value)
@@ -678,34 +459,5 @@ public sealed class PerspectiveSelectionHighlightController : MonoBehaviour
         }
 
         DestroyUnityObject(highlightObject);
-    }
-
-    private static void EnsureTrianglesFaceUp(List<Vector3> vertices, List<int> triangles)
-    {
-        if (vertices == null || triangles == null || triangles.Count < 3)
-        {
-            return;
-        }
-
-        int firstTriangleIndex = triangles[0];
-        int secondTriangleIndex = triangles[1];
-        int thirdTriangleIndex = triangles[2];
-
-        Vector3 a = vertices[firstTriangleIndex];
-        Vector3 b = vertices[secondTriangleIndex];
-        Vector3 c = vertices[thirdTriangleIndex];
-        Vector3 normal = Vector3.Cross(b - a, c - a);
-
-        if (normal.y >= 0f)
-        {
-            return;
-        }
-
-        for (int i = 0; i < triangles.Count; i += 3)
-        {
-            int temp = triangles[i + 1];
-            triangles[i + 1] = triangles[i + 2];
-            triangles[i + 2] = temp;
-        }
     }
 }

@@ -58,10 +58,13 @@ public class RoomManager : MonoBehaviour
     [SerializeField] private Transform roomRoot;
     [SerializeField] private Material roomMaterial;
     [SerializeField] private string floorMaterialFolderPath = "Assets/Materials";
+    [SerializeField] private string wallMaterialFolderPath = "Assets/Prefabs/Furniture/Models/Materials/Wall";
     [SerializeField] private string ceilingMaterialFolderPath = "Assets/Materials";
     [SerializeField] private string defaultFloorTextureCode = string.Empty;
+    [SerializeField] private string defaultWallTextureCode = string.Empty;
     [SerializeField] private string defaultCeilingTextureCode = string.Empty;
     [SerializeField, HideInInspector] private List<Material> floorMaterials = new List<Material>();
+    [SerializeField, HideInInspector] private List<Material> wallMaterials = new List<Material>();
     [SerializeField, HideInInspector] private List<Material> ceilingMaterials = new List<Material>();
     [SerializeField] private Color roomColor = new Color(0.2f, 0.8f, 0.2f, 0.3f);
     [SerializeField] private float wallConnectionThreshold = 0.1f;
@@ -80,8 +83,10 @@ public class RoomManager : MonoBehaviour
     private bool isGraphDirty = true;
 
     public string FloorMaterialFolderPath => floorMaterialFolderPath;
+    public string WallMaterialFolderPath => wallMaterialFolderPath;
     public string CeilingMaterialFolderPath => ceilingMaterialFolderPath;
     public string DefaultFloorTextureCode => defaultFloorTextureCode ?? string.Empty;
+    public string DefaultWallTextureCode => defaultWallTextureCode ?? string.Empty;
     public string DefaultCeilingTextureCode => defaultCeilingTextureCode ?? string.Empty;
 
     public event System.Action RoomsChanged;
@@ -96,9 +101,19 @@ public class RoomManager : MonoBehaviour
         return ceilingMaterials;
     }
 
+    public IReadOnlyList<Material> GetWallMaterials()
+    {
+        return wallMaterials;
+    }
+
     public Material ResolveFloorMaterial(string materialCode)
     {
         return ResolveMaterial(floorMaterials, materialCode);
+    }
+
+    public Material ResolveWallMaterial(string materialCode)
+    {
+        return ResolveMaterial(wallMaterials, materialCode);
     }
 
     public Material ResolveCeilingMaterial(string materialCode)
@@ -114,6 +129,11 @@ public class RoomManager : MonoBehaviour
     public string GetEffectiveCeilingTextureCode(Room room)
     {
         return GetEffectiveTextureCode(room != null ? room.CeilingTextureCode : null, defaultCeilingTextureCode);
+    }
+
+    public string GetEffectiveWallTextureCode(string selectedCode)
+    {
+        return GetEffectiveTextureCode(selectedCode, defaultWallTextureCode);
     }
 
     private void Awake()
@@ -191,7 +211,13 @@ public class RoomManager : MonoBehaviour
     private void RefreshMaterialCache()
     {
         RefreshMaterialCacheForFolder(floorMaterialFolderPath, floorMaterials);
+        RefreshMaterialCacheForFolder(wallMaterialFolderPath, wallMaterials);
         RefreshMaterialCacheForFolder(ceilingMaterialFolderPath, ceilingMaterials);
+    }
+
+    public void RefreshMaterialCacheForEditor()
+    {
+        RefreshMaterialCache();
     }
 
     private static void RefreshMaterialCacheForFolder(string folderPath, List<Material> target)

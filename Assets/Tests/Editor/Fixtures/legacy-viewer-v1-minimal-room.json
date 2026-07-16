@@ -1,0 +1,255 @@
+{
+    "startPoint": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "wallData": [
+        {
+            "name": "wall01",
+            "id": 1,
+            "texture": "W001",
+            "position": {
+                "x": 0.0,
+                "y": 1.5,
+                "z": -1.0
+            },
+            "angle": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 2.0,
+                "y": 3.0,
+                "z": 0.2
+            },
+            "segments": [
+                {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "angle": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "hasInterior": false,
+                    "door": null,
+                    "window": null
+                }
+            ]
+        },
+        {
+            "name": "wall02",
+            "id": 2,
+            "texture": "W001",
+            "position": {
+                "x": 1.0,
+                "y": 1.5,
+                "z": 0.0
+            },
+            "angle": {
+                "x": 0.0,
+                "y": 270.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 2.0,
+                "y": 3.0,
+                "z": 0.2
+            },
+            "segments": [
+                {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "angle": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "hasInterior": false,
+                    "door": null,
+                    "window": null
+                }
+            ]
+        },
+        {
+            "name": "wall03",
+            "id": 3,
+            "texture": "W001",
+            "position": {
+                "x": 0.0,
+                "y": 1.5,
+                "z": 1.0
+            },
+            "angle": {
+                "x": 0.0,
+                "y": 180.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 2.0,
+                "y": 3.0,
+                "z": 0.2
+            },
+            "segments": [
+                {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "angle": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "hasInterior": false,
+                    "door": null,
+                    "window": null
+                }
+            ]
+        },
+        {
+            "name": "wall04",
+            "id": 4,
+            "texture": "W001",
+            "position": {
+                "x": -1.0,
+                "y": 1.5,
+                "z": 0.0
+            },
+            "angle": {
+                "x": 0.0,
+                "y": 90.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 2.0,
+                "y": 3.0,
+                "z": 0.2
+            },
+            "segments": [
+                {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "angle": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "hasInterior": false,
+                    "door": null,
+                    "window": null
+                }
+            ]
+        }
+    ],
+    "roomData": [
+        {
+            "name": "Room_900",
+            "code": "900",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "angle": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "walls": [
+                1,
+                2,
+                3,
+                4
+            ],
+            "floor": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.01,
+                    "z": 0.0
+                },
+                "angle": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "scale": {
+                    "x": 2.0,
+                    "y": 1.0,
+                    "z": 2.0
+                },
+                "meshType": 0,
+                "mesh": {
+                    "vertices": [],
+                    "triangles": [],
+                    "normals": [],
+                    "uvs": []
+                },
+                "texture": "F001"
+            },
+            "ceil": {
+                "position": {
+                    "x": 0.0,
+                    "y": 3.0,
+                    "z": 0.0
+                },
+                "angle": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "scale": {
+                    "x": 2.0,
+                    "y": 1.0,
+                    "z": 2.0
+                },
+                "meshType": 0,
+                "mesh": {
+                    "vertices": [],
+                    "triangles": [],
+                    "normals": [],
+                    "uvs": []
+                },
+                "texture": "C001"
+            },
+            "furnish": []
+        }
+    ]
+}

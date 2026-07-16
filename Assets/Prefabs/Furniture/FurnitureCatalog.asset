@@ -92,7 +92,13 @@ MonoBehaviour:
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
     boundsSize: {x: 11.887857, y: 11.042879, z: 6.891798}
-    defects: []
+    defects:
+    - mntnCd: 901
+      locCd: 2
+      mtrlCd: 105
+    - mntnCd: 901
+      locCd: 2
+      mtrlCd: 418
   - code: CT001
     exportCode: 
     nativeCode: 

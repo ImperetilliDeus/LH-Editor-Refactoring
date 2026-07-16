@@ -50,6 +50,11 @@ internal sealed class WallOpeningMarkerDragController
         Vector3 direction = container.WallDirection;
         float projectedDistance = Vector3.Dot(point - container.WallStart, direction);
         float clampedDistance = clampOpeningCenterDistance(container, opening, projectedDistance);
+        if (Mathf.Abs(clampedDistance - opening.CenterDistance) <= 0.0001f)
+        {
+            return;
+        }
+
         opening.SetCenterDistance(clampedDistance);
         rebuildContainer(container, true);
     }

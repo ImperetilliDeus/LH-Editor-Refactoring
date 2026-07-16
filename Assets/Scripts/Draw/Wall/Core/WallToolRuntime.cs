@@ -88,6 +88,22 @@ internal sealed class WallToolRuntime : IWallToolContext
     public bool IsWallCreationMode => isWallCreationMode;
     public GameObject PreviewWall => previewWall;
 
+    public void SetWallMaterial(Material material)
+    {
+        if (wallMaterial == material)
+        {
+            return;
+        }
+
+        if (ownsWallMaterial && wallMaterial != null)
+        {
+            DestroyObject(wallMaterial);
+        }
+
+        wallMaterial = material;
+        ownsWallMaterial = false;
+    }
+
     public void SyncWallSequenceFromHierarchy()
     {
         wallSequence = ResolveNextWallSequence(wallRoot);
@@ -405,6 +421,11 @@ internal sealed class WallToolRuntime : IWallToolContext
         wallObject = isPreview ? previewWall : CreateWallObject();
 
         Wall wallComponent = wallObject.GetComponent<Wall>();
+        if (!isPreview && wallComponent != null)
+        {
+            wallComponent.Data.TextureCode = wallMaterial != null ? wallMaterial.name : string.Empty;
+        }
+
         bool applied = wallComponent != null &&
             wallComponent.TryApplyGeometryAndRefresh(
                 startPoint,

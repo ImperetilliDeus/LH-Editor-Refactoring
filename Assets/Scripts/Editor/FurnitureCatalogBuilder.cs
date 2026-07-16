@@ -335,6 +335,7 @@ public class FurnitureCatalogBuilder : EditorWindow
 
     private void FinalizeCatalogBuild()
     {
+        Dictionary<string, List<FurnitureDefectCatalogEntry>> existingDefectsByCode = CaptureExistingDefects(outputCatalog);
         SerializedObject serializedCatalog = new SerializedObject(outputCatalog);
         SerializedProperty itemsProperty = serializedCatalog.FindProperty("items");
         itemsProperty.arraySize = pendingItems.Count;
@@ -351,7 +352,9 @@ public class FurnitureCatalogBuilder : EditorWindow
             itemProperty.FindPropertyRelative("placementOffset").vector3Value = pendingItems[i].placementOffset;
             itemProperty.FindPropertyRelative("defaultEulerAngles").vector3Value = pendingItems[i].defaultEulerAngles;
             itemProperty.FindPropertyRelative("boundsSize").vector3Value = pendingItems[i].boundsSize;
-            itemProperty.FindPropertyRelative("defects").arraySize = 0;
+            ApplyDefects(
+                itemProperty.FindPropertyRelative("defects"),
+                ResolveExistingDefects(existingDefectsByCode, pendingItems[i]));
         }
 
         serializedCatalog.ApplyModifiedPropertiesWithoutUndo();
@@ -368,6 +371,119 @@ public class FurnitureCatalogBuilder : EditorWindow
             "Furniture Catalog Rebuilt",
             lastBuildSummary,
             "OK");
+    }
+
+    private static Dictionary<string, List<FurnitureDefectCatalogEntry>> CaptureExistingDefects(FurnitureCatalog catalog)
+    {
+        Dictionary<string, List<FurnitureDefectCatalogEntry>> results = new Dictionary<string, List<FurnitureDefectCatalogEntry>>();
+        if (catalog == null || catalog.Items == null)
+        {
+            return results;
+        }
+
+        IReadOnlyList<FurnitureCatalogItem> items = catalog.Items;
+        for (int i = 0; i < items.Count; i++)
+        {
+            FurnitureCatalogItem item = items[i];
+            if (item == null || item.defects == null || item.defects.Count <= 0)
+            {
+                continue;
+            }
+
+            List<FurnitureDefectCatalogEntry> copy = CopyDefects(item.defects);
+            AddDefectsByCode(results, item.code, copy);
+            AddDefectsByCode(results, item.exportCode, copy);
+            AddDefectsByCode(results, item.nativeCode, copy);
+        }
+
+        return results;
+    }
+
+    private static List<FurnitureDefectCatalogEntry> ResolveExistingDefects(
+        Dictionary<string, List<FurnitureDefectCatalogEntry>> defectsByCode,
+        FurnitureCatalogItem item)
+    {
+        if (defectsByCode == null || item == null)
+        {
+            return new List<FurnitureDefectCatalogEntry>();
+        }
+
+        if (TryGetDefectsByCode(defectsByCode, item.code, out List<FurnitureDefectCatalogEntry> defects) ||
+            TryGetDefectsByCode(defectsByCode, item.exportCode, out defects) ||
+            TryGetDefectsByCode(defectsByCode, item.nativeCode, out defects))
+        {
+            return CopyDefects(defects);
+        }
+
+        return new List<FurnitureDefectCatalogEntry>();
+    }
+
+    private static void ApplyDefects(SerializedProperty defectsProperty, IReadOnlyList<FurnitureDefectCatalogEntry> defects)
+    {
+        if (defectsProperty == null)
+        {
+            return;
+        }
+
+        int count = defects != null ? defects.Count : 0;
+        defectsProperty.arraySize = count;
+        for (int i = 0; i < count; i++)
+        {
+            FurnitureDefectCatalogEntry defect = defects[i];
+            SerializedProperty defectProperty = defectsProperty.GetArrayElementAtIndex(i);
+            defectProperty.FindPropertyRelative("mntnCd").stringValue = defect != null ? defect.mntnCd ?? string.Empty : string.Empty;
+            defectProperty.FindPropertyRelative("locCd").stringValue = defect != null ? defect.locCd ?? string.Empty : string.Empty;
+            defectProperty.FindPropertyRelative("mtrlCd").stringValue = defect != null ? defect.mtrlCd ?? string.Empty : string.Empty;
+        }
+    }
+
+    private static bool TryGetDefectsByCode(
+        Dictionary<string, List<FurnitureDefectCatalogEntry>> defectsByCode,
+        string code,
+        out List<FurnitureDefectCatalogEntry> defects)
+    {
+        defects = null;
+        return !string.IsNullOrWhiteSpace(code) && defectsByCode.TryGetValue(code, out defects);
+    }
+
+    private static void AddDefectsByCode(
+        Dictionary<string, List<FurnitureDefectCatalogEntry>> defectsByCode,
+        string code,
+        List<FurnitureDefectCatalogEntry> defects)
+    {
+        if (defectsByCode == null || string.IsNullOrWhiteSpace(code) || defects == null || defects.Count <= 0)
+        {
+            return;
+        }
+
+        defectsByCode[code] = CopyDefects(defects);
+    }
+
+    private static List<FurnitureDefectCatalogEntry> CopyDefects(IReadOnlyList<FurnitureDefectCatalogEntry> source)
+    {
+        List<FurnitureDefectCatalogEntry> results = new List<FurnitureDefectCatalogEntry>();
+        if (source == null)
+        {
+            return results;
+        }
+
+        for (int i = 0; i < source.Count; i++)
+        {
+            FurnitureDefectCatalogEntry entry = source[i];
+            if (entry == null)
+            {
+                continue;
+            }
+
+            results.Add(new FurnitureDefectCatalogEntry
+            {
+                mntnCd = entry.mntnCd ?? string.Empty,
+                locCd = entry.locCd ?? string.Empty,
+                mtrlCd = entry.mtrlCd ?? string.Empty,
+            });
+        }
+
+        return results;
     }
 
     private void StopBuildProcess()

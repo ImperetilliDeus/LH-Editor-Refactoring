@@ -68,9 +68,13 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
     public void Bind(DrawingOverlayDocument document, Texture texture)
     {
         boundDocument = document;
+        EnsurePreviewLayout();
         if (previewImage != null)
         {
             previewImage.texture = texture;
+            previewImage.enabled = texture != null;
+            previewImage.color = Color.white;
+            previewImage.uvRect = new Rect(0f, 0f, 1f, 1f);
         }
 
         if (aspectRatioFitter != null && document != null && document.source != null && document.source.pixelHeight > 0)
@@ -88,6 +92,7 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
         viewportRect = resolvedViewportRect;
         aspectRatioFitter = resolvedAspectRatioFitter;
         tmpFontAsset = resolvedTmpFontAsset;
+        EnsurePreviewLayout();
         EnsureViewportMask();
         EnsureOverlayVisuals();
         ResetViewTransform();
@@ -349,7 +354,7 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
         verticalRect.anchoredPosition = anchoredPosition;
         verticalRect.sizeDelta = new Vector2(2f, 28f);
 
-        bool visible = boundDocument.source.pixelWidth > 0 && boundDocument.source.pixelHeight > 0;
+        bool visible = CurrentTexture != null && boundDocument.source.pixelWidth > 0 && boundDocument.source.pixelHeight > 0;
         crosshairHorizontal.enabled = visible;
         crosshairVertical.enabled = visible;
     }
@@ -371,6 +376,46 @@ public sealed class OverlayPreviewController : MonoBehaviour, IPointerClickHandl
             OverlayCalibrationStep.ReadyToApply => "보정값이 적용되었습니다",
             _ => "기준점 또는 회전 기준선을 선택하세요",
         };
+    }
+
+    private void EnsurePreviewLayout()
+    {
+        if (previewImage == null)
+        {
+            return;
+        }
+
+        if (viewportRect == null)
+        {
+            viewportRect = previewImage.rectTransform;
+        }
+
+        RectTransform previewRect = previewImage.rectTransform;
+        if (previewRect != viewportRect)
+        {
+            return;
+        }
+
+        RectTransform parentRect = previewRect.parent as RectTransform;
+        if (parentRect == null)
+        {
+            return;
+        }
+
+        previewRect.anchorMin = new Vector2(0.5f, 0.5f);
+        previewRect.anchorMax = new Vector2(0.5f, 0.5f);
+        previewRect.pivot = new Vector2(0.5f, 0.5f);
+        previewRect.anchoredPosition = Vector2.zero;
+
+        Vector2 parentSize = parentRect.rect.size;
+        if (parentSize.x > 1f && parentSize.y > 1f)
+        {
+            previewRect.sizeDelta = parentSize;
+        }
+        else if (previewRect.rect.width <= 1f || previewRect.rect.height <= 1f)
+        {
+            previewRect.sizeDelta = new Vector2(660f, 390f);
+        }
     }
 
     private void SetLine(Image line, TMP_Text lineLabel, bool visible, Vector2 startPixel, Vector2 endPixel, string labelText)
