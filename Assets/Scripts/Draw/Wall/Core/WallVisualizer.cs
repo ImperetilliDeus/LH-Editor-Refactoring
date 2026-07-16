@@ -60,6 +60,7 @@ public class WallVisualizer : MonoBehaviour
             Quaternion.LookRotation(flatDirection.normalized, Vector3.up));
         transform.localScale = new Vector3(wallData.thickness, wallData.height, length);
 
+        ApplyWallTextureTiling();
         RefreshTopFaceVisual();
         RefreshEndCapVisuals();
         return true;
@@ -116,6 +117,7 @@ public class WallVisualizer : MonoBehaviour
         MeshRenderer sourceRenderer = GetComponent<MeshRenderer>();
         Material sharedMaterial = sourceRenderer != null ? sourceRenderer.sharedMaterial : null;
         bool visible = sharedMaterial != null;
+        ApplyWallTextureTiling();
 
         EnsureEndCap(ref startCapTransform, ref startCapFilter, ref startCapRenderer, StartCapObjectName);
         EnsureEndCap(ref endCapTransform, ref endCapFilter, ref endCapRenderer, EndCapObjectName);
@@ -210,6 +212,12 @@ public class WallVisualizer : MonoBehaviour
 
         capTopVisual.SetTopMaterial(GetTopMaterial());
         capTopVisual.SetWorldOffset(topFaceWorldOffset);
+        WallTextureTilingUtility.ApplyCapTiling(capRenderer, capTransform.lossyScale);
+    }
+
+    private void ApplyWallTextureTiling()
+    {
+        WallTextureTilingUtility.ApplyWallTiling(GetComponent<MeshRenderer>(), transform.localScale);
     }
 
     private void EnsureEndCap(

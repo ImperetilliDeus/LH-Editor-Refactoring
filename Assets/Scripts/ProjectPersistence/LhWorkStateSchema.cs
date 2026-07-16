@@ -39,6 +39,7 @@ public class LhWorkWallDto
     public float thickness;
     public float height;
     public float centerY;
+    public string textureCode = string.Empty;
     public int startVertexId;
     public int endVertexId;
     public bool suppressStartHandle;

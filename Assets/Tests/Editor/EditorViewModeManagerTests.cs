@@ -601,7 +601,7 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_UsesPolygonOutlineForRoom()
+    public void PerspectiveHighlight_IgnoresRoomTarget()
     {
         GameObject roomObject = new GameObject("Room");
         GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
@@ -623,109 +623,8 @@ public class EditorViewModeManagerTests
             Assert.That(roomInitialized, Is.True);
             Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
 
-            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
-
-            Assert.That(created, Is.True);
-            Transform highlight = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionHighlight");
-            Assert.That(highlight, Is.Not.Null);
-            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
-            Assert.That(lineRenderer, Is.Not.Null);
-            Assert.That(lineRenderer.positionCount, Is.EqualTo(5));
-        }
-        finally
-        {
-            DestroyObject(controllerObject);
-            DestroyObject(roomObject);
-        }
-    }
-
-    [Test]
-    public void PerspectiveHighlight_AddsVisibleOverlayForRoom()
-    {
-        GameObject roomObject = new GameObject("Room");
-        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
-
-        try
-        {
-            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
-            bool roomInitialized = (bool)InvokePublicWithResult(
-                room,
-                "SetManualBoundaryVertices",
-                new[]
-                {
-                    new Vector3(0f, 0f, 0f),
-                    new Vector3(4f, 0f, 0f),
-                    new Vector3(4f, 0f, 3f),
-                    new Vector3(0f, 0f, 3f),
-                },
-                false);
-            Assert.That(roomInitialized, Is.True);
-            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
-
-            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
-
-            Assert.That(created, Is.True);
-            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomOverlay");
-            Assert.That(overlay, Is.Not.Null);
-
-            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
-            MeshRenderer meshRenderer = overlay.GetComponent<MeshRenderer>();
-            Assert.That(meshFilter, Is.Not.Null);
-            Assert.That(meshRenderer, Is.Not.Null);
-            Assert.That(meshFilter.sharedMesh.vertexCount, Is.EqualTo(4));
-            Assert.That(meshFilter.sharedMesh.triangles.Length, Is.EqualTo(6));
-            Assert.That(meshRenderer.sharedMaterial.color.a, Is.GreaterThanOrEqualTo(0.4f));
-            Assert.That(meshRenderer.sharedMaterial.HasProperty("_ZTest"), Is.True);
-            Assert.That(meshRenderer.sharedMaterial.GetFloat("_ZTest"), Is.EqualTo((float)UnityEngine.Rendering.CompareFunction.Always));
-            Assert.That(meshRenderer.sharedMaterial.renderQueue, Is.GreaterThanOrEqualTo((int)UnityEngine.Rendering.RenderQueue.Overlay));
-            Assert.That(overlay.GetComponent<Collider>(), Is.Null);
-        }
-        finally
-        {
-            DestroyObject(controllerObject);
-            DestroyObject(roomObject);
-        }
-    }
-
-    [Test]
-    public void PerspectiveHighlight_KeepsWorldSpaceOverlayWhenControllerIsOffset()
-    {
-        GameObject roomObject = new GameObject("Room");
-        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
-        controllerObject.transform.position = new Vector3(624f, -8f, -157f);
-
-        try
-        {
-            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
-            bool roomInitialized = (bool)InvokePublicWithResult(
-                room,
-                "SetManualBoundaryVertices",
-                new[]
-                {
-                    new Vector3(0f, 0f, 0f),
-                    new Vector3(4f, 0f, 0f),
-                    new Vector3(4f, 0f, 3f),
-                    new Vector3(0f, 0f, 3f),
-                },
-                false);
-            Assert.That(roomInitialized, Is.True);
-            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
-
-            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
-
-            Assert.That(created, Is.True);
-            Transform root = controllerObject.transform.Find("PerspectiveSelectionHighlights");
-            Assert.That(root, Is.Not.Null);
-            Assert.That(root.position.x, Is.EqualTo(0f).Within(0.001f));
-            Assert.That(root.position.y, Is.EqualTo(0f).Within(0.001f));
-            Assert.That(root.position.z, Is.EqualTo(0f).Within(0.001f));
-
-            Transform overlay = root.Find("PerspectiveSelectionRoomOverlay");
-            Assert.That(overlay, Is.Not.Null);
-            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
-            Assert.That(meshFilter, Is.Not.Null);
-            Assert.That(meshFilter.sharedMesh.bounds.center.x, Is.EqualTo(2f).Within(0.001f));
-            Assert.That(meshFilter.sharedMesh.bounds.center.z, Is.EqualTo(1.5f).Within(0.001f));
+            Assert.That((bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject), Is.False);
+            Assert.That(controllerObject.transform.Find("PerspectiveSelectionHighlights"), Is.Null);
         }
         finally
         {
@@ -770,62 +669,13 @@ public class EditorViewModeManagerTests
 
             InvokePublic(controller, "RefreshHighlight");
 
-            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomOverlay");
-            Assert.That(overlay, Is.Not.Null);
+            Assert.That(controllerObject.transform.Find("PerspectiveSelectionHighlights"), Is.Null);
         }
         finally
         {
             DestroyObject(roomHandleObject);
             DestroyObject(viewModeObject);
             DestroyObject(controllerObject);
-            DestroyObject(roomObject);
-        }
-    }
-
-    [Test]
-    public void PerspectiveHighlight_DrawsRoomOverlayAboveEnclosingWalls()
-    {
-        GameObject roomObject = new GameObject("Room");
-        GameObject firstWallObject = new GameObject("WallA");
-        GameObject secondWallObject = new GameObject("WallB");
-        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
-
-        try
-        {
-            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
-            bool roomInitialized = (bool)InvokePublicWithResult(
-                room,
-                "SetManualBoundaryVertices",
-                new[]
-                {
-                    new Vector3(0f, 0f, 0f),
-                    new Vector3(4f, 0f, 0f),
-                    new Vector3(4f, 0f, 3f),
-                    new Vector3(0f, 0f, 3f),
-                },
-                false);
-            Assert.That(roomInitialized, Is.True);
-
-            Component firstWall = CreateWall(firstWallObject, new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.4f, 3f, 1.5f);
-            Component secondWall = CreateWall(secondWallObject, new Vector3(4f, 0f, 0f), new Vector3(4f, 0f, 3f), 0.4f, 4f, 2f);
-            SetRoomWallSet(room, firstWall, secondWall);
-
-            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
-
-            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
-
-            Assert.That(created, Is.True);
-            Transform overlay = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionRoomOverlay");
-            Assert.That(overlay, Is.Not.Null);
-            MeshFilter meshFilter = overlay.GetComponent<MeshFilter>();
-            Assert.That(meshFilter, Is.Not.Null);
-            Assert.That(meshFilter.sharedMesh.vertices[0].y, Is.GreaterThan(4f));
-        }
-        finally
-        {
-            DestroyObject(controllerObject);
-            DestroyObject(secondWallObject);
-            DestroyObject(firstWallObject);
             DestroyObject(roomObject);
         }
     }
@@ -1152,54 +1002,6 @@ public class EditorViewModeManagerTests
     }
 
     [Test]
-    public void PerspectiveHighlight_DrawsRoomOutlineAboveEnclosingWalls()
-    {
-        GameObject roomObject = new GameObject("Room");
-        GameObject firstWallObject = new GameObject("WallA");
-        GameObject secondWallObject = new GameObject("WallB");
-        GameObject controllerObject = new GameObject("PerspectiveSelectionHighlightController");
-
-        try
-        {
-            Component room = roomObject.AddComponent(GetAssemblyType("Room"));
-            bool roomInitialized = (bool)InvokePublicWithResult(
-                room,
-                "SetManualBoundaryVertices",
-                new[]
-                {
-                    new Vector3(0f, 0f, 0f),
-                    new Vector3(4f, 0f, 0f),
-                    new Vector3(4f, 0f, 3f),
-                    new Vector3(0f, 0f, 3f),
-                },
-                false);
-            Assert.That(roomInitialized, Is.True);
-
-            Component firstWall = CreateWall(firstWallObject, new Vector3(0f, 0f, 0f), new Vector3(4f, 0f, 0f), 0.4f, 3f, 1.5f);
-            Component secondWall = CreateWall(secondWallObject, new Vector3(4f, 0f, 0f), new Vector3(4f, 0f, 3f), 0.4f, 4f, 2f);
-            SetRoomWallSet(room, firstWall, secondWall);
-
-            Component controller = controllerObject.AddComponent(GetAssemblyType("PerspectiveSelectionHighlightController"));
-
-            bool created = (bool)InvokePublicWithResult(controller, "ShowHighlightForTarget", roomObject);
-
-            Assert.That(created, Is.True);
-            Transform highlight = controllerObject.transform.Find("PerspectiveSelectionHighlights/PerspectiveSelectionHighlight");
-            Assert.That(highlight, Is.Not.Null);
-            LineRenderer lineRenderer = highlight.GetComponent<LineRenderer>();
-            Assert.That(lineRenderer, Is.Not.Null);
-            Assert.That(lineRenderer.GetPosition(0).y, Is.GreaterThan(4f));
-        }
-        finally
-        {
-            DestroyObject(controllerObject);
-            DestroyObject(secondWallObject);
-            DestroyObject(firstWallObject);
-            DestroyObject(roomObject);
-        }
-    }
-
-    [Test]
     public void WallSelectionManager_IgnoresPerspectiveRightClick()
     {
         GameObject viewModeObject = new GameObject("EditorViewModeManager");
@@ -1384,13 +1186,80 @@ public class EditorViewModeManagerTests
                 placementManager,
                 "ResolvePlacementRoom",
                 new Bounds(new Vector3(100f, 0f, 100f), Vector3.one),
-                room);
+                room,
+                null);
 
             Assert.That(result, Is.EqualTo(room));
         }
         finally
         {
             DestroyObject(roomObject);
+            DestroyObject(placementObject);
+            DestroyObject(GameObject.Find("EditorInputManager"));
+            DestroyObject(GameObject.Find("FurnitureRoot"));
+        }
+    }
+
+    [Test]
+    public void FurniturePlacement_TreatsTopPlanLabelsAsNonBlockingUI()
+    {
+        GameObject placementObject = new GameObject("FurniturePlacementManager");
+        GameObject lengthLabelObject = new GameObject("LengthLabel_123");
+        GameObject roomLabelObject = new GameObject("Label(Clone)");
+
+        try
+        {
+            Component placementManager = placementObject.AddComponent(GetAssemblyType("FurniturePlacementManager"));
+            lengthLabelObject.AddComponent<Text>();
+            roomLabelObject.AddComponent<Text>();
+
+            bool lengthLabelNonBlocking = (bool)InvokePrivateWithResult(
+                placementManager,
+                "IsNonBlockingPlacementLabel",
+                lengthLabelObject);
+            bool roomLabelNonBlocking = (bool)InvokePrivateWithResult(
+                placementManager,
+                "IsNonBlockingPlacementLabel",
+                roomLabelObject);
+
+            Assert.That(lengthLabelNonBlocking, Is.True);
+            Assert.That(roomLabelNonBlocking, Is.True);
+        }
+        finally
+        {
+            DestroyObject(roomLabelObject);
+            DestroyObject(lengthLabelObject);
+            DestroyObject(placementObject);
+            DestroyObject(GameObject.Find("EditorInputManager"));
+            DestroyObject(GameObject.Find("FurnitureRoot"));
+        }
+    }
+
+    [Test]
+    public void FurniturePlacement_KeepsButtonLabelsBlockingUI()
+    {
+        GameObject placementObject = new GameObject("FurniturePlacementManager");
+        GameObject buttonObject = new GameObject("ToolbarButton");
+        GameObject labelObject = new GameObject("Label");
+
+        try
+        {
+            Component placementManager = placementObject.AddComponent(GetAssemblyType("FurniturePlacementManager"));
+            buttonObject.AddComponent<Button>();
+            labelObject.transform.SetParent(buttonObject.transform, false);
+            labelObject.AddComponent<Text>();
+
+            bool labelNonBlocking = (bool)InvokePrivateWithResult(
+                placementManager,
+                "IsNonBlockingPlacementLabel",
+                labelObject);
+
+            Assert.That(labelNonBlocking, Is.False);
+        }
+        finally
+        {
+            DestroyObject(labelObject);
+            DestroyObject(buttonObject);
             DestroyObject(placementObject);
             DestroyObject(GameObject.Find("EditorInputManager"));
             DestroyObject(GameObject.Find("FurnitureRoot"));

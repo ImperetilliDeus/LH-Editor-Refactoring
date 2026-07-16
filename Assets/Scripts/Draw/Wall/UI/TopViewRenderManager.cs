@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public partial class TopViewRenderManager : MonoBehaviour
 {
@@ -28,6 +29,9 @@ public partial class TopViewRenderManager : MonoBehaviour
     [Header("Preview")]
     [SerializeField, Min(0.01f)] private float previewWallThicknessMultiplier = 0.55f;
 
+    [Header("Diagnostics")]
+    [SerializeField] private bool logRoomWallAuthoringHitDiagnostics = true;
+
     [Header("Colors")]
     [SerializeField] private Color floorColor = new Color(0.34f, 0.86f, 0.58f, 0.22f);
     [SerializeField] private Color selectedFloorColor = new Color(0.28f, 0.6f, 1f, 0.35f);
@@ -52,6 +56,7 @@ public partial class TopViewRenderManager : MonoBehaviour
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedWallSegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedOpeningSegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
     private readonly List<TopPlanSegmentBatchGraphic.SegmentData> cachedVirtualBoundarySegments = new List<TopPlanSegmentBatchGraphic.SegmentData>();
+    private readonly List<RaycastResult> pointerHitDiagnosticsResults = new List<RaycastResult>();
 
     private TopPlanPolygonBatchGraphic floorBatchGraphic;
     private TopPlanSegmentBatchGraphic wallBatchGraphic;
@@ -122,6 +127,8 @@ public partial class TopViewRenderManager : MonoBehaviour
             return;
         }
 
+        LogRoomWallAuthoringPointerHitDiagnosticsIfNeeded();
+
         if (drawManager != null && drawManager.PreviewWall != null && drawManager.PreviewWall.activeInHierarchy)
         {
             visualsDirty = true;
@@ -144,6 +151,8 @@ public partial class TopViewRenderManager : MonoBehaviour
 
     private void HandleTopPlanWallSegmentClicked(TopPlanSegmentBatchGraphic.SegmentData segment)
     {
+        LogTopPlanWallSegmentClick(segment);
+
         if (!IsRoomWallAuthoringInteractionEnabled() ||
             roomWallAuthoringPanelController == null ||
             segment.wall == null)

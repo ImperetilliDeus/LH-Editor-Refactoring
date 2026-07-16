@@ -166,7 +166,10 @@ public class WallOpening : MonoBehaviour
         Vector3 referenceSize,
         bool fitDepth,
         bool fitHeight,
-        bool fitWidth)
+        bool fitWidth,
+        bool useParametricModel,
+        Vector3 parametricAuthoredSize,
+        bool parametricUsesBlenderLocalAxes)
     {
         if (prefab == null)
         {
@@ -208,13 +211,24 @@ public class WallOpening : MonoBehaviour
         modelScaleRoot.localRotation = Quaternion.identity;
         modelScaleRoot.localScale = Vector3.one;
 
-        modelScaleRoot.localScale = CalculateReferenceModelScale(
-            localScaleMultiplier,
-            modelTargetSize,
-            referenceSize,
-            fitDepth,
-            fitHeight,
-            fitWidth);
+        bool hasParametricModel = useParametricModel || HasParametricModel(activeModelInstance);
+        Vector3 effectiveReferenceSize = hasParametricModel && IsValidReferenceSize(parametricAuthoredSize)
+            ? parametricAuthoredSize
+            : referenceSize;
+        modelScaleRoot.localScale = hasParametricModel
+            ? CalculateModelScaleMultiplier(localScaleMultiplier)
+            : CalculateReferenceModelScale(
+                localScaleMultiplier,
+                modelTargetSize,
+                effectiveReferenceSize,
+                fitDepth,
+                fitHeight,
+                fitWidth);
+
+        if (hasParametricModel)
+        {
+            ApplyParametricModelSize(activeModelInstance, modelTargetSize, effectiveReferenceSize, parametricUsesBlenderLocalAxes);
+        }
         LayerUtility.ApplyLayer(
             modelRoot.gameObject,
             type == WallOpeningPlacementManager.OpeningPlacementType.Door
@@ -353,6 +367,14 @@ public class WallOpening : MonoBehaviour
             fitDepth ? clampedMultiplier.z * modelTargetSize.z / clampedReferenceSize.z : clampedMultiplier.z);
     }
 
+    private static Vector3 CalculateModelScaleMultiplier(Vector3 localScaleMultiplier)
+    {
+        return new Vector3(
+            Mathf.Max(MinimumModelBoundsSize, localScaleMultiplier.x),
+            Mathf.Max(MinimumModelBoundsSize, localScaleMultiplier.y),
+            Mathf.Max(MinimumModelBoundsSize, localScaleMultiplier.z));
+    }
+
     private static Vector3 CalculateInverseOpeningScale(Vector3 targetSize)
     {
         return new Vector3(
@@ -364,5 +386,38 @@ public class WallOpening : MonoBehaviour
     private static float InverseScaleAxis(float value)
     {
         return Mathf.Abs(value) > MinimumModelBoundsSize ? 1f / value : 1f;
+    }
+
+    private static bool HasParametricModel(GameObject modelInstance)
+    {
+        if (modelInstance == null)
+        {
+            return false;
+        }
+
+        return modelInstance.GetComponentInChildren<ParametricOpeningModel>(true) != null ||
+               ParametricOpeningModel.HasParametricParts(modelInstance.transform);
+    }
+
+    private static bool IsValidReferenceSize(Vector3 value)
+    {
+        return value.x > MinimumModelBoundsSize &&
+               value.y > MinimumModelBoundsSize &&
+               value.z > MinimumModelBoundsSize;
+    }
+
+    private static void ApplyParametricModelSize(
+        GameObject modelInstance,
+        Vector3 modelTargetSize,
+        Vector3 referenceSize,
+        bool usesBlenderLocalAxes)
+    {
+        ParametricOpeningModel parametricModel = modelInstance.GetComponentInChildren<ParametricOpeningModel>(true);
+        if (parametricModel == null)
+        {
+            parametricModel = modelInstance.AddComponent<ParametricOpeningModel>();
+        }
+
+        parametricModel.ApplyOpeningSize(modelTargetSize, referenceSize, usesBlenderLocalAxes);
     }
 }

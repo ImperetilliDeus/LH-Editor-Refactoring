@@ -82,7 +82,7 @@ internal sealed class WallOpeningLayoutRebuildController
 
             SyncContainerOuterMetadata(container, cachedWalls, collectWalls);
 
-            if (removedWalls.Count > 0)
+            if (!isDragging && removedWalls.Count > 0)
             {
                 collectWalls?.Invoke(container.transform, cachedWalls, true);
                 requestRefreshForWallReplacement?.Invoke(removedWalls, cachedWalls);
@@ -169,7 +169,7 @@ internal sealed class WallOpeningLayoutRebuildController
 
         SyncContainerOuterMetadata(container, cachedWalls, collectWalls);
 
-        if (removedWalls.Count > 0)
+        if (!isDragging && removedWalls.Count > 0)
         {
             collectWalls?.Invoke(container.transform, cachedWalls, true);
             requestRefreshForWallReplacement?.Invoke(removedWalls, cachedWalls);

@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 {
+    private const bool ForceValidationDebugLogs = true;
+
     private enum PlacementState
     {
         Idle,
@@ -35,11 +38,14 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     [Header("Preview")]
     [SerializeField] private Color validTint = new Color(0.45f, 1f, 0.55f, 0.85f);
     [SerializeField] private Color invalidTint = new Color(1f, 0.4f, 0.4f, 0.85f);
-    [SerializeField] private bool enableValidationDebugLogs;
+    [SerializeField] private bool enableValidationDebugLogs = true;
+    [SerializeField] private float validationDebugLogIntervalSeconds = 0.25f;
 
     private readonly List<Renderer> previewRenderers = new List<Renderer>();
     private readonly List<Collider> currentColliders = new List<Collider>();
     private readonly List<Room> cachedRooms = new List<Room>();
+    private readonly List<Vector3> cachedRoomFootprint = new List<Vector3>();
+    private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
     private MaterialPropertyBlock propertyBlock;
     private RaycastHit[] placementHitsBuffer = new RaycastHit[16];
     private Collider[] overlapResultsBuffer = new Collider[16];
@@ -50,6 +56,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     private float currentYaw;
     private bool lastPlacementValidity;
     private string lastValidationDebugMessage = string.Empty;
+    private float nextValidationDebugLogTime;
     private int furnishLayer = -1;
     private float nextQRotationTime;
     private float nextERotationTime;
@@ -64,6 +71,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
+        EnsurePlacementSurfaceMask();
         BindModeEvents();
         SyncModeState();
         EditorInputManager.Instance.RegisterHandler(EditorMode.FurniturePlace, this);
@@ -111,6 +119,8 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
+        EnsurePlacementSurfaceMask();
+        RefreshRoomFloorPlacementSurfaces();
 
         if (viewModeManager != null && viewModeManager.CurrentViewMode != EditorViewMode.Top)
         {
@@ -129,6 +139,8 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         {
             return;
         }
+
+        EmitPlacementLifecycleDebug($"BeginPlacement item={item.code} prefab={item.prefab.name}");
 
         currentYaw = item.defaultEulerAngles.y;
         state = PlacementState.PreviewFollowing;
@@ -155,7 +167,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             ApplyPreviewTransform(placementPoint, false);
         }
 
-        if (!inputFrame.LeftPressedThisFrame || inputFrame.PointerOverUI)
+        if (!inputFrame.LeftPressedThisFrame || IsPlacementPointerBlockedByUI(inputFrame))
         {
             return;
         }
@@ -360,15 +372,17 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         if (activeInstance == null)
         {
             lastPlacementValidity = false;
+            EmitPlacementLifecycleDebug("UpdatePlacementValidity skipped activeInstance=<null>");
             return;
         }
 
-        bool hasSurface = TryGetPlacementPoint(out _, out Room placementPointRoom);
+        bool hasSurface = TryGetPlacementPoint(out Vector3 placementPoint, out Room placementPointRoom);
         Bounds bounds = activeInstance.CalculateWorldBounds();
-        Room room = ResolvePlacementRoom(bounds, placementPointRoom);
+        Room boundsRoom = ResolveRoomForBounds(bounds);
+        Room room = ResolvePlacementRoom(bounds, placementPointRoom, boundsRoom);
         bool overlaps = CheckOverlaps(activeInstance, bounds, out Collider blockingCollider);
         lastPlacementValidity = hasSurface && room != null && !overlaps;
-        EmitValidationDebug(hasSurface, room, overlaps, blockingCollider, bounds);
+        EmitValidationDebug(hasSurface, placementPoint, placementPointRoom, boundsRoom, room, overlaps, blockingCollider, bounds);
         ApplyPreviewTint(lastPlacementValidity ? validTint : invalidTint);
     }
 
@@ -384,6 +398,11 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         if (LayerUtility.TryGetLayer(LayerUtility.CeilLayerName, out int ceilLayer))
         {
             queryMask &= ~(1 << ceilLayer);
+        }
+
+        if (LayerUtility.TryGetLayer(LayerUtility.WallLayerName, out int wallLayer))
+        {
+            queryMask &= ~(1 << wallLayer);
         }
 
         // Renderer.bounds is already a world-space AABB. Applying the furniture rotation again
@@ -486,6 +505,8 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         ResolveReferences();
         EnsureFurnitureRoot();
         EnsureCameraCulling();
+        EnsurePlacementSurfaceMask();
+        RefreshRoomFloorPlacementSurfaces();
         previewRenderers.Clear();
         if (activeInstance != null)
         {
@@ -530,11 +551,17 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             for (int i = 0; i < hitCount; i++)
             {
                 RaycastHit currentHit = placementHitsBuffer[i];
+                if (!IsFloorPlacementHit(currentHit, out Room hitRoom))
+                {
+                    continue;
+                }
+
                 if (!found ||
                     currentHit.point.y < bestHit.point.y ||
                     (Mathf.Approximately(currentHit.point.y, bestHit.point.y) && currentHit.distance < bestHit.distance))
                 {
                     bestHit = currentHit;
+                    room = hitRoom;
                     found = true;
                 }
             }
@@ -542,7 +569,6 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             if (found)
             {
                 point = bestHit.point;
-                room = ResolveRoomAtPosition(point);
                 return true;
             }
         }
@@ -556,6 +582,24 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         point = ray.GetPoint(enter);
         room = ResolveRoomAtPosition(point);
         return true;
+    }
+
+    private static bool IsFloorPlacementHit(RaycastHit hit, out Room room)
+    {
+        room = null;
+        Collider hitCollider = hit.collider;
+        if (hitCollider == null)
+        {
+            return false;
+        }
+
+        if (!LayerUtility.IsLayer(hitCollider.gameObject, LayerUtility.FloorLayerName))
+        {
+            return false;
+        }
+
+        room = hitCollider.GetComponentInParent<Room>();
+        return room != null;
     }
 
     private Room ResolveRoomAtPosition(Vector3 worldPosition)
@@ -574,13 +618,12 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
                 continue;
             }
 
-            IReadOnlyList<Vector3> vertices = room.BoundaryVertices;
-            if (vertices == null || vertices.Count < 3)
+            if (!TryBuildRoomPlacementFootprint(room, cachedRoomFootprint))
             {
                 continue;
             }
 
-            if (IsPointInsidePolygonXZ(worldPosition, vertices))
+            if (IsPointInsidePolygonXZ(worldPosition, cachedRoomFootprint))
             {
                 return room;
             }
@@ -605,13 +648,12 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
                 continue;
             }
 
-            IReadOnlyList<Vector3> vertices = room.BoundaryVertices;
-            if (vertices == null || vertices.Count < 3)
+            if (!TryBuildRoomPlacementFootprint(room, cachedRoomFootprint))
             {
                 continue;
             }
 
-            if (IsBoundsFootprintInsidePolygonXZ(bounds, vertices))
+            if (IsBoundsFootprintInsidePolygonXZ(bounds, cachedRoomFootprint))
             {
                 return room;
             }
@@ -620,14 +662,56 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         return null;
     }
 
-    private Room ResolvePlacementRoom(Bounds bounds, Room placementPointRoom)
+    private Room ResolvePlacementRoom(Bounds bounds, Room placementPointRoom, Room boundsRoom)
     {
         if (placementPointRoom != null)
         {
             return placementPointRoom;
         }
 
-        return ResolveRoomForBounds(bounds);
+        return boundsRoom;
+    }
+
+    private bool TryBuildRoomPlacementFootprint(Room room, List<Vector3> results)
+    {
+        if (results == null)
+        {
+            return false;
+        }
+
+        results.Clear();
+        if (room == null)
+        {
+            return false;
+        }
+
+        IReadOnlyList<Vector3> vertices = room.BoundaryVertices;
+        if (vertices == null || vertices.Count < 3)
+        {
+            return false;
+        }
+
+        Vector3 placementOffset = room.Data != null ? room.Data.PlacementOffset : Vector3.zero;
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            results.Add(vertices[i] + placementOffset);
+        }
+
+        return results.Count >= 3;
+    }
+
+    private void RefreshRoomFloorPlacementSurfaces()
+    {
+        if (roomManager == null)
+        {
+            return;
+        }
+
+        roomManager.GetAllRooms(cachedRooms);
+        foreach (Room room in cachedRooms)
+        {
+            room?.RefreshVisual();
+        }
     }
 
     private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<Vector3> polygon)
@@ -752,26 +836,274 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         activeInstance.transform.position = position;
     }
 
-    private void EmitValidationDebug(bool hasSurface, Room room, bool overlaps, Collider blockingCollider, Bounds bounds)
+    private void EmitValidationDebug(
+        bool hasSurface,
+        Vector3 placementPoint,
+        Room pointerRoom,
+        Room boundsRoom,
+        Room placementRoom,
+        bool overlaps,
+        Collider blockingCollider,
+        Bounds bounds)
     {
-        if (!enableValidationDebugLogs || activeInstance == null)
+        if ((!ForceValidationDebugLogs && !enableValidationDebugLogs) || activeInstance == null)
         {
             return;
         }
 
-        string roomName = room != null ? room.name : "<none>";
+        string pointerRoomName = pointerRoom != null ? pointerRoom.name : "<none>";
+        string boundsRoomName = boundsRoom != null ? boundsRoom.name : "<none>";
+        string placementRoomName = placementRoom != null ? placementRoom.name : "<none>";
         string blockerName = blockingCollider != null ? blockingCollider.name : "<none>";
         string blockerLayer = blockingCollider != null ? LayerMask.LayerToName(blockingCollider.gameObject.layer) : "<none>";
+        string reason = ResolvePlacementDebugReason(hasSurface, pointerRoom, boundsRoom, placementRoom, overlaps);
         string message =
-            $"[FurniturePlacement] item={activeInstance.name} valid={lastPlacementValidity} hasSurface={hasSurface} room={roomName} overlaps={overlaps} blocker={blockerName} blockerLayer={blockerLayer} pos={activeInstance.transform.position} boundsCenter={bounds.center} boundsSize={bounds.size}";
+            $"[FurniturePlacement] item={activeInstance.name} valid={lastPlacementValidity} reason={reason} " +
+            $"surface={hasSurface} pointer={FormatVector(placementPoint)} pointerRoom={pointerRoomName} " +
+            $"boundsRoom={boundsRoomName} placementRoom={placementRoomName} overlaps={overlaps} " +
+            $"blocker={blockerName} blockerLayer={blockerLayer} pos={FormatVector(activeInstance.transform.position)} " +
+            $"boundsCenter={FormatVector(bounds.center)} boundsSize={FormatVector(bounds.size)} " +
+            $"corners={FormatBoundsCorners(bounds)} rooms={BuildRoomContainmentDebug(placementPoint, bounds)}";
 
         if (message == lastValidationDebugMessage)
         {
             return;
         }
 
+        if (Time.unscaledTime < nextValidationDebugLogTime)
+        {
+            return;
+        }
+
+        nextValidationDebugLogTime = Time.unscaledTime + Mathf.Max(0.02f, validationDebugLogIntervalSeconds);
         lastValidationDebugMessage = message;
         Debug.Log(message, activeInstance);
+    }
+
+    private void EmitPlacementLifecycleDebug(string message)
+    {
+        if (!ForceValidationDebugLogs && !enableValidationDebugLogs)
+        {
+            return;
+        }
+
+        Debug.Log($"[FurniturePlacement] {message} modeActive={isFurniturePlaceModeActive} state={state}", this);
+    }
+
+    private static string ResolvePlacementDebugReason(
+        bool hasSurface,
+        Room pointerRoom,
+        Room boundsRoom,
+        Room placementRoom,
+        bool overlaps)
+    {
+        if (!hasSurface)
+        {
+            return "NoSurface";
+        }
+
+        if (placementRoom == null)
+        {
+            if (pointerRoom == null && boundsRoom == null)
+            {
+                return "PointerAndBoundsOutsideRooms";
+            }
+
+            if (pointerRoom != null && boundsRoom == null)
+            {
+                return "BoundsOutsidePointerRoom";
+            }
+
+            if (pointerRoom != null && boundsRoom != null && pointerRoom != boundsRoom)
+            {
+                return "PointerRoomAndBoundsRoomMismatch";
+            }
+
+            return "RoomRejected";
+        }
+
+        if (overlaps)
+        {
+            return "Overlap";
+        }
+
+        return "Valid";
+    }
+
+    private string BuildRoomContainmentDebug(Vector3 placementPoint, Bounds bounds)
+    {
+        if (roomManager == null)
+        {
+            return "<no-room-manager>";
+        }
+
+        roomManager.GetAllRooms(cachedRooms);
+        if (cachedRooms.Count == 0)
+        {
+            return "<none>";
+        }
+
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+        for (int i = 0; i < cachedRooms.Count; i++)
+        {
+            Room room = cachedRooms[i];
+            if (room == null)
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append("; ");
+            }
+
+            if (!TryBuildRoomPlacementFootprint(room, cachedRoomFootprint))
+            {
+                builder.Append(room.name).Append("(invalidPolygon)");
+                continue;
+            }
+
+            bool pointInside = IsPointInsidePolygonXZ(placementPoint, cachedRoomFootprint);
+            bool boundsInside = IsBoundsFootprintInsidePolygonXZ(bounds, cachedRoomFootprint);
+            builder.Append(room.name)
+                .Append("(point=").Append(pointInside)
+                .Append(",bounds=").Append(boundsInside)
+                .Append(",offset=").Append(FormatVector(room.Data != null ? room.Data.PlacementOffset : Vector3.zero))
+                .Append(",verts=").Append(cachedRoomFootprint.Count)
+                .Append(",cornerMask=").Append(BuildBoundsCornerMask(bounds, cachedRoomFootprint))
+                .Append(")");
+        }
+
+        return builder.Length > 0 ? builder.ToString() : "<none>";
+    }
+
+    private static string BuildBoundsCornerMask(Bounds bounds, IReadOnlyList<Vector3> polygon)
+    {
+        Vector3[] corners = GetBoundsFootprintPoints(bounds);
+        char[] mask = new char[corners.Length];
+        for (int i = 0; i < corners.Length; i++)
+        {
+            mask[i] = IsPointInsidePolygonXZ(corners[i], polygon) ? '1' : '0';
+        }
+
+        return new string(mask);
+    }
+
+    private static string FormatBoundsCorners(Bounds bounds)
+    {
+        Vector3[] corners = GetBoundsFootprintPoints(bounds);
+        return $"{FormatVector(corners[0])}|{FormatVector(corners[1])}|{FormatVector(corners[2])}|{FormatVector(corners[3])}|{FormatVector(corners[4])}";
+    }
+
+    private static Vector3[] GetBoundsFootprintPoints(Bounds bounds)
+    {
+        float y = bounds.center.y;
+        return new[]
+        {
+            new Vector3(bounds.center.x, y, bounds.center.z),
+            new Vector3(bounds.min.x, y, bounds.min.z),
+            new Vector3(bounds.min.x, y, bounds.max.z),
+            new Vector3(bounds.max.x, y, bounds.min.z),
+            new Vector3(bounds.max.x, y, bounds.max.z),
+        };
+    }
+
+    private static string FormatVector(Vector3 value)
+    {
+        return $"({value.x:F2},{value.y:F2},{value.z:F2})";
+    }
+
+    private bool IsPlacementPointerBlockedByUI(EditorInputFrame inputFrame)
+    {
+        if (!inputFrame.PointerOverUI)
+        {
+            return false;
+        }
+
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
+        {
+            return true;
+        }
+
+        Vector2 pointerScreenPosition = inputFrame.IsPointerAvailable
+            ? inputFrame.PointerScreenPosition
+            : Vector2.zero;
+        if (!inputFrame.IsPointerAvailable && !TryGetPointerScreenPosition(out pointerScreenPosition))
+        {
+            return true;
+        }
+
+        PointerEventData eventData = new PointerEventData(eventSystem)
+        {
+            position = pointerScreenPosition,
+        };
+
+        uiRaycastResults.Clear();
+        eventSystem.RaycastAll(eventData, uiRaycastResults);
+        if (uiRaycastResults.Count == 0)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < uiRaycastResults.Count; i++)
+        {
+            GameObject hitObject = uiRaycastResults[i].gameObject;
+            if (hitObject == null)
+            {
+                continue;
+            }
+
+            if (!IsNonBlockingPlacementLabel(hitObject))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsNonBlockingPlacementLabel(GameObject hitObject)
+    {
+        if (hitObject.GetComponentInParent<WallLengthLabelClickHandler>() != null)
+        {
+            return true;
+        }
+
+        string objectName = hitObject.name;
+        if (objectName.StartsWith("LengthLabel_", StringComparison.Ordinal) ||
+            objectName == "RoomTypeLabel" ||
+            objectName == "RoomTypeLabel(Clone)")
+        {
+            return true;
+        }
+
+        if (hitObject.GetComponentInParent<Selectable>() != null)
+        {
+            return false;
+        }
+
+        bool hasTextGraphic =
+            hitObject.GetComponent<Text>() != null ||
+            hitObject.GetComponent("TextMeshProUGUI") != null ||
+            hitObject.GetComponent("TMP_Text") != null;
+        if (!hasTextGraphic)
+        {
+            return false;
+        }
+
+        Transform current = hitObject.transform.parent;
+        while (current != null)
+        {
+            if (current.GetComponent<Selectable>() != null)
+            {
+                return false;
+            }
+
+            current = current.parent;
+        }
+
+        return objectName.IndexOf("Label", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private bool TryGetPointerScreenPosition(out Vector2 pointerScreenPosition)
@@ -812,6 +1144,16 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         {
             LayerUtility.ResolveObject(ref roomManager);
         }
+    }
+
+    private void EnsurePlacementSurfaceMask()
+    {
+        if (!LayerUtility.TryGetLayer(LayerUtility.FloorLayerName, out int floorLayer))
+        {
+            return;
+        }
+
+        placementSurfaceMask = placementSurfaceMask.value | (1 << floorLayer);
     }
 
     private void BindModeEvents()

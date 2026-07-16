@@ -158,6 +158,12 @@ public partial class WallPropertyInputManager
             modeManager.ModeChanged -= HandleModeChanged;
             modeManager.ModeChanged += HandleModeChanged;
         }
+
+        if (wallLengthDisplay != null)
+        {
+            wallLengthDisplay.LengthLabelClicked -= HandleLengthLabelClicked;
+            wallLengthDisplay.LengthLabelClicked += HandleLengthLabelClicked;
+        }
     }
 
     private void UnbindStateEvents()
@@ -171,6 +177,11 @@ public partial class WallPropertyInputManager
         if (modeManager != null)
         {
             modeManager.ModeChanged -= HandleModeChanged;
+        }
+
+        if (wallLengthDisplay != null)
+        {
+            wallLengthDisplay.LengthLabelClicked -= HandleLengthLabelClicked;
         }
     }
 
@@ -187,6 +198,36 @@ public partial class WallPropertyInputManager
     private void HandleModeChanged(EditorMode mode)
     {
         UpdateInputFieldValues(true);
+    }
+
+    private void HandleLengthLabelClicked(Transform wallTransform)
+    {
+        if (wallTransform == null || wallLengthInputField == null)
+        {
+            return;
+        }
+
+        GameObject wallObject = wallTransform.gameObject;
+        if (wallSelectionManager != null)
+        {
+            wallSelectionManager.SetSelectedWall(wallObject);
+        }
+
+        UpdateInputFieldValues(true);
+        if (!wallLengthInputField.interactable)
+        {
+            return;
+        }
+
+        wallLengthInputField.ActivateInputField();
+        wallLengthInputField.Select();
+
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(wallLengthInputField.gameObject);
+        }
+
+        wallLengthInputField.MoveTextEnd(false);
     }
 
     private void UpdateAnchorButtonState()

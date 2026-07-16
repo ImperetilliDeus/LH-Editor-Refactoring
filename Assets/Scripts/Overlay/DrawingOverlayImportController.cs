@@ -74,12 +74,9 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
     {
         try
         {
-            byte[] bytes = File.ReadAllBytes(path);
-            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
-            if (!ImageConversion.LoadImage(texture, bytes, false))
+            if (!TryLoadTexture(path, out Texture2D texture, out string error))
             {
-                UnityEngine.Object.Destroy(texture);
-                overlayManager.ShowStatusOnly("Failed to load the image file.");
+                overlayManager.ShowStatusOnly($"Failed to load the image file.\n{error}");
                 return;
             }
 
@@ -91,6 +88,179 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
             UnityEngine.Debug.LogException(exception, this);
             overlayManager.ShowStatusOnly("An error occurred while importing the image.");
         }
+    }
+
+    private static bool TryLoadTexture(string path, out Texture2D texture, out string error)
+    {
+        texture = null;
+        error = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            error = "The image file could not be found.";
+            return false;
+        }
+
+        try
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            Texture2D loadedTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+            if (ImageConversion.LoadImage(loadedTexture, bytes, false))
+            {
+                ConfigureImportedTexture(loadedTexture);
+                texture = loadedTexture;
+                return true;
+            }
+
+            UnityEngine.Object.Destroy(loadedTexture);
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+        }
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        if (TryLoadTextureWithWindowsDecoder(path, out texture, out string windowsDecoderError))
+        {
+            return true;
+        }
+
+        error = string.IsNullOrWhiteSpace(error)
+            ? windowsDecoderError
+            : $"{error}\n{windowsDecoderError}";
+#endif
+
+        if (string.IsNullOrWhiteSpace(error))
+        {
+            error = "Unity could not decode the selected image.";
+        }
+
+        return false;
+    }
+
+    private static bool TryLoadTextureWithWindowsDecoder(string path, out Texture2D texture, out string error)
+    {
+        texture = null;
+        error = string.Empty;
+
+        string tempPngPath = Path.Combine(
+            Path.GetTempPath(),
+            $"LHOverlay_{Guid.NewGuid():N}.png");
+
+        try
+        {
+            if (!TryConvertImageToPngWithPowerShell(path, tempPngPath, out error))
+            {
+                return false;
+            }
+
+            byte[] pngBytes = File.ReadAllBytes(tempPngPath);
+            Texture2D decodedTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+            if (!ImageConversion.LoadImage(decodedTexture, pngBytes, false))
+            {
+                UnityEngine.Object.Destroy(decodedTexture);
+                error = "Windows converted the image, but Unity could not read the converted PNG.";
+                return false;
+            }
+
+            ConfigureImportedTexture(decodedTexture);
+            texture = decodedTexture;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            error = $"Windows image decoder failed: {exception.Message}";
+            return false;
+        }
+        finally
+        {
+            TryDeleteFile(tempPngPath);
+        }
+    }
+
+    private static bool TryConvertImageToPngWithPowerShell(string sourcePath, string outputPath, out string error)
+    {
+        error = string.Empty;
+        string script = $@"
+Add-Type -AssemblyName System.Drawing
+$sourcePath = '{EscapePowerShellSingleQuotedString(sourcePath)}'
+$outputPath = '{EscapePowerShellSingleQuotedString(outputPath)}'
+$image = [System.Drawing.Image]::FromFile($sourcePath)
+try {{
+    $image.Save($outputPath, [System.Drawing.Imaging.ImageFormat]::Png)
+}} finally {{
+    $image.Dispose()
+}}";
+
+        try
+        {
+            using Process process = new Process();
+            process.StartInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = "-NoProfile -ExecutionPolicy Bypass -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(script)),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+
+            process.Start();
+            string stderr = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                error = string.IsNullOrWhiteSpace(stderr)
+                    ? $"Windows image decoder exited with code {process.ExitCode}."
+                    : stderr;
+                return false;
+            }
+
+            if (!File.Exists(outputPath))
+            {
+                error = "Windows image decoder did not create a converted PNG.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+            return false;
+        }
+    }
+
+    private static string EscapePowerShellSingleQuotedString(string value)
+    {
+        return (value ?? string.Empty).Replace("'", "''");
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
+            // Best effort cleanup only.
+        }
+    }
+
+    private static void ConfigureImportedTexture(Texture2D texture)
+    {
+        if (texture == null)
+        {
+            return;
+        }
+
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
     }
 
     private void ImportPdf(string path)

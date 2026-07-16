@@ -64,6 +64,7 @@ public static class LhWorkStateBuilder
             thickness = data != null ? data.thickness : 0f,
             height = data != null ? data.height : 0f,
             centerY = data != null ? data.centerY : 0f,
+            textureCode = data != null ? data.TextureCode ?? string.Empty : string.Empty,
             startVertexId = wall.StartVertexId,
             endVertexId = wall.EndVertexId,
             suppressStartHandle = wall.SuppressStartHandle,
@@ -76,6 +77,7 @@ public static class LhWorkStateBuilder
 
     private static LhWorkWallDto BuildContainerWall(WallOpeningContainer container, string collapsedId)
     {
+        string textureCode = ResolveContainerTextureCode(container);
         return new LhWorkWallDto
         {
             id = collapsedId ?? string.Empty,
@@ -85,6 +87,7 @@ public static class LhWorkStateBuilder
             thickness = container.WallThickness,
             height = container.WallHeight,
             centerY = container.CenterY,
+            textureCode = textureCode,
             startVertexId = container.OuterStartVertexId,
             endVertexId = container.OuterEndVertexId,
             suppressStartHandle = container.SuppressOuterStartHandle,
@@ -93,6 +96,28 @@ public static class LhWorkStateBuilder
             endSplitPoint = container.OuterEndSplitPoint,
             openings = BuildOpenings(container),
         };
+    }
+
+    private static string ResolveContainerTextureCode(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return string.Empty;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (wall == null || wall.Data == null || string.IsNullOrWhiteSpace(wall.Data.TextureCode))
+            {
+                continue;
+            }
+
+            return wall.Data.TextureCode;
+        }
+
+        return string.Empty;
     }
 
     private static List<LhWorkOpeningDto> BuildOpenings(WallOpeningContainer container)

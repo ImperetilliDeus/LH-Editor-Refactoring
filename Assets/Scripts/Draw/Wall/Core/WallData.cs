@@ -12,6 +12,7 @@ public class WallData
     [SerializeField, FormerlySerializedAs("thickness")] private float _thickness;
     [SerializeField, FormerlySerializedAs("height")] private float _height;
     [SerializeField, FormerlySerializedAs("centerY")] private float _centerY;
+    [SerializeField] private string textureCode = string.Empty;
 
     [SerializeField] private List<WallOpeningData> openings = new List<WallOpeningData>();
     [NonSerialized] private int suppressNotifications;
@@ -52,6 +53,12 @@ public class WallData
     {
         get => _centerY;
         set => SetField(ref _centerY, value);
+    }
+
+    public string TextureCode
+    {
+        get => textureCode;
+        set => SetField(ref textureCode, value ?? string.Empty);
     }
 
     public List<WallOpeningData> Openings => openings;
@@ -95,6 +102,7 @@ public class WallData
             thickness = thickness,
             height = height,
             centerY = centerY,
+            TextureCode = TextureCode,
         };
     }
 
@@ -114,6 +122,7 @@ public class WallData
             thickness = source.thickness;
             height = source.height;
             centerY = source.centerY;
+            TextureCode = source.TextureCode;
         }
         finally
         {

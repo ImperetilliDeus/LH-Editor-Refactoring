@@ -24,6 +24,10 @@ MonoBehaviour:
     fitDepth: 1
     fitHeight: 1
     fitWidth: 1
+    useParametricModel: 0
+    parametricProfileKey: ""
+    authoredSize: {x: 1, y: 1, z: 1}
+    usesBlenderLocalAxes: 0
   - openingType: 0
     typeKey: F001
     displayName: "\uC5EC\uB2EB\uC774\uBB38"
@@ -35,6 +39,10 @@ MonoBehaviour:
     fitDepth: 1
     fitHeight: 1
     fitWidth: 1
+    useParametricModel: 0
+    parametricProfileKey: ""
+    authoredSize: {x: 1, y: 1, z: 1}
+    usesBlenderLocalAxes: 0
   - openingType: 1
     typeKey: W001
     displayName: "\uCC3D\uBB38"
@@ -46,6 +54,10 @@ MonoBehaviour:
     fitDepth: 1
     fitHeight: 1
     fitWidth: 1
+    useParametricModel: 0
+    parametricProfileKey: ""
+    authoredSize: {x: 1, y: 1, z: 1}
+    usesBlenderLocalAxes: 0
   - openingType: 0
     typeKey: S001
     displayName: "\uBBF8\uB2EB\uC774\uBB38"
@@ -57,3 +69,22 @@ MonoBehaviour:
     fitDepth: 1
     fitHeight: 1
     fitWidth: 1
+    useParametricModel: 0
+    parametricProfileKey: ""
+    authoredSize: {x: 1, y: 1, z: 1}
+    usesBlenderLocalAxes: 0
+  - openingType: 1
+    typeKey: B001
+    displayName: "\uBCA0\uB780\uB2E4(\uB09C\uAC04\uD615)"
+    modelPrefab: {fileID: 116224595992912897, guid: 7fd567b22db6df143bb58f9ccb37649f, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 18, y: 21, z: 1.4}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: BALCONY_RAILING_WINDOW_V1
+    authoredSize: {x: 18, y: 21, z: 1.4}
+    usesBlenderLocalAxes: 0

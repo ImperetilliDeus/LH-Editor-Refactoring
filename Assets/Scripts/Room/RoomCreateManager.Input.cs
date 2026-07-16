@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public sealed partial class RoomCreateManager
@@ -26,9 +27,9 @@ public sealed partial class RoomCreateManager
             return;
         }
 
-        bool isPointerOverUI = inputFrame.PointerOverUI;
         bool hasPointerPosition = inputFrame.IsPointerAvailable;
         Vector2 pointerScreenPosition = inputFrame.PointerScreenPosition;
+        bool isPointerOverUI = hasPointerPosition && IsPointerBlockedForRoomCreation(pointerScreenPosition);
         bool polygonModifierPressed = IsPolygonCreationModifierPressed();
         bool isPointerOverRoomHandle = hasPointerPosition &&
                                        roomHandleManager != null &&
@@ -273,5 +274,55 @@ public sealed partial class RoomCreateManager
         lastLeftClickPosition = pointerScreenPosition;
 
         return isDoubleClick;
+    }
+
+    private bool IsPointerBlockedForRoomCreation(Vector2 pointerScreenPosition)
+    {
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
+        {
+            return false;
+        }
+
+        PointerEventData eventData = new PointerEventData(eventSystem)
+        {
+            position = pointerScreenPosition,
+        };
+
+        uiRaycastResults.Clear();
+        eventSystem.RaycastAll(eventData, uiRaycastResults);
+        for (int i = 0; i < uiRaycastResults.Count; i++)
+        {
+            GameObject hitObject = uiRaycastResults[i].gameObject;
+            if (hitObject == null || ShouldIgnoreRoomCreationUIHit(hitObject))
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool ShouldIgnoreRoomCreationUIHit(GameObject hitObject)
+    {
+        if (hitObject == null)
+        {
+            return true;
+        }
+
+        if (hitObject.GetComponentInParent<WallLengthLabelClickHandler>() != null)
+        {
+            return true;
+        }
+
+        if (LayerUtility.IsLayer(hitObject, LayerUtility.WallUILayerName))
+        {
+            return true;
+        }
+
+        TopPlanSegmentBatchGraphic segmentGraphic = hitObject.GetComponentInParent<TopPlanSegmentBatchGraphic>();
+        return segmentGraphic != null && !segmentGraphic.raycastTarget;
     }
 }

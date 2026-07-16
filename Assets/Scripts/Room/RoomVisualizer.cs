@@ -8,11 +8,13 @@ public class RoomVisualizer : MonoBehaviour
     private const string CeilingObjectName = "Ceiling";
     private const float CeilingColliderThickness = 0.02f;
     private const float FloorWorldY = 0.1f;
+    private const float RoomUnitToTextureMeter = 0.01f;
 
     private Mesh roomMesh;
     private GameObject floorObject;
     private MeshRenderer floorMeshRenderer;
     private MeshFilter floorMeshFilter;
+    private MeshCollider floorMeshCollider;
     private GameObject ceilingObject;
     private MeshRenderer ceilingMeshRenderer;
     private MeshFilter ceilingMeshFilter;
@@ -32,6 +34,7 @@ public class RoomVisualizer : MonoBehaviour
     private readonly List<int> cachedTriangles = new List<int>();
     private readonly List<Vector3> cachedTriangulationVertices = new List<Vector3>();
     private readonly List<int> cachedPolygonIndices = new List<int>();
+    private readonly List<Vector2> cachedUvs = new List<Vector2>();
     private static Material defaultRoomMaterial;
 
     private void OnEnable()
@@ -112,6 +115,11 @@ public class RoomVisualizer : MonoBehaviour
 
         roomMesh = GenerateRoomMesh(cachedLocalVertices);
         floorMeshFilter.sharedMesh = roomMesh;
+        if (floorMeshCollider != null)
+        {
+            floorMeshCollider.sharedMesh = null;
+            floorMeshCollider.sharedMesh = roomMesh;
+        }
 
         Material resolvedFloorSourceMaterial = ResolveFloorSourceMaterial();
         EnsureRuntimeMaterial(ref runtimeFloorMaterial, ref floorSourceMaterial, resolvedFloorSourceMaterial);
@@ -195,12 +203,29 @@ public class RoomVisualizer : MonoBehaviour
         }
 
         EnsureTrianglesFaceUp(cachedTriangulationVertices, cachedTriangles);
+        BuildPlanarUvs(cachedTriangulationVertices, cachedUvs);
 
         roomMesh.SetVertices(cachedTriangulationVertices);
+        roomMesh.SetUVs(0, cachedUvs);
         roomMesh.SetTriangles(cachedTriangles, 0);
         roomMesh.RecalculateNormals();
         roomMesh.RecalculateBounds();
         return roomMesh;
+    }
+
+    private static void BuildPlanarUvs(List<Vector3> vertices, List<Vector2> results)
+    {
+        results.Clear();
+        if (vertices == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            Vector3 vertex = vertices[i];
+            results.Add(new Vector2(vertex.x * RoomUnitToTextureMeter, vertex.z * RoomUnitToTextureMeter));
+        }
     }
 
     private void ApplyTransformFromGeometry(RoomGeometry geometry, Vector3 placementOffset)
@@ -275,6 +300,15 @@ public class RoomVisualizer : MonoBehaviour
             if (floorMeshRenderer == null)
             {
                 floorMeshRenderer = floorObject.AddComponent<MeshRenderer>();
+            }
+        }
+
+        if (floorMeshCollider == null)
+        {
+            floorMeshCollider = floorObject.GetComponent<MeshCollider>();
+            if (floorMeshCollider == null)
+            {
+                floorMeshCollider = floorObject.AddComponent<MeshCollider>();
             }
         }
 

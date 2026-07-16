@@ -12,6 +12,7 @@ public sealed class UiReferenceSettings : ScriptableObject
     public string materialScrollViewName = "Scroll View";
     public string materialContentName = "Content";
     public string materialFloorButtonName = "_Left";
+    public string materialWallButtonName = "_Wall";
     public string materialCeilingButtonName = "_Right";
 
     [Header("Room Wall Authoring")]

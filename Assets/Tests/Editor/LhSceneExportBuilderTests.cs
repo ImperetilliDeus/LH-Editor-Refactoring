@@ -120,6 +120,7 @@ public class LhSceneExportBuilderTests
     public void ValidateLegacy_ReportsMissingRoomCode()
     {
         object scene = CreateLegacySceneDto();
+        AddValidLegacyWall(scene, 1);
         object room = CreateLegacyRoomDto("Room Without Code", string.Empty);
         AddToList(GetFieldValue<IList>(scene, "roomData"), room);
 
@@ -133,6 +134,7 @@ public class LhSceneExportBuilderTests
     public void ValidateLegacy_ReportsMissingFurnitureDefectTupleFields()
     {
         object scene = CreateLegacySceneDto();
+        AddValidLegacyWall(scene, 1);
         object room = CreateLegacyRoomDto("Living", "900");
         object furniture = CreateLegacyFurnitureDto("SOFA");
         object defect = CreateFurnitureDefectDto("900", string.Empty, "080");
@@ -144,6 +146,74 @@ public class LhSceneExportBuilderTests
 
         Assert.That(GetPropertyValue<bool>(result, "IsValid"), Is.False);
         Assert.That(GetPropertyValue<IList>(result, "Errors"), Does.Contain("roomData[0].furnish[0].defects[0] is missing locCd."));
+    }
+
+    [Test]
+    public void ValidateLegacy_AcceptsMobileViewerOldContractScene()
+    {
+        object scene = CreateValidLegacySceneDto();
+
+        object result = InvokeValidateLegacy(scene);
+
+        Assert.That(GetPropertyValue<bool>(result, "IsValid"), Is.True);
+        Assert.That(GetPropertyValue<IList>(result, "Errors"), Is.Empty);
+    }
+
+    [Test]
+    public void ValidateLegacy_ReportsRoomWallReferenceMissingFromWallData()
+    {
+        object scene = CreateLegacySceneDto();
+        AddValidLegacyWall(scene, 1);
+        object room = CreateLegacyRoomDto("Living", "900");
+        IList walls = GetFieldValue<IList>(room, "walls");
+        walls.Clear();
+        walls.Add(404);
+        AddToList(GetFieldValue<IList>(scene, "roomData"), room);
+
+        object result = InvokeValidateLegacy(scene);
+
+        Assert.That(GetPropertyValue<bool>(result, "IsValid"), Is.False);
+        Assert.That(GetPropertyValue<IList>(result, "Errors"), Does.Contain("roomData[0].walls[0] references missing wall id 404."));
+    }
+
+    [Test]
+    public void ValidateLegacy_ReportsInteriorSegmentWithoutOpening()
+    {
+        object scene = CreateLegacySceneDto();
+        object wall = CreateLegacyWallDto(1, "wall01");
+        object segment = CreateWallSegmentDto();
+        SetFieldValue(segment, "hasInterior", true);
+        AddToList(GetFieldValue<IList>(wall, "segments"), segment);
+        AddToList(GetFieldValue<IList>(scene, "wallData"), wall);
+        AddToList(GetFieldValue<IList>(scene, "roomData"), CreateLegacyRoomDto("Living", "900"));
+
+        object result = InvokeValidateLegacy(scene);
+
+        Assert.That(GetPropertyValue<bool>(result, "IsValid"), Is.False);
+        Assert.That(GetPropertyValue<IList>(result, "Errors"), Does.Contain("wallData[0].segments[0] hasInterior is true but has no existing door or window."));
+    }
+
+    [Test]
+    public void ValidateLegacy_ReportsCustomSurfaceMeshShapeProblems()
+    {
+        object scene = CreateLegacySceneDto();
+        AddValidLegacyWall(scene, 1);
+        object room = CreateLegacyRoomDto("Living", "900");
+        object floor = GetFieldValue<object>(room, "floor");
+        SetFieldValue(floor, "meshType", 1);
+        object mesh = GetFieldValue<object>(floor, "mesh");
+        SetFieldValue(mesh, "normals", null);
+        IList triangles = GetFieldValue<IList>(mesh, "triangles");
+        triangles.Add(0);
+        SetFieldValue(floor, "mesh", mesh);
+        SetFieldValue(room, "floor", floor);
+        AddToList(GetFieldValue<IList>(scene, "roomData"), room);
+
+        object result = InvokeValidateLegacy(scene);
+
+        Assert.That(GetPropertyValue<bool>(result, "IsValid"), Is.False);
+        Assert.That(GetPropertyValue<IList>(result, "Errors"), Does.Contain("roomData[0].floor custom mesh has no normals list."));
+        Assert.That(GetPropertyValue<IList>(result, "Errors"), Does.Contain("roomData[0].floor custom mesh triangle list length is not divisible by 3."));
     }
 
     private Component CreateWindowOpening(string windowTypeKey)
@@ -279,6 +349,48 @@ public class LhSceneExportBuilderTests
         SetFieldValue(scene, "wallData", CreateList(wallType));
         SetFieldValue(scene, "roomData", CreateList(roomType));
         return scene;
+    }
+
+    private static object CreateValidLegacySceneDto()
+    {
+        object scene = CreateLegacySceneDto();
+        AddValidLegacyWall(scene, 1);
+        AddToList(GetFieldValue<IList>(scene, "roomData"), CreateLegacyRoomDto("Living", "900"));
+        return scene;
+    }
+
+    private static void AddValidLegacyWall(object scene, int id)
+    {
+        object wall = CreateLegacyWallDto(id, $"wall{id:00}");
+        AddToList(GetFieldValue<IList>(wall, "segments"), CreateWallSegmentDto());
+        AddToList(GetFieldValue<IList>(scene, "wallData"), wall);
+    }
+
+    private static object CreateLegacyWallDto(int id, string name)
+    {
+        Type wallType = GetAssemblyType("LH.Schema.LhLegacyWallDto");
+        object wall = Activator.CreateInstance(wallType);
+        SetFieldValue(wall, "name", name);
+        SetFieldValue(wall, "id", id);
+        SetFieldValue(wall, "texture", "W001");
+        SetFieldValue(wall, "position", CreateVector3Dto(Vector3.zero));
+        SetFieldValue(wall, "angle", CreateVector3Dto(Vector3.zero));
+        SetFieldValue(wall, "scale", CreateVector3Dto(Vector3.one));
+        SetFieldValue(wall, "segments", CreateList(GetAssemblyType("LH.Schema.LhWallSegmentDto")));
+        return wall;
+    }
+
+    private static object CreateWallSegmentDto()
+    {
+        Type segmentType = GetAssemblyType("LH.Schema.LhWallSegmentDto");
+        object segment = Activator.CreateInstance(segmentType);
+        SetFieldValue(segment, "position", CreateVector3Dto(Vector3.zero));
+        SetFieldValue(segment, "angle", CreateVector3Dto(Vector3.zero));
+        SetFieldValue(segment, "scale", CreateVector3Dto(Vector3.one));
+        SetFieldValue(segment, "hasInterior", false);
+        SetFieldValue(segment, "door", null);
+        SetFieldValue(segment, "window", null);
+        return segment;
     }
 
     private static object CreateLegacyRoomDto(string name, string code)

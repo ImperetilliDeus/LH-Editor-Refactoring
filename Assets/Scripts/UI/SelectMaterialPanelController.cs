@@ -5,23 +5,20 @@ using UnityEngine.UI;
 
 public class SelectMaterialPanelController : MonoBehaviour
 {
-    private enum MaterialCategory
-    {
-        Floor,
-        Ceiling,
-    }
-
     [Header("References")]
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private RoomManager roomManager;
+    [SerializeField] private DrawManager drawManager;
+    [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private UiReferenceSettings uiReferenceSettings;
     [SerializeField] private RectTransform contentRoot;
     [SerializeField] private RectTransform textureButtonTemplate;
     [SerializeField] private Button floorCategoryButton;
+    [SerializeField] private Button wallCategoryButton;
     [SerializeField] private Button ceilingCategoryButton;
 
     [Header("State")]
-    [SerializeField] private MaterialCategory activeCategory = MaterialCategory.Floor;
+    [SerializeField] private InteriorMaterialCategory activeCategory = InteriorMaterialCategory.Floor;
 
     private readonly List<GameObject> spawnedButtons = new List<GameObject>();
     private readonly List<Sprite> generatedSprites = new List<Sprite>();
@@ -53,13 +50,19 @@ public class SelectMaterialPanelController : MonoBehaviour
 
     public void ShowFloorMaterials()
     {
-        activeCategory = MaterialCategory.Floor;
+        activeCategory = InteriorMaterialCategory.Floor;
+        RefreshVisibleButtons();
+    }
+
+    public void ShowWallMaterials()
+    {
+        activeCategory = InteriorMaterialCategory.Wall;
         RefreshVisibleButtons();
     }
 
     public void ShowCeilingMaterials()
     {
-        activeCategory = MaterialCategory.Ceiling;
+        activeCategory = InteriorMaterialCategory.Ceiling;
         RefreshVisibleButtons();
     }
 
@@ -67,6 +70,8 @@ public class SelectMaterialPanelController : MonoBehaviour
     {
         LayerUtility.ResolveObject(ref roomAuthoringPanelManager);
         LayerUtility.ResolveObject(ref roomManager);
+        LayerUtility.ResolveObject(ref drawManager);
+        LayerUtility.ResolveObject(ref wallSelectionManager);
 
         if (contentRoot == null)
         {
@@ -97,6 +102,15 @@ public class SelectMaterialPanelController : MonoBehaviour
                 ceilingCategoryButton = right.GetComponent<Button>();
             }
         }
+
+        if (wallCategoryButton == null)
+        {
+            Transform wall = LayerUtility.FindChildByName(transform, GetMaterialWallButtonName());
+            if (wall != null)
+            {
+                wallCategoryButton = wall.GetComponent<Button>();
+            }
+        }
     }
 
     private void BindButtons()
@@ -105,6 +119,12 @@ public class SelectMaterialPanelController : MonoBehaviour
         {
             floorCategoryButton.onClick.RemoveListener(ShowFloorMaterials);
             floorCategoryButton.onClick.AddListener(ShowFloorMaterials);
+        }
+
+        if (wallCategoryButton != null)
+        {
+            wallCategoryButton.onClick.RemoveListener(ShowWallMaterials);
+            wallCategoryButton.onClick.AddListener(ShowWallMaterials);
         }
 
         if (ceilingCategoryButton != null)
@@ -167,6 +187,13 @@ public class SelectMaterialPanelController : MonoBehaviour
             : "_Right";
     }
 
+    private string GetMaterialWallButtonName()
+    {
+        return uiReferenceSettings != null && !string.IsNullOrWhiteSpace(uiReferenceSettings.materialWallButtonName)
+            ? uiReferenceSettings.materialWallButtonName
+            : "_Wall";
+    }
+
     private void HandleSelectedRoomChanged(Room room)
     {
         RefreshVisibleButtons();
@@ -182,9 +209,7 @@ public class SelectMaterialPanelController : MonoBehaviour
             return;
         }
 
-        IReadOnlyList<Material> materials = activeCategory == MaterialCategory.Floor
-            ? roomManager.GetFloorMaterials()
-            : roomManager.GetCeilingMaterials();
+        IReadOnlyList<Material> materials = GetActiveMaterials();
 
         if (materials == null)
         {
@@ -192,7 +217,9 @@ public class SelectMaterialPanelController : MonoBehaviour
         }
 
         Room selectedRoom = roomAuthoringPanelManager != null ? roomAuthoringPanelManager.SelectedRoom : null;
-        bool canApply = selectedRoom != null;
+        bool canApply = activeCategory == InteriorMaterialCategory.Wall
+            ? drawManager != null
+            : selectedRoom != null;
 
         for (int i = 0; i < materials.Count; i++)
         {
@@ -227,6 +254,12 @@ public class SelectMaterialPanelController : MonoBehaviour
 
     private void ApplySelectedMaterial(string materialCode)
     {
+        if (activeCategory == InteriorMaterialCategory.Wall)
+        {
+            ApplySelectedWallMaterial(materialCode);
+            return;
+        }
+
         if (roomManager == null || roomAuthoringPanelManager == null)
         {
             return;
@@ -244,8 +277,45 @@ public class SelectMaterialPanelController : MonoBehaviour
             selectedRoom.RoomTypeKey,
             selectedRoom.RoomCode,
             selectedRoom.RoomNativeCode,
-            activeCategory == MaterialCategory.Floor ? materialCode : roomManager.GetEffectiveFloorTextureCode(selectedRoom),
-            activeCategory == MaterialCategory.Ceiling ? materialCode : roomManager.GetEffectiveCeilingTextureCode(selectedRoom));
+            activeCategory == InteriorMaterialCategory.Floor ? materialCode : roomManager.GetEffectiveFloorTextureCode(selectedRoom),
+            activeCategory == InteriorMaterialCategory.Ceiling ? materialCode : roomManager.GetEffectiveCeilingTextureCode(selectedRoom));
+    }
+
+    private IReadOnlyList<Material> GetActiveMaterials()
+    {
+        if (roomManager == null)
+        {
+            return null;
+        }
+
+        switch (activeCategory)
+        {
+            case InteriorMaterialCategory.Floor:
+                return roomManager.GetFloorMaterials();
+            case InteriorMaterialCategory.Wall:
+                return roomManager.GetWallMaterials();
+            case InteriorMaterialCategory.Ceiling:
+                return roomManager.GetCeilingMaterials();
+            default:
+                return roomManager.GetFloorMaterials();
+        }
+    }
+
+    private void ApplySelectedWallMaterial(string materialCode)
+    {
+        if (roomManager == null)
+        {
+            return;
+        }
+
+        Material material = roomManager.ResolveWallMaterial(materialCode);
+        if (material == null)
+        {
+            return;
+        }
+
+        drawManager?.SetDefaultWallMaterial(material);
+        wallSelectionManager?.ApplyMaterialToSelectedWalls(material, materialCode);
     }
 
     private void ClearSpawnedButtons()

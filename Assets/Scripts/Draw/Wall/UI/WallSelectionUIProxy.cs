@@ -74,6 +74,7 @@ public class WallSelectionUIProxy : MonoBehaviour
         isSelected = selected;
         EnsureReferences();
         EnsureUI();
+        ApplyInteractionState();
         ApplyCurrentStyle();
     }
 
@@ -168,7 +169,7 @@ public class WallSelectionUIProxy : MonoBehaviour
         WallSelectionCanvasOrderingUtility.PlaceBelowSelectableControls(rootRect, targetCanvas.transform);
         if (rootImage != null)
         {
-            rootImage.raycastTarget = selectionManager.IsWallUIInteractionEnabled;
+            ApplyInteractionState();
         }
 
         UpdateEndCaps(width, thickness);
@@ -259,6 +260,16 @@ public class WallSelectionUIProxy : MonoBehaviour
 
         WallSelectionUIInput input = rootObject.AddComponent<WallSelectionUIInput>();
         input.Initialize(this);
+    }
+
+    private void ApplyInteractionState()
+    {
+        if (rootImage == null)
+        {
+            return;
+        }
+
+        rootImage.raycastTarget = selectionManager != null && selectionManager.IsWallUIInteractionEnabled;
     }
 
     private void ApplyCurrentStyle()

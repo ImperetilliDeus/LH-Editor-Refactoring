@@ -103,7 +103,10 @@ public partial class WallOpeningPlacementManager
                 definition.ReferenceSize,
                 definition.FitDepth,
                 definition.FitHeight,
-                definition.FitWidth);
+                definition.FitWidth,
+                definition.UseParametricModel,
+                definition.AuthoredSize,
+                definition.UsesBlenderLocalAxes);
         }
         else
         {

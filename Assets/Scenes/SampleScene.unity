@@ -5176,8 +5176,10 @@ MonoBehaviour:
   roomRoot: {fileID: 755237741}
   roomMaterial: {fileID: 2100000, guid: 7a8941e63c48f244ebfa68023dd00a18, type: 2}
   floorMaterialFolderPath: Assets/Prefabs/Furniture/Models/Materials/Floor
+  wallMaterialFolderPath: Assets/Prefabs/Furniture/Models/Materials/Wall
   ceilingMaterialFolderPath: Assets/Prefabs/Furniture/Models/Materials/Ceil
   defaultFloorTextureCode: F001
+  defaultWallTextureCode: W001 1
   defaultCeilingTextureCode: C001
   floorMaterials:
   - {fileID: 2100000, guid: 7245245260510894395a240003248753, type: 2}
@@ -5185,6 +5187,18 @@ MonoBehaviour:
   - {fileID: 2100000, guid: f58f2cb391b41c04083ffd44abf42268, type: 2}
   - {fileID: 2100000, guid: e0cbfd1e4ba5f054f9cd202c20842470, type: 2}
   - {fileID: 2100000, guid: 0d411c3d74c4a644fa74d4b1a77faead, type: 2}
+  - {fileID: 2100000, guid: ea5bca3238e84384393b02f7a3c040fa, type: 2}
+  - {fileID: 2100000, guid: ce24e05e0e791ba44b15692206ffb1d8, type: 2}
+  - {fileID: 2100000, guid: d9ab62777adaf45498c30cbac2486724, type: 2}
+  wallMaterials:
+  - {fileID: 2100000, guid: 0e5348109ad27674c910020f18f41c02, type: 2}
+  - {fileID: 2100000, guid: 11b50f0a2dc53b540989df83c2c2c9f3, type: 2}
+  - {fileID: 2100000, guid: 7557bffd242d82c4abf0fba4dd06c712, type: 2}
+  - {fileID: 2100000, guid: 1826ff4fc4ce6d94eb204d22a9f0aad3, type: 2}
+  - {fileID: 2100000, guid: 14057a1f35579f14687a8993a583cba5, type: 2}
+  - {fileID: 2100000, guid: 0b4717700701cbe4bb8b21069f7744d6, type: 2}
+  - {fileID: 2100000, guid: c256ab65d2c36d649b80d9ab9bddf8c1, type: 2}
+  - {fileID: 2100000, guid: 63a9e41651d56114988186e6ea8cc953, type: 2}
   ceilingMaterials:
   - {fileID: 2100000, guid: 5f93a825dcff1dc44a4dcf0d8716d938, type: 2}
   roomColor: {r: 0.6037736, g: 0.49255857, b: 0.43574226, a: 0.3}
@@ -6069,6 +6083,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetCanvas: {fileID: 1422295719}
+  modeManager: {fileID: 0}
   labelFont: {fileID: 12800000, guid: 9316d85b724f07340b5bfb2289b56cfa, type: 3}
   labelHeightOffset: 10
   labelScale: 1.5
@@ -6076,6 +6091,7 @@ MonoBehaviour:
   previewTextColor: {r: 0, g: 0, b: 0, a: 0.75}
   fontSize: 18
   labelSize: {x: 220, y: 40}
+  labelScreenPadding: 14
 --- !u!1 &525080093
 GameObject:
   m_ObjectHideFlags: 0
@@ -6139,7 +6155,7 @@ MonoBehaviour:
   _wallSurfaceOffset: 0.01
   _enablePreviewWall: 1
   _previewColor: {r: 0.2, g: 0.8, b: 1, a: 0.45}
-  _wallMaterial: {fileID: 2100000, guid: 0e5348109ad27674c910020f18f41c02, type: 2}
+  _wallMaterial: {fileID: 2100000, guid: 7557bffd242d82c4abf0fba4dd06c712, type: 2}
   _wallColor: {r: 0.78, g: 0.78, b: 0.78, a: 1}
   _wallTopMaterial: {fileID: 0}
 --- !u!114 &525080096
@@ -8473,6 +8489,7 @@ MonoBehaviour:
   validTint: {r: 0.45, g: 1, b: 0.55, a: 0.85}
   invalidTint: {r: 1, g: 0.4, b: 0.4, a: 0.85}
   enableValidationDebugLogs: 0
+  validationDebugLogIntervalSeconds: 0.25
 --- !u!1 &827918883
 GameObject:
   m_ObjectHideFlags: 0
@@ -11255,11 +11272,8 @@ MonoBehaviour:
   roomHandleManager: {fileID: 480306211}
   highlightMaterial: {fileID: 0}
   highlightColor: {r: 0.1, g: 0.85, b: 1, a: 1}
-  roomOverlayColor: {r: 0.1, g: 0.85, b: 1, a: 0.45}
   boundsPadding: 0.08
   lineWidth: 0.12
-  roomOutlineYOffset: 0.05
-  roomOverlayYOffset: 0.02
 --- !u!114 &1299695796
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15932,10 +15946,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomAuthoringPanelManager: {fileID: 480306210}
   roomManager: {fileID: 480306209}
+  drawManager: {fileID: 0}
+  wallSelectionManager: {fileID: 0}
   uiReferenceSettings: {fileID: 11400000, guid: 5711295a6e254661b3c829b8bc4f72a5, type: 2}
   contentRoot: {fileID: 1348814243}
   textureButtonTemplate: {fileID: 576871940971455559}
   floorCategoryButton: {fileID: 1133228979}
+  wallCategoryButton: {fileID: 0}
   ceilingCategoryButton: {fileID: 1168753623}
   activeCategory: 0
 --- !u!1 &1844523163
@@ -18108,6 +18125,7 @@ MonoBehaviour:
   modeManager: {fileID: 1793356131}
   showOnlyInDetailEdit: 0
   previewWallThicknessMultiplier: 0.55
+  logRoomWallAuthoringHitDiagnostics: 1
   floorColor: {r: 0.34, g: 0.86, b: 0.58, a: 0.22}
   selectedFloorColor: {r: 0.28, g: 0.6, b: 1, a: 0.35}
   wallColor: {r: 0, g: 0, b: 0, a: 1}

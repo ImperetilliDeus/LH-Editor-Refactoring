@@ -339,6 +339,7 @@ public static class LhWorkStateLoader
             thickness = wallDto.thickness,
             height = wallDto.height,
             centerY = wallDto.centerY,
+            textureCode = wallDto.textureCode ?? string.Empty,
             startVertexId = wallDto.startVertexId,
             endVertexId = wallDto.endVertexId,
             suppressStartHandle = wallDto.suppressStartHandle,
@@ -379,6 +380,7 @@ public static class LhWorkStateLoader
             wallDto.centerY)
         {
             id = wallDto.id ?? string.Empty,
+            TextureCode = wallDto.textureCode ?? string.Empty,
         };
 
         bool configured = WallObjectFactory.ConfigureWall(

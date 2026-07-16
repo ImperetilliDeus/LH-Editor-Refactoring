@@ -588,6 +588,37 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
+    public void ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars()
+    {
+        Type parametricType = GetAssemblyType("ParametricOpeningModel");
+        GameObject root = CreateGameObject("BalconyPrefab");
+        Component parametric = root.AddComponent(parametricType);
+
+        Transform topRail = CreateChildGameObject(root.transform, "Stretch_Railing_Top_Rail").transform;
+        topRail.localPosition = new Vector3(0f, -0.48f, 0.72f);
+        topRail.localScale = Vector3.one;
+        Transform verticalBar = CreateChildGameObject(root.transform, "Fixed_Railing_Vertical_Bar_01").transform;
+        verticalBar.localPosition = new Vector3(0.45f, -0.72f, -0.78f);
+        verticalBar.localScale = Vector3.one;
+
+        parametricType.GetMethod("ApplyOpeningSize")?.Invoke(
+            parametric,
+            new object[]
+            {
+                new Vector3(24f, 24f, 0.5f),
+                new Vector3(18f, 21f, 1.4f),
+            });
+
+        Assert.That(topRail.localScale.x, Is.EqualTo(24f / 18f).Within(0.0001f));
+        Assert.That(topRail.localScale.y, Is.EqualTo(1f).Within(0.0001f));
+        Assert.That(topRail.localScale.z, Is.EqualTo(1f).Within(0.0001f));
+        Assert.That(verticalBar.localScale, Is.EqualTo(Vector3.one));
+        Assert.That(verticalBar.localPosition.x, Is.EqualTo(0.45f * (24f / 18f)).Within(0.0001f));
+        Assert.That(verticalBar.localPosition.y, Is.EqualTo(-0.72f).Within(0.0001f));
+        Assert.That(verticalBar.localPosition.z, Is.EqualTo(-12f + (-0.78f + 10.5f)).Within(0.0001f));
+    }
+
+    [Test]
     public void SelectOpening_IgnoresOpening_WhenNotInDetailEditMode()
     {
         Type managerType = GetAssemblyType("WallOpeningPlacementManager");

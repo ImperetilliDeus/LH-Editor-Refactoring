@@ -29,6 +29,7 @@ namespace LH.Schema
         public LhVector3Dto position;
         public LhVector3Dto angle;
         public LhVector3Dto scale;
+        public string texture;
         public List<LhWallSegmentDto> segments;
     }
 
@@ -40,6 +41,7 @@ namespace LH.Schema
         public LhVector3Dto position;
         public LhVector3Dto angle;
         public LhVector3Dto scale;
+        public string texture;
         public List<LhWallSegmentDto> segments;
     }
 
@@ -104,6 +106,12 @@ namespace LH.Schema
         public LhVector3Dto position;
         public LhVector3Dto angle;
         public LhVector3Dto scale;
+        public string parametricProfileKey;
+        public LhVector3Dto authoredSize;
+        public float width;
+        public float height;
+        public float depth;
+        public float bottomY;
     }
 
     [Serializable]
@@ -114,6 +122,12 @@ namespace LH.Schema
         public LhVector3Dto position;
         public LhVector3Dto angle;
         public LhVector3Dto scale;
+        public string parametricProfileKey;
+        public LhVector3Dto authoredSize;
+        public float width;
+        public float height;
+        public float depth;
+        public float bottomY;
     }
 
     [Serializable]
