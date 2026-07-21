@@ -57,6 +57,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.MaterialRules.cs`
   - Extracted profile material resolution, generated material caching, resource material loading, and shader selection into `ParametricOpeningMaterialRules`.
   - `ParametricOpeningModel.ApplyProfileMaterials` remains as a thin adapter that walks cached parts and applies resolved materials.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.TransformRules.cs`
+  - Extracted stretch and axis-anchor rules into `ParametricOpeningPartTransformRules`.
+  - Moved `AxisAnchor` from a private nested enum to an internal top-level enum so the helper can return the same rule result type.
+  - `PartState` construction still owns state capture and now delegates stretch/anchor decisions to the helper.
 
 ## Verification State
 
@@ -67,7 +71,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after extracting `EntranceDoorOpeningPartSizes`.
 - Unity script compilation succeeded after extracting `WhiteWindowOpeningPartSizes`.
 - Unity script compilation succeeded after extracting `ParametricOpeningMaterialRules`.
+- Unity script compilation succeeded after extracting `ParametricOpeningPartTransformRules`.
 - EditMode test execution did not produce result XML in this environment.
+- The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
@@ -84,6 +90,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/white-window-authored-size-helper-test.log`
   - `Logs/parametric-opening-material-rules-compile.log`
   - `Logs/parametric-opening-material-rules-test.log`
+  - `Logs/parametric-opening-transform-rules-compile.log`
+  - `Logs/parametric-opening-transform-rules-test.log`
 
 ## Important Context
 
@@ -163,20 +171,18 @@ Already done:
 - Entrance-door authored-size rules were extracted to `EntranceDoorOpeningPartSizes`.
 - White two-panel window authored-size rules were extracted to `WhiteWindowOpeningPartSizes`.
 - Profile material rules were extracted to `ParametricOpeningMaterialRules`.
+- Stretch and axis-anchor rules were extracted to `ParametricOpeningPartTransformRules`.
 
 Next extraction:
 
-- Move stretch and anchor rules out of `ParametricOpeningModel`.
+- Continue reducing the remaining `ParametricOpeningModel.cs`, now about 628 lines.
+- Good next target: railing vertical bar layout helpers.
 - Preferred shape:
-  - an internal static helper such as `ParametricOpeningPartTransformRules`
+  - an internal static helper such as `ParametricOpeningRailingLayout`
   - methods:
-    - `ShouldStretchX`
-    - `ShouldStretchY`
-    - `ShouldStretchZ`
-    - `ResolveXAnchor`
-    - `ResolveYAnchor`
-    - `ResolveZAnchor`
-  - keep `PartState` construction flow unchanged until tests are stable.
+    - `ApplyVerticalBars`
+    - `ResolveAuthoredBarSpacing`
+  - keep the cached `railingVerticalBars` collection owned by `ParametricOpeningModel`.
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
