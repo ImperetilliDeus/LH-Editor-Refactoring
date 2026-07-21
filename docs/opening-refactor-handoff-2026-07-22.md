@@ -147,6 +147,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RefreshOpeningSelectionPresentation`.
   - Centralized the repeated detail menu refresh, detail input refresh, and marker dirty calls used by `SelectOpening` and `ClearOpeningSelection`.
   - Selection state changes, delete behavior, marker drag behavior, undo recording, and rebuild flow were left unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Selection.cs`
+  - Added `DetachAndDestroyOpening`.
+  - Moved the selected-opening detach, deactivate, and destroy sequence out of `DeleteSelectedOpening`.
+  - Container-empty restore, container rebuild, wall selection refresh, snapshot capture, and undo recording were left unchanged.
 
 ## Verification State
 
@@ -212,6 +216,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After centralizing opening selection presentation refresh, Unity script compilation succeeded.
 - After centralizing opening selection presentation refresh, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting the opening detach/destroy helper, Unity script compilation succeeded.
+- After extracting the opening detach/destroy helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -292,6 +300,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-selection-presentation-catalog-tests.xml`
   - `Logs/opening-selection-presentation-rail-regression.log`
   - `Logs/opening-selection-presentation-rail-regression.xml`
+  - `Logs/opening-detach-destroy-compile.log`
+  - `Logs/opening-detach-destroy-catalog-tests.log`
+  - `Logs/opening-detach-destroy-catalog-tests.xml`
+  - `Logs/opening-detach-destroy-rail-regression.log`
+  - `Logs/opening-detach-destroy-rail-regression.xml`
 
 ## Important Context
 
@@ -412,7 +425,7 @@ Suggested extraction order:
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations.
 3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
-4. `OpeningSelectionController` - started with selection presentation refresh cleanup.
+4. `OpeningSelectionController` - started with selection presentation refresh cleanup and detach/destroy extraction.
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
 

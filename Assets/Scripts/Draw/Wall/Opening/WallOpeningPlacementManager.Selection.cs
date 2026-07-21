@@ -62,9 +62,7 @@ public partial class WallOpeningPlacementManager
         UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(container);
         bool hasRemainingOpenings = HasOtherOpenings(container, openingToDelete);
         ClearOpeningSelection();
-        openingToDelete.transform.SetParent(null, false);
-        openingToDelete.gameObject.SetActive(false);
-        Destroy(openingToDelete.gameObject);
+        DetachAndDestroyOpening(openingToDelete);
         GameObject restoredWall = hasRemainingOpenings ? null : RestoreContainerIfEmpty(container);
         UndoRedoManager.OpeningLayoutSnapshot afterSnapshot;
 
@@ -158,5 +156,17 @@ public partial class WallOpeningPlacementManager
         SetOpeningDetailMenuVisible(showDetailMenu);
         RefreshOpeningDetailInputs(true);
         MarkMarkerVisualsDirty();
+    }
+
+    private void DetachAndDestroyOpening(WallOpening opening)
+    {
+        if (opening == null)
+        {
+            return;
+        }
+
+        opening.transform.SetParent(null, false);
+        opening.gameObject.SetActive(false);
+        Destroy(opening.gameObject);
     }
 }
