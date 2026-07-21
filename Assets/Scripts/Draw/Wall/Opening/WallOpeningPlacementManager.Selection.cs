@@ -68,7 +68,6 @@ public partial class WallOpeningPlacementManager
 
         if (restoredWall != null)
         {
-            afterSnapshot = CaptureLayoutSnapshot(restoredWall.GetComponent<Wall>());
             if (wallSelectionManager != null)
             {
                 wallSelectionManager.SetSelectedWallPreservingOpeningSelection(restoredWall);
@@ -78,8 +77,9 @@ public partial class WallOpeningPlacementManager
         {
             RebuildContainer(container, false);
             RefreshSelectedWallForContainer(container, container.WallLength * 0.5f);
-            afterSnapshot = CaptureLayoutSnapshot(container);
         }
+
+        afterSnapshot = CapturePostDeleteLayoutSnapshot(container, restoredWall);
 
         if (undoRedoManager != null)
         {
@@ -168,5 +168,17 @@ public partial class WallOpeningPlacementManager
         opening.transform.SetParent(null, false);
         opening.gameObject.SetActive(false);
         Destroy(opening.gameObject);
+    }
+
+    private UndoRedoManager.OpeningLayoutSnapshot CapturePostDeleteLayoutSnapshot(
+        WallOpeningContainer container,
+        GameObject restoredWall)
+    {
+        if (restoredWall != null)
+        {
+            return CaptureLayoutSnapshot(restoredWall.GetComponent<Wall>());
+        }
+
+        return CaptureLayoutSnapshot(container);
     }
 }
