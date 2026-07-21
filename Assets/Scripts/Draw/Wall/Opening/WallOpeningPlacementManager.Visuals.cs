@@ -64,33 +64,13 @@ public partial class WallOpeningPlacementManager
 
         opening.name = opening.Type == OpeningPlacementType.Door ? $"Door_{index}" : $"Window_{index}";
 
-        MeshFilter meshFilter = opening.GetComponent<MeshFilter>();
-        if (meshFilter == null)
-        {
-            meshFilter = opening.gameObject.AddComponent<MeshFilter>();
-        }
-
-        if (meshFilter.sharedMesh == null)
-        {
-            meshFilter.sharedMesh = GetCubeMesh();
-        }
-
-        BoxCollider collider = opening.GetComponent<BoxCollider>();
-        if (collider == null)
-        {
-            collider = opening.gameObject.AddComponent<BoxCollider>();
-        }
-
-        MeshRenderer renderer = opening.GetComponent<MeshRenderer>();
-        if (renderer == null)
-        {
-            renderer = opening.gameObject.AddComponent<MeshRenderer>();
-        }
-
         bool hasModelPrefab = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null;
         bool hidePlaceholderVisual = hasModelPrefab;
-        renderer.enabled = !hidePlaceholderVisual;
-        renderer.sharedMaterial = hidePlaceholderVisual ? null : GetOpeningMaterial(opening.Type);
+        OpeningPlaceholderVisualBuilder.Apply(
+            opening,
+            GetCubeMesh(),
+            GetOpeningMaterial(opening.Type),
+            hidePlaceholderVisual);
         if (hasModelPrefab)
         {
             opening.ApplyModelPrefab(

@@ -128,6 +128,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManager.Visuals.cs` now delegates visual resource lookup to the helper while keeping opening transform/model/filler orchestration unchanged.
   - Existing wall/segment creation paths now request the cube mesh through `GetCubeMesh()` instead of reading a field directly.
   - No behavior changes were intended.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningPlaceholderVisualBuilder.cs`
+  - Added an internal static helper for opening placeholder component setup.
+  - Moved `MeshFilter`, `BoxCollider`, and `MeshRenderer` ensure/apply logic out of `WallOpeningPlacementManager.Visuals.cs`.
+  - `WallOpeningPlacementManager.Visuals.cs` still owns opening transform placement, catalog/model-prefab decision flow, filler segment creation, and marker creation.
+  - No behavior changes were intended.
 
 ## Verification State
 
@@ -177,6 +182,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting `OpeningVisualResources`, Unity script compilation succeeded.
 - After extracting `OpeningVisualResources`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningPlaceholderVisualBuilder`, Unity script compilation succeeded.
+- After extracting `OpeningPlaceholderVisualBuilder`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -237,6 +246,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-visual-resources-catalog-tests.xml`
   - `Logs/opening-visual-resources-rail-regression.log`
   - `Logs/opening-visual-resources-rail-regression.xml`
+  - `Logs/opening-placeholder-visual-builder-compile.log`
+  - `Logs/opening-placeholder-visual-builder-catalog-tests.log`
+  - `Logs/opening-placeholder-visual-builder-catalog-tests.xml`
+  - `Logs/opening-placeholder-visual-builder-rail-regression.log`
+  - `Logs/opening-placeholder-visual-builder-rail-regression.xml`
 
 ## Important Context
 
@@ -356,7 +370,7 @@ Suggested extraction order:
 
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations.
-3. `OpeningVisualBuilder` - started with visual resource cache extraction.
+3. `OpeningVisualBuilder` - started with visual resource cache and placeholder component setup extraction.
 4. `OpeningSelectionController`
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
