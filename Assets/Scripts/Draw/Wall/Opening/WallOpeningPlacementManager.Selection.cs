@@ -23,32 +23,24 @@ public partial class WallOpeningPlacementManager
 
         if (SelectedOpening == opening)
         {
-            SetOpeningDetailMenuVisible(opening != null);
-            RefreshOpeningDetailInputs(true);
-            MarkMarkerVisualsDirty();
+            RefreshOpeningSelectionPresentation(opening != null);
             return;
         }
 
         selectionState.SetSelectedOpening(opening);
-        SetOpeningDetailMenuVisible(opening != null);
-        RefreshOpeningDetailInputs(true);
-        MarkMarkerVisualsDirty();
+        RefreshOpeningSelectionPresentation(opening != null);
     }
 
     public void ClearOpeningSelection()
     {
         if (SelectedOpening == null)
         {
-            SetOpeningDetailMenuVisible(false);
-            RefreshOpeningDetailInputs(true);
-            MarkMarkerVisualsDirty();
+            RefreshOpeningSelectionPresentation(false);
             return;
         }
 
         selectionState.ClearSelectedOpening();
-        SetOpeningDetailMenuVisible(false);
-        RefreshOpeningDetailInputs(true);
-        MarkMarkerVisualsDirty();
+        RefreshOpeningSelectionPresentation(false);
     }
 
     public void DeleteSelectedOpening()
@@ -159,5 +151,12 @@ public partial class WallOpeningPlacementManager
             RebuildContainer,
             RefreshSelectedWallForContainer,
             CaptureLayoutSnapshot);
+    }
+
+    private void RefreshOpeningSelectionPresentation(bool showDetailMenu)
+    {
+        SetOpeningDetailMenuVisible(showDetailMenu);
+        RefreshOpeningDetailInputs(true);
+        MarkMarkerVisualsDirty();
     }
 }
