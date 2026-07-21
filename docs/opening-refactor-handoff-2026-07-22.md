@@ -82,6 +82,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.EntranceDoorLayouts.cs`
   - Moved `ApplySingleEntranceDoorLayout` into a focused partial without behavior changes.
   - The method still uses `ApplyKnownPart` for part lookup and transform application.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteWindowLayouts.cs`
+  - Moved `ApplyWhiteTwoPanelWindowLayout` into a focused partial without behavior changes.
+  - The method still uses `ApplyKnownPart` for part lookup and transform application.
 
 ## Verification State
 
@@ -97,12 +100,14 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after moving general part transform application into `ParametricOpeningModel.PartTransforms.cs`.
 - Unity script compilation succeeded after moving private `PartState` into `ParametricOpeningModel.PartState.cs`.
 - Unity script compilation succeeded after moving single entrance door layout into `ParametricOpeningModel.EntranceDoorLayouts.cs`.
+- Unity script compilation succeeded after moving white two-panel window layout into `ParametricOpeningModel.WhiteWindowLayouts.cs`.
 - EditMode test execution did not produce result XML in this environment.
 - The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
 - After the part-transform partial split, a targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the part-state partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the entrance-door layout partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
+- After the white-window layout partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -128,6 +133,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/parametric-opening-part-state-test.log`
   - `Logs/parametric-opening-entrance-layouts-compile.log`
   - `Logs/parametric-opening-entrance-layouts-test.log`
+  - `Logs/parametric-opening-white-window-layouts-compile.log`
+  - `Logs/parametric-opening-white-window-layouts-test.log`
 
 ## Important Context
 
@@ -215,15 +222,16 @@ Recent extraction:
 - General part transform application was moved into `ParametricOpeningModel.PartTransforms.cs`.
 - Private `PartState` support was moved into `ParametricOpeningModel.PartState.cs`.
 - Single entrance door layout was moved into `ParametricOpeningModel.EntranceDoorLayouts.cs`.
-- `ParametricOpeningModel.cs` is now about 302 lines.
+- White two-panel window layout was moved into `ParametricOpeningModel.WhiteWindowLayouts.cs`.
+- `ParametricOpeningModel.cs` is now about 267 lines.
 - `PartState` remains private.
 
 Next extraction:
 
 - Continue reducing `ParametricOpeningModel.cs` with minimal behavior change.
 - Good next targets:
-  - move `ApplyWhiteTwoPanelWindowLayout` into a focused partial or helper
-  - consider extracting `ApplyKnownPart`/`FindPart` only if layout partials no longer need direct part lookup
+  - consider moving `ApplyKnownPart`/`FindPart` into a focused partial because multiple layout partials still use direct part lookup
+  - consider moving cache/build helpers such as `EnsureCached` into a focused partial
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
