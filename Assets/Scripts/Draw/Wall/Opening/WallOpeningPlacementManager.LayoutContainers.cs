@@ -183,7 +183,7 @@ public partial class WallOpeningPlacementManager
         GameObject wallObject = WallObjectFactory.CreateWallObject(
             snapshot.name,
             wallRoot,
-            cachedCubeMesh,
+            GetCubeMesh(),
             snapshot.visualState);
         if (!WallObjectFactory.ConfigureWall(
                 wallObject,
@@ -516,7 +516,7 @@ public partial class WallOpeningPlacementManager
         GameObject wallObject = WallObjectFactory.CreateWallObject(
             string.IsNullOrWhiteSpace(segmentName) ? SegmentObjectName : segmentName,
             parent,
-            cachedCubeMesh,
+            GetCubeMesh(),
             visualState);
         bool applied = WallObjectFactory.ConfigureWall(
             wallObject,

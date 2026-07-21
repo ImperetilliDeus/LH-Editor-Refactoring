@@ -76,9 +76,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private readonly WallOpeningMarkerDragController markerDragController = new WallOpeningMarkerDragController();
     private readonly WallOpeningLayoutRebuildController layoutRebuildController = new WallOpeningLayoutRebuildController();
     private readonly WallOpeningGeometryFactory geometryFactory = new WallOpeningGeometryFactory();
-    private Mesh cachedCubeMesh;
-    private Material cachedDoorMaterial;
-    private Material cachedWindowMaterial;
+    private readonly OpeningVisualResources visualResources = new OpeningVisualResources();
     private readonly WallOpeningSelectionState selectionState = new WallOpeningSelectionState();
     private Transform deactivatedWallsHolder;
     private bool markerVisualsDirty = true;
@@ -166,19 +164,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             EditorInputManager.Instance.UnregisterHandler(EditorMode.DetailEdit, this);
         }
 
-        if (cachedDoorMaterial != null)
-        {
-            Destroy(cachedDoorMaterial);
-        }
+        visualResources.DestroyCachedMaterials(Destroy);
 
         if (deactivatedWallsHolder != null)
         {
             Destroy(deactivatedWallsHolder.gameObject);
-        }
-
-        if (cachedWindowMaterial != null)
-        {
-            Destroy(cachedWindowMaterial);
         }
     }
 
@@ -740,7 +730,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         return geometryFactory.CreateStandaloneWallSegment(
             wallRoot,
-            cachedCubeMesh,
+            GetCubeMesh(),
             wallLengthDisplay,
             handleManager,
             Destroy,

@@ -122,6 +122,12 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Moved center-distance, width, height, and bottom-offset clamping calculations out of `WallOpeningPlacementManager.Rules.cs`.
   - `WallOpeningPlacementManager.Rules.cs` remains a thin adapter that collects current openings, resolves catalog constraints, and preserves existing private method call sites.
   - No behavior changes were intended.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningVisualResources.cs`
+  - Added an internal helper for cached cube mesh creation, placeholder material creation, and material cleanup.
+  - Removed direct cube mesh/material cache fields from `WallOpeningPlacementManager`.
+  - `WallOpeningPlacementManager.Visuals.cs` now delegates visual resource lookup to the helper while keeping opening transform/model/filler orchestration unchanged.
+  - Existing wall/segment creation paths now request the cube mesh through `GetCubeMesh()` instead of reading a field directly.
+  - No behavior changes were intended.
 
 ## Verification State
 
@@ -167,6 +173,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting `OpeningLayoutService`, Unity script compilation succeeded.
 - After extracting `OpeningLayoutService`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningVisualResources`, Unity script compilation succeeded.
+- After extracting `OpeningVisualResources`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -222,6 +232,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-layout-service-catalog-tests.xml`
   - `Logs/opening-layout-service-rail-regression.log`
   - `Logs/opening-layout-service-rail-regression.xml`
+  - `Logs/opening-visual-resources-compile.log`
+  - `Logs/opening-visual-resources-catalog-tests.log`
+  - `Logs/opening-visual-resources-catalog-tests.xml`
+  - `Logs/opening-visual-resources-rail-regression.log`
+  - `Logs/opening-visual-resources-rail-regression.xml`
 
 ## Important Context
 
@@ -341,7 +356,7 @@ Suggested extraction order:
 
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations.
-3. `OpeningVisualBuilder`
+3. `OpeningVisualBuilder` - started with visual resource cache extraction.
 4. `OpeningSelectionController`
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
