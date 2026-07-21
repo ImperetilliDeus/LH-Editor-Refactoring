@@ -64,6 +64,17 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.RailingLayout.cs`
   - Moved balcony railing vertical bar activation, spacing, and positioning into a focused partial.
   - This remains a partial instead of an external helper because it needs access to private cached `PartState` collections.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.PartTransforms.cs`
+  - Moved general part transform application into a focused partial without behavior changes.
+  - Extracted methods:
+    - `ApplyPart`
+    - `ResolveScaleForSize`
+    - `ResolveScaleAxis`
+    - `ResolveNextSize`
+    - `ResolveNextAxisSize`
+    - `ResolveStretchScale`
+    - `ResolveAxisPosition`
+  - `PartState` remains private in `ParametricOpeningModel.cs`.
 
 ## Verification State
 
@@ -76,9 +87,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after extracting `ParametricOpeningMaterialRules`.
 - Unity script compilation succeeded after extracting `ParametricOpeningPartTransformRules`.
 - Unity script compilation succeeded after moving railing vertical bar layout into `ParametricOpeningModel.RailingLayout.cs`.
+- Unity script compilation succeeded after moving general part transform application into `ParametricOpeningModel.PartTransforms.cs`.
 - EditMode test execution did not produce result XML in this environment.
 - The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
+- After the part-transform partial split, a targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -98,6 +111,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/parametric-opening-transform-rules-test.log`
   - `Logs/parametric-opening-railing-layout-compile.log`
   - `Logs/parametric-opening-railing-layout-test.log`
+  - `Logs/parametric-opening-part-transforms-compile.log`
+  - `Logs/parametric-opening-part-transforms-test.log`
 
 ## Important Context
 
@@ -180,19 +195,17 @@ Already done:
 - Stretch and axis-anchor rules were extracted to `ParametricOpeningPartTransformRules`.
 - Railing vertical bar layout was moved to `ParametricOpeningModel.RailingLayout.cs`.
 
-Next extraction:
+Recent extraction:
 
 - Continue reducing the remaining `ParametricOpeningModel.cs`, now about 566 lines.
-- Good next target: general part transform application and `PartState` support.
-- Preferred shape:
-  - keep behavior changes minimal
-  - consider a partial such as `ParametricOpeningModel.PartTransforms.cs`
-  - methods:
-    - `ApplyPart`
-    - `ResolveNextSize`
-    - `ResolveStretchScale`
-    - `ResolveAxisPosition`
-  - keep `PartState` private until tests are stable.
+- General part transform application was moved into `ParametricOpeningModel.PartTransforms.cs`.
+- `ParametricOpeningModel.cs` is now about 446 lines.
+- `PartState` support remains in `ParametricOpeningModel.cs` and is still private.
+
+Next extraction:
+
+- Continue reducing `ParametricOpeningModel.cs` with minimal behavior change.
+- Good next target: `PartState` support and authored-size dispatch, once tests are stable enough to give useful feedback.
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
