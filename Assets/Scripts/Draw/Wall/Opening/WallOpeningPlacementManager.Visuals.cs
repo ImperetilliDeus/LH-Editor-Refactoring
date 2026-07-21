@@ -31,37 +31,7 @@ public partial class WallOpeningPlacementManager
 
     private void UpdateOpeningVisual(WallOpeningContainer container, WallOpening opening, int index, Transform segmentRoot)
     {
-        Transform parent = segmentRoot != null ? segmentRoot : container.transform;
-        if (opening.transform.parent != parent)
-        {
-            opening.transform.SetParent(parent, false);
-        }
-
-        Vector3 openingCenter = container.WallStart + container.WallDirection * opening.CenterDistance;
-        float openingCenterY = opening.BottomY + opening.Height * 0.5f;
-        if (segmentRoot != null)
-        {
-            Vector3 parentScale = parent.localScale;
-            opening.transform.localPosition = new Vector3(
-                0f,
-                SafeDivide(openingCenterY - parent.position.y, parentScale.y),
-                0f);
-            opening.transform.localRotation = Quaternion.identity;
-            opening.transform.localScale = new Vector3(
-                SafeDivide(opening.Depth, parentScale.x),
-                SafeDivide(opening.Height, parentScale.y),
-                SafeDivide(opening.Width, parentScale.z));
-        }
-        else
-        {
-            opening.transform.position = new Vector3(
-                openingCenter.x,
-                openingCenterY,
-                openingCenter.z);
-            opening.transform.rotation = Quaternion.LookRotation(container.WallDirection, Vector3.up);
-            opening.transform.localScale = new Vector3(opening.Depth, opening.Height, opening.Width);
-        }
-
+        Transform parent = OpeningVisualTransformBuilder.Apply(container, opening, segmentRoot);
         opening.name = opening.Type == OpeningPlacementType.Door ? $"Door_{index}" : $"Window_{index}";
 
         bool hasModelPrefab = TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition) && definition.ModelPrefab != null;
@@ -83,11 +53,6 @@ public partial class WallOpeningPlacementManager
             opening.BottomY + opening.Height);
 
         opening.EnsureMarker(previewCanvas, mainCamera);
-    }
-
-    private static float SafeDivide(float numerator, float denominator)
-    {
-        return Mathf.Abs(denominator) > 0.000001f ? numerator / denominator : 0f;
     }
 
     private void EnsureCachedResources()

@@ -138,6 +138,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Moved the `OpeningTypeCatalogItem` to `WallOpening.ApplyModelPrefab` field mapping out of `WallOpeningPlacementManager.Visuals.cs`.
   - `WallOpeningPlacementManager.Visuals.cs` still owns catalog definition lookup and placeholder visibility decision.
   - No behavior changes were intended.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningVisualTransformBuilder.cs`
+  - Added an internal static helper for applying opening parent, position, rotation, and scale.
+  - Moved segment-root and standalone opening transform placement out of `WallOpeningPlacementManager.Visuals.cs`.
+  - `WallOpeningPlacementManager.Visuals.cs` uses the returned parent for existing filler segment creation.
+  - No behavior changes were intended.
 
 ## Verification State
 
@@ -195,6 +200,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting `OpeningModelPrefabApplier`, Unity script compilation succeeded.
 - After extracting `OpeningModelPrefabApplier`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningVisualTransformBuilder`, Unity script compilation succeeded.
+- After extracting `OpeningVisualTransformBuilder`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -265,6 +274,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-model-prefab-applier-catalog-tests.xml`
   - `Logs/opening-model-prefab-applier-rail-regression.log`
   - `Logs/opening-model-prefab-applier-rail-regression.xml`
+  - `Logs/opening-visual-transform-builder-compile.log`
+  - `Logs/opening-visual-transform-builder-catalog-tests.log`
+  - `Logs/opening-visual-transform-builder-catalog-tests.xml`
+  - `Logs/opening-visual-transform-builder-rail-regression.log`
+  - `Logs/opening-visual-transform-builder-rail-regression.xml`
 
 ## Important Context
 
@@ -384,7 +398,7 @@ Suggested extraction order:
 
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations.
-3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, and model prefab application extraction.
+3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
 4. `OpeningSelectionController`
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
