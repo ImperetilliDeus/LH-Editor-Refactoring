@@ -40,11 +40,17 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Furniture/FurniturePlacementManager.cs`
   - Disabled forced furniture placement validation logs by default.
   - `enableValidationDebugLogs` now controls normal logging behavior unless `ForceValidationDebugLogs` is intentionally re-enabled in code.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteDoorLayouts.cs`
+  - Reduced this partial to thin adapter methods.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteDoorLayoutRules.cs`
+  - Extracted white door layout calculations into `WhiteDoorOpeningLayout`.
+  - `ParametricOpeningModel` still owns part lookup and transform application through the existing `ApplyKnownPart` callback.
 
 ## Verification State
 
 - Unity script compilation succeeded after the reflection-based test adjustment.
 - Unity script compilation also succeeded after the follow-up changes.
+- Unity script compilation succeeded after extracting `WhiteDoorOpeningLayout`.
 - EditMode test execution did not produce result XML in this environment.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
 - Relevant logs:
@@ -52,6 +58,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/wall-opening-placement-tests-rerun.log`
   - `Logs/wall-opening-placement-manager-tests.log`
   - `Logs/wall-opening-placement-manager-tests-rerun.log`
+  - `Logs/white-door-layout-helper-compile.log`
+  - `Logs/white-door-layout-helper-test.log`
 
 ## Important Context
 
@@ -114,29 +122,30 @@ These are the highest-risk code health items found during project review:
   - Problem: viewer sync is file-system based and depends on exact script/prefab GUID behavior.
   - Risk: future partial files or generated dependencies can be omitted unless sync rules stay explicit.
 
-### 3. Start shrinking `ParametricOpeningModel`
+### 3. Continue shrinking `ParametricOpeningModel`
 
 Current problem:
 
-- `ParametricOpeningModel.cs` is about 1800+ lines.
+- `ParametricOpeningModel.cs` is still about 1393 lines.
 - New model profiles are implemented as hardcoded C# branches.
 - This will keep growing with every new door/window model.
 
-Low-risk first extraction:
+Already done:
 
-- Create `ParametricOpeningProfileKeys.cs` or `OpeningProfileKeyRegistry.cs`.
-- Move profile key constants out of `ParametricOpeningModel`.
-- Keep compatibility aliases in `ParametricOpeningModel` temporarily if needed.
+- `ParametricOpeningProfileKeys.cs` exists.
+- `ParametricOpeningModel` keeps compatibility aliases for profile keys.
+- White door layout calculations were extracted to `WhiteDoorOpeningLayout`.
 
 Next extraction:
 
-- Extract white door layout methods into a focused helper, for example:
-  - `WhiteDoorOpeningLayout.cs`
-  - static methods:
-    - `ApplyOneSlidingDoor`
-    - `ApplySwingDoor`
-    - `ApplyGlassFrameDoor`
-    - authored-size resolvers for those profiles
+- Move authored-size resolvers out of the nested `PartState` partial.
+- Preferred shape:
+  - an internal static helper such as `WhiteDoorOpeningPartSizes`
+  - methods:
+    - `ResolveOneSlidingDoor`
+    - `ResolveSwingDoor`
+    - `ResolveGlassFrameDoor`
+  - keep `PartState.ResolveAuthoredPartSize` as the dispatcher until tests are stable.
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
