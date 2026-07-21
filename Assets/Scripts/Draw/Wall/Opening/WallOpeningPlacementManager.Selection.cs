@@ -80,11 +80,7 @@ public partial class WallOpeningPlacementManager
         }
 
         afterSnapshot = CapturePostDeleteLayoutSnapshot(container, restoredWall);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, afterSnapshot);
-        }
+        RecordOpeningDeleteUndo(beforeSnapshot, afterSnapshot);
     }
 
     public void RegisterMarkerUI(WallOpeningMarkerUI markerUI)
@@ -180,5 +176,15 @@ public partial class WallOpeningPlacementManager
         }
 
         return CaptureLayoutSnapshot(container);
+    }
+
+    private void RecordOpeningDeleteUndo(
+        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot,
+        UndoRedoManager.OpeningLayoutSnapshot afterSnapshot)
+    {
+        if (undoRedoManager != null)
+        {
+            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, afterSnapshot);
+        }
     }
 }
