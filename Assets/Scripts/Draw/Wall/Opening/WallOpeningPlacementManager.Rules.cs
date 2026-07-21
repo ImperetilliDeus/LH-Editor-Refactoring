@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public partial class WallOpeningPlacementManager
 {
     private float ClampOpeningCenterDistance(
@@ -14,39 +12,14 @@ public partial class WallOpeningPlacementManager
         }
 
         float minimumSideWall = MillimetersToUnits(minimumSideWallMillimeters);
-        float targetWidth = overrideWidth > 0f ? overrideWidth : (targetOpening != null ? targetOpening.Width : 0f);
-        float halfWidth = targetWidth * 0.5f;
-        float minDistance = minimumSideWall + halfWidth;
-        float maxDistance = container.WallLength - minimumSideWall - halfWidth;
-
         CollectOpenings(container, cachedOpenings);
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null || opening == targetOpening)
-            {
-                continue;
-            }
-
-            float clearance = minimumSideWall + halfWidth + opening.Width * 0.5f;
-            if (opening.CenterDistance <= desiredDistance)
-            {
-                minDistance = Mathf.Max(minDistance, opening.CenterDistance + clearance);
-            }
-            else
-            {
-                maxDistance = Mathf.Min(maxDistance, opening.CenterDistance - clearance);
-            }
-        }
-
-        if (maxDistance < minDistance)
-        {
-            float midpoint = (minDistance + maxDistance) * 0.5f;
-            minDistance = midpoint;
-            maxDistance = midpoint;
-        }
-
-        return Mathf.Clamp(desiredDistance, minDistance, maxDistance);
+        return OpeningLayoutService.ClampCenterDistance(
+            container,
+            targetOpening,
+            cachedOpenings,
+            desiredDistance,
+            minimumSideWall,
+            overrideWidth);
     }
 
     private float ClampOpeningWidth(WallOpeningContainer container, WallOpening targetOpening, float desiredWidth)
@@ -56,41 +29,16 @@ public partial class WallOpeningPlacementManager
             return desiredWidth;
         }
 
-        float minimumSideWall = MillimetersToUnits(minimumSideWallMillimeters);
-        float leftLimit = minimumSideWall;
-        float rightLimit = container.WallLength - minimumSideWall;
-
         CollectOpenings(container, cachedOpenings);
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null || opening == targetOpening)
-            {
-                continue;
-            }
-
-            float neighborHalfWidth = opening.Width * 0.5f;
-            if (opening.CenterDistance < targetOpening.CenterDistance)
-            {
-                leftLimit = Mathf.Max(leftLimit, opening.CenterDistance + neighborHalfWidth + minimumSideWall);
-            }
-            else
-            {
-                rightLimit = Mathf.Min(rightLimit, opening.CenterDistance - neighborHalfWidth - minimumSideWall);
-            }
-        }
-
-        float maxWidth = Mathf.Max(MinimumWallSegmentLength, Mathf.Min(
-            (targetOpening.CenterDistance - leftLimit) * 2f,
-            (rightLimit - targetOpening.CenterDistance) * 2f));
-        float clampedWidth = Mathf.Clamp(desiredWidth, MinimumWallSegmentLength, maxWidth);
-        if (TryGetOpeningTypeDefinition(targetOpening, out OpeningTypeCatalogItem definition))
-        {
-            clampedWidth = definition.ClampWidth(clampedWidth);
-            clampedWidth = Mathf.Clamp(clampedWidth, MinimumWallSegmentLength, maxWidth);
-        }
-
-        return clampedWidth;
+        TryGetOpeningTypeDefinition(targetOpening, out OpeningTypeCatalogItem definition);
+        return OpeningLayoutService.ClampWidth(
+            container,
+            targetOpening,
+            cachedOpenings,
+            desiredWidth,
+            MillimetersToUnits(minimumSideWallMillimeters),
+            MinimumWallSegmentLength,
+            definition);
     }
 
     private float ClampOpeningHeight(WallOpeningContainer container, WallOpening targetOpening, float desiredHeight, float bottomY)
@@ -100,17 +48,13 @@ public partial class WallOpeningPlacementManager
             return desiredHeight;
         }
 
-        float maxHeight = Mathf.Max(
+        TryGetOpeningTypeDefinition(targetOpening, out OpeningTypeCatalogItem definition);
+        return OpeningLayoutService.ClampHeight(
+            container,
+            desiredHeight,
+            bottomY,
             MinimumWallSegmentLength,
-            container.WallTopY - bottomY);
-        float clampedHeight = Mathf.Clamp(desiredHeight, MinimumWallSegmentLength, maxHeight);
-        if (TryGetOpeningTypeDefinition(targetOpening, out OpeningTypeCatalogItem definition))
-        {
-            clampedHeight = definition.ClampHeight(clampedHeight);
-            clampedHeight = Mathf.Clamp(clampedHeight, MinimumWallSegmentLength, maxHeight);
-        }
-
-        return clampedHeight;
+            definition);
     }
 
     private float ClampOpeningBottomY(WallOpeningContainer container, WallOpening targetOpening, float desiredBottomY)
@@ -120,14 +64,7 @@ public partial class WallOpeningPlacementManager
             return desiredBottomY;
         }
 
-        float minBottomY = container.WallBottomY;
-        float maxBottomY = container.WallTopY - targetOpening.Height;
-        if (maxBottomY < minBottomY)
-        {
-            maxBottomY = minBottomY;
-        }
-
-        return Mathf.Clamp(desiredBottomY, minBottomY, maxBottomY);
+        return OpeningLayoutService.ClampBottomY(container, targetOpening, desiredBottomY);
     }
 
     private bool TryParsePositiveMillimeters(string inputText, out float value)

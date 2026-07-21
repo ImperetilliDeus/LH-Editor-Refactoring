@@ -117,6 +117,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Moved definition lookup by `OpeningPlacementType` and type/display key out of `WallOpeningPlacementManager.TypeCatalog.cs`.
   - Added `ResolveTypeKey(WallOpening)` for the existing door/window key selection logic.
   - `WallOpeningPlacementManager.TypeCatalog.cs` still owns catalog loading, option cache construction, and UI option application.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added an internal static helper for opening layout constraint calculations.
+  - Moved center-distance, width, height, and bottom-offset clamping calculations out of `WallOpeningPlacementManager.Rules.cs`.
+  - `WallOpeningPlacementManager.Rules.cs` remains a thin adapter that collects current openings, resolves catalog constraints, and preserves existing private method call sites.
+  - No behavior changes were intended.
 
 ## Verification State
 
@@ -158,6 +163,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting `OpeningTypeResolver`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningLayoutService`, Unity script compilation succeeded.
+- After extracting `OpeningLayoutService`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -207,6 +216,12 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-type-resolver-catalog-tests.xml`
   - `Logs/opening-type-resolver-rail-regression.log`
   - `Logs/opening-type-resolver-rail-regression.xml`
+  - `Logs/opening-layout-service-compile.log`
+  - `Logs/opening-layout-service-final-compile.log`
+  - `Logs/opening-layout-service-catalog-tests.log`
+  - `Logs/opening-layout-service-catalog-tests.xml`
+  - `Logs/opening-layout-service-rail-regression.log`
+  - `Logs/opening-layout-service-rail-regression.xml`
 
 ## Important Context
 
@@ -325,8 +340,8 @@ Do after tests are stable.
 Suggested extraction order:
 
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
-2. `OpeningVisualBuilder`
-3. `OpeningLayoutService`
+2. `OpeningLayoutService` - started with opening clamp calculations.
+3. `OpeningVisualBuilder`
 4. `OpeningSelectionController`
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
