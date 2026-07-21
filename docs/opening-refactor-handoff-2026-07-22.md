@@ -51,6 +51,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.EntranceDoorAuthoredSizes.cs`
   - Extracted entrance-door authored-size rules into `EntranceDoorOpeningPartSizes`.
   - `PartState.ResolveAuthoredPartSize` still owns dispatch and calls this helper for single entrance, lockset, and side-panel entrance door profiles.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteWindowAuthoredSizes.cs`
+  - Extracted white two-panel window authored-size rules into `WhiteWindowOpeningPartSizes`.
+  - `PartState.ResolveAuthoredPartSize` still owns dispatch and calls this helper for `WHITE_TWO_PANEL_WINDOW_V1`.
 
 ## Verification State
 
@@ -59,6 +62,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after extracting `WhiteDoorOpeningLayout`.
 - Unity script compilation succeeded after extracting `WhiteDoorOpeningPartSizes`.
 - Unity script compilation succeeded after extracting `EntranceDoorOpeningPartSizes`.
+- Unity script compilation succeeded after extracting `WhiteWindowOpeningPartSizes`.
 - EditMode test execution did not produce result XML in this environment.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
 - Relevant logs:
@@ -72,6 +76,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/white-door-authored-size-helper-test.log`
   - `Logs/entrance-door-authored-size-helper-compile.log`
   - `Logs/entrance-door-authored-size-helper-test.log`
+  - `Logs/white-window-authored-size-helper-compile.log`
+  - `Logs/white-window-authored-size-helper-test.log`
 
 ## Important Context
 
@@ -149,15 +155,18 @@ Already done:
 - White door layout calculations were extracted to `WhiteDoorOpeningLayout`.
 - White door authored-size rules were extracted to `WhiteDoorOpeningPartSizes`.
 - Entrance-door authored-size rules were extracted to `EntranceDoorOpeningPartSizes`.
+- White two-panel window authored-size rules were extracted to `WhiteWindowOpeningPartSizes`.
 
 Next extraction:
 
-- Move white two-panel window authored-size rules out of nested `PartState`.
+- Move material resolution rules out of `ParametricOpeningModel`.
 - Preferred shape:
-  - an internal static helper such as `WhiteWindowOpeningPartSizes`
+  - an internal static helper such as `ParametricOpeningMaterialRules`
   - methods:
-    - `ResolveTwoPanelWindow`
-  - keep `PartState.ResolveAuthoredPartSize` as the dispatcher until tests are stable.
+    - `ApplyProfileMaterials`
+    - `ResolveDoorMaterial`
+    - `ResolveWindowMaterial`
+  - keep `ParametricOpeningModel.ApplyProfileMaterials` as a thin adapter if prefab/runtime call flow depends on it.
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 

@@ -1247,63 +1247,10 @@ public sealed partial class ParametricOpeningModel : MonoBehaviour
 
             if (string.Equals(activeProfileKey, WhiteTwoPanelWindowProfile, StringComparison.Ordinal))
             {
-                return ResolveWhiteTwoPanelWindowAuthoredPartSize(transform.name, referenceSize);
+                return WhiteWindowOpeningPartSizes.ResolveTwoPanelWindow(transform.name, referenceSize, MinimumSize);
             }
 
             return CalculateApproximateLocalSize(transform);
-        }
-
-        private static Vector3 ResolveWhiteTwoPanelWindowAuthoredPartSize(string partName, Vector3 referenceSize)
-        {
-            const float frameThickness = 0.62f;
-            const float frameDepth = 0.55f;
-            const float glassDepth = 0.08f;
-            const float mullionWidth = 0.34f;
-            const float sashRail = 0.18f;
-
-            float width = Mathf.Max(MinimumSize, referenceSize.x);
-            float height = Mathf.Max(MinimumSize, referenceSize.z);
-            float innerWidth = Mathf.Max(MinimumSize, width - frameThickness * 2f);
-            float innerHeight = Mathf.Max(MinimumSize, height - frameThickness * 2f);
-            float paneWidth = Mathf.Max(MinimumSize, (innerWidth - mullionWidth) * 0.5f);
-            float paneHeight = Mathf.Max(MinimumSize, innerHeight - sashRail * 2f);
-
-            if (ContainsAny(partName, "Frame_Left", "Frame_Right"))
-            {
-                return new Vector3(frameThickness, frameDepth, height);
-            }
-
-            if (ContainsAny(partName, "Frame_Top", "Frame_Bottom"))
-            {
-                return new Vector3(width, frameDepth, frameThickness);
-            }
-
-            if (partName.Contains("CenterMullion"))
-            {
-                return new Vector3(mullionWidth, sashRail, innerHeight);
-            }
-
-            if (partName.Contains("Glass"))
-            {
-                return new Vector3(paneWidth, glassDepth, paneHeight);
-            }
-
-            if (partName.Contains("RecessLine_Horizontal"))
-            {
-                return new Vector3(paneWidth, sashRail, sashRail);
-            }
-
-            if (partName.Contains("Threshold"))
-            {
-                return new Vector3(width, 0.16f, 0.12f);
-            }
-
-            if (partName.Contains("Handle"))
-            {
-                return new Vector3(0.12f, 0.12f, 1.1f);
-            }
-
-            return Vector3.one * MinimumSize;
         }
 
         private static Vector3 CalculateApproximateLocalSize(Transform transform)
