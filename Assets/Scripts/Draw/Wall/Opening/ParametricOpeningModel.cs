@@ -1229,17 +1229,17 @@ public sealed partial class ParametricOpeningModel : MonoBehaviour
 
                 if (string.Equals(activeProfileKey, WhiteOneSlidingDoorProfile, StringComparison.Ordinal))
                 {
-                    return ResolveWhiteOneSlidingDoorAuthoredPartSize(transform.name, referenceSize);
+                    return WhiteDoorOpeningPartSizes.ResolveOneSlidingDoor(transform.name, referenceSize, MinimumSize);
                 }
 
                 if (string.Equals(activeProfileKey, WhiteSwingDoorProfile, StringComparison.Ordinal))
                 {
-                    return ResolveWhiteSwingDoorAuthoredPartSize(transform.name, referenceSize);
+                    return WhiteDoorOpeningPartSizes.ResolveSwingDoor(transform.name, referenceSize, MinimumSize);
                 }
 
                 if (string.Equals(activeProfileKey, WhiteGlassFrameDoorProfile, StringComparison.Ordinal))
                 {
-                    return ResolveWhiteGlassFrameDoorAuthoredPartSize(transform.name, referenceSize);
+                    return WhiteDoorOpeningPartSizes.ResolveGlassFrameDoor(transform.name, referenceSize, MinimumSize);
                 }
 
                 return ResolveEntranceDoorAuthoredPartSize(transform.name, referenceSize);

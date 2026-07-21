@@ -45,12 +45,16 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteDoorLayoutRules.cs`
   - Extracted white door layout calculations into `WhiteDoorOpeningLayout`.
   - `ParametricOpeningModel` still owns part lookup and transform application through the existing `ApplyKnownPart` callback.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteDoorAuthoredSizes.cs`
+  - Replaced the nested `PartState` partial with an internal static `WhiteDoorOpeningPartSizes` helper.
+  - `PartState.ResolveAuthoredPartSize` still owns dispatch and calls the helper for white door profiles.
 
 ## Verification State
 
 - Unity script compilation succeeded after the reflection-based test adjustment.
 - Unity script compilation also succeeded after the follow-up changes.
 - Unity script compilation succeeded after extracting `WhiteDoorOpeningLayout`.
+- Unity script compilation succeeded after extracting `WhiteDoorOpeningPartSizes`.
 - EditMode test execution did not produce result XML in this environment.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
 - Relevant logs:
@@ -60,6 +64,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/wall-opening-placement-manager-tests-rerun.log`
   - `Logs/white-door-layout-helper-compile.log`
   - `Logs/white-door-layout-helper-test.log`
+  - `Logs/white-door-authored-size-helper-compile.log`
+  - `Logs/white-door-authored-size-helper-test.log`
 
 ## Important Context
 
@@ -135,16 +141,17 @@ Already done:
 - `ParametricOpeningProfileKeys.cs` exists.
 - `ParametricOpeningModel` keeps compatibility aliases for profile keys.
 - White door layout calculations were extracted to `WhiteDoorOpeningLayout`.
+- White door authored-size rules were extracted to `WhiteDoorOpeningPartSizes`.
 
 Next extraction:
 
-- Move authored-size resolvers out of the nested `PartState` partial.
+- Move entrance-door authored-size rules out of nested `PartState`.
 - Preferred shape:
-  - an internal static helper such as `WhiteDoorOpeningPartSizes`
+  - an internal static helper such as `EntranceDoorOpeningPartSizes`
   - methods:
-    - `ResolveOneSlidingDoor`
-    - `ResolveSwingDoor`
-    - `ResolveGlassFrameDoor`
+    - `ResolveSingleEntranceDoor`
+    - `ResolveEntranceDoorLockset`
+    - `ResolveEntranceDoorSidePanel`
   - keep `PartState.ResolveAuthoredPartSize` as the dispatcher until tests are stable.
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
