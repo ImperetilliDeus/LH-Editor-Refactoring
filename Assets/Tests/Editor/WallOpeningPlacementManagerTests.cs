@@ -619,6 +619,41 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
+    public void ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize()
+    {
+        Type parametricType = GetAssemblyType("ParametricOpeningModel");
+        GameObject root = CreateGameObject("WhiteGlassFrameDoorPrefab");
+        Component parametric = root.AddComponent(parametricType);
+
+        Transform topRail = CreateChildGameObject(root.transform, "Stretch_Top_Rail").transform;
+        topRail.localScale = Vector3.one;
+        Transform bottomRail = CreateChildGameObject(root.transform, "Stretch_Bottom_Rail").transform;
+        bottomRail.localScale = Vector3.one;
+
+        string profileKey = (string)parametricType.GetField("WhiteGlassFrameDoorProfile")?.GetValue(null);
+        parametricType.GetMethod(
+                "ApplyOpeningSize",
+                new[] { typeof(Vector3), typeof(Vector3), typeof(bool), typeof(string) })
+            ?.Invoke(
+                parametric,
+                new object[]
+                {
+                    new Vector3(12f, 1f, 8f),
+                    new Vector3(10f, 1f, 6f),
+                    false,
+                    profileKey,
+                });
+
+        float expectedRailScaleX = (12f - 0.45f * 2f) / (10f - 0.45f * 2f);
+        Assert.That(topRail.localScale.x, Is.EqualTo(expectedRailScaleX).Within(0.0001f));
+        Assert.That(topRail.localScale.y, Is.EqualTo(1f).Within(0.0001f));
+        Assert.That(topRail.localScale.z, Is.EqualTo(1f).Within(0.0001f));
+        Assert.That(bottomRail.localScale.x, Is.EqualTo(expectedRailScaleX).Within(0.0001f));
+        Assert.That(bottomRail.localScale.y, Is.EqualTo(1f).Within(0.0001f));
+        Assert.That(bottomRail.localScale.z, Is.EqualTo(1f).Within(0.0001f));
+    }
+
+    [Test]
     public void SelectOpening_IgnoresOpening_WhenNotInDetailEditMode()
     {
         Type managerType = GetAssemblyType("WallOpeningPlacementManager");

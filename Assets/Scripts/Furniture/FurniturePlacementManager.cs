@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 {
-    private const bool ForceValidationDebugLogs = true;
+    private const bool ForceValidationDebugLogs = false;
 
     private enum PlacementState
     {
@@ -38,7 +38,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     [Header("Preview")]
     [SerializeField] private Color validTint = new Color(0.45f, 1f, 0.55f, 0.85f);
     [SerializeField] private Color invalidTint = new Color(1f, 0.4f, 0.4f, 0.85f);
-    [SerializeField] private bool enableValidationDebugLogs = true;
+    [SerializeField] private bool enableValidationDebugLogs;
     [SerializeField] private float validationDebugLogIntervalSeconds = 0.25f;
 
     private readonly List<Renderer> previewRenderers = new List<Renderer>();

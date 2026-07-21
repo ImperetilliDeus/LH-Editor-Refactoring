@@ -26,14 +26,32 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
     - valid min/max size ranges
     - `S003` is `Window + WindowLike + PassThrough`
 
+## Completed In Follow-up Session
+
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.WhiteDoorAuthoredSizes.cs`
+  - Fixed `WHITE_GLASS_FRAME_DOOR_V1` authored-size resolution for `Stretch_Top_Rail` and `Stretch_Bottom_Rail`.
+  - These rail parts now resolve from the authored rail size instead of falling back to `MinimumSize`.
+- `Assets/Scripts/Editor/OpeningModelViewerSyncWindow.cs`
+  - Updated runtime script sync to copy all `ParametricOpeningModel*.cs` partial files.
+  - The viewer main script `.meta` GUID is still preserved because existing viewer prefabs reference it.
+  - Partial script `.meta` files are copied with their source files.
+- `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+  - Added a regression test for `WhiteGlassFrameDoor` rail scaling.
+- `Assets/Scripts/Furniture/FurniturePlacementManager.cs`
+  - Disabled forced furniture placement validation logs by default.
+  - `enableValidationDebugLogs` now controls normal logging behavior unless `ForceValidationDebugLogs` is intentionally re-enabled in code.
+
 ## Verification State
 
 - Unity script compilation succeeded after the reflection-based test adjustment.
+- Unity script compilation also succeeded after the follow-up changes.
 - EditMode test execution did not produce result XML in this environment.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
+  - `Logs/wall-opening-placement-manager-tests.log`
+  - `Logs/wall-opening-placement-manager-tests-rerun.log`
 
 ## Important Context
 
@@ -70,8 +88,33 @@ Expected:
 
 - result XML is created
 - `OpeningTypeCatalogTests` pass
+- `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passes
 
-### 2. Start shrinking `ParametricOpeningModel`
+### 2. High-priority improvement points
+
+These are the highest-risk code health items found during project review:
+
+- `ParametricOpeningModel`
+  - Current total: about 1666 lines across 3 partial files.
+  - Problem: profile dispatch, layout placement, authored part sizes, material rules, stretch rules, and name matching are still one conceptual class.
+  - Risk: every new door/window type adds more hardcoded branches and name-fragile rules.
+- `WallOpeningPlacementManager`
+  - Current total: about 2547 lines across 8 partial files.
+  - Problem: placement, layout snapshots, UI, selection, visuals, type catalog resolution, and undo recording are strongly coupled.
+  - Risk: split/drag/opening delete behavior can regress because state transitions cross partial-file boundaries.
+- `HandleManager`
+  - Current total: about 3129 lines across 5 partial files.
+  - Problem: handle input, drag rules, registry refresh, UI state, and container drag behavior are mixed.
+  - Risk: wall vertex drag, split point drag, opening container rebuild, and undo capture are tightly coupled.
+- `FurniturePlacementManager`
+  - Current total: about 1075 lines in one file.
+  - Problem: input, placement validation, room containment, overlap checks, selection, deletion, preview tinting, and debug logging live together.
+  - Risk: validation and input changes can easily affect selection and mode transitions.
+- `OpeningModelViewerSyncWindow`
+  - Problem: viewer sync is file-system based and depends on exact script/prefab GUID behavior.
+  - Risk: future partial files or generated dependencies can be omitted unless sync rules stay explicit.
+
+### 3. Start shrinking `ParametricOpeningModel`
 
 Current problem:
 
@@ -97,7 +140,7 @@ Next extraction:
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
-### 3. Prepare `WallOpeningPlacementManager` split
+### 4. Prepare `WallOpeningPlacementManager` split
 
 Do after tests are stable.
 

@@ -189,16 +189,52 @@ public sealed class OpeningModelViewerSyncWindow : EditorWindow
 
     private void CopyRuntimeScript()
     {
-        string sourcePath = ToAbsoluteEditorPath(EditorParametricScriptPath);
-        string targetPath = ToAbsoluteViewerPath(ViewerParametricScriptPath);
+        string sourceDirectory = Path.GetDirectoryName(ToAbsoluteEditorPath(EditorParametricScriptPath));
+        if (string.IsNullOrWhiteSpace(sourceDirectory) || !Directory.Exists(sourceDirectory))
+        {
+            return;
+        }
+
+        string viewerDirectory = Path.GetDirectoryName(ViewerParametricScriptPath)?.Replace('\\', '/');
+        if (string.IsNullOrWhiteSpace(viewerDirectory))
+        {
+            return;
+        }
+
+        string[] sourceScripts = Directory.GetFiles(sourceDirectory, "ParametricOpeningModel*.cs");
+        for (int i = 0; i < sourceScripts.Length; i++)
+        {
+            string fileName = Path.GetFileName(sourceScripts[i]);
+            bool isMainScript = string.Equals(fileName, Path.GetFileName(EditorParametricScriptPath), StringComparison.OrdinalIgnoreCase);
+            string targetAssetPath = isMainScript
+                ? ViewerParametricScriptPath
+                : $"{viewerDirectory}/{fileName}";
+            CopyRuntimeScriptFile(sourceScripts[i], targetAssetPath, copyMeta: !isMainScript);
+        }
+    }
+
+    private void CopyRuntimeScriptFile(string sourcePath, string targetAssetPath, bool copyMeta)
+    {
         if (!File.Exists(sourcePath))
         {
             return;
         }
 
+        string targetPath = ToAbsoluteViewerPath(targetAssetPath);
         Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
         File.Copy(sourcePath, targetPath, true);
-        // Keep the viewer .meta GUID stable because existing viewer prefabs reference it.
+
+        if (!copyMeta)
+        {
+            // Keep the viewer main script .meta GUID stable because existing viewer prefabs reference it.
+            return;
+        }
+
+        string sourceMetaPath = sourcePath + ".meta";
+        if (File.Exists(sourceMetaPath))
+        {
+            File.Copy(sourceMetaPath, targetPath + ".meta", true);
+        }
     }
 
     private void CopyOpeningDependency(string dependencyAssetPath)

@@ -155,6 +155,11 @@ public sealed partial class ParametricOpeningModel
                 return new Vector3(mullionWidth, railThickness, innerHeight);
             }
 
+            if (ContainsAny(partName, "Top_Rail", "Bottom_Rail"))
+            {
+                return new Vector3(innerWidth, railThickness, railThickness);
+            }
+
             if (partName.Contains("DoorPanel") && partName.Contains("Glass"))
             {
                 return new Vector3(panelWidth, panelDepth, innerHeight - railThickness * 2f);
