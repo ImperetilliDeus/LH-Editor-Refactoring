@@ -133,9 +133,12 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after moving size/reference conversion helpers into `ParametricOpeningModel.SizeResolution.cs`.
 - Unity script compilation succeeded after moving profile classification helpers into `ParametricOpeningModel.ProfileClassification.cs`.
 - Unity script compilation succeeded after moving `ApplyProfileMaterials` into `ParametricOpeningModel.MaterialRules.cs`.
-- EditMode test execution did not produce result XML in this environment.
-- The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
-- The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
+- EditMode test execution issue was diagnosed.
+  - Do not pass `-quit` with `-runTests`; Unity Test Framework schedules the run after editor startup and exits itself when the run completes.
+  - Use a project-relative `-testResults` path such as `Logs\test-results.xml`.
+  - With this corrected invocation, XML results are created.
+- An earlier transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat that as an environment/Unity process state issue, not a test assertion result.
+- Earlier targeted test commands used `-quit`, so they exited after script compilation without running tests or writing result XML.
 - After the part-transform partial split, a targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the part-state partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the entrance-door layout partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
@@ -145,6 +148,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After the size-resolution partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the profile-classification partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the material-adapter move, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
+- Corrected Test Runner verification:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -182,6 +188,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/parametric-opening-profile-classification-test.log`
   - `Logs/parametric-opening-material-adapter-compile.log`
   - `Logs/parametric-opening-material-adapter-test.log`
+  - `Logs/test-runner-opening-catalog-no-quit.log`
+  - `Logs/test-runner-opening-catalog-relative-no-quit.log`
+  - `Logs/test-runner-opening-catalog-relative-no-quit.xml`
+  - `Logs/wall-opening-placement-rail-regression-no-quit.log`
+  - `Logs/wall-opening-placement-rail-regression-no-quit.xml`
 
 ## Important Context
 
@@ -206,12 +217,12 @@ Recommended direction:
 
 ## Next Recommended Work
 
-### 1. Verify tests when Unity Test Runner works
+### 1. Verify tests with the corrected Unity Test Runner command
 
 Run:
 
 ```powershell
-& 'C:\Program Files\Unity\Hub\Editor\6000.0.66f2\Editor\Unity.exe' -batchmode -projectPath 'E:\Unity\LH Editor_Refactoring' -runTests -testPlatform EditMode -testFilter OpeningTypeCatalogTests -testResults 'Logs\opening-catalog-tests.xml' -logFile 'Logs\opening-catalog-tests.log' -quit
+& 'C:\Program Files\Unity\Hub\Editor\6000.0.66f2\Editor\Unity.exe' -batchmode -projectPath 'E:\Unity\LH Editor_Refactoring' -runTests -testPlatform EditMode -testFilter OpeningTypeCatalogTests -testResults 'Logs\opening-catalog-tests.xml' -logFile 'E:\Unity\LH Editor_Refactoring\Logs\opening-catalog-tests.log'
 ```
 
 Expected:
@@ -219,6 +230,11 @@ Expected:
 - result XML is created
 - `OpeningTypeCatalogTests` pass
 - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passes
+
+Important:
+
+- Do not include `-quit` in `-runTests` commands.
+- Prefer a project-relative `-testResults` path under `Logs\`.
 
 ### 2. High-priority improvement points
 
@@ -281,10 +297,10 @@ Recent extraction:
 Next extraction:
 
 - Pause simple `ParametricOpeningModel.cs` file-splitting for now. The remaining main file is mostly public entrypoints, serialized fields/constants, and high-level dispatch.
-- Do not start deeper behavior-oriented profile dispatch rewrites until EditMode test output is reliable again.
+- Do not start deeper behavior-oriented profile dispatch rewrites unless the relevant EditMode tests pass with the corrected command.
 - Recommended next direction:
-  - either investigate/fix Unity Test Runner result XML generation
-  - or move to the next high-priority large class, `WallOpeningPlacementManager`, with the same small, behavior-preserving extraction style
+  - move to the next high-priority large class, `WallOpeningPlacementManager`, with the same small, behavior-preserving extraction style
+  - first inspect its partial files and identify type/catalog/modelLayout/collisionPolicy resolution methods for a narrow `OpeningTypeResolver` extraction
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
