@@ -9,6 +9,9 @@ internal readonly struct EditorPointerFrame
         bool leftPressedThisFrame,
         bool leftReleasedThisFrame,
         bool leftPressed,
+        bool middlePressedThisFrame,
+        bool middleReleasedThisFrame,
+        bool middlePressed,
         bool rightPressedThisFrame)
     {
         IsAvailable = true;
@@ -16,6 +19,9 @@ internal readonly struct EditorPointerFrame
         LeftPressedThisFrame = leftPressedThisFrame;
         LeftReleasedThisFrame = leftReleasedThisFrame;
         LeftPressed = leftPressed;
+        MiddlePressedThisFrame = middlePressedThisFrame;
+        MiddleReleasedThisFrame = middleReleasedThisFrame;
+        MiddlePressed = middlePressed;
         RightPressedThisFrame = rightPressedThisFrame;
     }
 
@@ -26,6 +32,9 @@ internal readonly struct EditorPointerFrame
         LeftPressedThisFrame = false;
         LeftReleasedThisFrame = false;
         LeftPressed = false;
+        MiddlePressedThisFrame = false;
+        MiddleReleasedThisFrame = false;
+        MiddlePressed = false;
         RightPressedThisFrame = false;
     }
 
@@ -34,5 +43,8 @@ internal readonly struct EditorPointerFrame
     public bool LeftPressedThisFrame { get; }
     public bool LeftReleasedThisFrame { get; }
     public bool LeftPressed { get; }
+    public bool MiddlePressedThisFrame { get; }
+    public bool MiddleReleasedThisFrame { get; }
+    public bool MiddlePressed { get; }
     public bool RightPressedThisFrame { get; }
 }

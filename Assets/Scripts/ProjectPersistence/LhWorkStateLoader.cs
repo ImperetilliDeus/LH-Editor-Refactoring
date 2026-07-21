@@ -493,24 +493,39 @@ public static class LhWorkStateLoader
             return null;
         }
 
+        Wall firstVisibleWall = null;
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (wall != null && !WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            {
+                firstVisibleWall = wall;
+                break;
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(preferredWallId))
         {
             for (int i = 0; i < walls.Length; i++)
             {
                 Wall wall = walls[i];
-                if (wall != null && wall.Data != null && string.Equals(wall.Data.id, preferredWallId, System.StringComparison.Ordinal))
+                if (wall != null &&
+                    wall.Data != null &&
+                    !WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall) &&
+                    string.Equals(wall.Data.id, preferredWallId, System.StringComparison.Ordinal))
                 {
                     return wall;
                 }
             }
 
-            if (walls[0] != null && walls[0].Data != null)
+            Wall targetWall = firstVisibleWall != null ? firstVisibleWall : walls[0];
+            if (targetWall != null && targetWall.Data != null)
             {
-                walls[0].Data.id = preferredWallId;
+                targetWall.Data.id = preferredWallId;
             }
         }
 
-        return walls[0];
+        return firstVisibleWall != null ? firstVisibleWall : walls[0];
     }
 
     private static WallOpeningPlacementManager.OpeningPlacementType ResolveOpeningType(string value)

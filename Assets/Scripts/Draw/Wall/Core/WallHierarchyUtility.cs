@@ -50,6 +50,45 @@ public static class WallHierarchyUtility
         return renderer != null && !renderer.enabled;
     }
 
+    public static bool HasAnyLogicalWallId(Wall wall, HashSet<string> wallIds)
+    {
+        if (wall == null || wallIds == null || wallIds.Count == 0)
+        {
+            return false;
+        }
+
+        WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+        if (container != null && !string.IsNullOrWhiteSpace(container.PersistentWallId) && wallIds.Contains(container.PersistentWallId))
+        {
+            return true;
+        }
+
+        if (wall.Data != null && !string.IsNullOrWhiteSpace(wall.Data.id) && wallIds.Contains(wall.Data.id))
+        {
+            return true;
+        }
+
+        if (container == null)
+        {
+            return false;
+        }
+
+        Wall[] containerWalls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < containerWalls.Length; i++)
+        {
+            Wall containerWall = containerWalls[i];
+            if (containerWall != null &&
+                containerWall.Data != null &&
+                !string.IsNullOrWhiteSpace(containerWall.Data.id) &&
+                wallIds.Contains(containerWall.Data.id))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static bool IsPreviewWall(Wall wall)
     {
         return wall != null && IsPreviewWall(wall.transform);

@@ -203,7 +203,7 @@ public static class SceneHierarchyTreeModel
             for (int i = 0; i < walls.Count; i++)
             {
                 Wall wall = walls[i];
-                if (wall != null && wall.Data != null && wallIds.Contains(wall.Data.id))
+                if (WallHierarchyUtility.HasAnyLogicalWallId(wall, wallIds))
                 {
                     return true;
                 }

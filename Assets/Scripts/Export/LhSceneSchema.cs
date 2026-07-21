@@ -108,6 +108,9 @@ namespace LH.Schema
         public LhVector3Dto scale;
         public string parametricProfileKey;
         public LhVector3Dto authoredSize;
+        public string modelLayoutKind;
+        public string collisionPolicy;
+        public bool selectable;
         public float width;
         public float height;
         public float depth;
@@ -124,6 +127,9 @@ namespace LH.Schema
         public LhVector3Dto scale;
         public string parametricProfileKey;
         public LhVector3Dto authoredSize;
+        public string modelLayoutKind;
+        public string collisionPolicy;
+        public bool selectable;
         public float width;
         public float height;
         public float depth;

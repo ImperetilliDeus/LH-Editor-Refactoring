@@ -8,6 +8,9 @@ internal static class PointerInputFrameUtility
                 inputFrame.LeftPressedThisFrame,
                 inputFrame.LeftReleasedThisFrame,
                 inputFrame.LeftPressed,
+                inputFrame.MiddlePressedThisFrame,
+                inputFrame.MiddleReleasedThisFrame,
+                inputFrame.MiddlePressed,
                 inputFrame.RightPressedThisFrame)
             : EditorPointerFrame.Unavailable;
     }

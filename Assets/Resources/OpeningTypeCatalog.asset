@@ -14,20 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   items:
   - openingType: 0
-    typeKey: E001
-    displayName: "\uD604\uAD00"
-    modelPrefab: {fileID: 569507486651759752, guid: acca1e657e3c79a4aa2de6a289f5713a, type: 3}
+    typeKey: E003
+    displayName: "\uD604\uAD00\uBB38"
+    modelPrefab: {fileID: 8639893765745797482, guid: f6b1c4fda72d1cc4bac7809674a13384, type: 3}
     modelLocalPosition: {x: 0, y: 0, z: 0}
     modelLocalEulerAngles: {x: 0, y: 0, z: 0}
     modelScaleMultiplier: {x: 1, y: 1, z: 1}
-    referenceSize: {x: 0.52734995, y: 1, z: 1}
-    fitDepth: 1
-    fitHeight: 1
-    fitWidth: 1
-    useParametricModel: 0
-    parametricProfileKey: ""
-    authoredSize: {x: 1, y: 1, z: 1}
-    usesBlenderLocalAxes: 0
+    referenceSize: {x: 9.5, y: 21, z: 1}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: SINGLE_ENTRANCE_DOOR_V1
+    authoredSize: {x: 9.5, y: 21, z: 1}
+    usesBlenderLocalAxes: 1
+    minSize: {x: 9, y: 20, z: 0.5}
+    maxSize: {x: 11, y: 22, z: 1.5}
+    modelLayoutKind: 1
+    collisionPolicy: 2
+    selectable: 1
   - openingType: 0
     typeKey: F001
     displayName: "\uC5EC\uB2EB\uC774\uBB38"
@@ -40,9 +45,14 @@ MonoBehaviour:
     fitHeight: 1
     fitWidth: 1
     useParametricModel: 0
-    parametricProfileKey: ""
+    parametricProfileKey: 
     authoredSize: {x: 1, y: 1, z: 1}
     usesBlenderLocalAxes: 0
+    minSize: {x: 0, y: 0, z: 0}
+    maxSize: {x: 0, y: 0, z: 0}
+    modelLayoutKind: 1
+    collisionPolicy: 1
+    selectable: 1
   - openingType: 1
     typeKey: W001
     displayName: "\uCC3D\uBB38"
@@ -55,9 +65,14 @@ MonoBehaviour:
     fitHeight: 1
     fitWidth: 1
     useParametricModel: 0
-    parametricProfileKey: ""
+    parametricProfileKey: 
     authoredSize: {x: 1, y: 1, z: 1}
     usesBlenderLocalAxes: 0
+    minSize: {x: 0, y: 0, z: 0}
+    maxSize: {x: 0, y: 0, z: 0}
+    modelLayoutKind: 2
+    collisionPolicy: 2
+    selectable: 1
   - openingType: 0
     typeKey: S001
     displayName: "\uBBF8\uB2EB\uC774\uBB38"
@@ -70,9 +85,14 @@ MonoBehaviour:
     fitHeight: 1
     fitWidth: 1
     useParametricModel: 0
-    parametricProfileKey: ""
+    parametricProfileKey: 
     authoredSize: {x: 1, y: 1, z: 1}
     usesBlenderLocalAxes: 0
+    minSize: {x: 0, y: 0, z: 0}
+    maxSize: {x: 0, y: 0, z: 0}
+    modelLayoutKind: 1
+    collisionPolicy: 1
+    selectable: 1
   - openingType: 1
     typeKey: B001
     displayName: "\uBCA0\uB780\uB2E4(\uB09C\uAC04\uD615)"
@@ -88,3 +108,68 @@ MonoBehaviour:
     parametricProfileKey: BALCONY_RAILING_WINDOW_V1
     authoredSize: {x: 18, y: 21, z: 1.4}
     usesBlenderLocalAxes: 0
+    minSize: {x: 12, y: 18, z: 0.5}
+    maxSize: {x: 24, y: 24, z: 2}
+    modelLayoutKind: 3
+    collisionPolicy: 2
+    selectable: 1
+  - openingType: 0
+    typeKey: S002
+    displayName: "\uC6D0 \uC2AC\uB77C\uC774\uB529 \uB3C4\uC5B4"
+    modelPrefab: {fileID: 3232139952956136182, guid: 7509ce8e11e75ca4e8b2f6ddfe388b19, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 9, y: 21, z: 0.8}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: WHITE_ONE_SLIDING_DOOR_V1
+    authoredSize: {x: 9, y: 21, z: 0.8}
+    usesBlenderLocalAxes: 1
+    minSize: {x: 7, y: 20, z: 0.5}
+    maxSize: {x: 12, y: 24, z: 1.2}
+    modelLayoutKind: 1
+    collisionPolicy: 1
+    selectable: 1
+  - openingType: 0
+    typeKey: F002
+    displayName: "\uD654\uC774\uD2B8 \uD3F4\uB529 \uB3C4\uC5B4"
+    modelPrefab: {fileID: 4622597832035309937, guid: f4aa212b0fe52514488404a7d9e28413, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 9, y: 21, z: 0.8}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: WHITE_SWING_DOOR_V1
+    authoredSize: {x: 9, y: 21, z: 0.8}
+    usesBlenderLocalAxes: 1
+    minSize: {x: 7, y: 20, z: 0.5}
+    maxSize: {x: 11, y: 23, z: 1.2}
+    modelLayoutKind: 1
+    collisionPolicy: 1
+    selectable: 1
+  - openingType: 1
+    typeKey: S003
+    displayName: "\uCC3D\uD638"
+    modelPrefab: {fileID: 3507848397964595283, guid: b4b6354d3020a2842843d0dd0b4e77bc, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 18, y: 21, z: 1}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: WHITE_TWO_PANEL_WINDOW_V1
+    authoredSize: {x: 18, y: 21, z: 1}
+    usesBlenderLocalAxes: 1
+    minSize: {x: 12, y: 18, z: 0.5}
+    maxSize: {x: 24, y: 24, z: 1.5}
+    modelLayoutKind: 2
+    collisionPolicy: 1
+    selectable: 1

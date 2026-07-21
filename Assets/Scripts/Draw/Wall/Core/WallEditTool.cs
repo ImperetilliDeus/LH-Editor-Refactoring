@@ -29,7 +29,7 @@ internal sealed class WallEditTool : IWallTool
             return WallToolRequest.ActivateDelete;
         }
 
-        if (inputFrame.PointerOverUI || !inputFrame.LeftPressedThisFrame)
+        if (inputFrame.MiddlePressed || inputFrame.PointerOverUI || !inputFrame.LeftPressedThisFrame)
         {
             return WallToolRequest.None;
         }

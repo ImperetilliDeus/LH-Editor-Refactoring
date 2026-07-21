@@ -255,6 +255,7 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
             inputFrame.LeftPressedThisFrame,
             inputFrame.LeftReleasedThisFrame,
             inputFrame.LeftPressed,
+            inputFrame.MiddlePressed,
             inputFrame.RightPressedThisFrame,
             inputFrame.DeletePressedThisFrame,
             inputFrame.PointerOverUI);

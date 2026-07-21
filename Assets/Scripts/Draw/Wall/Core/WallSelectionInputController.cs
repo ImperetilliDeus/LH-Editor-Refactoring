@@ -27,7 +27,7 @@ internal sealed class WallSelectionInputController
         Action<Vector3, Vector3> applyConnectedWallDrag,
         Action beginDraggingWall)
     {
-        if (!pointerFrame.IsAvailable)
+        if (!pointerFrame.IsAvailable || pointerFrame.MiddlePressed)
         {
             return;
         }
@@ -127,12 +127,18 @@ internal sealed class WallSelectionInputController
         Action<bool> setSelectUIVisible,
         Action<Vector2, Vector3> beginPendingWallDrag)
     {
-        if (!pointerFrame.IsAvailable || !isDefaultMode || isPointerOverUI || isWallCreationMode || isHandleDragging || isPointerOverHandle)
+        if (!pointerFrame.IsAvailable ||
+            pointerFrame.MiddlePressed ||
+            !isDefaultMode ||
+            isPointerOverUI ||
+            isWallCreationMode ||
+            isHandleDragging ||
+            isPointerOverHandle)
         {
             return false;
         }
 
-        if (tryGetWallFromMouseRay == null)
+        if (!pointerFrame.LeftPressedThisFrame || tryGetWallFromMouseRay == null)
         {
             return false;
         }
@@ -174,6 +180,12 @@ internal sealed class WallSelectionInputController
         finalizeMoveIfNeeded?.Invoke();
         resetDragState?.Invoke();
         refreshWallSelectionUIPositions?.Invoke();
+
+        if (pointerFrame.MiddlePressed)
+        {
+            finishMultiSelectDrag?.Invoke();
+            return;
+        }
 
         if (pointerFrame.RightPressedThisFrame)
         {

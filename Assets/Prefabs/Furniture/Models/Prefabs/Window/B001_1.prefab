@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 781155783619542715}
-  - component: {fileID: 1849111338343697219}
+  - component: {fileID: 2703752773113268418}
   m_Layer: 0
   m_Name: B001_1
   m_TagString: Untagged
@@ -76,7 +76,7 @@ Transform:
   - {fileID: 3722559275765443951}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1849111338343697219
+--- !u!114 &2703752773113268418
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -85,11 +85,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 116224595992912897}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1f49ab6c19f4c93a75dbd1cc80bd402, type: 3}
+  m_Script: {fileID: 11500000, guid: 91004903b3cdea44c8ac403bf2e7b5f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   authoredSize: {x: 18, y: 21, z: 1.4}
   preferAuthoredSizeWhenCatalogReferenceIsDefault: 1
+  profileKey: 
 --- !u!1 &242373221543037861
 GameObject:
   m_ObjectHideFlags: 0
@@ -101,7 +102,6 @@ GameObject:
   - component: {fileID: 3033514905073031708}
   - component: {fileID: 730901865208292189}
   - component: {fileID: 6502754923613845383}
-  - component: {fileID: 6274696241651993868}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_15
   m_TagString: Untagged
@@ -131,7 +131,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 242373221543037861}
-  m_Mesh: {fileID: 5368692348888278766, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -6418548665371611625, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &6502754923613845383
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -177,27 +177,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6274696241651993868
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 242373221543037861}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &391188836119936230
 GameObject:
   m_ObjectHideFlags: 0
@@ -209,7 +188,6 @@ GameObject:
   - component: {fileID: 4918056588665542800}
   - component: {fileID: 7424588912455404852}
   - component: {fileID: 2268529223154499902}
-  - component: {fileID: 7760599622142898007}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_10
   m_TagString: Untagged
@@ -239,7 +217,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 391188836119936230}
-  m_Mesh: {fileID: -1466523044827503923, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -8682175349258082092, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &2268529223154499902
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -285,27 +263,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7760599622142898007
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 391188836119936230}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &522937275354806017
 GameObject:
   m_ObjectHideFlags: 0
@@ -317,7 +274,6 @@ GameObject:
   - component: {fileID: 3289222563688310376}
   - component: {fileID: 1646727109520247089}
   - component: {fileID: 6053822563132614469}
-  - component: {fileID: 6840643198220809026}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_17
   m_TagString: Untagged
@@ -347,7 +303,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 522937275354806017}
-  m_Mesh: {fileID: -6819411677837923511, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 1859546722205286061, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &6053822563132614469
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -393,27 +349,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6840643198220809026
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 522937275354806017}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &692987277164763736
 GameObject:
   m_ObjectHideFlags: 0
@@ -425,7 +360,6 @@ GameObject:
   - component: {fileID: 1293196531194165692}
   - component: {fileID: 3851331407881205387}
   - component: {fileID: 9177915845558592528}
-  - component: {fileID: 4106319051922108686}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_05
   m_TagString: Untagged
@@ -455,7 +389,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 692987277164763736}
-  m_Mesh: {fileID: -5147210540594355345, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 6051033469629169211, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &9177915845558592528
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -501,27 +435,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4106319051922108686
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 692987277164763736}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &791900728202662594
 GameObject:
   m_ObjectHideFlags: 0
@@ -533,7 +446,6 @@ GameObject:
   - component: {fileID: 5830898113208744290}
   - component: {fileID: 4925394926411761335}
   - component: {fileID: 5480266871678609068}
-  - component: {fileID: 237515953636233709}
   m_Layer: 0
   m_Name: Stretch_Railing_Bottom_Rail
   m_TagString: Untagged
@@ -563,7 +475,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 791900728202662594}
-  m_Mesh: {fileID: 5401792909025250290, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 1050846823386773721, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &5480266871678609068
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -609,27 +521,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &237515953636233709
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 791900728202662594}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 18, y: 0.25, z: 0.25}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &900724104988243643
 GameObject:
   m_ObjectHideFlags: 0
@@ -641,7 +532,6 @@ GameObject:
   - component: {fileID: 2751573695544170563}
   - component: {fileID: 1453254079337747378}
   - component: {fileID: 8487062047189298445}
-  - component: {fileID: 3285114321323485418}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_24
   m_TagString: Untagged
@@ -671,7 +561,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 900724104988243643}
-  m_Mesh: {fileID: -6408318754354589561, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -794089807710221920, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8487062047189298445
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -717,27 +607,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &3285114321323485418
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900724104988243643}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &967822398525610247
 GameObject:
   m_ObjectHideFlags: 0
@@ -749,7 +618,6 @@ GameObject:
   - component: {fileID: 1156853389959608917}
   - component: {fileID: 2461052600644363919}
   - component: {fileID: 7369696762505613081}
-  - component: {fileID: 7369696762505613082}
   m_Layer: 0
   m_Name: Stretch_Glass_Right_SlidingPanel
   m_TagString: Untagged
@@ -779,7 +647,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 967822398525610247}
-  m_Mesh: {fileID: 1424571851098284099, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 5241623165264452005, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &7369696762505613081
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -825,27 +693,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7369696762505613082
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 967822398525610247}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 8.19, y: 19.7, z: 0.08}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1020777737299301302
 GameObject:
   m_ObjectHideFlags: 0
@@ -857,7 +704,6 @@ GameObject:
   - component: {fileID: 6263703600030311285}
   - component: {fileID: 66255261972956871}
   - component: {fileID: 8438917159766975599}
-  - component: {fileID: 1583607885645048708}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_30
   m_TagString: Untagged
@@ -887,7 +733,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1020777737299301302}
-  m_Mesh: {fileID: 7881317360424580289, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 2360065990905092619, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8438917159766975599
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -933,27 +779,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &1583607885645048708
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1020777737299301302}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1531671531935581314
 GameObject:
   m_ObjectHideFlags: 0
@@ -965,7 +790,6 @@ GameObject:
   - component: {fileID: 2084303413503380032}
   - component: {fileID: 1136874300724289069}
   - component: {fileID: 3170741507614020623}
-  - component: {fileID: 8182166269356888032}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_07
   m_TagString: Untagged
@@ -995,7 +819,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1531671531935581314}
-  m_Mesh: {fileID: -5740042049607678426, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 7326064175733553507, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &3170741507614020623
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1041,27 +865,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &8182166269356888032
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1531671531935581314}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2370350256672754600
 GameObject:
   m_ObjectHideFlags: 0
@@ -1073,7 +876,6 @@ GameObject:
   - component: {fileID: 8578802526346495471}
   - component: {fileID: 8363198146232281158}
   - component: {fileID: 7157308548886616972}
-  - component: {fileID: 7544430031667386720}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_26
   m_TagString: Untagged
@@ -1103,7 +905,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2370350256672754600}
-  m_Mesh: {fileID: -5322849151614164725, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 546069708509149883, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &7157308548886616972
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1149,27 +951,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7544430031667386720
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2370350256672754600}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2399095637078714392
 GameObject:
   m_ObjectHideFlags: 0
@@ -1181,7 +962,6 @@ GameObject:
   - component: {fileID: 3940271763371755686}
   - component: {fileID: 593360655740879749}
   - component: {fileID: 9077573015109410163}
-  - component: {fileID: 117901781092893945}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_01
   m_TagString: Untagged
@@ -1211,7 +991,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2399095637078714392}
-  m_Mesh: {fileID: -3705207454992431614, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -191785286690007815, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &9077573015109410163
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1257,27 +1037,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &117901781092893945
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2399095637078714392}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2399488619338415195
 GameObject:
   m_ObjectHideFlags: 0
@@ -1289,7 +1048,6 @@ GameObject:
   - component: {fileID: 4680470771214037243}
   - component: {fileID: 564831661150829346}
   - component: {fileID: 6531729958427129357}
-  - component: {fileID: 1744244794361810529}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_11
   m_TagString: Untagged
@@ -1319,7 +1077,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2399488619338415195}
-  m_Mesh: {fileID: -1388906472942862475, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -8617300195850051509, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &6531729958427129357
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1365,27 +1123,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &1744244794361810529
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2399488619338415195}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2721162274722731667
 GameObject:
   m_ObjectHideFlags: 0
@@ -1397,7 +1134,6 @@ GameObject:
   - component: {fileID: 7572540193523371582}
   - component: {fileID: 7186347551182484911}
   - component: {fileID: 1005738124890522368}
-  - component: {fileID: 5869565311382402450}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_21
   m_TagString: Untagged
@@ -1427,7 +1163,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2721162274722731667}
-  m_Mesh: {fileID: -5293932469070358691, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -5527663084597284584, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &1005738124890522368
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1473,27 +1209,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &5869565311382402450
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2721162274722731667}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2746626522674152302
 GameObject:
   m_ObjectHideFlags: 0
@@ -1505,7 +1220,6 @@ GameObject:
   - component: {fileID: 8809236637432861188}
   - component: {fileID: 2423892114769758470}
   - component: {fileID: 3291269269193057497}
-  - component: {fileID: 165343598040814268}
   m_Layer: 0
   m_Name: Fixed_Railing_Right_Post
   m_TagString: Untagged
@@ -1535,7 +1249,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2746626522674152302}
-  m_Mesh: {fileID: -7330679785408990148, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 7052588402408999224, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &3291269269193057497
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1581,27 +1295,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &165343598040814268
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2746626522674152302}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.28, y: 7, z: 0.28}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2992189728141448376
 GameObject:
   m_ObjectHideFlags: 0
@@ -1613,7 +1306,6 @@ GameObject:
   - component: {fileID: 2929462961197277566}
   - component: {fileID: 5362269916326266293}
   - component: {fileID: 292491433801742982}
-  - component: {fileID: 4296263793817039586}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_28
   m_TagString: Untagged
@@ -1643,7 +1335,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2992189728141448376}
-  m_Mesh: {fileID: -85520852078600804, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 701543439947936642, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &292491433801742982
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1689,27 +1381,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4296263793817039586
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2992189728141448376}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3514562014965018095
 GameObject:
   m_ObjectHideFlags: 0
@@ -1721,7 +1392,6 @@ GameObject:
   - component: {fileID: 1096385486898229886}
   - component: {fileID: 4094990430408156791}
   - component: {fileID: 1832569229441605086}
-  - component: {fileID: 577859922722343093}
   m_Layer: 0
   m_Name: Fixed_Center_Mullion
   m_TagString: Untagged
@@ -1751,7 +1421,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3514562014965018095}
-  m_Mesh: {fileID: -9125012262605975611, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -8756335196407463680, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &1832569229441605086
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1797,27 +1467,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &577859922722343093
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3514562014965018095}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.32, y: 19.7, z: 0.52}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3514941139319519569
 GameObject:
   m_ObjectHideFlags: 0
@@ -1829,7 +1478,6 @@ GameObject:
   - component: {fileID: 2509700068706753927}
   - component: {fileID: 7846212821273703745}
   - component: {fileID: 8035043242218416915}
-  - component: {fileID: 4223675953299342663}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_27
   m_TagString: Untagged
@@ -1859,7 +1507,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3514941139319519569}
-  m_Mesh: {fileID: 6980143187042174996, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -3051586918842798105, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8035043242218416915
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1905,27 +1553,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4223675953299342663
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3514941139319519569}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3751874730057510338
 GameObject:
   m_ObjectHideFlags: 0
@@ -1937,7 +1564,6 @@ GameObject:
   - component: {fileID: 137215428021918274}
   - component: {fileID: 5975539182891138840}
   - component: {fileID: 1954462476653993327}
-  - component: {fileID: 704853533941517875}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_18
   m_TagString: Untagged
@@ -1967,7 +1593,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3751874730057510338}
-  m_Mesh: {fileID: 8388976959211318820, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 3292230737309333011, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &1954462476653993327
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2013,27 +1639,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &704853533941517875
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3751874730057510338}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3761841658637243540
 GameObject:
   m_ObjectHideFlags: 0
@@ -2045,7 +1650,6 @@ GameObject:
   - component: {fileID: 3454569315701418398}
   - component: {fileID: 7609848597665532876}
   - component: {fileID: 4017661500648331789}
-  - component: {fileID: 5289356987254133855}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_02
   m_TagString: Untagged
@@ -2075,7 +1679,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3761841658637243540}
-  m_Mesh: {fileID: 348219816100968112, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -7311494703279276970, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &4017661500648331789
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2121,27 +1725,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &5289356987254133855
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3761841658637243540}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4083713760364383984
 GameObject:
   m_ObjectHideFlags: 0
@@ -2153,7 +1736,6 @@ GameObject:
   - component: {fileID: 6368807072565740731}
   - component: {fileID: 6453716162943902244}
   - component: {fileID: 7006258638166509724}
-  - component: {fileID: 6100726773928089103}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_23
   m_TagString: Untagged
@@ -2183,7 +1765,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4083713760364383984}
-  m_Mesh: {fileID: 8801643044771753866, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 4191119422009766467, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &7006258638166509724
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2229,27 +1811,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6100726773928089103
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4083713760364383984}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4291110385311710562
 GameObject:
   m_ObjectHideFlags: 0
@@ -2261,7 +1822,6 @@ GameObject:
   - component: {fileID: 6770565106873036903}
   - component: {fileID: 8410722833756931971}
   - component: {fileID: 6969928619517768919}
-  - component: {fileID: 6969928619517768920}
   m_Layer: 0
   m_Name: Stretch_Glass_Left_SlidingPanel
   m_TagString: Untagged
@@ -2291,7 +1851,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4291110385311710562}
-  m_Mesh: {fileID: -1662382484803004038, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 2556639725072241602, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &6969928619517768919
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2337,27 +1897,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6969928619517768920
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4291110385311710562}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 8.19, y: 19.7, z: 0.08}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4395690327149029748
 GameObject:
   m_ObjectHideFlags: 0
@@ -2369,7 +1908,6 @@ GameObject:
   - component: {fileID: 8311372887951007340}
   - component: {fileID: 4444028333898479857}
   - component: {fileID: 3410465421289235787}
-  - component: {fileID: 2941732037658097414}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_09
   m_TagString: Untagged
@@ -2399,7 +1937,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4395690327149029748}
-  m_Mesh: {fileID: -7094190770470503552, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -8375268098305111070, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &3410465421289235787
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2445,27 +1983,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2941732037658097414
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4395690327149029748}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4522096970776486300
 GameObject:
   m_ObjectHideFlags: 0
@@ -2477,7 +1994,6 @@ GameObject:
   - component: {fileID: 108358179803977109}
   - component: {fileID: 4769186903750021000}
   - component: {fileID: 8647059822869766739}
-  - component: {fileID: 6323212460664245720}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_06
   m_TagString: Untagged
@@ -2507,7 +2023,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4522096970776486300}
-  m_Mesh: {fileID: 5026403578219863612, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 7447753750661588219, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8647059822869766739
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2553,27 +2069,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6323212460664245720
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4522096970776486300}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5210132840278475291
 GameObject:
   m_ObjectHideFlags: 0
@@ -2585,7 +2080,6 @@ GameObject:
   - component: {fileID: 1579651233251415523}
   - component: {fileID: 3512500660270281363}
   - component: {fileID: 1050560164783329857}
-  - component: {fileID: 8712363797326859949}
   m_Layer: 0
   m_Name: Fixed_Railing_Left_Post
   m_TagString: Untagged
@@ -2615,7 +2109,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5210132840278475291}
-  m_Mesh: {fileID: -3543810814276948824, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 3114721407537387728, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &1050560164783329857
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2661,27 +2155,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &8712363797326859949
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5210132840278475291}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.28, y: 7, z: 0.28}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5327338900148326114
 GameObject:
   m_ObjectHideFlags: 0
@@ -2693,7 +2166,6 @@ GameObject:
   - component: {fileID: 83887424450003638}
   - component: {fileID: 3047745244819570731}
   - component: {fileID: 4843592924002340220}
-  - component: {fileID: 2963748802205292708}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_08
   m_TagString: Untagged
@@ -2723,7 +2195,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5327338900148326114}
-  m_Mesh: {fileID: -5712855784340470297, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -6332849922684290229, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &4843592924002340220
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2769,27 +2241,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2963748802205292708
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5327338900148326114}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5503979017402752111
 GameObject:
   m_ObjectHideFlags: 0
@@ -2801,7 +2252,6 @@ GameObject:
   - component: {fileID: 7126175752578838152}
   - component: {fileID: 2249193011942049613}
   - component: {fileID: 7218659022702458049}
-  - component: {fileID: 4364766163016404205}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_22
   m_TagString: Untagged
@@ -2831,7 +2281,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5503979017402752111}
-  m_Mesh: {fileID: 5580611978528213477, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -5344561719356032706, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &7218659022702458049
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2877,27 +2327,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4364766163016404205
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5503979017402752111}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5520835771711247335
 GameObject:
   m_ObjectHideFlags: 0
@@ -2909,7 +2338,6 @@ GameObject:
   - component: {fileID: 1576363359252796395}
   - component: {fileID: 3611229176240166146}
   - component: {fileID: 7770376430924157355}
-  - component: {fileID: 2557596379117227155}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_16
   m_TagString: Untagged
@@ -2939,7 +2367,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5520835771711247335}
-  m_Mesh: {fileID: 7719437975455081564, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 1840355123357158996, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &7770376430924157355
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2985,27 +2413,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2557596379117227155
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5520835771711247335}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5994854029173886040
 GameObject:
   m_ObjectHideFlags: 0
@@ -3017,7 +2424,6 @@ GameObject:
   - component: {fileID: 7289589488079752093}
   - component: {fileID: 2533904851817828309}
   - component: {fileID: 4946342543778386096}
-  - component: {fileID: 7424760479489632123}
   m_Layer: 0
   m_Name: Stretch_Railing_Top_Rail
   m_TagString: Untagged
@@ -3047,7 +2453,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5994854029173886040}
-  m_Mesh: {fileID: -7244499361388539556, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 4932292729216687572, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &4946342543778386096
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3093,27 +2499,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7424760479489632123
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5994854029173886040}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 18, y: 0.25, z: 0.25}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6164396399350102900
 GameObject:
   m_ObjectHideFlags: 0
@@ -3125,7 +2510,6 @@ GameObject:
   - component: {fileID: 1737475493908469134}
   - component: {fileID: 2542801394737346915}
   - component: {fileID: 1570390811320643853}
-  - component: {fileID: 4398336562409804631}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_29
   m_TagString: Untagged
@@ -3155,7 +2539,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6164396399350102900}
-  m_Mesh: {fileID: -5676108102959389782, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -5212467864626110794, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &1570390811320643853
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3201,27 +2585,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4398336562409804631
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6164396399350102900}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6218415997174133095
 GameObject:
   m_ObjectHideFlags: 0
@@ -3233,7 +2596,6 @@ GameObject:
   - component: {fileID: 5841436472184177844}
   - component: {fileID: 1943204811011497162}
   - component: {fileID: 3490807933276675279}
-  - component: {fileID: 6593940196588768412}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_12
   m_TagString: Untagged
@@ -3263,7 +2625,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6218415997174133095}
-  m_Mesh: {fileID: 5521240669895560281, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -6717331613555424125, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &3490807933276675279
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3309,27 +2671,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6593940196588768412
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6218415997174133095}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6239672540526165864
 GameObject:
   m_ObjectHideFlags: 0
@@ -3341,7 +2682,6 @@ GameObject:
   - component: {fileID: 3062894369819019241}
   - component: {fileID: 8740580787410734804}
   - component: {fileID: 193272627605868509}
-  - component: {fileID: 6143000108209427780}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_19
   m_TagString: Untagged
@@ -3371,7 +2711,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6239672540526165864}
-  m_Mesh: {fileID: -8655629476508431201, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -6899524870491884093, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &193272627605868509
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3417,27 +2757,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6143000108209427780
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6239672540526165864}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6245897335038253223
 GameObject:
   m_ObjectHideFlags: 0
@@ -3449,7 +2768,6 @@ GameObject:
   - component: {fileID: 4718039362263521240}
   - component: {fileID: 4109285013188246997}
   - component: {fileID: 2027631220411787857}
-  - component: {fileID: 7036576061528938612}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_20
   m_TagString: Untagged
@@ -3479,7 +2797,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6245897335038253223}
-  m_Mesh: {fileID: 6811293148335456811, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 1432581099344309136, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &2027631220411787857
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3525,27 +2843,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7036576061528938612
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6245897335038253223}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6304197394906441271
 GameObject:
   m_ObjectHideFlags: 0
@@ -3557,7 +2854,6 @@ GameObject:
   - component: {fileID: 3469059730332184966}
   - component: {fileID: 6691376858047199422}
   - component: {fileID: 6811559820355230726}
-  - component: {fileID: 2465775512042047736}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_31
   m_TagString: Untagged
@@ -3587,7 +2883,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6304197394906441271}
-  m_Mesh: {fileID: -2941036237218860798, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 2249234632967659219, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &6811559820355230726
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3633,27 +2929,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2465775512042047736
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6304197394906441271}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6440048718253304500
 GameObject:
   m_ObjectHideFlags: 0
@@ -3665,7 +2940,6 @@ GameObject:
   - component: {fileID: 2329276747938505120}
   - component: {fileID: 5037961705646249385}
   - component: {fileID: 5751561845150233656}
-  - component: {fileID: 4755756734266430017}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_04
   m_TagString: Untagged
@@ -3695,7 +2969,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6440048718253304500}
-  m_Mesh: {fileID: 7570307159718119897, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -7147958318291755682, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &5751561845150233656
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3741,27 +3015,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4755756734266430017
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6440048718253304500}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6673395680242638274
 GameObject:
   m_ObjectHideFlags: 0
@@ -3773,7 +3026,6 @@ GameObject:
   - component: {fileID: 7513471033086004358}
   - component: {fileID: 914833943694388166}
   - component: {fileID: 3705255657927602164}
-  - component: {fileID: 7873775178178474118}
   m_Layer: 0
   m_Name: Stretch_BalconyFrame_BottomRail
   m_TagString: Untagged
@@ -3803,7 +3055,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6673395680242638274}
-  m_Mesh: {fileID: -2708144648956582887, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -2625219220403702309, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &3705255657927602164
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3849,27 +3101,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7873775178178474118
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6673395680242638274}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 18, y: 0.65, z: 0.8}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6769457253004536633
 GameObject:
   m_ObjectHideFlags: 0
@@ -3881,7 +3112,6 @@ GameObject:
   - component: {fileID: 6481651590228850706}
   - component: {fileID: 7151762695712131637}
   - component: {fileID: 8205834224641729478}
-  - component: {fileID: 1240297484647583292}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_13
   m_TagString: Untagged
@@ -3911,7 +3141,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6769457253004536633}
-  m_Mesh: {fileID: 5207145274811707946, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -3603445430237632387, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8205834224641729478
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3957,27 +3187,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &1240297484647583292
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6769457253004536633}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6877951157715633050
 GameObject:
   m_ObjectHideFlags: 0
@@ -3989,14 +3198,13 @@ GameObject:
   - component: {fileID: 7268895443484647405}
   - component: {fileID: 454206026768963321}
   - component: {fileID: 8506779061923904423}
-  - component: {fileID: 7241037332975961641}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_14
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7268895443484647405
 Transform:
   m_ObjectHideFlags: 0
@@ -4019,7 +3227,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6877951157715633050}
-  m_Mesh: {fileID: 3006917738534070624, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -6945852434748556446, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8506779061923904423
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4065,27 +3273,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7241037332975961641
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6877951157715633050}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7088474212712314228
 GameObject:
   m_ObjectHideFlags: 0
@@ -4097,7 +3284,6 @@ GameObject:
   - component: {fileID: 710210713136398953}
   - component: {fileID: 6982380872499572565}
   - component: {fileID: 1674546771165595822}
-  - component: {fileID: 6996947211297545842}
   m_Layer: 0
   m_Name: Stretch_BalconyFrame_Top
   m_TagString: Untagged
@@ -4127,7 +3313,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7088474212712314228}
-  m_Mesh: {fileID: 878405089527804693, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -834232930756431243, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &1674546771165595822
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4173,27 +3359,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6996947211297545842
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7088474212712314228}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 18, y: 0.65, z: 0.8}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7886115382237007801
 GameObject:
   m_ObjectHideFlags: 0
@@ -4205,7 +3370,6 @@ GameObject:
   - component: {fileID: 3050138425827596439}
   - component: {fileID: 3198906159437613840}
   - component: {fileID: 609367646728139613}
-  - component: {fileID: 4020927797759417065}
   m_Layer: 0
   m_Name: Fixed_BalconyFrame_Left
   m_TagString: Untagged
@@ -4281,27 +3445,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4020927797759417065
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7886115382237007801}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.65, y: 21, z: 0.8}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7995256771395770371
 GameObject:
   m_ObjectHideFlags: 0
@@ -4313,7 +3456,6 @@ GameObject:
   - component: {fileID: 8513622124393332603}
   - component: {fileID: 4953797855087059123}
   - component: {fileID: 7231722702808200108}
-  - component: {fileID: 7796294096009666827}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_25
   m_TagString: Untagged
@@ -4343,7 +3485,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7995256771395770371}
-  m_Mesh: {fileID: 2584811279166177105, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -6167252629440401754, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &7231722702808200108
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4389,27 +3531,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &7796294096009666827
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7995256771395770371}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8112998514204304363
 GameObject:
   m_ObjectHideFlags: 0
@@ -4421,7 +3542,6 @@ GameObject:
   - component: {fileID: 2523382453316795283}
   - component: {fileID: 8860487497620584892}
   - component: {fileID: 4571873005413995300}
-  - component: {fileID: 5610980978478371860}
   m_Layer: 0
   m_Name: Fixed_BalconyFrame_Right
   m_TagString: Untagged
@@ -4451,7 +3571,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8112998514204304363}
-  m_Mesh: {fileID: -5157797113291120856, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 3869016338699051006, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &4571873005413995300
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4497,27 +3617,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &5610980978478371860
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8112998514204304363}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.65, y: 21, z: 0.8}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8201760495319866253
 GameObject:
   m_ObjectHideFlags: 0
@@ -4529,7 +3628,6 @@ GameObject:
   - component: {fileID: 1710072508747581142}
   - component: {fileID: 3304664717531661760}
   - component: {fileID: 2893267978286218966}
-  - component: {fileID: 3719361389099497927}
   m_Layer: 0
   m_Name: Stretch_Railing_Mid_Rail
   m_TagString: Untagged
@@ -4559,7 +3657,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8201760495319866253}
-  m_Mesh: {fileID: -1951866690544258039, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: 4492414651193713410, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &2893267978286218966
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4605,27 +3703,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &3719361389099497927
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8201760495319866253}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 18, y: 0.205, z: 0.205}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8437384475809987782
 GameObject:
   m_ObjectHideFlags: 0
@@ -4637,7 +3714,6 @@ GameObject:
   - component: {fileID: 7490660101220366581}
   - component: {fileID: 8765183357870911726}
   - component: {fileID: 410350301412602545}
-  - component: {fileID: 5534522221742820751}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_03
   m_TagString: Untagged
@@ -4667,7 +3743,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8437384475809987782}
-  m_Mesh: {fileID: -7697026441239219382, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -4588310561241436628, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &410350301412602545
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4713,27 +3789,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &5534522221742820751
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8437384475809987782}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8836833717551924048
 GameObject:
   m_ObjectHideFlags: 0
@@ -4745,7 +3800,6 @@ GameObject:
   - component: {fileID: 3722559275765443951}
   - component: {fileID: 6409695232259796375}
   - component: {fileID: 8606455183399231543}
-  - component: {fileID: 6230577950585919907}
   m_Layer: 0
   m_Name: Fixed_Railing_Vertical_Bar_32
   m_TagString: Untagged
@@ -4775,7 +3829,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8836833717551924048}
-  m_Mesh: {fileID: -5431919691370349707, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
+  m_Mesh: {fileID: -3897028551149810686, guid: 9e0d3f6e86c3ae14981a790378b982ab, type: 2}
 --- !u!23 &8606455183399231543
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4821,24 +3875,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6230577950585919907
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8836833717551924048}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.12, y: 6.45, z: 0.12}
-  m_Center: {x: 0, y: 0, z: 0}

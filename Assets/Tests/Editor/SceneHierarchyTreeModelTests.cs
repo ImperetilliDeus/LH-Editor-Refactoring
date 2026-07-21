@@ -82,6 +82,30 @@ public class SceneHierarchyTreeModelTests
     }
 
     [Test]
+    public void BuildRows_AssignsOpeningContainerToRoomByPersistentWallId()
+    {
+        Transform wallRoot = CreateObject("Walls").transform;
+        GameObject containerObject = CreateObject("Wall_With_Opening");
+        containerObject.transform.SetParent(wallRoot, false);
+        Component container = containerObject.AddComponent(GetAssemblyType("WallOpeningContainer"));
+        container.GetType().GetMethod("SetPersistentWallId")
+            ?.Invoke(container, new object[] { "collapsed-wall-id" });
+        CreateWall("Segment_A", "generated-a", containerObject.transform);
+        Component secondSegment = CreateWall("Segment_B", "generated-b", containerObject.transform);
+        Component room = CreateRoom("RoomObject", "Loaded Room", secondSegment);
+        room.GetType().GetMethod("SetManualWallIds")
+            ?.Invoke(room, new object[] { new[] { "collapsed-wall-id" } });
+
+        IList rows = BuildRows(wallRoot, CreateRoomList(room));
+
+        Assert.That(rows, Has.Count.EqualTo(2));
+        AssertRow(rows[0], "Room", 0, "Room (Loaded Room)", null);
+        Assert.That(GetProperty<object>(rows[1], "Kind").ToString(), Is.EqualTo("Wall"));
+        Assert.That(GetProperty<int>(rows[1], "Depth"), Is.EqualTo(1));
+        Assert.That(GetProperty<string>(rows[1], "DisplayName"), Is.EqualTo("Wall_With_Opening"));
+    }
+
+    [Test]
     public void BuildRows_SkipsWallPreview()
     {
         Transform wallRoot = CreateObject("Walls").transform;

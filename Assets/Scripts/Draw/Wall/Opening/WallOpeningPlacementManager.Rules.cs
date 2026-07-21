@@ -83,7 +83,14 @@ public partial class WallOpeningPlacementManager
         float maxWidth = Mathf.Max(MinimumWallSegmentLength, Mathf.Min(
             (targetOpening.CenterDistance - leftLimit) * 2f,
             (rightLimit - targetOpening.CenterDistance) * 2f));
-        return Mathf.Clamp(desiredWidth, MinimumWallSegmentLength, maxWidth);
+        float clampedWidth = Mathf.Clamp(desiredWidth, MinimumWallSegmentLength, maxWidth);
+        if (TryGetOpeningTypeDefinition(targetOpening, out OpeningTypeCatalogItem definition))
+        {
+            clampedWidth = definition.ClampWidth(clampedWidth);
+            clampedWidth = Mathf.Clamp(clampedWidth, MinimumWallSegmentLength, maxWidth);
+        }
+
+        return clampedWidth;
     }
 
     private float ClampOpeningHeight(WallOpeningContainer container, WallOpening targetOpening, float desiredHeight, float bottomY)
@@ -96,7 +103,14 @@ public partial class WallOpeningPlacementManager
         float maxHeight = Mathf.Max(
             MinimumWallSegmentLength,
             container.WallTopY - bottomY);
-        return Mathf.Clamp(desiredHeight, MinimumWallSegmentLength, maxHeight);
+        float clampedHeight = Mathf.Clamp(desiredHeight, MinimumWallSegmentLength, maxHeight);
+        if (TryGetOpeningTypeDefinition(targetOpening, out OpeningTypeCatalogItem definition))
+        {
+            clampedHeight = definition.ClampHeight(clampedHeight);
+            clampedHeight = Mathf.Clamp(clampedHeight, MinimumWallSegmentLength, maxHeight);
+        }
+
+        return clampedHeight;
     }
 
     private float ClampOpeningBottomY(WallOpeningContainer container, WallOpening targetOpening, float desiredBottomY)

@@ -8,6 +8,21 @@ public class OpeningTypeCatalog : ScriptableObject
     public IReadOnlyList<OpeningTypeCatalogItem> Items => items;
 }
 
+public enum OpeningModelLayoutKind
+{
+    Auto = 0,
+    DoorLike = 1,
+    WindowLike = 2,
+    BalconyLike = 3,
+}
+
+public enum OpeningCollisionPolicy
+{
+    Auto = 0,
+    PassThrough = 1,
+    BlockCharacter = 2,
+}
+
 [System.Serializable]
 public class OpeningTypeCatalogItem
 {
@@ -26,6 +41,11 @@ public class OpeningTypeCatalogItem
     [SerializeField] private string parametricProfileKey;
     [SerializeField] private Vector3 authoredSize = Vector3.one;
     [SerializeField] private bool usesBlenderLocalAxes;
+    [SerializeField] private Vector3 minSize = Vector3.zero;
+    [SerializeField] private Vector3 maxSize = Vector3.zero;
+    [SerializeField] private OpeningModelLayoutKind modelLayoutKind = OpeningModelLayoutKind.Auto;
+    [SerializeField] private OpeningCollisionPolicy collisionPolicy = OpeningCollisionPolicy.Auto;
+    [SerializeField] private bool selectable = true;
 
     public WallOpeningPlacementManager.OpeningPlacementType OpeningType => openingType;
     public string TypeKey => typeKey;
@@ -42,4 +62,40 @@ public class OpeningTypeCatalogItem
     public string ParametricProfileKey => parametricProfileKey;
     public Vector3 AuthoredSize => authoredSize;
     public bool UsesBlenderLocalAxes => usesBlenderLocalAxes;
+    public Vector3 MinSize => minSize;
+    public Vector3 MaxSize => maxSize;
+    public OpeningModelLayoutKind ModelLayoutKind => modelLayoutKind;
+    public OpeningCollisionPolicy CollisionPolicy => collisionPolicy;
+    public bool Selectable => selectable;
+
+    public float ClampWidth(float value)
+    {
+        return ClampAxis(value, minSize.x, maxSize.x);
+    }
+
+    public float ClampHeight(float value)
+    {
+        return ClampAxis(value, minSize.y, maxSize.y);
+    }
+
+    public float ClampDepth(float value)
+    {
+        return ClampAxis(value, minSize.z, maxSize.z);
+    }
+
+    private static float ClampAxis(float value, float min, float max)
+    {
+        float result = value;
+        if (min > 0f)
+        {
+            result = Mathf.Max(result, min);
+        }
+
+        if (max > 0f)
+        {
+            result = Mathf.Min(result, max);
+        }
+
+        return result;
+    }
 }

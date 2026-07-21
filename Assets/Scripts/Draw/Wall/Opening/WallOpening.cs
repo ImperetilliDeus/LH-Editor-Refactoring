@@ -168,6 +168,7 @@ public class WallOpening : MonoBehaviour
         bool fitHeight,
         bool fitWidth,
         bool useParametricModel,
+        string parametricProfileKey,
         Vector3 parametricAuthoredSize,
         bool parametricUsesBlenderLocalAxes)
     {
@@ -227,7 +228,12 @@ public class WallOpening : MonoBehaviour
 
         if (hasParametricModel)
         {
-            ApplyParametricModelSize(activeModelInstance, modelTargetSize, effectiveReferenceSize, parametricUsesBlenderLocalAxes);
+            ApplyParametricModelSize(
+                activeModelInstance,
+                modelTargetSize,
+                effectiveReferenceSize,
+                parametricUsesBlenderLocalAxes,
+                parametricProfileKey);
         }
         LayerUtility.ApplyLayer(
             modelRoot.gameObject,
@@ -410,7 +416,8 @@ public class WallOpening : MonoBehaviour
         GameObject modelInstance,
         Vector3 modelTargetSize,
         Vector3 referenceSize,
-        bool usesBlenderLocalAxes)
+        bool usesBlenderLocalAxes,
+        string parametricProfileKey)
     {
         ParametricOpeningModel parametricModel = modelInstance.GetComponentInChildren<ParametricOpeningModel>(true);
         if (parametricModel == null)
@@ -418,6 +425,6 @@ public class WallOpening : MonoBehaviour
             parametricModel = modelInstance.AddComponent<ParametricOpeningModel>();
         }
 
-        parametricModel.ApplyOpeningSize(modelTargetSize, referenceSize, usesBlenderLocalAxes);
+        parametricModel.ApplyOpeningSize(modelTargetSize, referenceSize, usesBlenderLocalAxes, parametricProfileKey);
     }
 }

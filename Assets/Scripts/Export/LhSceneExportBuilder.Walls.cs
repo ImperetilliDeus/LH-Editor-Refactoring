@@ -551,6 +551,9 @@ namespace LH.Export
                     scale = scale,
                     parametricProfileKey = ResolveOpeningParametricProfile(opening),
                     authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                    modelLayoutKind = ResolveOpeningModelLayoutKind(opening),
+                    collisionPolicy = ResolveOpeningCollisionPolicy(opening),
+                    selectable = ResolveOpeningSelectable(opening),
                     width = opening.Width,
                     height = opening.Height,
                     depth = opening.Depth,
@@ -577,6 +580,9 @@ namespace LH.Export
                 scale = relativeScale,
                 parametricProfileKey = ResolveOpeningParametricProfile(opening),
                 authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                modelLayoutKind = ResolveOpeningModelLayoutKind(opening),
+                collisionPolicy = ResolveOpeningCollisionPolicy(opening),
+                selectable = ResolveOpeningSelectable(opening),
                 width = opening.Width,
                 height = opening.Height,
                 depth = opening.Depth,
@@ -604,6 +610,9 @@ namespace LH.Export
                     scale = scale,
                     parametricProfileKey = ResolveOpeningParametricProfile(opening),
                     authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                    modelLayoutKind = ResolveOpeningModelLayoutKind(opening),
+                    collisionPolicy = ResolveOpeningCollisionPolicy(opening),
+                    selectable = ResolveOpeningSelectable(opening),
                     width = opening.Width,
                     height = opening.Height,
                     depth = opening.Depth,
@@ -630,6 +639,9 @@ namespace LH.Export
                 scale = relativeScale,
                 parametricProfileKey = ResolveOpeningParametricProfile(opening),
                 authoredSize = LhVector3Dto.FromVector3(ResolveOpeningAuthoredSize(opening)),
+                modelLayoutKind = ResolveOpeningModelLayoutKind(opening),
+                collisionPolicy = ResolveOpeningCollisionPolicy(opening),
+                selectable = ResolveOpeningSelectable(opening),
                 width = opening.Width,
                 height = opening.Height,
                 depth = opening.Depth,
@@ -662,6 +674,27 @@ namespace LH.Export
             }
 
             return Vector3.zero;
+        }
+
+        private static string ResolveOpeningModelLayoutKind(WallOpening opening)
+        {
+            return TryResolveOpeningCatalogItem(opening, out OpeningTypeCatalogItem item) && item != null
+                ? item.ModelLayoutKind.ToString()
+                : OpeningModelLayoutKind.Auto.ToString();
+        }
+
+        private static string ResolveOpeningCollisionPolicy(WallOpening opening)
+        {
+            return TryResolveOpeningCatalogItem(opening, out OpeningTypeCatalogItem item) && item != null
+                ? item.CollisionPolicy.ToString()
+                : OpeningCollisionPolicy.Auto.ToString();
+        }
+
+        private static bool ResolveOpeningSelectable(WallOpening opening)
+        {
+            return !TryResolveOpeningCatalogItem(opening, out OpeningTypeCatalogItem item) ||
+                   item == null ||
+                   item.Selectable;
         }
 
         private static bool TryResolveOpeningCatalogItem(WallOpening opening, out OpeningTypeCatalogItem item)

@@ -12,7 +12,7 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private float panSensitivity = 1f;
 
     [Header("Zoom")]
-    [SerializeField] private float zoomSpeed = 25f;
+    [SerializeField] private float zoomSpeed = 10f;
     [SerializeField] private float minDistance = 10f;
     [SerializeField] private float maxDistance = 2000f;
 
@@ -201,7 +201,7 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        float zoomDelta = scrollValue * zoomSpeed * Time.unscaledDeltaTime;
+        float zoomDelta = NormalizeScrollTicks(scrollValue) * zoomSpeed;
         Vector3 pivot = GetZoomPivot(inputFrame.PointerScreenPosition);
         Vector3 toCamera = CameraTransform.position - pivot;
         float currentDistance = toCamera.magnitude;
@@ -327,6 +327,11 @@ public class CameraManager_3D : MonoBehaviour, IEditorModeInputHandler
         float clampedY = Mathf.Clamp(cameraScreenPosition.y, pixelRect.yMin, pixelRect.yMax);
         ray = targetCamera.ScreenPointToRay(new Vector2(clampedX, clampedY));
         return true;
+    }
+
+    private static float NormalizeScrollTicks(float scrollInput)
+    {
+        return Mathf.Abs(scrollInput) > 10f ? scrollInput / 120f : scrollInput;
     }
 
 }

@@ -5,7 +5,7 @@ public class CameraManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private GameObject Grid;
 
     [SerializeField] private float panSensitivity = 1f;
-    [SerializeField] private float zoomSpeed = 50f;
+    [SerializeField] private float zoomSpeed = 15f;
     [SerializeField] private float minZoomSize = 100f;
     [SerializeField] private float maxZoomSize = 1000f;
 
@@ -129,7 +129,7 @@ public class CameraManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        MainCamera.orthographicSize -= scrollInput * zoomSpeed * Time.unscaledDeltaTime;
+        MainCamera.orthographicSize -= NormalizeScrollTicks(scrollInput) * zoomSpeed;
     }
 
     private void RefreshGridBounds()
@@ -158,6 +158,11 @@ public class CameraManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         gridPlane = new Plane(Vector3.up, new Vector3(0f, gridBounds.center.y, 0f));
+    }
+
+    private static float NormalizeScrollTicks(float scrollInput)
+    {
+        return Mathf.Abs(scrollInput) > 10f ? scrollInput / 120f : scrollInput;
     }
 
     private bool TryGetMouseWorldPoint(out Vector3 worldPoint)

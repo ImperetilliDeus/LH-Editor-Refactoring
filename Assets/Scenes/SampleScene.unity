@@ -3662,7 +3662,7 @@ MonoBehaviour:
   targetCamera: {fileID: 372474338}
   gridObject: {fileID: 481239205}
   panSensitivity: 1
-  zoomSpeed: 1000
+  zoomSpeed: 15
   minDistance: 10
   maxDistance: 2000
   rotationSensitivity: 0.2
@@ -9239,7 +9239,7 @@ MonoBehaviour:
   exportFilePath: Exports/lh_scene.json
   defaultFileName: lh_scene
   startPoint: {x: 0, y: 0, z: 0}
-  prettyPrint: 1
+  prettyPrint: 0
   exportMode: 1
 --- !u!1 &957945873
 GameObject:
@@ -10936,7 +10936,7 @@ MonoBehaviour:
   MainCamera: {fileID: 330585545}
   Grid: {fileID: 481239205}
   panSensitivity: 1
-  zoomSpeed: 1000
+  zoomSpeed: 15
   minZoomSize: 50
   maxZoomSize: 1000
 --- !u!114 &1243706538
@@ -10954,7 +10954,7 @@ MonoBehaviour:
   targetCamera: {fileID: 372474338}
   gridObject: {fileID: 481239205}
   panSensitivity: 1
-  zoomSpeed: 1000
+  zoomSpeed: 10
   minDistance: 10
   maxDistance: 2000
   rotationSensitivity: 0.2

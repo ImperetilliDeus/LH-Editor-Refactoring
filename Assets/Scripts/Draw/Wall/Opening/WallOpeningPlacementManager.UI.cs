@@ -121,8 +121,15 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        float clampedMillimeters = Mathf.Min(millimeters, UnitsToMillimeters(SelectedOpening.Container.WallThickness));
-        SelectedOpening.SetDepth(MillimetersToUnits(clampedMillimeters));
+        float depth = MillimetersToUnits(millimeters);
+        depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
+        if (TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition))
+        {
+            depth = definition.ClampDepth(depth);
+            depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
+        }
+
+        SelectedOpening.SetDepth(depth);
         RebuildSelectedOpeningWithUndo();
     }
 
@@ -145,6 +152,7 @@ public partial class WallOpeningPlacementManager
 
         string nextTypeKey = GetDoorTypeKeyForOption(optionIndex);
         SelectedOpening.SetDoorTypeKey(nextTypeKey);
+        ApplySelectedOpeningTypeSizeConstraints();
         RebuildSelectedOpeningWithUndo();
     }
 
@@ -165,6 +173,7 @@ public partial class WallOpeningPlacementManager
 
         string nextTypeKey = GetWindowTypeKeyForOption(optionIndex);
         SelectedOpening.SetWindowTypeKey(nextTypeKey);
+        ApplySelectedOpeningTypeSizeConstraints();
         RebuildSelectedOpeningWithUndo();
     }
 
@@ -202,6 +211,36 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildSelectedOpeningWithUndo();
+    }
+
+    private void ApplySelectedOpeningTypeSizeConstraints()
+    {
+        if (SelectedOpening == null || SelectedOpening.Container == null)
+        {
+            return;
+        }
+
+        float width = ClampOpeningWidth(SelectedOpening.Container, SelectedOpening, SelectedOpening.Width);
+        if (width > MinimumWallSegmentLength)
+        {
+            SelectedOpening.SetWidth(width);
+        }
+
+        float height = ClampOpeningHeight(SelectedOpening.Container, SelectedOpening, SelectedOpening.Height, SelectedOpening.BottomY);
+        if (height > MinimumWallSegmentLength)
+        {
+            SelectedOpening.SetHeight(height);
+        }
+
+        if (TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition))
+        {
+            float depth = definition.ClampDepth(SelectedOpening.Depth);
+            depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
+            if (depth > MinimumWallSegmentLength)
+            {
+                SelectedOpening.SetDepth(depth);
+            }
+        }
     }
 
     private void ApplySelectedOpeningBottomOffsetFromInput(string inputText, OpeningPlacementType requiredType)
