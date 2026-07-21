@@ -61,6 +61,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Extracted stretch and axis-anchor rules into `ParametricOpeningPartTransformRules`.
   - Moved `AxisAnchor` from a private nested enum to an internal top-level enum so the helper can return the same rule result type.
   - `PartState` construction still owns state capture and now delegates stretch/anchor decisions to the helper.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.RailingLayout.cs`
+  - Moved balcony railing vertical bar activation, spacing, and positioning into a focused partial.
+  - This remains a partial instead of an external helper because it needs access to private cached `PartState` collections.
 
 ## Verification State
 
@@ -72,6 +75,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after extracting `WhiteWindowOpeningPartSizes`.
 - Unity script compilation succeeded after extracting `ParametricOpeningMaterialRules`.
 - Unity script compilation succeeded after extracting `ParametricOpeningPartTransformRules`.
+- Unity script compilation succeeded after moving railing vertical bar layout into `ParametricOpeningModel.RailingLayout.cs`.
 - EditMode test execution did not produce result XML in this environment.
 - The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
@@ -92,6 +96,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/parametric-opening-material-rules-test.log`
   - `Logs/parametric-opening-transform-rules-compile.log`
   - `Logs/parametric-opening-transform-rules-test.log`
+  - `Logs/parametric-opening-railing-layout-compile.log`
+  - `Logs/parametric-opening-railing-layout-test.log`
 
 ## Important Context
 
@@ -172,17 +178,21 @@ Already done:
 - White two-panel window authored-size rules were extracted to `WhiteWindowOpeningPartSizes`.
 - Profile material rules were extracted to `ParametricOpeningMaterialRules`.
 - Stretch and axis-anchor rules were extracted to `ParametricOpeningPartTransformRules`.
+- Railing vertical bar layout was moved to `ParametricOpeningModel.RailingLayout.cs`.
 
 Next extraction:
 
-- Continue reducing the remaining `ParametricOpeningModel.cs`, now about 628 lines.
-- Good next target: railing vertical bar layout helpers.
+- Continue reducing the remaining `ParametricOpeningModel.cs`, now about 566 lines.
+- Good next target: general part transform application and `PartState` support.
 - Preferred shape:
-  - an internal static helper such as `ParametricOpeningRailingLayout`
+  - keep behavior changes minimal
+  - consider a partial such as `ParametricOpeningModel.PartTransforms.cs`
   - methods:
-    - `ApplyVerticalBars`
-    - `ResolveAuthoredBarSpacing`
-  - keep the cached `railingVerticalBars` collection owned by `ParametricOpeningModel`.
+    - `ApplyPart`
+    - `ResolveNextSize`
+    - `ResolveStretchScale`
+    - `ResolveAxisPosition`
+  - keep `PartState` private until tests are stable.
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
