@@ -83,35 +83,7 @@ public partial class WallOpeningPlacementManager
         string typeKey,
         out OpeningTypeCatalogItem definition)
     {
-        definition = null;
-        if (openingTypeCatalog == null || string.IsNullOrWhiteSpace(typeKey))
-        {
-            return false;
-        }
-
-        IReadOnlyList<OpeningTypeCatalogItem> items = openingTypeCatalog.Items;
-        if (items == null)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < items.Count; i++)
-        {
-            OpeningTypeCatalogItem item = items[i];
-            if (item == null || item.OpeningType != openingType)
-            {
-                continue;
-            }
-
-            if (string.Equals(item.TypeKey, typeKey, System.StringComparison.Ordinal) ||
-                string.Equals(item.DisplayName, typeKey, System.StringComparison.Ordinal))
-            {
-                definition = item;
-                return true;
-            }
-        }
-
-        return false;
+        return OpeningTypeResolver.TryFindDefinition(openingTypeCatalog, openingType, typeKey, out definition);
     }
 
     private bool TryGetOpeningTypeDefinition(WallOpening opening, out OpeningTypeCatalogItem definition)
@@ -122,10 +94,6 @@ public partial class WallOpeningPlacementManager
             return false;
         }
 
-        string typeKey = opening.Type == OpeningPlacementType.Door
-            ? opening.DoorTypeKey
-            : opening.WindowTypeKey;
-
-        return TryGetOpeningTypeDefinition(opening.Type, typeKey, out definition);
+        return TryGetOpeningTypeDefinition(opening.Type, OpeningTypeResolver.ResolveTypeKey(opening), out definition);
     }
 }

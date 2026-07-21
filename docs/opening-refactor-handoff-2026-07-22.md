@@ -112,6 +112,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.MaterialRules.cs`
   - Moved `ApplyProfileMaterials` adapter from `ParametricOpeningModel.cs` into this material-focused partial without behavior changes.
   - `ParametricOpeningMaterialRules` still owns material selection and material creation.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningTypeResolver.cs`
+  - Added an internal static helper for opening catalog lookup.
+  - Moved definition lookup by `OpeningPlacementType` and type/display key out of `WallOpeningPlacementManager.TypeCatalog.cs`.
+  - Added `ResolveTypeKey(WallOpening)` for the existing door/window key selection logic.
+  - `WallOpeningPlacementManager.TypeCatalog.cs` still owns catalog loading, option cache construction, and UI option application.
 
 ## Verification State
 
@@ -133,6 +138,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after moving size/reference conversion helpers into `ParametricOpeningModel.SizeResolution.cs`.
 - Unity script compilation succeeded after moving profile classification helpers into `ParametricOpeningModel.ProfileClassification.cs`.
 - Unity script compilation succeeded after moving `ApplyProfileMaterials` into `ParametricOpeningModel.MaterialRules.cs`.
+- Unity script compilation succeeded after extracting `OpeningTypeResolver`.
 - EditMode test execution issue was diagnosed.
   - Do not pass `-quit` with `-runTests`; Unity Test Framework schedules the run after editor startup and exits itself when the run completes.
   - Use a project-relative `-testResults` path such as `Logs\test-results.xml`.
@@ -149,6 +155,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After the profile-classification partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the material-adapter move, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - Corrected Test Runner verification:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningTypeResolver`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -193,6 +202,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/test-runner-opening-catalog-relative-no-quit.xml`
   - `Logs/wall-opening-placement-rail-regression-no-quit.log`
   - `Logs/wall-opening-placement-rail-regression-no-quit.xml`
+  - `Logs/opening-type-resolver-compile.log`
+  - `Logs/opening-type-resolver-catalog-tests.log`
+  - `Logs/opening-type-resolver-catalog-tests.xml`
+  - `Logs/opening-type-resolver-rail-regression.log`
+  - `Logs/opening-type-resolver-rail-regression.xml`
 
 ## Important Context
 
@@ -310,7 +324,7 @@ Do after tests are stable.
 
 Suggested extraction order:
 
-1. `OpeningTypeResolver`
+1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningVisualBuilder`
 3. `OpeningLayoutService`
 4. `OpeningSelectionController`
