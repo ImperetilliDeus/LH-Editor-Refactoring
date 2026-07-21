@@ -56,7 +56,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `PartState.ResolveAuthoredPartSize` still owns dispatch and calls this helper for `WHITE_TWO_PANEL_WINDOW_V1`.
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.MaterialRules.cs`
   - Extracted profile material resolution, generated material caching, resource material loading, and shader selection into `ParametricOpeningMaterialRules`.
-  - `ParametricOpeningModel.ApplyProfileMaterials` remains as a thin adapter that walks cached parts and applies resolved materials.
+  - `ParametricOpeningModel.ApplyProfileMaterials` is a thin adapter that walks cached parts and applies resolved materials.
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.TransformRules.cs`
   - Extracted stretch and axis-anchor rules into `ParametricOpeningPartTransformRules`.
   - Moved `AxisAnchor` from a private nested enum to an internal top-level enum so the helper can return the same rule result type.
@@ -109,6 +109,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
     - `IsWindowProfile`
     - `ContainsAny`
   - Similar private helper methods still exist inside top-level helper classes such as `ParametricOpeningPartTransformRules`, `ParametricOpeningMaterialRules`, and authored-size helpers. These were left unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.MaterialRules.cs`
+  - Moved `ApplyProfileMaterials` adapter from `ParametricOpeningModel.cs` into this material-focused partial without behavior changes.
+  - `ParametricOpeningMaterialRules` still owns material selection and material creation.
 
 ## Verification State
 
@@ -129,6 +132,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after moving part cache construction into `ParametricOpeningModel.PartCache.cs`.
 - Unity script compilation succeeded after moving size/reference conversion helpers into `ParametricOpeningModel.SizeResolution.cs`.
 - Unity script compilation succeeded after moving profile classification helpers into `ParametricOpeningModel.ProfileClassification.cs`.
+- Unity script compilation succeeded after moving `ApplyProfileMaterials` into `ParametricOpeningModel.MaterialRules.cs`.
 - EditMode test execution did not produce result XML in this environment.
 - The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
@@ -140,6 +144,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After the part-cache partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the size-resolution partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the profile-classification partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
+- After the material-adapter move, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -175,6 +180,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/parametric-opening-size-resolution-test.log`
   - `Logs/parametric-opening-profile-classification-compile.log`
   - `Logs/parametric-opening-profile-classification-test.log`
+  - `Logs/parametric-opening-material-adapter-compile.log`
+  - `Logs/parametric-opening-material-adapter-test.log`
 
 ## Important Context
 
@@ -267,15 +274,17 @@ Recent extraction:
 - Part cache construction was moved into `ParametricOpeningModel.PartCache.cs`.
 - Size/reference conversion helpers were moved into `ParametricOpeningModel.SizeResolution.cs`.
 - Profile classification helpers were moved into `ParametricOpeningModel.ProfileClassification.cs`.
-- `ParametricOpeningModel.cs` is now about 134 lines.
+- Material application adapter was moved into `ParametricOpeningModel.MaterialRules.cs`.
+- `ParametricOpeningModel.cs` is now about 109 lines.
 - `PartState` remains private.
 
 Next extraction:
 
-- Continue reducing `ParametricOpeningModel.cs` with minimal behavior change.
-- Good next targets:
-  - consider moving material application adapter `ApplyProfileMaterials` into `ParametricOpeningModel.MaterialRules.cs` or a focused partial
-  - after that, pause simple file-splitting and reassess whether to move to `WallOpeningPlacementManager` or wait for reliable EditMode test output before deeper behavior-oriented refactors
+- Pause simple `ParametricOpeningModel.cs` file-splitting for now. The remaining main file is mostly public entrypoints, serialized fields/constants, and high-level dispatch.
+- Do not start deeper behavior-oriented profile dispatch rewrites until EditMode test output is reliable again.
+- Recommended next direction:
+  - either investigate/fix Unity Test Runner result XML generation
+  - or move to the next high-priority large class, `WallOpeningPlacementManager`, with the same small, behavior-preserving extraction style
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 

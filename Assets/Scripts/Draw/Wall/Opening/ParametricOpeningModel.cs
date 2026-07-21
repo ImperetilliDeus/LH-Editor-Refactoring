@@ -128,33 +128,4 @@ public sealed partial class ParametricOpeningModel : MonoBehaviour
                 partName.StartsWith("Stretch_", StringComparison.Ordinal));
     }
 
-    private void ApplyProfileMaterials(string activeProfileKey)
-    {
-        if (!ParametricOpeningMaterialRules.ShouldApply(activeProfileKey))
-        {
-            return;
-        }
-
-        for (int i = 0; i < parts.Count; i++)
-        {
-            Transform partTransform = parts[i].Transform;
-            if (partTransform == null)
-            {
-                continue;
-            }
-
-            Renderer renderer = partTransform.GetComponent<Renderer>();
-            if (renderer == null)
-            {
-                continue;
-            }
-
-            Material material = ParametricOpeningMaterialRules.ResolveMaterial(partTransform.name, activeProfileKey);
-            if (material != null)
-            {
-                renderer.sharedMaterial = material;
-            }
-        }
-    }
-
 }
