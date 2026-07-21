@@ -71,28 +71,7 @@ public partial class WallOpeningPlacementManager
             GetCubeMesh(),
             GetOpeningMaterial(opening.Type),
             hidePlaceholderVisual);
-        if (hasModelPrefab)
-        {
-            opening.ApplyModelPrefab(
-                definition.ModelPrefab,
-                definition.ModelLocalPosition,
-                definition.ModelLocalEulerAngles,
-                definition.ModelScaleMultiplier,
-                new Vector3(opening.Depth, opening.Height, opening.Width),
-                new Vector3(opening.Width, opening.Height, opening.Depth),
-                definition.ReferenceSize,
-                definition.FitDepth,
-                definition.FitHeight,
-                definition.FitWidth,
-                definition.UseParametricModel,
-                definition.ParametricProfileKey,
-                definition.AuthoredSize,
-                definition.UsesBlenderLocalAxes);
-        }
-        else
-        {
-            opening.ClearModelPrefab();
-        }
+        OpeningModelPrefabApplier.Apply(opening, hasModelPrefab ? definition : null);
 
         CreateFillerSegment(parent, $"{opening.name}_BottomFill", container, opening, opening.BottomY - container.WallBottomY, container.WallBottomY);
         CreateFillerSegment(
