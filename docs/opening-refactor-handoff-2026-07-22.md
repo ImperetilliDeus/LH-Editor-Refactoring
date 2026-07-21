@@ -91,6 +91,14 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.PartCache.cs`
   - Moved `EnsureCached` into a focused partial without behavior changes.
   - Parametric part discovery, `PartState` construction, and railing vertical bar cache sorting remain unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.SizeResolution.cs`
+  - Moved size/reference conversion helpers into a focused partial without behavior changes.
+  - Extracted methods:
+    - `ClampSize`
+    - `ToModelLocalSize`
+    - `ResolveReferenceSize`
+    - `IsDefaultReferenceSize`
+    - `ToRootLocalSize`
 
 ## Verification State
 
@@ -109,6 +117,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - Unity script compilation succeeded after moving white two-panel window layout into `ParametricOpeningModel.WhiteWindowLayouts.cs`.
 - Unity script compilation succeeded after moving part lookup/application adapters into `ParametricOpeningModel.PartLookup.cs`.
 - Unity script compilation succeeded after moving part cache construction into `ParametricOpeningModel.PartCache.cs`.
+- Unity script compilation succeeded after moving size/reference conversion helpers into `ParametricOpeningModel.SizeResolution.cs`.
 - EditMode test execution did not produce result XML in this environment.
 - The transform-rules test retry hit Unity's `ProjectAlreadyOpenInAnotherInstance` crash path. Treat this as an environment/Unity process state issue, not a test assertion result.
 - The same issue occurred with a previously passing filter, `WallOpeningPlacementManagerTests`, so this appears to be a current Unity Test Runner/batchmode invocation issue, not a new test failure.
@@ -118,6 +127,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After the white-window layout partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the part-lookup partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - After the part-cache partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
+- After the size-resolution partial split, the same targeted EditMode test command again produced no result XML. The Unity log showed script compilation and clean batchmode exit, but no test execution/result output.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -149,6 +159,8 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/parametric-opening-part-lookup-test.log`
   - `Logs/parametric-opening-part-cache-compile.log`
   - `Logs/parametric-opening-part-cache-test.log`
+  - `Logs/parametric-opening-size-resolution-compile.log`
+  - `Logs/parametric-opening-size-resolution-test.log`
 
 ## Important Context
 
@@ -239,15 +251,16 @@ Recent extraction:
 - White two-panel window layout was moved into `ParametricOpeningModel.WhiteWindowLayouts.cs`.
 - Part lookup/application adapters were moved into `ParametricOpeningModel.PartLookup.cs`.
 - Part cache construction was moved into `ParametricOpeningModel.PartCache.cs`.
-- `ParametricOpeningModel.cs` is now about 214 lines.
+- Size/reference conversion helpers were moved into `ParametricOpeningModel.SizeResolution.cs`.
+- `ParametricOpeningModel.cs` is now about 179 lines.
 - `PartState` remains private.
 
 Next extraction:
 
 - Continue reducing `ParametricOpeningModel.cs` with minimal behavior change.
 - Good next targets:
-  - consider moving size/reference conversion helpers such as `ClampSize`, `ResolveReferenceSize`, `ToModelLocalSize`, and `ToRootLocalSize` into a focused partial
   - consider moving profile classification helpers such as `NormalizeProfileKey`, `IsDoorProfile`, `IsWindowProfile`, and `ContainsAny` into a focused partial
+  - consider moving material application adapter `ApplyProfileMaterials` into `ParametricOpeningModel.MaterialRules.cs` or a focused partial
 
 Do not do a large rewrite in one step. First move code with minimal behavior change.
 
