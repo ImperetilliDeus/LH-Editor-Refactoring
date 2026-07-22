@@ -228,6 +228,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyWidthDefinitionConstraint` and `ApplyHeightDefinitionConstraint`.
   - Moved catalog width/height definition clamp application out of `ClampWidth` and `ClampHeight`.
   - Kept initial min/max clamp order and final definition-bounded clamp behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `ApplyCenterDistanceNeighborLimits`.
+  - Moved neighbor-opening min/max distance updates out of `ClampCenterDistance`.
+  - Kept target width resolution, midpoint fallback, and final center-distance clamp unchanged.
 
 ## Verification State
 
@@ -373,6 +377,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting layout definition constraint helpers, Unity script compilation succeeded.
 - After extracting layout definition constraint helpers, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting center-distance neighbor helper, Unity script compilation succeeded.
+- After extracting center-distance neighbor helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -553,6 +561,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-layout-definition-constraint-helper-catalog-tests.xml`
   - `Logs/opening-layout-definition-constraint-helper-rail-regression.log`
   - `Logs/opening-layout-definition-constraint-helper-rail-regression.xml`
+  - `Logs/opening-center-distance-neighbor-helper-compile.log`
+  - `Logs/opening-center-distance-neighbor-helper-catalog-tests.log`
+  - `Logs/opening-center-distance-neighbor-helper-catalog-tests.xml`
+  - `Logs/opening-center-distance-neighbor-helper-rail-regression.log`
+  - `Logs/opening-center-distance-neighbor-helper-rail-regression.xml`
 
 ## Important Context
 

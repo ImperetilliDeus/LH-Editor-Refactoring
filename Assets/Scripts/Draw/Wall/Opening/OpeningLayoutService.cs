@@ -21,6 +21,34 @@ internal static class OpeningLayoutService
         float minDistance = minimumSideWall + halfWidth;
         float maxDistance = container.WallLength - minimumSideWall - halfWidth;
 
+        ApplyCenterDistanceNeighborLimits(
+            openings,
+            targetOpening,
+            desiredDistance,
+            minimumSideWall,
+            halfWidth,
+            ref minDistance,
+            ref maxDistance);
+
+        if (maxDistance < minDistance)
+        {
+            float midpoint = (minDistance + maxDistance) * 0.5f;
+            minDistance = midpoint;
+            maxDistance = midpoint;
+        }
+
+        return Mathf.Clamp(desiredDistance, minDistance, maxDistance);
+    }
+
+    private static void ApplyCenterDistanceNeighborLimits(
+        IReadOnlyList<WallOpening> openings,
+        WallOpening targetOpening,
+        float desiredDistance,
+        float minimumSideWall,
+        float halfWidth,
+        ref float minDistance,
+        ref float maxDistance)
+    {
         if (openings != null)
         {
             for (int i = 0; i < openings.Count; i++)
@@ -42,15 +70,6 @@ internal static class OpeningLayoutService
                 }
             }
         }
-
-        if (maxDistance < minDistance)
-        {
-            float midpoint = (minDistance + maxDistance) * 0.5f;
-            minDistance = midpoint;
-            maxDistance = midpoint;
-        }
-
-        return Mathf.Clamp(desiredDistance, minDistance, maxDistance);
     }
 
     public static float ClampWidth(
