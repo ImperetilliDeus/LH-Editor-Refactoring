@@ -75,8 +75,7 @@ public partial class WallOpeningPlacementManager
         }
         else
         {
-            RebuildContainer(container, false);
-            RefreshSelectedWallForContainer(container, container.WallLength * 0.5f);
+            RebuildContainerAfterOpeningDelete(container);
         }
 
         afterSnapshot = CapturePostDeleteLayoutSnapshot(container, restoredWall);
@@ -193,5 +192,11 @@ public partial class WallOpeningPlacementManager
         }
 
         MarkMarkerVisualsDirty();
+    }
+
+    private void RebuildContainerAfterOpeningDelete(WallOpeningContainer container)
+    {
+        RebuildContainer(container, false);
+        RefreshSelectedWallForContainer(container, container.WallLength * 0.5f);
     }
 }
