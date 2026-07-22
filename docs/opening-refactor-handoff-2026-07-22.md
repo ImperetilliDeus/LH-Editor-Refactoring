@@ -180,6 +180,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ResolveNewOpeningDimensions`.
   - Moved door/window default width, height, depth, bottom offset selection and unit conversion out of `CreateOpeningOnSelectedWall`.
   - Kept new-opening span resolution, object creation, rebuild, selection, undo, and wall registry refresh unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `CreateInitializedOpening`.
+  - Moved new opening `GameObject` creation, parent assignment, layer assignment, `WallOpening` component creation, and initialization out of `CreateOpeningOnSelectedWall`.
+  - Kept selection, rebuild, undo recording, and wall registry refresh unchanged.
 
 ## Verification State
 
@@ -277,6 +281,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting new-opening default dimension resolution, Unity script compilation succeeded.
 - After extracting new-opening default dimension resolution, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting initialized opening creation, Unity script compilation succeeded.
+- After extracting initialized opening creation, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -397,6 +405,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-default-dimensions-helper-catalog-tests.xml`
   - `Logs/opening-default-dimensions-helper-rail-regression.log`
   - `Logs/opening-default-dimensions-helper-rail-regression.xml`
+  - `Logs/opening-create-initialized-helper-compile.log`
+  - `Logs/opening-create-initialized-helper-catalog-tests.log`
+  - `Logs/opening-create-initialized-helper-catalog-tests.xml`
+  - `Logs/opening-create-initialized-helper-rail-regression.log`
+  - `Logs/opening-create-initialized-helper-rail-regression.xml`
 
 ## Important Context
 

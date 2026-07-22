@@ -40,21 +40,9 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        GameObject openingObject = new GameObject(type == OpeningPlacementType.Door ? "Door" : "Window");
-        openingObject.transform.SetParent(container.transform, false);
-        LayerUtility.ApplyLayer(
-            openingObject,
-            type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
-            false);
-        WallOpening opening = openingObject.AddComponent<WallOpening>();
-        opening.Initialize(
-            this,
+        WallOpening opening = CreateInitializedOpening(
             container,
             type,
-            type == OpeningPlacementType.Door ? GetCurrentDoorTypeKey() : string.Empty,
-            type == OpeningPlacementType.Window ? GetCurrentWindowTypeKey() : string.Empty,
-            false,
-            false,
             centerDistance,
             openingWidth,
             openingHeight,
@@ -71,6 +59,39 @@ public partial class WallOpeningPlacementManager
         }
 
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
+    }
+
+    private WallOpening CreateInitializedOpening(
+        WallOpeningContainer container,
+        OpeningPlacementType type,
+        float centerDistance,
+        float openingWidth,
+        float openingHeight,
+        float openingDepth,
+        float openingBottomY)
+    {
+        GameObject openingObject = new GameObject(type == OpeningPlacementType.Door ? "Door" : "Window");
+        openingObject.transform.SetParent(container.transform, false);
+        LayerUtility.ApplyLayer(
+            openingObject,
+            type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
+            false);
+
+        WallOpening opening = openingObject.AddComponent<WallOpening>();
+        opening.Initialize(
+            this,
+            container,
+            type,
+            type == OpeningPlacementType.Door ? GetCurrentDoorTypeKey() : string.Empty,
+            type == OpeningPlacementType.Window ? GetCurrentWindowTypeKey() : string.Empty,
+            false,
+            false,
+            centerDistance,
+            openingWidth,
+            openingHeight,
+            openingDepth,
+            openingBottomY);
+        return opening;
     }
 
     private bool ResolveNewOpeningDimensions(
