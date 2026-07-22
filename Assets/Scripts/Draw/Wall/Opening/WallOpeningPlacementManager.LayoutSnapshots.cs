@@ -252,7 +252,7 @@ public partial class WallOpeningPlacementManager
         int openingCount = target.openings != null ? target.openings.Length : 0;
         if (openingCount == 0)
         {
-            RestoreWallFromSnapshot(BuildWallSnapshotFromContainer(target));
+            RestoreWallFromEmptyContainerSnapshot(target);
 
             return;
         }
@@ -265,6 +265,11 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildContainer(container, false);
+    }
+
+    private GameObject RestoreWallFromEmptyContainerSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
+    {
+        return RestoreWallFromSnapshot(BuildWallSnapshotFromContainer(layoutSnapshot));
     }
 
     private static bool CanRestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)

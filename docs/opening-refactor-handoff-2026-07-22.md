@@ -204,6 +204,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CanRestoreWallFromSnapshot`.
   - Moved no-container wall snapshot validity check out of `ApplyLayoutSnapshot`.
   - Kept the exact restore condition unchanged: an existing `wallObject` or a non-empty snapshot name.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `RestoreWallFromEmptyContainerSnapshot`.
+  - Moved the empty-container snapshot conversion and restored-wall registration call out of `ApplyLayoutSnapshot`.
+  - Kept the `openingCount == 0` branch and wall snapshot construction behavior unchanged.
 
 ## Verification State
 
@@ -325,6 +329,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting wall-restore validation helper, Unity script compilation succeeded.
 - After extracting wall-restore validation helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting empty-container restore helper, Unity script compilation succeeded.
+- After extracting empty-container restore helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -475,6 +483,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-wall-restore-validation-helper-catalog-tests.xml`
   - `Logs/opening-wall-restore-validation-helper-rail-regression.log`
   - `Logs/opening-wall-restore-validation-helper-rail-regression.xml`
+  - `Logs/opening-empty-container-restore-helper-compile.log`
+  - `Logs/opening-empty-container-restore-helper-catalog-tests.log`
+  - `Logs/opening-empty-container-restore-helper-catalog-tests.xml`
+  - `Logs/opening-empty-container-restore-helper-rail-regression.log`
+  - `Logs/opening-empty-container-restore-helper-rail-regression.xml`
 
 ## Important Context
 
