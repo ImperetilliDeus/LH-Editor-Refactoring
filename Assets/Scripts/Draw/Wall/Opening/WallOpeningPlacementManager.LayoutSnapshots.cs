@@ -288,30 +288,38 @@ public partial class WallOpeningPlacementManager
 
         for (int i = 0; i < openingCount; i++)
         {
-            UndoRedoManager.OpeningStateSnapshot openingSnapshot = target.openings[i];
-            GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
-            openingObject.transform.SetParent(container.transform, false);
-            LayerUtility.ApplyLayer(
-                openingObject,
-                openingSnapshot.type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
-                false);
-            WallOpening opening = openingObject.AddComponent<WallOpening>();
-            opening.Initialize(
-                this,
-                container,
-                openingSnapshot.type,
-                openingSnapshot.doorTypeKey,
-                openingSnapshot.windowTypeKey,
-                openingSnapshot.doorOpensRight,
-                openingSnapshot.doorVerticalFlip,
-                openingSnapshot.centerDistance,
-                openingSnapshot.width,
-                openingSnapshot.height,
-                openingSnapshot.depth,
-                openingSnapshot.bottomY);
+            CreateOpeningFromSnapshot(container, target.openings[i]);
         }
 
         RebuildContainer(container, false);
+    }
+
+    private WallOpening CreateOpeningFromSnapshot(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningStateSnapshot openingSnapshot)
+    {
+        GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
+        openingObject.transform.SetParent(container.transform, false);
+        LayerUtility.ApplyLayer(
+            openingObject,
+            openingSnapshot.type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
+            false);
+
+        WallOpening opening = openingObject.AddComponent<WallOpening>();
+        opening.Initialize(
+            this,
+            container,
+            openingSnapshot.type,
+            openingSnapshot.doorTypeKey,
+            openingSnapshot.windowTypeKey,
+            openingSnapshot.doorOpensRight,
+            openingSnapshot.doorVerticalFlip,
+            openingSnapshot.centerDistance,
+            openingSnapshot.width,
+            openingSnapshot.height,
+            openingSnapshot.depth,
+            openingSnapshot.bottomY);
+        return opening;
     }
 
     public void RebuildOpeningContainer(WallOpeningContainer container)
