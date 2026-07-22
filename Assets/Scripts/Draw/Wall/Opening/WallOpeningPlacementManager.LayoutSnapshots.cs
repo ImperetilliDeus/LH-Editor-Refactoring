@@ -239,7 +239,7 @@ public partial class WallOpeningPlacementManager
 
         if (!target.hasContainer)
         {
-            if (target.wallSnapshot.wallObject == null && string.IsNullOrEmpty(target.wallSnapshot.name))
+            if (!CanRestoreWallFromSnapshot(target.wallSnapshot))
             {
                 return;
             }
@@ -265,6 +265,11 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildContainer(container, false);
+    }
+
+    private static bool CanRestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)
+    {
+        return wallSnapshot.wallObject != null || !string.IsNullOrEmpty(wallSnapshot.name);
     }
 
     private GameObject RestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)

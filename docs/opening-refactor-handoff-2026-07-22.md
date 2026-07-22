@@ -200,6 +200,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RestoreWallFromSnapshot`.
   - Centralized restored-wall creation and handle-manager registration for both no-container snapshots and empty-container snapshots.
   - Kept wall snapshot selection and early-return branching unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `CanRestoreWallFromSnapshot`.
+  - Moved no-container wall snapshot validity check out of `ApplyLayoutSnapshot`.
+  - Kept the exact restore condition unchanged: an existing `wallObject` or a non-empty snapshot name.
 
 ## Verification State
 
@@ -317,6 +321,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting restored-wall helper, Unity script compilation succeeded.
 - After extracting restored-wall helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting wall-restore validation helper, Unity script compilation succeeded.
+- After extracting wall-restore validation helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -462,6 +470,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-restore-wall-helper-catalog-tests.xml`
   - `Logs/opening-restore-wall-helper-rail-regression.log`
   - `Logs/opening-restore-wall-helper-rail-regression.xml`
+  - `Logs/opening-wall-restore-validation-helper-compile.log`
+  - `Logs/opening-wall-restore-validation-helper-catalog-tests.log`
+  - `Logs/opening-wall-restore-validation-helper-catalog-tests.xml`
+  - `Logs/opening-wall-restore-validation-helper-rail-regression.log`
+  - `Logs/opening-wall-restore-validation-helper-rail-regression.xml`
 
 ## Important Context
 
