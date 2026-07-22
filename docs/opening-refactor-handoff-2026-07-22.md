@@ -192,6 +192,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateOpeningFromSnapshot`.
   - Moved snapshot opening `GameObject` creation, parent assignment, layer assignment, `WallOpening` component creation, and snapshot-based initialization out of `ApplyLayoutSnapshot`.
   - Kept container creation, rebuild, and snapshot branching unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `CreateContainerFromSnapshot`.
+  - Moved restored opening-container `GameObject` creation, transform reset, `WallOpeningContainer` component creation, and layout-snapshot initialization out of `ApplyLayoutSnapshot`.
+  - Kept opening count branching, child opening restoration, and rebuild unchanged.
 
 ## Verification State
 
@@ -301,6 +305,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting snapshot opening restore helper, Unity script compilation succeeded.
 - After extracting snapshot opening restore helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container restore helper, Unity script compilation succeeded.
+- After extracting container restore helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -436,6 +444,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-snapshot-restore-helper-catalog-tests.xml`
   - `Logs/opening-snapshot-restore-helper-rail-regression.log`
   - `Logs/opening-snapshot-restore-helper-rail-regression.xml`
+  - `Logs/opening-container-restore-helper-compile.log`
+  - `Logs/opening-container-restore-helper-catalog-tests.log`
+  - `Logs/opening-container-restore-helper-catalog-tests.xml`
+  - `Logs/opening-container-restore-helper-rail-regression.log`
+  - `Logs/opening-container-restore-helper-rail-regression.xml`
 
 ## Important Context
 

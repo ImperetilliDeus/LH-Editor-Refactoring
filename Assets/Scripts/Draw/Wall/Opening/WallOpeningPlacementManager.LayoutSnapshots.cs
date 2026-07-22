@@ -265,26 +265,7 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        GameObject containerObject = new GameObject(target.layoutName);
-        containerObject.transform.SetParent(wallRoot, false);
-        containerObject.transform.position = Vector3.zero;
-        containerObject.transform.rotation = Quaternion.identity;
-        containerObject.transform.localScale = Vector3.one;
-
-        WallOpeningContainer container = containerObject.AddComponent<WallOpeningContainer>();
-        container.Initialize(
-            target.wallStart,
-            target.wallEnd,
-            target.wallThickness,
-            target.wallHeight,
-            target.centerY,
-            target.visualState,
-            target.outerStartVertexId,
-            target.outerEndVertexId,
-            target.suppressOuterStartHandle,
-            target.suppressOuterEndHandle,
-            target.outerStartSplitPoint,
-            target.outerEndSplitPoint);
+        WallOpeningContainer container = CreateContainerFromSnapshot(target);
 
         for (int i = 0; i < openingCount; i++)
         {
@@ -292,6 +273,31 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildContainer(container, false);
+    }
+
+    private WallOpeningContainer CreateContainerFromSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
+    {
+        GameObject containerObject = new GameObject(layoutSnapshot.layoutName);
+        containerObject.transform.SetParent(wallRoot, false);
+        containerObject.transform.position = Vector3.zero;
+        containerObject.transform.rotation = Quaternion.identity;
+        containerObject.transform.localScale = Vector3.one;
+
+        WallOpeningContainer container = containerObject.AddComponent<WallOpeningContainer>();
+        container.Initialize(
+            layoutSnapshot.wallStart,
+            layoutSnapshot.wallEnd,
+            layoutSnapshot.wallThickness,
+            layoutSnapshot.wallHeight,
+            layoutSnapshot.centerY,
+            layoutSnapshot.visualState,
+            layoutSnapshot.outerStartVertexId,
+            layoutSnapshot.outerEndVertexId,
+            layoutSnapshot.suppressOuterStartHandle,
+            layoutSnapshot.suppressOuterEndHandle,
+            layoutSnapshot.outerStartSplitPoint,
+            layoutSnapshot.outerEndSplitPoint);
+        return container;
     }
 
     private WallOpening CreateOpeningFromSnapshot(
