@@ -196,6 +196,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateContainerFromSnapshot`.
   - Moved restored opening-container `GameObject` creation, transform reset, `WallOpeningContainer` component creation, and layout-snapshot initialization out of `ApplyLayoutSnapshot`.
   - Kept opening count branching, child opening restoration, and rebuild unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `RestoreWallFromSnapshot`.
+  - Centralized restored-wall creation and handle-manager registration for both no-container snapshots and empty-container snapshots.
+  - Kept wall snapshot selection and early-return branching unchanged.
 
 ## Verification State
 
@@ -309,6 +313,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container restore helper, Unity script compilation succeeded.
 - After extracting container restore helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting restored-wall helper, Unity script compilation succeeded.
+- After extracting restored-wall helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -449,6 +457,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-restore-helper-catalog-tests.xml`
   - `Logs/opening-container-restore-helper-rail-regression.log`
   - `Logs/opening-container-restore-helper-rail-regression.xml`
+  - `Logs/opening-restore-wall-helper-compile.log`
+  - `Logs/opening-restore-wall-helper-catalog-tests.log`
+  - `Logs/opening-restore-wall-helper-catalog-tests.xml`
+  - `Logs/opening-restore-wall-helper-rail-regression.log`
+  - `Logs/opening-restore-wall-helper-rail-regression.xml`
 
 ## Important Context
 

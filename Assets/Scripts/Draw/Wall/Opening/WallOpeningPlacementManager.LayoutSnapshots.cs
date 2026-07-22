@@ -244,11 +244,7 @@ public partial class WallOpeningPlacementManager
                 return;
             }
 
-            GameObject restoredWall = CreateRestoredWall(target.wallSnapshot);
-            if (restoredWall != null && handleManager != null)
-            {
-                handleManager.RegisterWall(restoredWall);
-            }
+            RestoreWallFromSnapshot(target.wallSnapshot);
 
             return;
         }
@@ -256,11 +252,7 @@ public partial class WallOpeningPlacementManager
         int openingCount = target.openings != null ? target.openings.Length : 0;
         if (openingCount == 0)
         {
-            GameObject restoredWall = CreateRestoredWall(BuildWallSnapshotFromContainer(target));
-            if (restoredWall != null && handleManager != null)
-            {
-                handleManager.RegisterWall(restoredWall);
-            }
+            RestoreWallFromSnapshot(BuildWallSnapshotFromContainer(target));
 
             return;
         }
@@ -273,6 +265,17 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildContainer(container, false);
+    }
+
+    private GameObject RestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)
+    {
+        GameObject restoredWall = CreateRestoredWall(wallSnapshot);
+        if (restoredWall != null && handleManager != null)
+        {
+            handleManager.RegisterWall(restoredWall);
+        }
+
+        return restoredWall;
     }
 
     private WallOpeningContainer CreateContainerFromSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
