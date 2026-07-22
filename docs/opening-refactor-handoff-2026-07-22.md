@@ -232,6 +232,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyCenterDistanceNeighborLimits`.
   - Moved neighbor-opening min/max distance updates out of `ClampCenterDistance`.
   - Kept target width resolution, midpoint fallback, and final center-distance clamp unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `ApplyWidthNeighborLimits`.
+  - Moved neighbor-opening left/right width limit updates out of `ClampWidth`.
+  - Kept max-width calculation, initial width clamp, and definition-bounded clamp behavior unchanged.
 
 ## Verification State
 
@@ -381,6 +385,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting center-distance neighbor helper, Unity script compilation succeeded.
 - After extracting center-distance neighbor helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting width neighbor helper, Unity script compilation succeeded.
+- After extracting width neighbor helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -566,6 +574,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-center-distance-neighbor-helper-catalog-tests.xml`
   - `Logs/opening-center-distance-neighbor-helper-rail-regression.log`
   - `Logs/opening-center-distance-neighbor-helper-rail-regression.xml`
+  - `Logs/opening-width-neighbor-helper-compile.log`
+  - `Logs/opening-width-neighbor-helper-catalog-tests.log`
+  - `Logs/opening-width-neighbor-helper-catalog-tests.xml`
+  - `Logs/opening-width-neighbor-helper-rail-regression.log`
+  - `Logs/opening-width-neighbor-helper-rail-regression.xml`
 
 ## Important Context
 

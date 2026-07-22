@@ -89,6 +89,27 @@ internal static class OpeningLayoutService
         float leftLimit = minimumSideWall;
         float rightLimit = container.WallLength - minimumSideWall;
 
+        ApplyWidthNeighborLimits(
+            openings,
+            targetOpening,
+            minimumSideWall,
+            ref leftLimit,
+            ref rightLimit);
+
+        float maxWidth = Mathf.Max(minimumWallSegmentLength, Mathf.Min(
+            (targetOpening.CenterDistance - leftLimit) * 2f,
+            (rightLimit - targetOpening.CenterDistance) * 2f));
+        float clampedWidth = Mathf.Clamp(desiredWidth, minimumWallSegmentLength, maxWidth);
+        return ApplyWidthDefinitionConstraint(clampedWidth, minimumWallSegmentLength, maxWidth, definition);
+    }
+
+    private static void ApplyWidthNeighborLimits(
+        IReadOnlyList<WallOpening> openings,
+        WallOpening targetOpening,
+        float minimumSideWall,
+        ref float leftLimit,
+        ref float rightLimit)
+    {
         if (openings != null)
         {
             for (int i = 0; i < openings.Count; i++)
@@ -110,12 +131,6 @@ internal static class OpeningLayoutService
                 }
             }
         }
-
-        float maxWidth = Mathf.Max(minimumWallSegmentLength, Mathf.Min(
-            (targetOpening.CenterDistance - leftLimit) * 2f,
-            (rightLimit - targetOpening.CenterDistance) * 2f));
-        float clampedWidth = Mathf.Clamp(desiredWidth, minimumWallSegmentLength, maxWidth);
-        return ApplyWidthDefinitionConstraint(clampedWidth, minimumWallSegmentLength, maxWidth, definition);
     }
 
     public static float ClampHeight(
