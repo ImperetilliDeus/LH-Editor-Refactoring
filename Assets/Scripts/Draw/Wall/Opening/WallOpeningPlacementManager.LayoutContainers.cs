@@ -218,15 +218,9 @@ public partial class WallOpeningPlacementManager
         }
 
         WallGeometryData geometry = CaptureGeometry(selectedWall);
-        GameObject containerObject = new GameObject(selectedWall.name);
-        containerObject.transform.SetParent(wallRoot, false);
-        containerObject.transform.position = Vector3.zero;
-        containerObject.transform.rotation = Quaternion.identity;
-        containerObject.transform.localScale = Vector3.one;
-        LayerUtility.ApplyLayer(containerObject, LayerUtility.WallLayerName, false);
-
-        WallOpeningContainer container = containerObject.AddComponent<WallOpeningContainer>();
-        container.Initialize(
+        WallOpeningContainer container = OpeningContainerFactory.Create(
+            selectedWall.name,
+            wallRoot,
             geometry.wallStart,
             geometry.wallEnd,
             geometry.wallThickness,
@@ -238,7 +232,8 @@ public partial class WallOpeningPlacementManager
             selectedWall.SuppressStartHandle,
             selectedWall.SuppressEndHandle,
             selectedWall.IsStartSplitPoint,
-            selectedWall.IsEndSplitPoint);
+            selectedWall.IsEndSplitPoint,
+            true);
         if (selectedWall.Data != null)
         {
             container.SetPersistentWallId(selectedWall.Data.id);
@@ -408,15 +403,9 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        GameObject containerObject = new GameObject(layoutName);
-        containerObject.transform.SetParent(wallRoot, false);
-        containerObject.transform.position = Vector3.zero;
-        containerObject.transform.rotation = Quaternion.identity;
-        containerObject.transform.localScale = Vector3.one;
-        LayerUtility.ApplyLayer(containerObject, LayerUtility.WallLayerName, false);
-
-        WallOpeningContainer nextContainer = containerObject.AddComponent<WallOpeningContainer>();
-        nextContainer.Initialize(
+        WallOpeningContainer nextContainer = OpeningContainerFactory.Create(
+            layoutName,
+            wallRoot,
             startPoint,
             endPoint,
             sourceSnapshot.wallThickness,
@@ -428,7 +417,8 @@ public partial class WallOpeningPlacementManager
             suppressStartHandle,
             suppressEndHandle,
             startSplitPoint,
-            endSplitPoint);
+            endSplitPoint,
+            true);
 
         for (int i = 0; i < openings.Count; i++)
         {

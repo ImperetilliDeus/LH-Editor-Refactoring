@@ -256,6 +256,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `DeleteOpeningWithoutContainer`.
   - Moved the container-missing delete fallback out of `DeleteSelectedOpening`.
   - Kept selection clearing and opening `GameObject` destruction behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningContainerFactory.cs`
+  - Added an internal helper for creating and initializing `WallOpeningContainer` objects.
+  - Moved repeated container `GameObject` creation, transform reset, optional wall-layer application, component creation, and `Initialize` calls out of `WallOpeningPlacementManager.LayoutContainers.cs` and `WallOpeningPlacementManager.LayoutSnapshots.cs`.
+  - Preserved the existing layer behavior: selected-wall and split-container creation still apply the wall layer, while snapshot container restore keeps the prior no-layer path.
 
 ## Verification State
 
@@ -431,6 +435,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting delete-without-container helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningContainerFactory`, Unity script compilation succeeded.
+- After extracting `OpeningContainerFactory`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+  - Unity initially reported another instance had the project open; waiting for Unity cleanup and rerunning with `Unity.com` resolved it.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -644,6 +653,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-delete-without-container-helper-catalog-tests.xml`
   - `Logs/opening-delete-without-container-helper-rail-regression.log`
   - `Logs/opening-delete-without-container-helper-rail-regression.xml`
+  - `Logs/opening-container-factory-compile.log`
+  - `Logs/opening-container-factory-catalog-tests.log`
+  - `Logs/opening-container-factory-catalog-tests.xml`
+  - `Logs/opening-container-factory-rail-regression.log`
+  - `Logs/opening-container-factory-rail-regression.xml`
 
 ## Important Context
 

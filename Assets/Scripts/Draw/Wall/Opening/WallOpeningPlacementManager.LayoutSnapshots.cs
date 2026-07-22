@@ -306,27 +306,7 @@ public partial class WallOpeningPlacementManager
 
     private WallOpeningContainer CreateContainerFromSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
     {
-        GameObject containerObject = new GameObject(layoutSnapshot.layoutName);
-        containerObject.transform.SetParent(wallRoot, false);
-        containerObject.transform.position = Vector3.zero;
-        containerObject.transform.rotation = Quaternion.identity;
-        containerObject.transform.localScale = Vector3.one;
-
-        WallOpeningContainer container = containerObject.AddComponent<WallOpeningContainer>();
-        container.Initialize(
-            layoutSnapshot.wallStart,
-            layoutSnapshot.wallEnd,
-            layoutSnapshot.wallThickness,
-            layoutSnapshot.wallHeight,
-            layoutSnapshot.centerY,
-            layoutSnapshot.visualState,
-            layoutSnapshot.outerStartVertexId,
-            layoutSnapshot.outerEndVertexId,
-            layoutSnapshot.suppressOuterStartHandle,
-            layoutSnapshot.suppressOuterEndHandle,
-            layoutSnapshot.outerStartSplitPoint,
-            layoutSnapshot.outerEndSplitPoint);
-        return container;
+        return OpeningContainerFactory.Create(layoutSnapshot, wallRoot, false);
     }
 
     private void RestoreOpeningsFromSnapshot(
