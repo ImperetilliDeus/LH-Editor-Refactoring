@@ -246,15 +246,14 @@ internal static class OpeningLayoutService
             float availableWidth = rightLimit - leftLimit;
             if (availableWidth >= minimumWallSegmentLength)
             {
-                float gapCenter = (leftLimit + rightLimit) * 0.5f;
-                float score = Mathf.Abs(gapCenter - preferredCenter);
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    bestLeftLimit = leftLimit;
-                    bestRightLimit = rightLimit;
-                    foundGap = true;
-                }
+                TryUpdateBestOpeningGap(
+                    leftLimit,
+                    rightLimit,
+                    preferredCenter,
+                    ref bestScore,
+                    ref bestLeftLimit,
+                    ref bestRightLimit,
+                    ref foundGap);
             }
 
             if (i < openingCount)
@@ -276,5 +275,27 @@ internal static class OpeningLayoutService
         resolvedWidth = Mathf.Min(Mathf.Max(desiredWidth, minimumWallSegmentLength), maxWidth);
         centerDistance = (bestLeftLimit + bestRightLimit) * 0.5f;
         return resolvedWidth >= minimumWallSegmentLength;
+    }
+
+    private static void TryUpdateBestOpeningGap(
+        float leftLimit,
+        float rightLimit,
+        float preferredCenter,
+        ref float bestScore,
+        ref float bestLeftLimit,
+        ref float bestRightLimit,
+        ref bool foundGap)
+    {
+        float gapCenter = (leftLimit + rightLimit) * 0.5f;
+        float score = Mathf.Abs(gapCenter - preferredCenter);
+        if (score >= bestScore)
+        {
+            return;
+        }
+
+        bestScore = score;
+        bestLeftLimit = leftLimit;
+        bestRightLimit = rightLimit;
+        foundGap = true;
     }
 }

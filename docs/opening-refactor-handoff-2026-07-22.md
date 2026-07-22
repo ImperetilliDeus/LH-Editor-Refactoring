@@ -236,6 +236,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyWidthNeighborLimits`.
   - Moved neighbor-opening left/right width limit updates out of `ClampWidth`.
   - Kept max-width calculation, initial width clamp, and definition-bounded clamp behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `TryUpdateBestOpeningGap`.
+  - Moved best-gap score comparison and left/right limit selection out of `TryResolveNewOpeningSpan`.
+  - Kept gap scanning order, available-width threshold, preferred-center scoring, and final span resolution unchanged.
 
 ## Verification State
 
@@ -389,6 +393,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting width neighbor helper, Unity script compilation succeeded.
 - After extracting width neighbor helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting opening gap evaluation helper, Unity script compilation succeeded.
+- After extracting opening gap evaluation helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -579,6 +587,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-width-neighbor-helper-catalog-tests.xml`
   - `Logs/opening-width-neighbor-helper-rail-regression.log`
   - `Logs/opening-width-neighbor-helper-rail-regression.xml`
+  - `Logs/opening-gap-evaluation-helper-compile.log`
+  - `Logs/opening-gap-evaluation-helper-catalog-tests.log`
+  - `Logs/opening-gap-evaluation-helper-catalog-tests.xml`
+  - `Logs/opening-gap-evaluation-helper-rail-regression.log`
+  - `Logs/opening-gap-evaluation-helper-rail-regression.xml`
 
 ## Important Context
 
