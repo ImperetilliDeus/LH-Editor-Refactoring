@@ -68,10 +68,7 @@ public partial class WallOpeningPlacementManager
 
         if (restoredWall != null)
         {
-            if (wallSelectionManager != null)
-            {
-                wallSelectionManager.SetSelectedWallPreservingOpeningSelection(restoredWall);
-            }
+            SelectRestoredWallAfterOpeningDelete(restoredWall);
         }
         else
         {
@@ -198,5 +195,13 @@ public partial class WallOpeningPlacementManager
     {
         RebuildContainer(container, false);
         RefreshSelectedWallForContainer(container, container.WallLength * 0.5f);
+    }
+
+    private void SelectRestoredWallAfterOpeningDelete(GameObject restoredWall)
+    {
+        if (wallSelectionManager != null)
+        {
+            wallSelectionManager.SetSelectedWallPreservingOpeningSelection(restoredWall);
+        }
     }
 }

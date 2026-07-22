@@ -167,6 +167,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RebuildContainerAfterOpeningDelete`.
   - Moved the post-delete container rebuild and selected-wall refresh path out of `DeleteSelectedOpening`.
   - Restored-wall handling, snapshot capture, and undo recording were left unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Selection.cs`
+  - Added `SelectRestoredWallAfterOpeningDelete`.
+  - Moved the restored-wall selection-manager null check and selection call out of `DeleteSelectedOpening`.
+  - Container rebuild, snapshot capture, and undo recording were left unchanged.
 
 ## Verification State
 
@@ -252,6 +256,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting the opening delete rebuild helper, Unity script compilation succeeded.
 - After extracting the opening delete rebuild helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting the restored-wall selection helper, Unity script compilation succeeded.
+- After extracting the restored-wall selection helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -357,6 +365,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-delete-rebuild-helper-catalog-tests.xml`
   - `Logs/opening-delete-rebuild-helper-rail-regression.log`
   - `Logs/opening-delete-rebuild-helper-rail-regression.xml`
+  - `Logs/opening-delete-restored-wall-selection-compile.log`
+  - `Logs/opening-delete-restored-wall-selection-catalog-tests.log`
+  - `Logs/opening-delete-restored-wall-selection-catalog-tests.xml`
+  - `Logs/opening-delete-restored-wall-selection-rail-regression.log`
+  - `Logs/opening-delete-restored-wall-selection-rail-regression.xml`
 
 ## Important Context
 
@@ -477,7 +490,7 @@ Suggested extraction order:
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations.
 3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
-4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, marker registration cleanup, and delete rebuild extraction.
+4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, marker registration cleanup, delete rebuild extraction, and restored-wall selection extraction.
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
 
