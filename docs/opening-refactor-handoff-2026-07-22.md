@@ -171,6 +171,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `SelectRestoredWallAfterOpeningDelete`.
   - Moved the restored-wall selection-manager null check and selection call out of `DeleteSelectedOpening`.
   - Container rebuild, snapshot capture, and undo recording were left unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `TryResolveNewOpeningSpan`.
+  - Moved the gap selection and default new-opening span calculation out of `WallOpeningPlacementManager.LayoutSnapshots.cs`.
+  - `WallOpeningPlacementManager.LayoutSnapshots.cs` still owns opening collection/sorting, default size resolution, object creation, rebuild, UI selection, undo recording, and wall registry refresh.
+  - No behavior changes were intended.
 
 ## Verification State
 
@@ -260,6 +265,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting the restored-wall selection helper, Unity script compilation succeeded.
 - After extracting the restored-wall selection helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting new-opening span calculation into `OpeningLayoutService`, Unity script compilation succeeded.
+- After extracting new-opening span calculation into `OpeningLayoutService`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -370,6 +379,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-delete-restored-wall-selection-catalog-tests.xml`
   - `Logs/opening-delete-restored-wall-selection-rail-regression.log`
   - `Logs/opening-delete-restored-wall-selection-rail-regression.xml`
+  - `Logs/opening-span-layout-service-compile.log`
+  - `Logs/opening-span-layout-service-catalog-tests.log`
+  - `Logs/opening-span-layout-service-catalog-tests.xml`
+  - `Logs/opening-span-layout-service-rail-regression.log`
+  - `Logs/opening-span-layout-service-rail-regression.xml`
 
 ## Important Context
 
@@ -488,7 +502,7 @@ Do after tests are stable.
 Suggested extraction order:
 
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
-2. `OpeningLayoutService` - started with opening clamp calculations.
+2. `OpeningLayoutService` - started with opening clamp calculations and new-opening span calculation.
 3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
 4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, marker registration cleanup, delete rebuild extraction, and restored-wall selection extraction.
 

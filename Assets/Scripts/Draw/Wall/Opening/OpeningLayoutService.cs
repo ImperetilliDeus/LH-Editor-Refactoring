@@ -146,4 +146,83 @@ internal static class OpeningLayoutService
 
         return Mathf.Clamp(desiredBottomY, minBottomY, maxBottomY);
     }
+
+    public static bool TryResolveNewOpeningSpan(
+        WallOpeningContainer container,
+        IReadOnlyList<WallOpening> sortedOpenings,
+        float desiredWidth,
+        float minimumSideWall,
+        float minimumWallSegmentLength,
+        out float centerDistance,
+        out float resolvedWidth)
+    {
+        centerDistance = 0f;
+        resolvedWidth = 0f;
+        if (container == null)
+        {
+            return false;
+        }
+
+        float wallLength = container.WallLength;
+        if (wallLength <= minimumSideWall * 2f + minimumWallSegmentLength)
+        {
+            return false;
+        }
+
+        float preferredCenter = wallLength * 0.5f;
+        float bestLeftLimit = 0f;
+        float bestRightLimit = 0f;
+        float bestScore = float.MaxValue;
+        bool foundGap = false;
+        float leftLimit = minimumSideWall;
+        int openingCount = sortedOpenings != null ? sortedOpenings.Count : 0;
+
+        for (int i = 0; i <= openingCount; i++)
+        {
+            float rightLimit = wallLength - minimumSideWall;
+            if (i < openingCount)
+            {
+                WallOpening nextOpening = sortedOpenings[i];
+                if (nextOpening == null)
+                {
+                    continue;
+                }
+
+                rightLimit = nextOpening.CenterDistance - nextOpening.Width * 0.5f - minimumSideWall;
+            }
+
+            float availableWidth = rightLimit - leftLimit;
+            if (availableWidth >= minimumWallSegmentLength)
+            {
+                float gapCenter = (leftLimit + rightLimit) * 0.5f;
+                float score = Mathf.Abs(gapCenter - preferredCenter);
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestLeftLimit = leftLimit;
+                    bestRightLimit = rightLimit;
+                    foundGap = true;
+                }
+            }
+
+            if (i < openingCount)
+            {
+                WallOpening previousOpening = sortedOpenings[i];
+                if (previousOpening != null)
+                {
+                    leftLimit = previousOpening.CenterDistance + previousOpening.Width * 0.5f + minimumSideWall;
+                }
+            }
+        }
+
+        if (!foundGap)
+        {
+            return false;
+        }
+
+        float maxWidth = bestRightLimit - bestLeftLimit;
+        resolvedWidth = Mathf.Min(Mathf.Max(desiredWidth, minimumWallSegmentLength), maxWidth);
+        centerDistance = (bestLeftLimit + bestRightLimit) * 0.5f;
+        return resolvedWidth >= minimumWallSegmentLength;
+    }
 }

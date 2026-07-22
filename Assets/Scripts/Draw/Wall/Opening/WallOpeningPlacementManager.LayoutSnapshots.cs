@@ -97,69 +97,16 @@ public partial class WallOpeningPlacementManager
         }
 
         float minimumSideWall = Mathf.Max(MillimetersToUnits(minimumSideWallMillimeters), MinimumWallSegmentLength);
-        float wallLength = container.WallLength;
-        if (wallLength <= minimumSideWall * 2f + MinimumWallSegmentLength)
-        {
-            return false;
-        }
-
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
-
-        float preferredCenter = wallLength * 0.5f;
-        float bestLeftLimit = 0f;
-        float bestRightLimit = 0f;
-        float bestScore = float.MaxValue;
-        bool foundGap = false;
-        float leftLimit = minimumSideWall;
-
-        for (int i = 0; i <= cachedOpenings.Count; i++)
-        {
-            float rightLimit = wallLength - minimumSideWall;
-            if (i < cachedOpenings.Count)
-            {
-                WallOpening nextOpening = cachedOpenings[i];
-                if (nextOpening == null)
-                {
-                    continue;
-                }
-
-                rightLimit = nextOpening.CenterDistance - nextOpening.Width * 0.5f - minimumSideWall;
-            }
-
-            float availableWidth = rightLimit - leftLimit;
-            if (availableWidth >= MinimumWallSegmentLength)
-            {
-                float gapCenter = (leftLimit + rightLimit) * 0.5f;
-                float score = Mathf.Abs(gapCenter - preferredCenter);
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    bestLeftLimit = leftLimit;
-                    bestRightLimit = rightLimit;
-                    foundGap = true;
-                }
-            }
-
-            if (i < cachedOpenings.Count)
-            {
-                WallOpening previousOpening = cachedOpenings[i];
-                if (previousOpening != null)
-                {
-                    leftLimit = previousOpening.CenterDistance + previousOpening.Width * 0.5f + minimumSideWall;
-                }
-            }
-        }
-
-        if (!foundGap)
-        {
-            return false;
-        }
-
-        float maxWidth = bestRightLimit - bestLeftLimit;
-        resolvedWidth = Mathf.Min(Mathf.Max(desiredWidth, MinimumWallSegmentLength), maxWidth);
-        centerDistance = (bestLeftLimit + bestRightLimit) * 0.5f;
-        return resolvedWidth >= MinimumWallSegmentLength;
+        return OpeningLayoutService.TryResolveNewOpeningSpan(
+            container,
+            cachedOpenings,
+            desiredWidth,
+            minimumSideWall,
+            MinimumWallSegmentLength,
+            out centerDistance,
+            out resolvedWidth);
     }
 
     public UndoRedoManager.OpeningLayoutSnapshot CaptureLayoutSnapshot(Wall wall)
