@@ -176,6 +176,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Moved the gap selection and default new-opening span calculation out of `WallOpeningPlacementManager.LayoutSnapshots.cs`.
   - `WallOpeningPlacementManager.LayoutSnapshots.cs` still owns opening collection/sorting, default size resolution, object creation, rebuild, UI selection, undo recording, and wall registry refresh.
   - No behavior changes were intended.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `ResolveNewOpeningDimensions`.
+  - Moved door/window default width, height, depth, bottom offset selection and unit conversion out of `CreateOpeningOnSelectedWall`.
+  - Kept new-opening span resolution, object creation, rebuild, selection, undo, and wall registry refresh unchanged.
 
 ## Verification State
 
@@ -269,6 +273,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting new-opening span calculation into `OpeningLayoutService`, Unity script compilation succeeded.
 - After extracting new-opening span calculation into `OpeningLayoutService`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting new-opening default dimension resolution, Unity script compilation succeeded.
+- After extracting new-opening default dimension resolution, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -384,6 +392,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-span-layout-service-catalog-tests.xml`
   - `Logs/opening-span-layout-service-rail-regression.log`
   - `Logs/opening-span-layout-service-rail-regression.xml`
+  - `Logs/opening-default-dimensions-helper-compile.log`
+  - `Logs/opening-default-dimensions-helper-catalog-tests.log`
+  - `Logs/opening-default-dimensions-helper-catalog-tests.xml`
+  - `Logs/opening-default-dimensions-helper-rail-regression.log`
+  - `Logs/opening-default-dimensions-helper-rail-regression.xml`
 
 ## Important Context
 

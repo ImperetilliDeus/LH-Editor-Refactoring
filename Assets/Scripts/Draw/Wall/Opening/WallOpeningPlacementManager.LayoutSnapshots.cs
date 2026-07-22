@@ -24,28 +24,18 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        float openingWidth = MillimetersToUnits(type == OpeningPlacementType.Door ? defaultDoorWidthMillimeters : defaultWindowWidthMillimeters);
-        float openingHeight = MillimetersToUnits(type == OpeningPlacementType.Door ? defaultDoorHeightMillimeters : defaultWindowHeightMillimeters);
-        float defaultDepthMillimeters = type == OpeningPlacementType.Door
-            ? defaultDoorDepthMillimeters
-            : defaultWindowDepthMillimeters;
-        float defaultBottomOffsetMillimeters = type == OpeningPlacementType.Door
-            ? defaultDoorBottomOffsetMillimeters
-            : defaultWindowBottomOffsetMillimeters;
-
-        float openingDepth = Mathf.Min(MillimetersToUnits(defaultDepthMillimeters), container.WallThickness);
-        float bottomOffset = MillimetersToUnits(defaultBottomOffsetMillimeters);
-
-        if (!TryResolveNewOpeningSpan(container, openingWidth, out float centerDistance, out openingWidth))
+        if (!ResolveNewOpeningDimensions(
+                type,
+                container,
+                out float openingWidth,
+                out float openingHeight,
+                out float openingDepth,
+                out float openingBottomY))
         {
             return;
         }
 
-        float openingBottomY = container.WallBottomY + bottomOffset;
-
-        float maxAllowedHeight = container.WallTopY - openingBottomY;
-        openingHeight = Mathf.Min(openingHeight, maxAllowedHeight);
-        if (openingHeight <= 0.01f)
+        if (!TryResolveNewOpeningSpan(container, openingWidth, out float centerDistance, out openingWidth))
         {
             return;
         }
@@ -81,6 +71,41 @@ public partial class WallOpeningPlacementManager
         }
 
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
+    }
+
+    private bool ResolveNewOpeningDimensions(
+        OpeningPlacementType type,
+        WallOpeningContainer container,
+        out float openingWidth,
+        out float openingHeight,
+        out float openingDepth,
+        out float openingBottomY)
+    {
+        openingWidth = 0f;
+        openingHeight = 0f;
+        openingDepth = 0f;
+        openingBottomY = 0f;
+        if (container == null)
+        {
+            return false;
+        }
+
+        openingWidth = MillimetersToUnits(type == OpeningPlacementType.Door ? defaultDoorWidthMillimeters : defaultWindowWidthMillimeters);
+        openingHeight = MillimetersToUnits(type == OpeningPlacementType.Door ? defaultDoorHeightMillimeters : defaultWindowHeightMillimeters);
+        float defaultDepthMillimeters = type == OpeningPlacementType.Door
+            ? defaultDoorDepthMillimeters
+            : defaultWindowDepthMillimeters;
+        float defaultBottomOffsetMillimeters = type == OpeningPlacementType.Door
+            ? defaultDoorBottomOffsetMillimeters
+            : defaultWindowBottomOffsetMillimeters;
+
+        openingDepth = Mathf.Min(MillimetersToUnits(defaultDepthMillimeters), container.WallThickness);
+        float bottomOffset = MillimetersToUnits(defaultBottomOffsetMillimeters);
+        openingBottomY = container.WallBottomY + bottomOffset;
+
+        float maxAllowedHeight = container.WallTopY - openingBottomY;
+        openingHeight = Mathf.Min(openingHeight, maxAllowedHeight);
+        return openingHeight > 0.01f;
     }
 
     private bool TryResolveNewOpeningSpan(
