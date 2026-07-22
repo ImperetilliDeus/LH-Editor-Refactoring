@@ -64,8 +64,14 @@ public partial class WallOpeningPlacementManager
         ClearOpeningSelection();
         DetachAndDestroyOpening(openingToDelete);
         GameObject restoredWall = hasRemainingOpenings ? null : RestoreContainerIfEmpty(container);
-        UndoRedoManager.OpeningLayoutSnapshot afterSnapshot;
+        UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = CompletePostDeleteLayout(container, restoredWall);
+        RecordOpeningDeleteUndo(beforeSnapshot, afterSnapshot);
+    }
 
+    private UndoRedoManager.OpeningLayoutSnapshot CompletePostDeleteLayout(
+        WallOpeningContainer container,
+        GameObject restoredWall)
+    {
         if (restoredWall != null)
         {
             SelectRestoredWallAfterOpeningDelete(restoredWall);
@@ -75,8 +81,7 @@ public partial class WallOpeningPlacementManager
             RebuildContainerAfterOpeningDelete(container);
         }
 
-        afterSnapshot = CapturePostDeleteLayoutSnapshot(container, restoredWall);
-        RecordOpeningDeleteUndo(beforeSnapshot, afterSnapshot);
+        return CapturePostDeleteLayoutSnapshot(container, restoredWall);
     }
 
     public void RegisterMarkerUI(WallOpeningMarkerUI markerUI)

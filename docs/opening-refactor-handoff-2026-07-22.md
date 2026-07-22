@@ -248,6 +248,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `UpdateOpeningGapLeftLimit`.
   - Moved new-opening gap left-limit advancement out of `TryResolveNewOpeningSpan`.
   - Kept index bounds handling, null previous-opening behavior, and gap scanning order unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Selection.cs`
+  - Added `CompletePostDeleteLayout`.
+  - Moved post-delete restored-wall selection vs. container rebuild branching and after-snapshot capture out of `DeleteSelectedOpening`.
+  - Kept deletion ordering, restore/rebuild behavior, after-snapshot source, and undo recording unchanged.
 
 ## Verification State
 
@@ -413,6 +417,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting opening gap left-limit helper, Unity script compilation succeeded.
 - After extracting opening gap left-limit helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting post-delete layout helper, Unity script compilation succeeded.
+- After extracting post-delete layout helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -618,6 +626,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-gap-left-limit-helper-catalog-tests.xml`
   - `Logs/opening-gap-left-limit-helper-rail-regression.log`
   - `Logs/opening-gap-left-limit-helper-rail-regression.xml`
+  - `Logs/opening-post-delete-layout-helper-compile.log`
+  - `Logs/opening-post-delete-layout-helper-catalog-tests.log`
+  - `Logs/opening-post-delete-layout-helper-catalog-tests.xml`
+  - `Logs/opening-post-delete-layout-helper-rail-regression.log`
+  - `Logs/opening-post-delete-layout-helper-rail-regression.xml`
 
 ## Important Context
 
