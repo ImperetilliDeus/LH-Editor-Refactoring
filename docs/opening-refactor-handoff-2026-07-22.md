@@ -184,6 +184,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateInitializedOpening`.
   - Moved new opening `GameObject` creation, parent assignment, layer assignment, `WallOpening` component creation, and initialization out of `CreateOpeningOnSelectedWall`.
   - Kept selection, rebuild, undo recording, and wall registry refresh unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `FinalizeCreatedOpening`.
+  - Moved new opening selection, container rebuild, selected-wall refresh, undo recording, and wall registry refresh out of `CreateOpeningOnSelectedWall`.
+  - Opening validation, dimension resolution, span resolution, and initialized opening creation were left unchanged.
 
 ## Verification State
 
@@ -285,6 +289,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting initialized opening creation, Unity script compilation succeeded.
 - After extracting initialized opening creation, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting created opening finalization, Unity script compilation succeeded.
+- After extracting created opening finalization, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -410,6 +418,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-create-initialized-helper-catalog-tests.xml`
   - `Logs/opening-create-initialized-helper-rail-regression.log`
   - `Logs/opening-create-initialized-helper-rail-regression.xml`
+  - `Logs/opening-finalize-created-helper-compile.log`
+  - `Logs/opening-finalize-created-helper-catalog-tests.log`
+  - `Logs/opening-finalize-created-helper-catalog-tests.xml`
+  - `Logs/opening-finalize-created-helper-rail-regression.log`
+  - `Logs/opening-finalize-created-helper-rail-regression.xml`
 
 ## Important Context
 

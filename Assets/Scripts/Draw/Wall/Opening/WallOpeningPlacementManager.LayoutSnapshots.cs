@@ -49,6 +49,14 @@ public partial class WallOpeningPlacementManager
             openingDepth,
             openingBottomY);
 
+        FinalizeCreatedOpening(container, opening, beforeSnapshot);
+    }
+
+    private void FinalizeCreatedOpening(
+        WallOpeningContainer container,
+        WallOpening opening,
+        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot)
+    {
         SelectOpening(opening);
         RebuildContainer(container, false);
         RefreshSelectedWallForContainer(container, opening.CenterDistance);
