@@ -159,6 +159,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RecordOpeningDeleteUndo`.
   - Moved the delete undo null-check and `RecordOpeningLayoutChange` call out of `DeleteSelectedOpening`.
   - Delete flow state changes and snapshot capture were left unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Selection.cs`
+  - Added `SetMarkerUIRegistered`.
+  - Centralized marker UI register/unregister null checks, add/remove calls, and marker dirty marking.
+  - Marker registration public API and marker refresh behavior were left unchanged.
 
 ## Verification State
 
@@ -236,6 +240,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting the opening delete undo helper, Unity script compilation succeeded.
 - After extracting the opening delete undo helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After centralizing marker UI registration, Unity script compilation succeeded.
+- After centralizing marker UI registration, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -331,6 +339,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-delete-undo-helper-catalog-tests.xml`
   - `Logs/opening-delete-undo-helper-rail-regression.log`
   - `Logs/opening-delete-undo-helper-rail-regression.xml`
+  - `Logs/opening-marker-registration-helper-compile.log`
+  - `Logs/opening-marker-registration-helper-catalog-tests.log`
+  - `Logs/opening-marker-registration-helper-catalog-tests.xml`
+  - `Logs/opening-marker-registration-helper-rail-regression.log`
+  - `Logs/opening-marker-registration-helper-rail-regression.xml`
 
 ## Important Context
 
@@ -451,7 +464,7 @@ Suggested extraction order:
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations.
 3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
-4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, and delete undo extraction.
+4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, and marker registration cleanup.
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
 

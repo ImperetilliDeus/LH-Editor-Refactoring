@@ -85,24 +85,12 @@ public partial class WallOpeningPlacementManager
 
     public void RegisterMarkerUI(WallOpeningMarkerUI markerUI)
     {
-        if (markerUI == null)
-        {
-            return;
-        }
-
-        markerUIs.Add(markerUI);
-        MarkMarkerVisualsDirty();
+        SetMarkerUIRegistered(markerUI, true);
     }
 
     public void UnregisterMarkerUI(WallOpeningMarkerUI markerUI)
     {
-        if (markerUI == null)
-        {
-            return;
-        }
-
-        markerUIs.Remove(markerUI);
-        MarkMarkerVisualsDirty();
+        SetMarkerUIRegistered(markerUI, false);
     }
 
     public void BeginMarkerDrag(WallOpening opening)
@@ -186,5 +174,24 @@ public partial class WallOpeningPlacementManager
         {
             undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, afterSnapshot);
         }
+    }
+
+    private void SetMarkerUIRegistered(WallOpeningMarkerUI markerUI, bool registered)
+    {
+        if (markerUI == null)
+        {
+            return;
+        }
+
+        if (registered)
+        {
+            markerUIs.Add(markerUI);
+        }
+        else
+        {
+            markerUIs.Remove(markerUI);
+        }
+
+        MarkMarkerVisualsDirty();
     }
 }
