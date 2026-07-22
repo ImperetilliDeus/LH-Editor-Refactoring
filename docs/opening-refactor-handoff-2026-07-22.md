@@ -240,6 +240,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `TryUpdateBestOpeningGap`.
   - Moved best-gap score comparison and left/right limit selection out of `TryResolveNewOpeningSpan`.
   - Kept gap scanning order, available-width threshold, preferred-center scoring, and final span resolution unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `TryResolveOpeningGapRightLimit`.
+  - Moved new-opening gap right-limit calculation out of `TryResolveNewOpeningSpan`.
+  - Kept null next-opening handling, end-of-wall fallback, gap scanning order, and left-limit updates unchanged.
 
 ## Verification State
 
@@ -397,6 +401,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting opening gap evaluation helper, Unity script compilation succeeded.
 - After extracting opening gap evaluation helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting opening gap right-limit helper, Unity script compilation succeeded.
+- After extracting opening gap right-limit helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -592,6 +600,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-gap-evaluation-helper-catalog-tests.xml`
   - `Logs/opening-gap-evaluation-helper-rail-regression.log`
   - `Logs/opening-gap-evaluation-helper-rail-regression.xml`
+  - `Logs/opening-gap-right-limit-helper-compile.log`
+  - `Logs/opening-gap-right-limit-helper-catalog-tests.log`
+  - `Logs/opening-gap-right-limit-helper-catalog-tests.xml`
+  - `Logs/opening-gap-right-limit-helper-rail-regression.log`
+  - `Logs/opening-gap-right-limit-helper-rail-regression.xml`
 
 ## Important Context
 

@@ -231,16 +231,15 @@ internal static class OpeningLayoutService
 
         for (int i = 0; i <= openingCount; i++)
         {
-            float rightLimit = wallLength - minimumSideWall;
-            if (i < openingCount)
+            if (!TryResolveOpeningGapRightLimit(
+                    sortedOpenings,
+                    i,
+                    openingCount,
+                    wallLength,
+                    minimumSideWall,
+                    out float rightLimit))
             {
-                WallOpening nextOpening = sortedOpenings[i];
-                if (nextOpening == null)
-                {
-                    continue;
-                }
-
-                rightLimit = nextOpening.CenterDistance - nextOpening.Width * 0.5f - minimumSideWall;
+                continue;
             }
 
             float availableWidth = rightLimit - leftLimit;
@@ -275,6 +274,30 @@ internal static class OpeningLayoutService
         resolvedWidth = Mathf.Min(Mathf.Max(desiredWidth, minimumWallSegmentLength), maxWidth);
         centerDistance = (bestLeftLimit + bestRightLimit) * 0.5f;
         return resolvedWidth >= minimumWallSegmentLength;
+    }
+
+    private static bool TryResolveOpeningGapRightLimit(
+        IReadOnlyList<WallOpening> sortedOpenings,
+        int index,
+        int openingCount,
+        float wallLength,
+        float minimumSideWall,
+        out float rightLimit)
+    {
+        rightLimit = wallLength - minimumSideWall;
+        if (index >= openingCount)
+        {
+            return true;
+        }
+
+        WallOpening nextOpening = sortedOpenings[index];
+        if (nextOpening == null)
+        {
+            return false;
+        }
+
+        rightLimit = nextOpening.CenterDistance - nextOpening.Width * 0.5f - minimumSideWall;
+        return true;
     }
 
     private static void TryUpdateBestOpeningGap(
