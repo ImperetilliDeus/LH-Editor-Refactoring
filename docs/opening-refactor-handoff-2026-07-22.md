@@ -244,6 +244,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `TryResolveOpeningGapRightLimit`.
   - Moved new-opening gap right-limit calculation out of `TryResolveNewOpeningSpan`.
   - Kept null next-opening handling, end-of-wall fallback, gap scanning order, and left-limit updates unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `UpdateOpeningGapLeftLimit`.
+  - Moved new-opening gap left-limit advancement out of `TryResolveNewOpeningSpan`.
+  - Kept index bounds handling, null previous-opening behavior, and gap scanning order unchanged.
 
 ## Verification State
 
@@ -405,6 +409,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting opening gap right-limit helper, Unity script compilation succeeded.
 - After extracting opening gap right-limit helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting opening gap left-limit helper, Unity script compilation succeeded.
+- After extracting opening gap left-limit helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -605,6 +613,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-gap-right-limit-helper-catalog-tests.xml`
   - `Logs/opening-gap-right-limit-helper-rail-regression.log`
   - `Logs/opening-gap-right-limit-helper-rail-regression.xml`
+  - `Logs/opening-gap-left-limit-helper-compile.log`
+  - `Logs/opening-gap-left-limit-helper-catalog-tests.log`
+  - `Logs/opening-gap-left-limit-helper-catalog-tests.xml`
+  - `Logs/opening-gap-left-limit-helper-rail-regression.log`
+  - `Logs/opening-gap-left-limit-helper-rail-regression.xml`
 
 ## Important Context
 

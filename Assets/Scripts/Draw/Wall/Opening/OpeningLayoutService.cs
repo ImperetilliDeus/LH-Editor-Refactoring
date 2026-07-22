@@ -255,14 +255,7 @@ internal static class OpeningLayoutService
                     ref foundGap);
             }
 
-            if (i < openingCount)
-            {
-                WallOpening previousOpening = sortedOpenings[i];
-                if (previousOpening != null)
-                {
-                    leftLimit = previousOpening.CenterDistance + previousOpening.Width * 0.5f + minimumSideWall;
-                }
-            }
+            UpdateOpeningGapLeftLimit(sortedOpenings, i, openingCount, minimumSideWall, ref leftLimit);
         }
 
         if (!foundGap)
@@ -298,6 +291,27 @@ internal static class OpeningLayoutService
 
         rightLimit = nextOpening.CenterDistance - nextOpening.Width * 0.5f - minimumSideWall;
         return true;
+    }
+
+    private static void UpdateOpeningGapLeftLimit(
+        IReadOnlyList<WallOpening> sortedOpenings,
+        int index,
+        int openingCount,
+        float minimumSideWall,
+        ref float leftLimit)
+    {
+        if (index >= openingCount)
+        {
+            return;
+        }
+
+        WallOpening previousOpening = sortedOpenings[index];
+        if (previousOpening == null)
+        {
+            return;
+        }
+
+        leftLimit = previousOpening.CenterDistance + previousOpening.Width * 0.5f + minimumSideWall;
     }
 
     private static void TryUpdateBestOpeningGap(
