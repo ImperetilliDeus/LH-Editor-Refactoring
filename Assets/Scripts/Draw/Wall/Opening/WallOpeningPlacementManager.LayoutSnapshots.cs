@@ -177,12 +177,7 @@ public partial class WallOpeningPlacementManager
             return CaptureLayoutSnapshot(container);
         }
 
-        return new UndoRedoManager.OpeningLayoutSnapshot
-        {
-            hasContainer = false,
-            layoutName = wall.name,
-            wallSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
-        };
+        return CreateLayoutSnapshotFromWall(wall);
     }
 
     public UndoRedoManager.OpeningLayoutSnapshot CaptureLayoutSnapshot(WallOpeningContainer container)
@@ -197,6 +192,16 @@ public partial class WallOpeningPlacementManager
         UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = CaptureOpeningSnapshots(cachedOpenings);
 
         return CreateLayoutSnapshotFromContainer(container, openingSnapshots);
+    }
+
+    private static UndoRedoManager.OpeningLayoutSnapshot CreateLayoutSnapshotFromWall(Wall wall)
+    {
+        return new UndoRedoManager.OpeningLayoutSnapshot
+        {
+            hasContainer = false,
+            layoutName = wall.name,
+            wallSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
+        };
     }
 
     private static UndoRedoManager.OpeningLayoutSnapshot CreateLayoutSnapshotFromContainer(
