@@ -252,6 +252,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CompletePostDeleteLayout`.
   - Moved post-delete restored-wall selection vs. container rebuild branching and after-snapshot capture out of `DeleteSelectedOpening`.
   - Kept deletion ordering, restore/rebuild behavior, after-snapshot source, and undo recording unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Selection.cs`
+  - Added `DeleteOpeningWithoutContainer`.
+  - Moved the container-missing delete fallback out of `DeleteSelectedOpening`.
+  - Kept selection clearing and opening `GameObject` destruction behavior unchanged.
 
 ## Verification State
 
@@ -421,6 +425,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting post-delete layout helper, Unity script compilation succeeded.
 - After extracting post-delete layout helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting delete-without-container helper, Unity script compilation succeeded.
+- After extracting delete-without-container helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -631,6 +639,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-post-delete-layout-helper-catalog-tests.xml`
   - `Logs/opening-post-delete-layout-helper-rail-regression.log`
   - `Logs/opening-post-delete-layout-helper-rail-regression.xml`
+  - `Logs/opening-delete-without-container-helper-compile.log`
+  - `Logs/opening-delete-without-container-helper-catalog-tests.log`
+  - `Logs/opening-delete-without-container-helper-catalog-tests.xml`
+  - `Logs/opening-delete-without-container-helper-rail-regression.log`
+  - `Logs/opening-delete-without-container-helper-rail-regression.xml`
 
 ## Important Context
 

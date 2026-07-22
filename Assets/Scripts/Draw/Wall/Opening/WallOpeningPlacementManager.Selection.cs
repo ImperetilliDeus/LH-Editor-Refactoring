@@ -54,8 +54,7 @@ public partial class WallOpeningPlacementManager
         WallOpeningContainer container = openingToDelete.Container;
         if (container == null)
         {
-            ClearOpeningSelection();
-            Destroy(openingToDelete.gameObject);
+            DeleteOpeningWithoutContainer(openingToDelete);
             return;
         }
 
@@ -66,6 +65,15 @@ public partial class WallOpeningPlacementManager
         GameObject restoredWall = hasRemainingOpenings ? null : RestoreContainerIfEmpty(container);
         UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = CompletePostDeleteLayout(container, restoredWall);
         RecordOpeningDeleteUndo(beforeSnapshot, afterSnapshot);
+    }
+
+    private void DeleteOpeningWithoutContainer(WallOpening opening)
+    {
+        ClearOpeningSelection();
+        if (opening != null)
+        {
+            Destroy(opening.gameObject);
+        }
     }
 
     private UndoRedoManager.OpeningLayoutSnapshot CompletePostDeleteLayout(
