@@ -196,6 +196,13 @@ public partial class WallOpeningPlacementManager
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
         UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = CaptureOpeningSnapshots(cachedOpenings);
 
+        return CreateLayoutSnapshotFromContainer(container, openingSnapshots);
+    }
+
+    private static UndoRedoManager.OpeningLayoutSnapshot CreateLayoutSnapshotFromContainer(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots)
+    {
         return new UndoRedoManager.OpeningLayoutSnapshot
         {
             hasContainer = true,

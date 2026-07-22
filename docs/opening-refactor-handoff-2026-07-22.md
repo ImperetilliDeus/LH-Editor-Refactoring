@@ -216,6 +216,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CaptureOpeningSnapshots`.
   - Moved sorted opening-to-snapshot array construction out of `CaptureLayoutSnapshot(WallOpeningContainer)`.
   - Kept opening collection, center-distance sort order, and layout snapshot field assignment unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `CreateLayoutSnapshotFromContainer`.
+  - Moved container layout snapshot field assignment out of `CaptureLayoutSnapshot(WallOpeningContainer)`.
+  - Kept opening collection, sorting, opening snapshot capture, and all copied layout fields unchanged.
 
 ## Verification State
 
@@ -349,6 +353,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting opening snapshot capture helper, Unity script compilation succeeded.
 - After extracting opening snapshot capture helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting layout snapshot builder helper, Unity script compilation succeeded.
+- After extracting layout snapshot builder helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -514,6 +522,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-capture-snapshots-helper-catalog-tests.xml`
   - `Logs/opening-capture-snapshots-helper-rail-regression.log`
   - `Logs/opening-capture-snapshots-helper-rail-regression.xml`
+  - `Logs/opening-layout-snapshot-builder-helper-compile.log`
+  - `Logs/opening-layout-snapshot-builder-helper-catalog-tests.log`
+  - `Logs/opening-layout-snapshot-builder-helper-catalog-tests.xml`
+  - `Logs/opening-layout-snapshot-builder-helper-rail-regression.log`
+  - `Logs/opening-layout-snapshot-builder-helper-rail-regression.xml`
 
 ## Important Context
 
