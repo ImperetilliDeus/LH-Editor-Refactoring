@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public partial class WallOpeningPlacementManager
@@ -193,24 +194,7 @@ public partial class WallOpeningPlacementManager
 
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
-        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = new UndoRedoManager.OpeningStateSnapshot[cachedOpenings.Count];
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            openingSnapshots[i] = new UndoRedoManager.OpeningStateSnapshot
-            {
-                type = opening.Type,
-                doorTypeKey = opening.DoorTypeKey,
-                windowTypeKey = opening.WindowTypeKey,
-                doorOpensRight = opening.DoorOpensRight,
-                doorVerticalFlip = opening.DoorVerticalFlip,
-                centerDistance = opening.CenterDistance,
-                width = opening.Width,
-                height = opening.Height,
-                depth = opening.Depth,
-                bottomY = opening.BottomY,
-            };
-        }
+        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = CaptureOpeningSnapshots(cachedOpenings);
 
         return new UndoRedoManager.OpeningLayoutSnapshot
         {
@@ -230,6 +214,30 @@ public partial class WallOpeningPlacementManager
             outerEndSplitPoint = container.OuterEndSplitPoint,
             openings = openingSnapshots,
         };
+    }
+
+    private static UndoRedoManager.OpeningStateSnapshot[] CaptureOpeningSnapshots(List<WallOpening> openings)
+    {
+        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = new UndoRedoManager.OpeningStateSnapshot[openings.Count];
+        for (int i = 0; i < openings.Count; i++)
+        {
+            WallOpening opening = openings[i];
+            openingSnapshots[i] = new UndoRedoManager.OpeningStateSnapshot
+            {
+                type = opening.Type,
+                doorTypeKey = opening.DoorTypeKey,
+                windowTypeKey = opening.WindowTypeKey,
+                doorOpensRight = opening.DoorOpensRight,
+                doorVerticalFlip = opening.DoorVerticalFlip,
+                centerDistance = opening.CenterDistance,
+                width = opening.Width,
+                height = opening.Height,
+                depth = opening.Depth,
+                bottomY = opening.BottomY,
+            };
+        }
+
+        return openingSnapshots;
     }
 
     public void ApplyLayoutSnapshot(UndoRedoManager.OpeningLayoutSnapshot target, UndoRedoManager.OpeningLayoutSnapshot current)
