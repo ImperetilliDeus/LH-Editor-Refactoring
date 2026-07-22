@@ -258,11 +258,7 @@ public partial class WallOpeningPlacementManager
         }
 
         WallOpeningContainer container = CreateContainerFromSnapshot(target);
-
-        for (int i = 0; i < openingCount; i++)
-        {
-            CreateOpeningFromSnapshot(container, target.openings[i]);
-        }
+        RestoreOpeningsFromSnapshot(container, target.openings, openingCount);
 
         RebuildContainer(container, false);
     }
@@ -311,6 +307,17 @@ public partial class WallOpeningPlacementManager
             layoutSnapshot.outerStartSplitPoint,
             layoutSnapshot.outerEndSplitPoint);
         return container;
+    }
+
+    private void RestoreOpeningsFromSnapshot(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots,
+        int openingCount)
+    {
+        for (int i = 0; i < openingCount; i++)
+        {
+            CreateOpeningFromSnapshot(container, openingSnapshots[i]);
+        }
     }
 
     private WallOpening CreateOpeningFromSnapshot(
