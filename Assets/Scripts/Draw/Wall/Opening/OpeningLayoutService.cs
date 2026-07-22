@@ -96,13 +96,7 @@ internal static class OpeningLayoutService
             (targetOpening.CenterDistance - leftLimit) * 2f,
             (rightLimit - targetOpening.CenterDistance) * 2f));
         float clampedWidth = Mathf.Clamp(desiredWidth, minimumWallSegmentLength, maxWidth);
-        if (definition != null)
-        {
-            clampedWidth = definition.ClampWidth(clampedWidth);
-            clampedWidth = Mathf.Clamp(clampedWidth, minimumWallSegmentLength, maxWidth);
-        }
-
-        return clampedWidth;
+        return ApplyWidthDefinitionConstraint(clampedWidth, minimumWallSegmentLength, maxWidth, definition);
     }
 
     public static float ClampHeight(
@@ -121,13 +115,37 @@ internal static class OpeningLayoutService
             minimumWallSegmentLength,
             container.WallTopY - bottomY);
         float clampedHeight = Mathf.Clamp(desiredHeight, minimumWallSegmentLength, maxHeight);
-        if (definition != null)
+        return ApplyHeightDefinitionConstraint(clampedHeight, minimumWallSegmentLength, maxHeight, definition);
+    }
+
+    private static float ApplyWidthDefinitionConstraint(
+        float clampedWidth,
+        float minimumWallSegmentLength,
+        float maxWidth,
+        OpeningTypeCatalogItem definition)
+    {
+        if (definition == null)
         {
-            clampedHeight = definition.ClampHeight(clampedHeight);
-            clampedHeight = Mathf.Clamp(clampedHeight, minimumWallSegmentLength, maxHeight);
+            return clampedWidth;
         }
 
-        return clampedHeight;
+        clampedWidth = definition.ClampWidth(clampedWidth);
+        return Mathf.Clamp(clampedWidth, minimumWallSegmentLength, maxWidth);
+    }
+
+    private static float ApplyHeightDefinitionConstraint(
+        float clampedHeight,
+        float minimumWallSegmentLength,
+        float maxHeight,
+        OpeningTypeCatalogItem definition)
+    {
+        if (definition == null)
+        {
+            return clampedHeight;
+        }
+
+        clampedHeight = definition.ClampHeight(clampedHeight);
+        return Mathf.Clamp(clampedHeight, minimumWallSegmentLength, maxHeight);
     }
 
     public static float ClampBottomY(WallOpeningContainer container, WallOpening targetOpening, float desiredBottomY)

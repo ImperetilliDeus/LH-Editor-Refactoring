@@ -224,6 +224,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateLayoutSnapshotFromWall`.
   - Moved no-container wall layout snapshot construction out of `CaptureLayoutSnapshot(Wall)`.
   - Kept null handling, container snapshot delegation, wall name assignment, and wall-state capture unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/OpeningLayoutService.cs`
+  - Added `ApplyWidthDefinitionConstraint` and `ApplyHeightDefinitionConstraint`.
+  - Moved catalog width/height definition clamp application out of `ClampWidth` and `ClampHeight`.
+  - Kept initial min/max clamp order and final definition-bounded clamp behavior unchanged.
 
 ## Verification State
 
@@ -365,6 +369,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting wall snapshot builder helper, Unity script compilation succeeded.
 - After extracting wall snapshot builder helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting layout definition constraint helpers, Unity script compilation succeeded.
+- After extracting layout definition constraint helpers, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -540,6 +548,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-wall-snapshot-builder-helper-catalog-tests.xml`
   - `Logs/opening-wall-snapshot-builder-helper-rail-regression.log`
   - `Logs/opening-wall-snapshot-builder-helper-rail-regression.xml`
+  - `Logs/opening-layout-definition-constraint-helper-compile.log`
+  - `Logs/opening-layout-definition-constraint-helper-catalog-tests.log`
+  - `Logs/opening-layout-definition-constraint-helper-catalog-tests.xml`
+  - `Logs/opening-layout-definition-constraint-helper-rail-regression.log`
+  - `Logs/opening-layout-definition-constraint-helper-rail-regression.xml`
 
 ## Important Context
 
