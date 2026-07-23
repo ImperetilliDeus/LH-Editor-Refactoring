@@ -312,6 +312,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `IsMatchingStandaloneWall`.
   - Moved standalone wall name and endpoint comparison out of `FindMatchingStandaloneWall`.
   - Kept wall-root null handling, wall collection, null-wall skip, direct wall-root parent check, snapshot wall-data null requirement, endpoint tolerance, and null fallback unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ClearDeactivatedWallsHolder`.
+  - Moved non-drag rebuild cleanup of deactivated wall-holder children out of `RebuildContainer`.
+  - Kept transient drag rebuild begin/end behavior, non-drag-only cleanup timing, null-holder behavior, child destruction order, and layout rebuild controller arguments unchanged.
 
 ## Verification State
 
@@ -542,6 +546,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting standalone wall matching helper, Unity script compilation succeeded.
 - After extracting standalone wall matching helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting deactivated-holder cleanup helper, Unity script compilation succeeded.
+- After extracting deactivated-holder cleanup helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -827,6 +835,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-wall-match-helper-catalog-tests.xml`
   - `Logs/opening-standalone-wall-match-helper-rail-regression.log`
   - `Logs/opening-standalone-wall-match-helper-rail-regression.xml`
+  - `Logs/opening-clear-deactivated-holder-helper-compile.log`
+  - `Logs/opening-clear-deactivated-holder-helper-catalog-tests.log`
+  - `Logs/opening-clear-deactivated-holder-helper-catalog-tests.xml`
+  - `Logs/opening-clear-deactivated-holder-helper-rail-regression.log`
+  - `Logs/opening-clear-deactivated-holder-helper-rail-regression.xml`
 
 ## Important Context
 
