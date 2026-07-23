@@ -160,7 +160,12 @@ public partial class WallOpeningPlacementManager
 
     private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(WallOpeningContainer container)
     {
-        return BuildWallSnapshotFromContainer(new UndoRedoManager.OpeningLayoutSnapshot
+        return BuildWallSnapshotFromContainer(BuildLayoutSnapshotFromContainer(container));
+    }
+
+    private static UndoRedoManager.OpeningLayoutSnapshot BuildLayoutSnapshotFromContainer(WallOpeningContainer container)
+    {
+        return new UndoRedoManager.OpeningLayoutSnapshot
         {
             layoutName = container != null ? container.name : "Wall",
             wallStart = container != null ? container.WallStart : Vector3.zero,
@@ -175,7 +180,7 @@ public partial class WallOpeningPlacementManager
             suppressOuterEndHandle = container != null && container.SuppressOuterEndHandle,
             outerStartSplitPoint = container != null && container.OuterStartSplitPoint,
             outerEndSplitPoint = container != null && container.OuterEndSplitPoint,
-        });
+        };
     }
 
     private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(UndoRedoManager.OpeningLayoutSnapshot snapshot)

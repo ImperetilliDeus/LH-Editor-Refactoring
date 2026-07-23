@@ -400,6 +400,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RefreshAfterEmptyContainerRestore`.
   - Moved empty-container restore topology refresh, wall registry refresh coroutine, and marker-dirty notification out of `RestoreContainerIfEmpty`.
   - Kept wall snapshot creation, layout removal, wall restore, topology refresh order, registry refresh argument, marker refresh timing, and restored wall return behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `BuildLayoutSnapshotFromContainer`.
+  - Moved the container-to-layout-snapshot adapter object construction out of `BuildWallSnapshotFromContainer(WallOpeningContainer)`.
+  - Kept null-container fallback values, wall snapshot adapter call, visual state transfer, vertex/handle/split-point fields, and empty-container restore behavior unchanged.
 
 ## Verification State
 
@@ -719,6 +723,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting empty-container restore refresh helper, Unity script compilation succeeded.
 - After extracting empty-container restore refresh helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container layout snapshot helper, Unity script compilation succeeded.
+- After extracting container layout snapshot helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1114,6 +1122,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-empty-restore-refresh-helper-catalog-tests.xml`
   - `Logs/opening-empty-restore-refresh-helper-rail-regression.log`
   - `Logs/opening-empty-restore-refresh-helper-rail-regression.xml`
+  - `Logs/opening-container-layout-snapshot-helper-compile.log`
+  - `Logs/opening-container-layout-snapshot-helper-catalog-tests.log`
+  - `Logs/opening-container-layout-snapshot-helper-catalog-tests.xml`
+  - `Logs/opening-container-layout-snapshot-helper-rail-regression.log`
+  - `Logs/opening-container-layout-snapshot-helper-rail-regression.xml`
 
 ## Important Context
 
