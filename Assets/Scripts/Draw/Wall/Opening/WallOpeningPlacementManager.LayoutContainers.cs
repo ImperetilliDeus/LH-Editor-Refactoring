@@ -620,6 +620,11 @@ public partial class WallOpeningPlacementManager
             return existing;
         }
 
+        return CreateSegmentsRoot(container);
+    }
+
+    private static Transform CreateSegmentsRoot(WallOpeningContainer container)
+    {
         GameObject segmentsObject = new GameObject(SegmentGroupName);
         segmentsObject.transform.SetParent(container.transform, false);
         segmentsObject.transform.localPosition = Vector3.zero;

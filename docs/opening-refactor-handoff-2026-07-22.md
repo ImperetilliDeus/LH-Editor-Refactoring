@@ -292,6 +292,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyHiddenBaseWallVisual`.
   - Moved hidden base-wall visual renderer disabling and top-material clearing out of `CreateWallSegment`.
   - Kept wall object creation/configuration, failure cleanup, handle registration, and return behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `CreateSegmentsRoot`.
+  - Moved segment-root `GameObject` creation, parent assignment, transform reset, and wall-layer application out of `GetOrCreateSegmentsRoot`.
+  - Kept null handling, existing-root lookup/reuse, segment root name, layer assignment, and returned transform unchanged.
 
 ## Verification State
 
@@ -502,6 +506,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting hidden base-wall visual helper, Unity script compilation succeeded.
 - After extracting hidden base-wall visual helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting segments-root helper, Unity script compilation succeeded.
+- After extracting segments-root helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -762,6 +770,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-hidden-base-wall-visual-helper-catalog-tests.xml`
   - `Logs/opening-hidden-base-wall-visual-helper-rail-regression.log`
   - `Logs/opening-hidden-base-wall-visual-helper-rail-regression.xml`
+  - `Logs/opening-segments-root-helper-compile.log`
+  - `Logs/opening-segments-root-helper-catalog-tests.log`
+  - `Logs/opening-segments-root-helper-catalog-tests.xml`
+  - `Logs/opening-segments-root-helper-rail-regression.log`
+  - `Logs/opening-segments-root-helper-rail-regression.xml`
 
 ## Important Context
 
