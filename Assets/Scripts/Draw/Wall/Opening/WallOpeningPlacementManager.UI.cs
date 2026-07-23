@@ -235,11 +235,7 @@ public partial class WallOpeningPlacementManager
 
         ApplySelectedOpeningWidthConstraint();
 
-        float height = ClampOpeningHeight(SelectedOpening.Container, SelectedOpening, SelectedOpening.Height, SelectedOpening.BottomY);
-        if (height > MinimumWallSegmentLength)
-        {
-            SelectedOpening.SetHeight(height);
-        }
+        ApplySelectedOpeningHeightConstraint();
 
         if (TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition))
         {
@@ -258,6 +254,15 @@ public partial class WallOpeningPlacementManager
         if (width > MinimumWallSegmentLength)
         {
             SelectedOpening.SetWidth(width);
+        }
+    }
+
+    private void ApplySelectedOpeningHeightConstraint()
+    {
+        float height = ClampOpeningHeight(SelectedOpening.Container, SelectedOpening, SelectedOpening.Height, SelectedOpening.BottomY);
+        if (height > MinimumWallSegmentLength)
+        {
+            SelectedOpening.SetHeight(height);
         }
     }
 
