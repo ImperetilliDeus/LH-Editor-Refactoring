@@ -279,6 +279,28 @@ public partial class WallOpeningPlacementManager
         RemoveLayout(sourceSnapshot);
 
         Vector3 splitPoint = container.WallStart + container.WallDirection * splitDistance;
+        CreateSplitLayouts(container, sourceSnapshot, splitPoint, leftOpenings, rightOpenings);
+
+        RoomTopologyEvents.RequestRefreshAll();
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
+
+        if (wallSelectionManager != null)
+        {
+            Wall replacementWall = FindClosestVisibleWallToPoint(splitPoint);
+            if (replacementWall != null)
+            {
+                wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
+            }
+        }
+    }
+
+    private void CreateSplitLayouts(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        Vector3 splitPoint,
+        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
+        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
+    {
         CreateSplitContainerLayout(
             sourceSnapshot,
             container.name + "_A",
@@ -303,18 +325,6 @@ public partial class WallOpeningPlacementManager
             true,
             container.OuterEndSplitPoint,
             rightOpenings);
-
-        RoomTopologyEvents.RequestRefreshAll();
-        StartCoroutine(RefreshWallRegistryAfterSplit(false));
-
-        if (wallSelectionManager != null)
-        {
-            Wall replacementWall = FindClosestVisibleWallToPoint(splitPoint);
-            if (replacementWall != null)
-            {
-                wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
-            }
-        }
     }
 
     private static bool SplitDistanceOverlapsOpeningSpan(
