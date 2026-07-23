@@ -404,6 +404,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `BuildLayoutSnapshotFromContainer`.
   - Moved the container-to-layout-snapshot adapter object construction out of `BuildWallSnapshotFromContainer(WallOpeningContainer)`.
   - Kept null-container fallback values, wall snapshot adapter call, visual state transfer, vertex/handle/split-point fields, and empty-container restore behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `BuildWallDataFromLayoutSnapshot`.
+  - Moved `WallData` construction out of `BuildWallSnapshotFromContainer(OpeningLayoutSnapshot)`.
+  - Kept wall snapshot name, visual state, wall data values, vertex ids, handle suppression flags, split-point flags, and restore adapter behavior unchanged.
 
 ## Verification State
 
@@ -727,6 +731,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container layout snapshot helper, Unity script compilation succeeded.
 - After extracting container layout snapshot helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting layout wall-data helper, Unity script compilation succeeded.
+- After extracting layout wall-data helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1127,6 +1135,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-layout-snapshot-helper-catalog-tests.xml`
   - `Logs/opening-container-layout-snapshot-helper-rail-regression.log`
   - `Logs/opening-container-layout-snapshot-helper-rail-regression.xml`
+  - `Logs/opening-layout-wall-data-helper-compile.log`
+  - `Logs/opening-layout-wall-data-helper-catalog-tests.log`
+  - `Logs/opening-layout-wall-data-helper-catalog-tests.xml`
+  - `Logs/opening-layout-wall-data-helper-rail-regression.log`
+  - `Logs/opening-layout-wall-data-helper-rail-regression.xml`
 
 ## Important Context
 

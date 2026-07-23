@@ -189,7 +189,7 @@ public partial class WallOpeningPlacementManager
         {
             name = snapshot.layoutName,
             visualState = snapshot.visualState,
-            wallData = new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY),
+            wallData = BuildWallDataFromLayoutSnapshot(snapshot),
             startVertexId = snapshot.outerStartVertexId,
             endVertexId = snapshot.outerEndVertexId,
             suppressStartHandle = snapshot.suppressOuterStartHandle,
@@ -197,6 +197,11 @@ public partial class WallOpeningPlacementManager
             startSplitPoint = snapshot.outerStartSplitPoint,
             endSplitPoint = snapshot.outerEndSplitPoint,
         };
+    }
+
+    private static WallData BuildWallDataFromLayoutSnapshot(UndoRedoManager.OpeningLayoutSnapshot snapshot)
+    {
+        return new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY);
     }
 
     private GameObject CreateRestoredWall(UndoRedoManager.WallStateSnapshot snapshot)
