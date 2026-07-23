@@ -140,10 +140,7 @@ public partial class WallOpeningPlacementManager
         RemoveLayout(CaptureLayoutSnapshot(container));
         GameObject restoredWall = RestoreWallFromSnapshot(wallSnapshot);
 
-        RoomTopologyEvents.RequestRefreshAll();
-        StartCoroutine(RefreshWallRegistryAfterSplit(false));
-
-        MarkMarkerVisualsDirty();
+        RefreshAfterEmptyContainerRestore();
         return restoredWall;
     }
 
@@ -151,6 +148,14 @@ public partial class WallOpeningPlacementManager
     {
         CollectOpenings(container, cachedOpenings);
         return cachedOpenings.Count == 0;
+    }
+
+    private void RefreshAfterEmptyContainerRestore()
+    {
+        RoomTopologyEvents.RequestRefreshAll();
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
+
+        MarkMarkerVisualsDirty();
     }
 
     private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(WallOpeningContainer container)
