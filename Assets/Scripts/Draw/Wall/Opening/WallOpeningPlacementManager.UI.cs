@@ -196,7 +196,7 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        if (SelectedOpening == null || (requiredType.HasValue && SelectedOpening.Type != requiredType.Value))
+        if (!CanApplySelectedOpeningDimension(requiredType))
         {
             updateDefaultValue?.Invoke(millimeters);
             RefreshOpeningDetailInputs(true);
@@ -218,6 +218,12 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildSelectedOpeningWithUndo();
+    }
+
+    private bool CanApplySelectedOpeningDimension(OpeningPlacementType? requiredType)
+    {
+        return SelectedOpening != null
+            && (!requiredType.HasValue || SelectedOpening.Type == requiredType.Value);
     }
 
     private void ApplySelectedOpeningTypeSizeConstraints()
