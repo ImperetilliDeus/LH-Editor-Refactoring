@@ -284,6 +284,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateSplitOpeningContainer`.
   - Moved split-layout `OpeningContainerFactory.Create` argument mapping out of `CreateSplitContainerLayout`.
   - Kept layout name, wall root parent, start/end points, source snapshot wall dimensions/visual state, outer vertex IDs, handle suppression flags, split-point flags, and wall-layer application unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `CreateStandaloneSplitWallLayout`.
+  - Moved the no-opening split fallback's `CreateStandaloneWallSegment` argument mapping out of `CreateSplitContainerLayout`.
+  - Kept layout name, start/end points, source snapshot wall dimensions/visual state, outer vertex IDs, handle suppression flags, and split-point flags unchanged.
 
 ## Verification State
 
@@ -486,6 +490,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting split opening-container helper, Unity script compilation succeeded.
 - After extracting split opening-container helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting standalone split-wall helper, Unity script compilation succeeded.
+- After extracting standalone split-wall helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -736,6 +744,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-split-container-helper-catalog-tests.xml`
   - `Logs/opening-split-container-helper-rail-regression.log`
   - `Logs/opening-split-container-helper-rail-regression.xml`
+  - `Logs/opening-standalone-split-wall-helper-compile.log`
+  - `Logs/opening-standalone-split-wall-helper-catalog-tests.log`
+  - `Logs/opening-standalone-split-wall-helper-catalog-tests.xml`
+  - `Logs/opening-standalone-split-wall-helper-rail-regression.log`
+  - `Logs/opening-standalone-split-wall-helper-rail-regression.xml`
 
 ## Important Context
 

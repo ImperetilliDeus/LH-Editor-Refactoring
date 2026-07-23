@@ -411,20 +411,17 @@ public partial class WallOpeningPlacementManager
 
         if (openings == null || openings.Count == 0)
         {
-            CreateStandaloneWallSegment(
+            CreateStandaloneSplitWallLayout(
                 layoutName,
+                sourceSnapshot,
                 startPoint,
                 endPoint,
-                sourceSnapshot.wallThickness,
-                sourceSnapshot.wallHeight,
-                sourceSnapshot.centerY,
                 startVertexId,
                 endVertexId,
                 suppressStartHandle,
                 suppressEndHandle,
                 startSplitPoint,
-                endSplitPoint,
-                sourceSnapshot.visualState);
+                endSplitPoint);
             return;
         }
 
@@ -446,6 +443,34 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildContainer(nextContainer, false);
+    }
+
+    private void CreateStandaloneSplitWallLayout(
+        string layoutName,
+        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        Vector3 startPoint,
+        Vector3 endPoint,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle,
+        bool startSplitPoint,
+        bool endSplitPoint)
+    {
+        CreateStandaloneWallSegment(
+            layoutName,
+            startPoint,
+            endPoint,
+            sourceSnapshot.wallThickness,
+            sourceSnapshot.wallHeight,
+            sourceSnapshot.centerY,
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            startSplitPoint,
+            endSplitPoint,
+            sourceSnapshot.visualState);
     }
 
     private WallOpeningContainer CreateSplitOpeningContainer(
