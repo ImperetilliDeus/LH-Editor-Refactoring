@@ -428,7 +428,39 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        WallOpeningContainer nextContainer = OpeningContainerFactory.Create(
+        WallOpeningContainer nextContainer = CreateSplitOpeningContainer(
+            layoutName,
+            sourceSnapshot,
+            startPoint,
+            endPoint,
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            startSplitPoint,
+            endSplitPoint);
+
+        for (int i = 0; i < openings.Count; i++)
+        {
+            CreateOpeningFromSnapshot(nextContainer, openings[i]);
+        }
+
+        RebuildContainer(nextContainer, false);
+    }
+
+    private WallOpeningContainer CreateSplitOpeningContainer(
+        string layoutName,
+        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        Vector3 startPoint,
+        Vector3 endPoint,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle,
+        bool startSplitPoint,
+        bool endSplitPoint)
+    {
+        return OpeningContainerFactory.Create(
             layoutName,
             wallRoot,
             startPoint,
@@ -444,13 +476,6 @@ public partial class WallOpeningPlacementManager
             startSplitPoint,
             endSplitPoint,
             true);
-
-        for (int i = 0; i < openings.Count; i++)
-        {
-            CreateOpeningFromSnapshot(nextContainer, openings[i]);
-        }
-
-        RebuildContainer(nextContainer, false);
     }
 
     private WallGeometryData CaptureGeometry(Wall wall)
