@@ -583,15 +583,7 @@ public partial class WallOpeningPlacementManager
 
         if (hideBaseWallVisual)
         {
-            MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
-            if (renderer != null)
-            {
-                renderer.sharedMaterial = null;
-                renderer.enabled = false;
-            }
-
-            Wall wallComponent = wallObject.GetComponent<Wall>();
-            wallComponent?.SetTopMaterial(null);
+            ApplyHiddenBaseWallVisual(wallObject);
         }
 
         if (handleManager != null)
@@ -600,6 +592,19 @@ public partial class WallOpeningPlacementManager
         }
 
         return wallObject.transform;
+    }
+
+    private static void ApplyHiddenBaseWallVisual(GameObject wallObject)
+    {
+        MeshRenderer renderer = wallObject.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.sharedMaterial = null;
+            renderer.enabled = false;
+        }
+
+        Wall wallComponent = wallObject.GetComponent<Wall>();
+        wallComponent?.SetTopMaterial(null);
     }
 
     private Transform GetOrCreateSegmentsRoot(WallOpeningContainer container)
