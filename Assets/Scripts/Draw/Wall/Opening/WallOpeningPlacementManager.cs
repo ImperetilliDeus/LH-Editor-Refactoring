@@ -926,12 +926,19 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     public float GetSelectedOpeningBottomOffsetMillimeters(float fallbackValue, OpeningPlacementType requiredType)
     {
-        if (SelectedOpening == null || SelectedOpening.Type != requiredType || SelectedOpening.Container == null)
+        if (!CanUseSelectedOpeningBottomOffset(requiredType))
         {
             return fallbackValue;
         }
 
         return UnitsToMillimeters(SelectedOpening.BottomY - SelectedOpening.Container.WallBottomY);
+    }
+
+    private bool CanUseSelectedOpeningBottomOffset(OpeningPlacementType requiredType)
+    {
+        return SelectedOpening != null
+            && SelectedOpening.Type == requiredType
+            && SelectedOpening.Container != null;
     }
 
 }

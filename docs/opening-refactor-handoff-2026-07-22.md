@@ -360,6 +360,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ClearSelectedGeneratedWallDuringDrag`.
   - Moved drag-only selected generated-wall clearing out of `ClearGeneratedContainerVisuals`.
   - Kept null-wall skip behavior, drag-only selection clearing, selected-wall comparison, opening-selection-preserving clear call, length-display clearing order, and drag/non-drag cleanup order unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `CanUseSelectedOpeningBottomOffset`.
+  - Moved selected-opening bottom-offset guard logic out of `GetSelectedOpeningBottomOffsetMillimeters`.
+  - Kept fallback behavior, required opening type check, selected opening container check, bottom offset calculation, and millimeter conversion unchanged.
 
 ## Verification State
 
@@ -639,6 +643,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting drag selected-wall clear helper, Unity script compilation succeeded.
 - After extracting drag selected-wall clear helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting selected bottom-offset guard helper, Unity script compilation succeeded.
+- After extracting selected bottom-offset guard helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -984,6 +992,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-drag-selected-wall-clear-helper-catalog-tests.xml`
   - `Logs/opening-drag-selected-wall-clear-helper-rail-regression.log`
   - `Logs/opening-drag-selected-wall-clear-helper-rail-regression.xml`
+  - `Logs/opening-selected-bottom-offset-guard-helper-compile.log`
+  - `Logs/opening-selected-bottom-offset-guard-helper-catalog-tests.log`
+  - `Logs/opening-selected-bottom-offset-guard-helper-catalog-tests.xml`
+  - `Logs/opening-selected-bottom-offset-guard-helper-rail-regression.log`
+  - `Logs/opening-selected-bottom-offset-guard-helper-rail-regression.xml`
 
 ## Important Context
 
