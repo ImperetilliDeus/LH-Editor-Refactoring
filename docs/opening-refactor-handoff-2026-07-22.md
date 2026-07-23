@@ -368,6 +368,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `UpdateDefaultBottomOffsetMillimeters`.
   - Moved door/window default bottom-offset assignment out of `ApplySelectedOpeningBottomOffsetFromInput`.
   - Kept parse failure handling, selected-opening type guard, refresh timing, container guard, bottom position clamp, height clamp, and rebuild-with-undo behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `ResolveSelectedOpeningDepthFromInputMillimeters`.
+  - Moved selected-opening depth millimeter conversion, wall-thickness clamp, and catalog depth clamp out of `ApplySelectedOpeningDepthFromInput`.
+  - Kept parse failure handling, default depth update fallback, selected-opening guard, depth assignment, and rebuild-with-undo behavior unchanged.
 
 ## Verification State
 
@@ -655,6 +659,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting default bottom-offset helper, Unity script compilation succeeded.
 - After extracting default bottom-offset helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting selected depth input helper, Unity script compilation succeeded.
+- After extracting selected depth input helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1010,6 +1018,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-default-bottom-offset-helper-catalog-tests.xml`
   - `Logs/opening-default-bottom-offset-helper-rail-regression.log`
   - `Logs/opening-default-bottom-offset-helper-rail-regression.xml`
+  - `Logs/opening-selected-depth-input-helper-compile.log`
+  - `Logs/opening-selected-depth-input-helper-catalog-tests.log`
+  - `Logs/opening-selected-depth-input-helper-catalog-tests.xml`
+  - `Logs/opening-selected-depth-input-helper-rail-regression.log`
+  - `Logs/opening-selected-depth-input-helper-rail-regression.xml`
 
 ## Important Context
 

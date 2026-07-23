@@ -121,16 +121,23 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        float depth = MillimetersToUnits(millimeters);
-        depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
-        if (TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition))
-        {
-            depth = definition.ClampDepth(depth);
-            depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
-        }
+        float depth = ResolveSelectedOpeningDepthFromInputMillimeters(SelectedOpening, millimeters);
 
         SelectedOpening.SetDepth(depth);
         RebuildSelectedOpeningWithUndo();
+    }
+
+    private float ResolveSelectedOpeningDepthFromInputMillimeters(WallOpening opening, float millimeters)
+    {
+        float depth = MillimetersToUnits(millimeters);
+        depth = Mathf.Min(depth, opening.Container.WallThickness);
+        if (TryGetOpeningTypeDefinition(opening, out OpeningTypeCatalogItem definition))
+        {
+            depth = definition.ClampDepth(depth);
+            depth = Mathf.Min(depth, opening.Container.WallThickness);
+        }
+
+        return depth;
     }
 
     public void ApplySelectedDoorBottomOffsetFromInput(string inputText)
