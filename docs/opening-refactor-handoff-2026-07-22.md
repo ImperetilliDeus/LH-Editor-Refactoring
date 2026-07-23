@@ -296,6 +296,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateSegmentsRoot`.
   - Moved segment-root `GameObject` creation, parent assignment, transform reset, and wall-layer application out of `GetOrCreateSegmentsRoot`.
   - Kept null handling, existing-root lookup/reuse, segment root name, layer assignment, and returned transform unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `CanSelectReplacementWall`.
+  - Moved replacement-wall candidate filtering out of `FindClosestVisibleWallToPoint`.
+  - Kept wall collection, active-in-hierarchy requirement, hidden opening base segment exclusion, midpoint distance scoring, best-wall update, and null fallback unchanged.
 
 ## Verification State
 
@@ -510,6 +514,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting segments-root helper, Unity script compilation succeeded.
 - After extracting segments-root helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting replacement-wall filter helper, Unity script compilation succeeded.
+- After extracting replacement-wall filter helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -775,6 +783,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-segments-root-helper-catalog-tests.xml`
   - `Logs/opening-segments-root-helper-rail-regression.log`
   - `Logs/opening-segments-root-helper-rail-regression.xml`
+  - `Logs/opening-replacement-wall-filter-helper-compile.log`
+  - `Logs/opening-replacement-wall-filter-helper-catalog-tests.log`
+  - `Logs/opening-replacement-wall-filter-helper-catalog-tests.xml`
+  - `Logs/opening-replacement-wall-filter-helper-rail-regression.log`
+  - `Logs/opening-replacement-wall-filter-helper-rail-regression.xml`
 
 ## Important Context
 

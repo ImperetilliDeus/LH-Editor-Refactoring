@@ -648,7 +648,7 @@ public partial class WallOpeningPlacementManager
         for (int i = 0; i < cachedWalls.Count; i++)
         {
             Wall wall = cachedWalls[i];
-            if (wall == null || !wall.gameObject.activeInHierarchy || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            if (!CanSelectReplacementWall(wall))
             {
                 continue;
             }
@@ -665,5 +665,12 @@ public partial class WallOpeningPlacementManager
         }
 
         return bestWall;
+    }
+
+    private static bool CanSelectReplacementWall(Wall wall)
+    {
+        return wall != null &&
+            wall.gameObject.activeInHierarchy &&
+            !WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall);
     }
 }
