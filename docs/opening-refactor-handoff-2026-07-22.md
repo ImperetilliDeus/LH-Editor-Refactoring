@@ -364,6 +364,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CanUseSelectedOpeningBottomOffset`.
   - Moved selected-opening bottom-offset guard logic out of `GetSelectedOpeningBottomOffsetMillimeters`.
   - Kept fallback behavior, required opening type check, selected opening container check, bottom offset calculation, and millimeter conversion unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `UpdateDefaultBottomOffsetMillimeters`.
+  - Moved door/window default bottom-offset assignment out of `ApplySelectedOpeningBottomOffsetFromInput`.
+  - Kept parse failure handling, selected-opening type guard, refresh timing, container guard, bottom position clamp, height clamp, and rebuild-with-undo behavior unchanged.
 
 ## Verification State
 
@@ -647,6 +651,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting selected bottom-offset guard helper, Unity script compilation succeeded.
 - After extracting selected bottom-offset guard helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting default bottom-offset helper, Unity script compilation succeeded.
+- After extracting default bottom-offset helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -997,6 +1005,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-selected-bottom-offset-guard-helper-catalog-tests.xml`
   - `Logs/opening-selected-bottom-offset-guard-helper-rail-regression.log`
   - `Logs/opening-selected-bottom-offset-guard-helper-rail-regression.xml`
+  - `Logs/opening-default-bottom-offset-helper-compile.log`
+  - `Logs/opening-default-bottom-offset-helper-catalog-tests.log`
+  - `Logs/opening-default-bottom-offset-helper-catalog-tests.xml`
+  - `Logs/opening-default-bottom-offset-helper-rail-regression.log`
+  - `Logs/opening-default-bottom-offset-helper-rail-regression.xml`
 
 ## Important Context
 

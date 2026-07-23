@@ -253,15 +253,7 @@ public partial class WallOpeningPlacementManager
 
         if (SelectedOpening == null || SelectedOpening.Type != requiredType)
         {
-            if (requiredType == OpeningPlacementType.Door)
-            {
-                defaultDoorBottomOffsetMillimeters = millimeters;
-            }
-            else
-            {
-                defaultWindowBottomOffsetMillimeters = millimeters;
-            }
-
+            UpdateDefaultBottomOffsetMillimeters(requiredType, millimeters);
             RefreshOpeningDetailInputs(true);
             return;
         }
@@ -279,6 +271,17 @@ public partial class WallOpeningPlacementManager
         float clampedHeight = ClampOpeningHeight(container, SelectedOpening, SelectedOpening.Height, bottomY);
         SelectedOpening.SetHeight(clampedHeight);
         RebuildSelectedOpeningWithUndo();
+    }
+
+    private void UpdateDefaultBottomOffsetMillimeters(OpeningPlacementType requiredType, float millimeters)
+    {
+        if (requiredType == OpeningPlacementType.Door)
+        {
+            defaultDoorBottomOffsetMillimeters = millimeters;
+            return;
+        }
+
+        defaultWindowBottomOffsetMillimeters = millimeters;
     }
 
     private void RebuildSelectedOpeningWithUndo()
