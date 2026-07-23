@@ -457,9 +457,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return false;
         }
 
-        bool draggingStart = draggedVertexId == container.OuterStartVertexId;
-        bool draggingEnd = draggedVertexId == container.OuterEndVertexId;
-        if (!draggingStart && !draggingEnd)
+        if (!TryResolveOuterSplitDragTarget(container, draggedVertexId, out bool draggingStart, out bool draggingEnd))
         {
             return false;
         }
@@ -516,6 +514,17 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         constrainedPoint = container.WallStart + wallDirection * desiredDistance;
         constrainedPoint.y = desiredPoint.y;
         return true;
+    }
+
+    private static bool TryResolveOuterSplitDragTarget(
+        WallOpeningContainer container,
+        int draggedVertexId,
+        out bool draggingStart,
+        out bool draggingEnd)
+    {
+        draggingStart = draggedVertexId == container.OuterStartVertexId;
+        draggingEnd = draggedVertexId == container.OuterEndVertexId;
+        return draggingStart || draggingEnd;
     }
 
     private static bool TryResolveOuterSplitMinimumLengthPoint(
