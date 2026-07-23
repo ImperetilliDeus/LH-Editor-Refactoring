@@ -483,18 +483,14 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 continue;
             }
 
-            float halfWidth = opening.Width * 0.5f;
-            if (draggingStart)
-            {
-                float distanceFromEnd = container.WallLength - opening.CenterDistance;
-                minimumRequiredLength = Mathf.Max(minimumRequiredLength, distanceFromEnd + halfWidth + effectiveSideWall);
-                maxStartDistance = Mathf.Min(maxStartDistance, opening.CenterDistance - halfWidth - effectiveSideWall);
-            }
-            else
-            {
-                minimumRequiredLength = Mathf.Max(minimumRequiredLength, opening.CenterDistance + halfWidth + effectiveSideWall);
-                minEndDistance = Mathf.Max(minEndDistance, opening.CenterDistance + halfWidth + effectiveSideWall);
-            }
+            ApplyOuterSplitOpeningConstraint(
+                opening,
+                draggingStart,
+                container.WallLength,
+                effectiveSideWall,
+                ref minimumRequiredLength,
+                ref maxStartDistance,
+                ref minEndDistance);
         }
 
         Vector3 anchorPoint = draggingStart ? container.WallEnd : container.WallStart;
@@ -533,6 +529,29 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         constrainedPoint.y = desiredPoint.y;
         return true;
     }
+
+    private static void ApplyOuterSplitOpeningConstraint(
+        WallOpening opening,
+        bool draggingStart,
+        float wallLength,
+        float effectiveSideWall,
+        ref float minimumRequiredLength,
+        ref float maxStartDistance,
+        ref float minEndDistance)
+    {
+        float halfWidth = opening.Width * 0.5f;
+        if (draggingStart)
+        {
+            float distanceFromEnd = wallLength - opening.CenterDistance;
+            minimumRequiredLength = Mathf.Max(minimumRequiredLength, distanceFromEnd + halfWidth + effectiveSideWall);
+            maxStartDistance = Mathf.Min(maxStartDistance, opening.CenterDistance - halfWidth - effectiveSideWall);
+            return;
+        }
+
+        minimumRequiredLength = Mathf.Max(minimumRequiredLength, opening.CenterDistance + halfWidth + effectiveSideWall);
+        minEndDistance = Mathf.Max(minEndDistance, opening.CenterDistance + halfWidth + effectiveSideWall);
+    }
+
     private void RebuildContainer(WallOpeningContainer container, bool isDragging = false)
     {
         if (isDragging)
