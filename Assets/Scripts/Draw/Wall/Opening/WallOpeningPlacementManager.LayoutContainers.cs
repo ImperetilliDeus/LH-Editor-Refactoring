@@ -274,39 +274,7 @@ public partial class WallOpeningPlacementManager
         UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot = CaptureLayoutSnapshot(container);
         List<UndoRedoManager.OpeningStateSnapshot> leftOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
         List<UndoRedoManager.OpeningStateSnapshot> rightOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
-
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            UndoRedoManager.OpeningStateSnapshot snapshot = new UndoRedoManager.OpeningStateSnapshot
-            {
-                type = opening.Type,
-                doorTypeKey = opening.DoorTypeKey,
-                windowTypeKey = opening.WindowTypeKey,
-                doorOpensRight = opening.DoorOpensRight,
-                doorVerticalFlip = opening.DoorVerticalFlip,
-                centerDistance = opening.CenterDistance,
-                width = opening.Width,
-                height = opening.Height,
-                depth = opening.Depth,
-                bottomY = opening.BottomY,
-            };
-
-            if (opening.CenterDistance < splitDistance)
-            {
-                leftOpenings.Add(snapshot);
-            }
-            else
-            {
-                snapshot.centerDistance -= splitDistance;
-                rightOpenings.Add(snapshot);
-            }
-        }
+        PartitionOpeningsForSplit(cachedOpenings, splitDistance, leftOpenings, rightOpenings);
 
         RemoveLayout(sourceSnapshot);
 
@@ -371,6 +339,45 @@ public partial class WallOpeningPlacementManager
         }
 
         return false;
+    }
+
+    private static void PartitionOpeningsForSplit(
+        IReadOnlyList<WallOpening> openings,
+        float splitDistance,
+        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
+        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
+    {
+        for (int i = 0; i < openings.Count; i++)
+        {
+            WallOpening opening = openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            UndoRedoManager.OpeningStateSnapshot snapshot = new UndoRedoManager.OpeningStateSnapshot
+            {
+                type = opening.Type,
+                doorTypeKey = opening.DoorTypeKey,
+                windowTypeKey = opening.WindowTypeKey,
+                doorOpensRight = opening.DoorOpensRight,
+                doorVerticalFlip = opening.DoorVerticalFlip,
+                centerDistance = opening.CenterDistance,
+                width = opening.Width,
+                height = opening.Height,
+                depth = opening.Depth,
+                bottomY = opening.BottomY,
+            };
+
+            if (opening.CenterDistance < splitDistance)
+            {
+                leftOpenings.Add(snapshot);
+                continue;
+            }
+
+            snapshot.centerDistance -= splitDistance;
+            rightOpenings.Add(snapshot);
+        }
     }
 
     private void CreateSplitContainerLayout(
