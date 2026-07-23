@@ -237,15 +237,7 @@ public partial class WallOpeningPlacementManager
 
         ApplySelectedOpeningHeightConstraint();
 
-        if (TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition))
-        {
-            float depth = definition.ClampDepth(SelectedOpening.Depth);
-            depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
-            if (depth > MinimumWallSegmentLength)
-            {
-                SelectedOpening.SetDepth(depth);
-            }
-        }
+        ApplySelectedOpeningDepthConstraint();
     }
 
     private void ApplySelectedOpeningWidthConstraint()
@@ -263,6 +255,19 @@ public partial class WallOpeningPlacementManager
         if (height > MinimumWallSegmentLength)
         {
             SelectedOpening.SetHeight(height);
+        }
+    }
+
+    private void ApplySelectedOpeningDepthConstraint()
+    {
+        if (TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition))
+        {
+            float depth = definition.ClampDepth(SelectedOpening.Depth);
+            depth = Mathf.Min(depth, SelectedOpening.Container.WallThickness);
+            if (depth > MinimumWallSegmentLength)
+            {
+                SelectedOpening.SetDepth(depth);
+            }
         }
     }
 

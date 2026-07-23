@@ -384,6 +384,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplySelectedOpeningHeightConstraint`.
   - Moved selected-opening type-size height clamp and assignment out of `ApplySelectedOpeningTypeSizeConstraints`.
   - Kept selected-opening/container guard, height clamp inputs, minimum segment threshold, height assignment, width/depth constraint order, and rebuild caller behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `ApplySelectedOpeningDepthConstraint`.
+  - Moved selected-opening type-size depth catalog clamp, wall-thickness clamp, and assignment out of `ApplySelectedOpeningTypeSizeConstraints`.
+  - Kept selected-opening/container guard, catalog definition lookup, depth clamp inputs, minimum segment threshold, depth assignment, width/height constraint order, and rebuild caller behavior unchanged.
 
 ## Verification State
 
@@ -687,6 +691,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting type height constraint helper, Unity script compilation succeeded.
 - After extracting type height constraint helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting type depth constraint helper, Unity script compilation succeeded.
+- After extracting type depth constraint helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1062,6 +1070,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-type-height-constraint-helper-catalog-tests.xml`
   - `Logs/opening-type-height-constraint-helper-rail-regression.log`
   - `Logs/opening-type-height-constraint-helper-rail-regression.xml`
+  - `Logs/opening-type-depth-constraint-helper-compile.log`
+  - `Logs/opening-type-depth-constraint-helper-catalog-tests.log`
+  - `Logs/opening-type-depth-constraint-helper-catalog-tests.xml`
+  - `Logs/opening-type-depth-constraint-helper-rail-regression.log`
+  - `Logs/opening-type-depth-constraint-helper-rail-regression.xml`
 
 ## Important Context
 
