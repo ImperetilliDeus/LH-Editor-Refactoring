@@ -265,22 +265,10 @@ public partial class WallOpeningPlacementManager
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
 
-        const float splitEpsilon = 0.0001f;
-        for (int i = 0; i < cachedOpenings.Count; i++)
+        if (SplitDistanceOverlapsOpeningSpan(cachedOpenings, splitDistance))
         {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            float openingStart = opening.CenterDistance - opening.Width * 0.5f;
-            float openingEnd = opening.CenterDistance + opening.Width * 0.5f;
-            if (splitDistance >= openingStart - splitEpsilon && splitDistance <= openingEnd + splitEpsilon)
-            {
-                Debug.LogWarning("Wall split point overlaps an opening span.", selectedSegment);
-                return;
-            }
+            Debug.LogWarning("Wall split point overlaps an opening span.", selectedSegment);
+            return;
         }
 
         UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot = CaptureLayoutSnapshot(container);
@@ -359,6 +347,30 @@ public partial class WallOpeningPlacementManager
                 wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
             }
         }
+    }
+
+    private static bool SplitDistanceOverlapsOpeningSpan(
+        IReadOnlyList<WallOpening> openings,
+        float splitDistance)
+    {
+        const float splitEpsilon = 0.0001f;
+        for (int i = 0; i < openings.Count; i++)
+        {
+            WallOpening opening = openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            float openingStart = opening.CenterDistance - opening.Width * 0.5f;
+            float openingEnd = opening.CenterDistance + opening.Width * 0.5f;
+            if (splitDistance >= openingStart - splitEpsilon && splitDistance <= openingEnd + splitEpsilon)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void CreateSplitContainerLayout(

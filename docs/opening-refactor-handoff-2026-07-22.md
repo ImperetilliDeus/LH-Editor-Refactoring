@@ -264,6 +264,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Reused `RestoreWallFromSnapshot` inside `RestoreContainerIfEmpty`.
   - Removed the local duplicate restored-wall creation and handle-manager registration block.
   - Kept empty-container detection, snapshot capture/removal, topology refresh, wall registry refresh, and marker dirty behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `SplitDistanceOverlapsOpeningSpan`.
+  - Moved split-point overlap detection for existing openings out of `SplitContainerWallSegment`.
+  - Kept split-distance bounds checking, opening collection/sorting, warning message/context, snapshot partitioning, layout rebuild, and selection refresh unchanged.
 
 ## Verification State
 
@@ -446,6 +450,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Unity initially reported another instance had the project open; waiting for Unity cleanup and rerunning with `Unity.com` resolved it.
 - After reusing the restored-wall helper in empty-container restore, Unity script compilation succeeded.
 - After reusing the restored-wall helper in empty-container restore, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting the split overlap helper, Unity script compilation succeeded.
+- After extracting the split overlap helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -671,6 +679,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-empty-restore-wall-helper-catalog-tests.xml`
   - `Logs/opening-empty-restore-wall-helper-rail-regression.log`
   - `Logs/opening-empty-restore-wall-helper-rail-regression.xml`
+  - `Logs/opening-split-overlap-helper-compile.log`
+  - `Logs/opening-split-overlap-helper-catalog-tests.log`
+  - `Logs/opening-split-overlap-helper-catalog-tests.xml`
+  - `Logs/opening-split-overlap-helper-rail-regression.log`
+  - `Logs/opening-split-overlap-helper-rail-regression.xml`
 
 ## Important Context
 
