@@ -15,28 +15,7 @@ public partial class WallOpeningPlacementManager
 
         if (snapshot.hasContainer)
         {
-            Transform container = wallRoot.Find(snapshot.layoutName);
-            if (container != null)
-            {
-                WallHierarchyUtility.CollectWalls(container, cachedWalls);
-                for (int i = 0; i < cachedWalls.Count; i++)
-                {
-                    if (cachedWalls[i] == null)
-                    {
-                        continue;
-                    }
-
-                    cachedWalls[i].ClearLengthDisplay(wallLengthDisplay);
-                    if (handleManager != null)
-                    {
-                        handleManager.UnregisterWall(cachedWalls[i].gameObject);
-                    }
-                }
-
-                container.gameObject.SetActive(false);
-                Destroy(container.gameObject);
-            }
-
+            RemoveContainerLayout(snapshot.layoutName);
             return;
         }
 
@@ -54,6 +33,33 @@ public partial class WallOpeningPlacementManager
         wall.ClearLengthDisplay(wallLengthDisplay);
         wall.gameObject.SetActive(false);
         Destroy(wall.gameObject);
+    }
+
+    private void RemoveContainerLayout(string layoutName)
+    {
+        Transform container = wallRoot.Find(layoutName);
+        if (container == null)
+        {
+            return;
+        }
+
+        WallHierarchyUtility.CollectWalls(container, cachedWalls);
+        for (int i = 0; i < cachedWalls.Count; i++)
+        {
+            if (cachedWalls[i] == null)
+            {
+                continue;
+            }
+
+            cachedWalls[i].ClearLengthDisplay(wallLengthDisplay);
+            if (handleManager != null)
+            {
+                handleManager.UnregisterWall(cachedWalls[i].gameObject);
+            }
+        }
+
+        container.gameObject.SetActive(false);
+        Destroy(container.gameObject);
     }
 
     private Wall FindMatchingStandaloneWall(UndoRedoManager.WallStateSnapshot snapshot)

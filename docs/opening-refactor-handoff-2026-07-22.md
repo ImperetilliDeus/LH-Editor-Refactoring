@@ -300,6 +300,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CanSelectReplacementWall`.
   - Moved replacement-wall candidate filtering out of `FindClosestVisibleWallToPoint`.
   - Kept wall collection, active-in-hierarchy requirement, hidden opening base segment exclusion, midpoint distance scoring, best-wall update, and null fallback unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `RemoveContainerLayout`.
+  - Moved container layout lookup, child wall length-display clearing, handle-manager unregistration, deactivate, and destroy behavior out of `RemoveLayout`.
+  - Kept wall-root null handling, container-vs-standalone branching, missing-container no-op behavior, and standalone removal behavior unchanged.
 
 ## Verification State
 
@@ -518,6 +522,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting replacement-wall filter helper, Unity script compilation succeeded.
 - After extracting replacement-wall filter helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container layout removal helper, Unity script compilation succeeded.
+- After extracting container layout removal helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -788,6 +796,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-replacement-wall-filter-helper-catalog-tests.xml`
   - `Logs/opening-replacement-wall-filter-helper-rail-regression.log`
   - `Logs/opening-replacement-wall-filter-helper-rail-regression.xml`
+  - `Logs/opening-remove-container-layout-helper-compile.log`
+  - `Logs/opening-remove-container-layout-helper-catalog-tests.log`
+  - `Logs/opening-remove-container-layout-helper-catalog-tests.xml`
+  - `Logs/opening-remove-container-layout-helper-rail-regression.log`
+  - `Logs/opening-remove-container-layout-helper-rail-regression.xml`
 
 ## Important Context
 
