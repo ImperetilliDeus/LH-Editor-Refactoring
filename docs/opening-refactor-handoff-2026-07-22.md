@@ -340,6 +340,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CanUseSegmentForSelectionRefresh`.
   - Moved selection-refresh segment candidate filtering out of `FindClosestSegmentToDistance`.
   - Kept container null handling, hidden opening base segment exclusion, midpoint distance scoring, best-wall update, and null fallback unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `CalculateSelectionSegmentDistanceDelta`.
+  - Moved selection-refresh midpoint projection and preferred-distance delta calculation out of `FindClosestSegmentToDistance`.
+  - Kept segment candidate filtering, wall direction projection, absolute delta scoring, best-wall update, and null fallback unchanged.
 
 ## Verification State
 
@@ -599,6 +603,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting selection segment filter helper, Unity script compilation succeeded.
 - After extracting selection segment filter helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting selection segment distance helper, Unity script compilation succeeded.
+- After extracting selection segment distance helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -919,6 +927,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-selection-segment-filter-helper-catalog-tests.xml`
   - `Logs/opening-selection-segment-filter-helper-rail-regression.log`
   - `Logs/opening-selection-segment-filter-helper-rail-regression.xml`
+  - `Logs/opening-selection-segment-distance-helper-compile.log`
+  - `Logs/opening-selection-segment-distance-helper-catalog-tests.log`
+  - `Logs/opening-selection-segment-distance-helper-catalog-tests.xml`
+  - `Logs/opening-selection-segment-distance-helper-rail-regression.log`
+  - `Logs/opening-selection-segment-distance-helper-rail-regression.xml`
 
 ## Important Context
 

@@ -692,9 +692,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 continue;
             }
 
-            Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
-            float distanceAlongWall = Vector3.Dot(midpoint - container.WallStart, container.WallDirection);
-            float delta = Mathf.Abs(distanceAlongWall - preferredDistance);
+            float delta = CalculateSelectionSegmentDistanceDelta(
+                wall,
+                container.WallStart,
+                container.WallDirection,
+                preferredDistance);
             if (delta >= bestDelta)
             {
                 continue;
@@ -705,6 +707,17 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
 
         return bestWall;
+    }
+
+    private static float CalculateSelectionSegmentDistanceDelta(
+        Wall wall,
+        Vector3 wallStart,
+        Vector3 wallDirection,
+        float preferredDistance)
+    {
+        Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
+        float distanceAlongWall = Vector3.Dot(midpoint - wallStart, wallDirection);
+        return Mathf.Abs(distanceAlongWall - preferredDistance);
     }
 
     private static bool CanUseSegmentForSelectionRefresh(Wall wall)
