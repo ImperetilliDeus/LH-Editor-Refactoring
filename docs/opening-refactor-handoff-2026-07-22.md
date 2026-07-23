@@ -304,6 +304,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RemoveContainerLayout`.
   - Moved container layout lookup, child wall length-display clearing, handle-manager unregistration, deactivate, and destroy behavior out of `RemoveLayout`.
   - Kept wall-root null handling, container-vs-standalone branching, missing-container no-op behavior, and standalone removal behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `RemoveStandaloneLayout`.
+  - Moved standalone wall lookup, handle-manager unregistration, length-display clearing, deactivate, and destroy behavior out of `RemoveLayout`.
+  - Kept wall-root null handling, container-vs-standalone branching, matching-wall lookup behavior, missing-wall no-op behavior, and container removal behavior unchanged.
 
 ## Verification State
 
@@ -526,6 +530,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container layout removal helper, Unity script compilation succeeded.
 - After extracting container layout removal helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting standalone layout removal helper, Unity script compilation succeeded.
+- After extracting standalone layout removal helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -801,6 +809,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-remove-container-layout-helper-catalog-tests.xml`
   - `Logs/opening-remove-container-layout-helper-rail-regression.log`
   - `Logs/opening-remove-container-layout-helper-rail-regression.xml`
+  - `Logs/opening-remove-standalone-layout-helper-compile.log`
+  - `Logs/opening-remove-standalone-layout-helper-catalog-tests.log`
+  - `Logs/opening-remove-standalone-layout-helper-catalog-tests.xml`
+  - `Logs/opening-remove-standalone-layout-helper-rail-regression.log`
+  - `Logs/opening-remove-standalone-layout-helper-rail-regression.xml`
 
 ## Important Context
 

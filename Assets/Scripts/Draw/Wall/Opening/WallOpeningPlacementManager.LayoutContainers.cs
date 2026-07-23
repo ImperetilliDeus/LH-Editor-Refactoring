@@ -19,20 +19,7 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        Wall wall = FindMatchingStandaloneWall(snapshot.wallSnapshot);
-        if (wall == null)
-        {
-            return;
-        }
-
-        if (handleManager != null)
-        {
-            handleManager.UnregisterWall(wall.gameObject);
-        }
-
-        wall.ClearLengthDisplay(wallLengthDisplay);
-        wall.gameObject.SetActive(false);
-        Destroy(wall.gameObject);
+        RemoveStandaloneLayout(snapshot.wallSnapshot);
     }
 
     private void RemoveContainerLayout(string layoutName)
@@ -60,6 +47,24 @@ public partial class WallOpeningPlacementManager
 
         container.gameObject.SetActive(false);
         Destroy(container.gameObject);
+    }
+
+    private void RemoveStandaloneLayout(UndoRedoManager.WallStateSnapshot wallSnapshot)
+    {
+        Wall wall = FindMatchingStandaloneWall(wallSnapshot);
+        if (wall == null)
+        {
+            return;
+        }
+
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(wall.gameObject);
+        }
+
+        wall.ClearLengthDisplay(wallLengthDisplay);
+        wall.gameObject.SetActive(false);
+        Destroy(wall.gameObject);
     }
 
     private Wall FindMatchingStandaloneWall(UndoRedoManager.WallStateSnapshot snapshot)
