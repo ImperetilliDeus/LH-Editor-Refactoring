@@ -266,7 +266,12 @@ public partial class WallOpeningPlacementManager
             selectedWall.IsEndSplitPoint,
             true);
         ApplyPersistentWallId(container, selectedWall);
+        RemoveOriginalWallAfterContainerCreation(selectedWall);
+        return container.transform;
+    }
 
+    private void RemoveOriginalWallAfterContainerCreation(Wall selectedWall)
+    {
         if (handleManager != null)
         {
             handleManager.UnregisterWall(selectedWall.gameObject);
@@ -276,7 +281,6 @@ public partial class WallOpeningPlacementManager
 
         selectedWall.ClearLengthDisplay(wallLengthDisplay);
         DestroyWallObject(selectedWall);
-        return container.transform;
     }
 
     private static void ApplyPersistentWallId(WallOpeningContainer container, Wall selectedWall)

@@ -412,6 +412,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyPersistentWallId`.
   - Moved selected-wall persistent id transfer out of `GetOrCreateOpeningContainer`.
   - Kept container creation inputs, selected-wall data null guard, persistent id source, handle unregister order, pending room-refresh tracking, length-display clearing, and wall destroy behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `RemoveOriginalWallAfterContainerCreation`.
+  - Moved original selected-wall cleanup out of `GetOrCreateOpeningContainer` after opening-container creation.
+  - Kept persistent id application order, handle unregister guard, pending room-refresh tracking, length-display clearing, wall GameObject deactivate/destroy behavior, and returned container transform unchanged.
 
 ## Verification State
 
@@ -743,6 +747,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting persistent wall id helper, Unity script compilation succeeded.
 - After extracting persistent wall id helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting original wall removal helper, Unity script compilation succeeded.
+- After extracting original wall removal helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1153,6 +1161,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-persistent-wall-id-helper-catalog-tests.xml`
   - `Logs/opening-persistent-wall-id-helper-rail-regression.log`
   - `Logs/opening-persistent-wall-id-helper-rail-regression.xml`
+  - `Logs/opening-original-wall-removal-helper-compile.log`
+  - `Logs/opening-original-wall-removal-helper-catalog-tests.log`
+  - `Logs/opening-original-wall-removal-helper-catalog-tests.xml`
+  - `Logs/opening-original-wall-removal-helper-rail-regression.log`
+  - `Logs/opening-original-wall-removal-helper-rail-regression.xml`
 
 ## Important Context
 
