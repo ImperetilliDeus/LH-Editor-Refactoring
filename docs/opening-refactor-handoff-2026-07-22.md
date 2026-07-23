@@ -352,6 +352,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `DestroyGeneratedWall`.
   - Moved non-drag generated-wall handle unregister and destroy behavior out of `ClearGeneratedContainerVisuals`.
   - Kept null-wall skip behavior, selected-wall clearing order, length-display clearing order, drag/non-drag branching, handle unregistration, and destroy timing unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ShouldPreserveContainerChildDuringVisualClear`.
+  - Moved container child preservation checks out of `ClearGeneratedContainerVisuals`.
+  - Kept reverse child iteration, null-child skip behavior, direct `WallOpening` preservation, nested `WallOpening` preservation, segment-group preservation, and orphan child destroy behavior unchanged.
 
 ## Verification State
 
@@ -623,6 +627,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting generated wall destroy helper, Unity script compilation succeeded.
 - After extracting generated wall destroy helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container child preserve helper, Unity script compilation succeeded.
+- After extracting container child preserve helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -958,6 +966,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-generated-wall-destroy-helper-catalog-tests.xml`
   - `Logs/opening-generated-wall-destroy-helper-rail-regression.log`
   - `Logs/opening-generated-wall-destroy-helper-rail-regression.xml`
+  - `Logs/opening-container-child-preserve-helper-compile.log`
+  - `Logs/opening-container-child-preserve-helper-catalog-tests.log`
+  - `Logs/opening-container-child-preserve-helper-catalog-tests.xml`
+  - `Logs/opening-container-child-preserve-helper-rail-regression.log`
+  - `Logs/opening-container-child-preserve-helper-rail-regression.xml`
 
 ## Important Context
 

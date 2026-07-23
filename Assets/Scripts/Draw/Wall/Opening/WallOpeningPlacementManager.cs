@@ -789,23 +789,20 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 continue;
             }
 
-            if (child.GetComponent<WallOpening>() != null)
-            {
-                continue;
-            }
-
-            if (child.GetComponentInChildren<WallOpening>(true) != null)
-            {
-                continue;
-            }
-
-            if (child.name == SegmentGroupName)
+            if (ShouldPreserveContainerChildDuringVisualClear(child))
             {
                 continue;
             }
 
             Destroy(child.gameObject);
         }
+    }
+
+    private static bool ShouldPreserveContainerChildDuringVisualClear(Transform child)
+    {
+        return child.GetComponent<WallOpening>() != null
+            || child.GetComponentInChildren<WallOpening>(true) != null
+            || child.name == SegmentGroupName;
     }
 
     private void MoveWallToDeactivatedHolderForDrag(Wall wall)
