@@ -63,8 +63,7 @@ public partial class WallOpeningPlacementManager
         }
 
         wall.ClearLengthDisplay(wallLengthDisplay);
-        wall.gameObject.SetActive(false);
-        Destroy(wall.gameObject);
+        DestroyWallObject(wall);
     }
 
     private Wall FindMatchingStandaloneWall(UndoRedoManager.WallStateSnapshot snapshot)
@@ -259,9 +258,19 @@ public partial class WallOpeningPlacementManager
         pendingRoomRefreshRemovedWalls.Add(selectedWall);
 
         selectedWall.ClearLengthDisplay(wallLengthDisplay);
-        selectedWall.gameObject.SetActive(false);
-        Destroy(selectedWall.gameObject);
+        DestroyWallObject(selectedWall);
         return container.transform;
+    }
+
+    private void DestroyWallObject(Wall wall)
+    {
+        if (wall == null)
+        {
+            return;
+        }
+
+        wall.gameObject.SetActive(false);
+        Destroy(wall.gameObject);
     }
 
     private void SplitContainerWallSegment(WallOpeningContainer container, Wall selectedSegment)
