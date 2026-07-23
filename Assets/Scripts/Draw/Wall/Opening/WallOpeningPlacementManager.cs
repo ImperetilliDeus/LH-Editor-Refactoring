@@ -777,11 +777,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             }
             else
             {
-                if (handleManager != null)
-                {
-                    handleManager.UnregisterWall(walls[i].gameObject);
-                }
-                Destroy(walls[i].gameObject);
+                DestroyGeneratedWall(walls[i]);
             }
         }
 
@@ -827,6 +823,16 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
 
         wall.transform.SetParent(deactivatedWallsHolder, false);
+    }
+
+    private void DestroyGeneratedWall(Wall wall)
+    {
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(wall.gameObject);
+        }
+
+        Destroy(wall.gameObject);
     }
 
     private GameObject CreateStandaloneWallSegment(

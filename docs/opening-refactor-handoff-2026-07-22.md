@@ -348,6 +348,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `MoveWallToDeactivatedHolderForDrag`.
   - Moved drag rebuild wall handle/UI cleanup and deactivated-holder reparenting out of `ClearGeneratedContainerVisuals`.
   - Kept null-wall skip behavior, selected-wall clearing order, length-display clearing order, handle unregistration, selection proxy cleanup, drag/non-drag branching, and non-drag destroy behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `DestroyGeneratedWall`.
+  - Moved non-drag generated-wall handle unregister and destroy behavior out of `ClearGeneratedContainerVisuals`.
+  - Kept null-wall skip behavior, selected-wall clearing order, length-display clearing order, drag/non-drag branching, handle unregistration, and destroy timing unchanged.
 
 ## Verification State
 
@@ -615,6 +619,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting drag wall deactivation helper, Unity script compilation succeeded.
 - After extracting drag wall deactivation helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting generated wall destroy helper, Unity script compilation succeeded.
+- After extracting generated wall destroy helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -945,6 +953,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-drag-wall-deactivation-helper-catalog-tests.xml`
   - `Logs/opening-drag-wall-deactivation-helper-rail-regression.log`
   - `Logs/opening-drag-wall-deactivation-helper-rail-regression.xml`
+  - `Logs/opening-generated-wall-destroy-helper-compile.log`
+  - `Logs/opening-generated-wall-destroy-helper-catalog-tests.log`
+  - `Logs/opening-generated-wall-destroy-helper-catalog-tests.xml`
+  - `Logs/opening-generated-wall-destroy-helper-rail-regression.log`
+  - `Logs/opening-generated-wall-destroy-helper-rail-regression.xml`
 
 ## Important Context
 
