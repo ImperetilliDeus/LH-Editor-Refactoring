@@ -272,6 +272,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `PartitionOpeningsForSplit`.
   - Moved split-time opening snapshot creation and left/right list partitioning out of `SplitContainerWallSegment`.
   - Kept snapshot field mapping, left-side distance preservation, right-side distance rebasing by `splitDistance`, split layout creation, topology refresh, and selection refresh unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Reused `CreateOpeningFromSnapshot` inside `CreateSplitContainerLayout`.
+  - Removed the local duplicate split-layout opening `GameObject` creation, parent/layer assignment, `WallOpening` component creation, and snapshot initialization block.
+  - Kept split container creation, standalone-wall fallback, opening order, and rebuild behavior unchanged.
 
 ## Verification State
 
@@ -462,6 +466,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting the split partition helper, Unity script compilation succeeded.
 - After extracting the split partition helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After reusing the snapshot opening helper in split layout creation, Unity script compilation succeeded.
+- After reusing the snapshot opening helper in split layout creation, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -697,6 +705,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-split-partition-helper-catalog-tests.xml`
   - `Logs/opening-split-partition-helper-rail-regression.log`
   - `Logs/opening-split-partition-helper-rail-regression.xml`
+  - `Logs/opening-split-snapshot-helper-reuse-compile.log`
+  - `Logs/opening-split-snapshot-helper-reuse-catalog-tests.log`
+  - `Logs/opening-split-snapshot-helper-reuse-catalog-tests.xml`
+  - `Logs/opening-split-snapshot-helper-reuse-rail-regression.log`
+  - `Logs/opening-split-snapshot-helper-reuse-rail-regression.xml`
 
 ## Important Context
 

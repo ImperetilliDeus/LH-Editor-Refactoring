@@ -437,28 +437,7 @@ public partial class WallOpeningPlacementManager
 
         for (int i = 0; i < openings.Count; i++)
         {
-            UndoRedoManager.OpeningStateSnapshot openingSnapshot = openings[i];
-            GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
-            openingObject.transform.SetParent(nextContainer.transform, false);
-            LayerUtility.ApplyLayer(
-                openingObject,
-                openingSnapshot.type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
-                false);
-
-            WallOpening opening = openingObject.AddComponent<WallOpening>();
-            opening.Initialize(
-                this,
-                nextContainer,
-                openingSnapshot.type,
-                openingSnapshot.doorTypeKey,
-                openingSnapshot.windowTypeKey,
-                openingSnapshot.doorOpensRight,
-                openingSnapshot.doorVerticalFlip,
-                openingSnapshot.centerDistance,
-                openingSnapshot.width,
-                openingSnapshot.height,
-                openingSnapshot.depth,
-                openingSnapshot.bottomY);
+            CreateOpeningFromSnapshot(nextContainer, openings[i]);
         }
 
         RebuildContainer(nextContainer, false);
