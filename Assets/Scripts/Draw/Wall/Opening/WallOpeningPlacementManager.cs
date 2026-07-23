@@ -396,25 +396,13 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         {
             WallOpening opening = cachedOpenings[i];
             UndoRedoManager.OpeningStateSnapshot openingSnapshot = baselineSnapshot.openings[i];
-            float nextCenterDistance;
-
-            if (translated || (!movedStart && !movedEnd))
-            {
-                nextCenterDistance = openingSnapshot.centerDistance;
-            }
-            else if (movedStart && !movedEnd)
-            {
-                float distanceFromEnd = oldLength - openingSnapshot.centerDistance;
-                nextCenterDistance = newLength - distanceFromEnd;
-            }
-            else if (!movedStart && movedEnd)
-            {
-                nextCenterDistance = openingSnapshot.centerDistance;
-            }
-            else // Both moved (stretch)
-            {
-                nextCenterDistance = oldLength > 0.001f ? (openingSnapshot.centerDistance / oldLength) * newLength : newLength * 0.5f;
-            }
+            float nextCenterDistance = ResolveOpeningCenterDistanceAfterSpanChange(
+                openingSnapshot,
+                oldLength,
+                newLength,
+                movedStart,
+                movedEnd,
+                translated);
 
             opening.SetCenterDistance(ClampOpeningCenterDistance(container, opening, nextCenterDistance, opening.Width));
         }
@@ -428,6 +416,33 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             float preferredDistance = startDragged ? 0f : newLength;
             RefreshSelectedWallForContainer(container, preferredDistance);
         }
+    }
+
+    private static float ResolveOpeningCenterDistanceAfterSpanChange(
+        UndoRedoManager.OpeningStateSnapshot openingSnapshot,
+        float oldLength,
+        float newLength,
+        bool movedStart,
+        bool movedEnd,
+        bool translated)
+    {
+        if (translated || (!movedStart && !movedEnd))
+        {
+            return openingSnapshot.centerDistance;
+        }
+
+        if (movedStart && !movedEnd)
+        {
+            float distanceFromEnd = oldLength - openingSnapshot.centerDistance;
+            return newLength - distanceFromEnd;
+        }
+
+        if (!movedStart && movedEnd)
+        {
+            return openingSnapshot.centerDistance;
+        }
+
+        return oldLength > 0.001f ? (openingSnapshot.centerDistance / oldLength) * newLength : newLength * 0.5f;
     }
 
     internal bool TryConstrainContainerOuterSplitPointDrag(

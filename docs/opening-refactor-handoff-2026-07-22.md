@@ -316,6 +316,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ClearDeactivatedWallsHolder`.
   - Moved non-drag rebuild cleanup of deactivated wall-holder children out of `RebuildContainer`.
   - Kept transient drag rebuild begin/end behavior, non-drag-only cleanup timing, null-holder behavior, child destruction order, and layout rebuild controller arguments unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ResolveOpeningCenterDistanceAfterSpanChange`.
+  - Moved opening center-distance recalculation for external container span drags out of `ApplyContainerSpanFromExternalDrag`.
+  - Kept movement classification, drag constraint application, wall span update, opening collection/sorting, clamp call, rebuild, and selection refresh unchanged.
 
 ## Verification State
 
@@ -552,6 +556,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting deactivated-holder cleanup helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting external-span opening distance helper, Unity script compilation succeeded.
+- After extracting external-span opening distance helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+  - Initial parallel catalog execution hit Unity's single-project instance lock; rerunning the catalog test sequentially with `Unity.com` passed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -840,6 +849,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-clear-deactivated-holder-helper-catalog-tests.xml`
   - `Logs/opening-clear-deactivated-holder-helper-rail-regression.log`
   - `Logs/opening-clear-deactivated-holder-helper-rail-regression.xml`
+  - `Logs/opening-external-span-distance-helper-compile.log`
+  - `Logs/opening-external-span-distance-helper-catalog-tests.log`
+  - `Logs/opening-external-span-distance-helper-catalog-tests.xml`
+  - `Logs/opening-external-span-distance-helper-rail-regression.log`
+  - `Logs/opening-external-span-distance-helper-rail-regression.xml`
 
 ## Important Context
 
