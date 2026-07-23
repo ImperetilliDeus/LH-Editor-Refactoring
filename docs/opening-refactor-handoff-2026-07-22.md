@@ -336,6 +336,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `TryResolveOuterSplitDragTarget`.
   - Moved outer split dragged-vertex start/end classification out of `TryConstrainContainerOuterSplitPointDrag`.
   - Kept null-container handling, outer start/end vertex comparison, non-outer vertex rejection, and subsequent constraint flow unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `CanUseSegmentForSelectionRefresh`.
+  - Moved selection-refresh segment candidate filtering out of `FindClosestSegmentToDistance`.
+  - Kept container null handling, hidden opening base segment exclusion, midpoint distance scoring, best-wall update, and null fallback unchanged.
 
 ## Verification State
 
@@ -591,6 +595,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting outer split drag target helper, Unity script compilation succeeded.
 - After extracting outer split drag target helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting selection segment filter helper, Unity script compilation succeeded.
+- After extracting selection segment filter helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -906,6 +914,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-outer-split-drag-target-helper-catalog-tests.xml`
   - `Logs/opening-outer-split-drag-target-helper-rail-regression.log`
   - `Logs/opening-outer-split-drag-target-helper-rail-regression.xml`
+  - `Logs/opening-selection-segment-filter-helper-compile.log`
+  - `Logs/opening-selection-segment-filter-helper-catalog-tests.log`
+  - `Logs/opening-selection-segment-filter-helper-catalog-tests.xml`
+  - `Logs/opening-selection-segment-filter-helper-rail-regression.log`
+  - `Logs/opening-selection-segment-filter-helper-rail-regression.xml`
 
 ## Important Context
 

@@ -687,7 +687,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         for (int i = 0; i < walls.Length; i++)
         {
             Wall wall = walls[i];
-            if (wall == null || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            if (!CanUseSegmentForSelectionRefresh(wall))
             {
                 continue;
             }
@@ -705,6 +705,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
 
         return bestWall;
+    }
+
+    private static bool CanUseSegmentForSelectionRefresh(Wall wall)
+    {
+        return wall != null && !WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall);
     }
 
     private void CollectOpenings(WallOpeningContainer container, List<WallOpening> results)
