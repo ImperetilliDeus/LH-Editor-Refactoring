@@ -493,26 +493,16 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 ref minEndDistance);
         }
 
-        Vector3 anchorPoint = draggingStart ? container.WallEnd : container.WallStart;
-        Vector3 desiredOffset = desiredPoint - anchorPoint;
-        desiredOffset.y = 0f;
-        float desiredLength = desiredOffset.magnitude;
-        if (desiredLength >= minimumRequiredLength - 0.0001f)
+        if (!TryResolveOuterSplitMinimumLengthPoint(
+            desiredPoint,
+            container.WallStart,
+            container.WallEnd,
+            draggingStart,
+            minimumRequiredLength,
+            out constrainedPoint))
         {
             return true;
         }
-
-        Vector3 fallbackDirection = draggingStart
-            ? container.WallStart - container.WallEnd
-            : container.WallEnd - container.WallStart;
-        fallbackDirection.y = 0f;
-
-        Vector3 direction = desiredLength > 0.0001f
-            ? desiredOffset / desiredLength
-            : (fallbackDirection.sqrMagnitude > 0.0001f ? fallbackDirection.normalized : Vector3.right);
-
-        constrainedPoint = anchorPoint + direction * minimumRequiredLength;
-        constrainedPoint.y = desiredPoint.y;
 
         Vector3 wallDirection = container.WallDirection;
         float desiredDistance = Vector3.Dot(constrainedPoint - container.WallStart, wallDirection);
@@ -524,6 +514,39 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             minEndDistance);
 
         constrainedPoint = container.WallStart + wallDirection * desiredDistance;
+        constrainedPoint.y = desiredPoint.y;
+        return true;
+    }
+
+    private static bool TryResolveOuterSplitMinimumLengthPoint(
+        Vector3 desiredPoint,
+        Vector3 wallStart,
+        Vector3 wallEnd,
+        bool draggingStart,
+        float minimumRequiredLength,
+        out Vector3 constrainedPoint)
+    {
+        constrainedPoint = desiredPoint;
+
+        Vector3 anchorPoint = draggingStart ? wallEnd : wallStart;
+        Vector3 desiredOffset = desiredPoint - anchorPoint;
+        desiredOffset.y = 0f;
+        float desiredLength = desiredOffset.magnitude;
+        if (desiredLength >= minimumRequiredLength - 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 fallbackDirection = draggingStart
+            ? wallStart - wallEnd
+            : wallEnd - wallStart;
+        fallbackDirection.y = 0f;
+
+        Vector3 direction = desiredLength > 0.0001f
+            ? desiredOffset / desiredLength
+            : (fallbackDirection.sqrMagnitude > 0.0001f ? fallbackDirection.normalized : Vector3.right);
+
+        constrainedPoint = anchorPoint + direction * minimumRequiredLength;
         constrainedPoint.y = desiredPoint.y;
         return true;
     }
