@@ -516,18 +516,36 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         Vector3 wallDirection = container.WallDirection;
         float desiredDistance = Vector3.Dot(constrainedPoint - container.WallStart, wallDirection);
-        if (draggingStart && maxStartDistance != float.PositiveInfinity)
-        {
-            desiredDistance = Mathf.Min(desiredDistance, maxStartDistance);
-        }
-        else if (draggingEnd && minEndDistance != float.NegativeInfinity)
-        {
-            desiredDistance = Mathf.Max(desiredDistance, minEndDistance);
-        }
+        desiredDistance = ClampOuterSplitConstrainedDistance(
+            desiredDistance,
+            draggingStart,
+            draggingEnd,
+            maxStartDistance,
+            minEndDistance);
 
         constrainedPoint = container.WallStart + wallDirection * desiredDistance;
         constrainedPoint.y = desiredPoint.y;
         return true;
+    }
+
+    private static float ClampOuterSplitConstrainedDistance(
+        float desiredDistance,
+        bool draggingStart,
+        bool draggingEnd,
+        float maxStartDistance,
+        float minEndDistance)
+    {
+        if (draggingStart && maxStartDistance != float.PositiveInfinity)
+        {
+            return Mathf.Min(desiredDistance, maxStartDistance);
+        }
+
+        if (draggingEnd && minEndDistance != float.NegativeInfinity)
+        {
+            return Mathf.Max(desiredDistance, minEndDistance);
+        }
+
+        return desiredDistance;
     }
 
     private static void ApplyOuterSplitOpeningConstraint(

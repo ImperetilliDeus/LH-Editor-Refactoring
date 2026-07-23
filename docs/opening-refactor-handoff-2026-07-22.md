@@ -324,6 +324,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyOuterSplitOpeningConstraint`.
   - Moved per-opening outer split drag constraint accumulation out of `TryConstrainContainerOuterSplitPointDrag`.
   - Kept null-opening skip behavior, effective side-wall calculation, start/end drag branching, minimum required length updates, start-distance cap, and end-distance floor unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ClampOuterSplitConstrainedDistance`.
+  - Moved constrained wall-distance cap/floor application out of `TryConstrainContainerOuterSplitPointDrag`.
+  - Kept desired-point projection, start cap, end floor, infinity sentinels, constrained point reconstruction, and desired Y restoration unchanged.
 
 ## Verification State
 
@@ -567,6 +571,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Initial parallel catalog execution hit Unity's single-project instance lock; rerunning the catalog test sequentially with `Unity.com` passed.
 - After extracting outer split opening constraint helper, Unity script compilation succeeded.
 - After extracting outer split opening constraint helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting outer split distance clamp helper, Unity script compilation succeeded.
+- After extracting outer split distance clamp helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -867,6 +875,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-outer-split-constraint-helper-catalog-tests.xml`
   - `Logs/opening-outer-split-constraint-helper-rail-regression.log`
   - `Logs/opening-outer-split-constraint-helper-rail-regression.xml`
+  - `Logs/opening-outer-split-distance-clamp-helper-compile.log`
+  - `Logs/opening-outer-split-distance-clamp-helper-catalog-tests.log`
+  - `Logs/opening-outer-split-distance-clamp-helper-catalog-tests.xml`
+  - `Logs/opening-outer-split-distance-clamp-helper-rail-regression.log`
+  - `Logs/opening-outer-split-distance-clamp-helper-rail-regression.xml`
 
 ## Important Context
 
