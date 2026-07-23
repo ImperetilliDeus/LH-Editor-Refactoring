@@ -408,6 +408,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `BuildWallDataFromLayoutSnapshot`.
   - Moved `WallData` construction out of `BuildWallSnapshotFromContainer(OpeningLayoutSnapshot)`.
   - Kept wall snapshot name, visual state, wall data values, vertex ids, handle suppression flags, split-point flags, and restore adapter behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `ApplyPersistentWallId`.
+  - Moved selected-wall persistent id transfer out of `GetOrCreateOpeningContainer`.
+  - Kept container creation inputs, selected-wall data null guard, persistent id source, handle unregister order, pending room-refresh tracking, length-display clearing, and wall destroy behavior unchanged.
 
 ## Verification State
 
@@ -735,6 +739,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting layout wall-data helper, Unity script compilation succeeded.
 - After extracting layout wall-data helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting persistent wall id helper, Unity script compilation succeeded.
+- After extracting persistent wall id helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1140,6 +1148,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-layout-wall-data-helper-catalog-tests.xml`
   - `Logs/opening-layout-wall-data-helper-rail-regression.log`
   - `Logs/opening-layout-wall-data-helper-rail-regression.xml`
+  - `Logs/opening-persistent-wall-id-helper-compile.log`
+  - `Logs/opening-persistent-wall-id-helper-catalog-tests.log`
+  - `Logs/opening-persistent-wall-id-helper-catalog-tests.xml`
+  - `Logs/opening-persistent-wall-id-helper-rail-regression.log`
+  - `Logs/opening-persistent-wall-id-helper-rail-regression.xml`
 
 ## Important Context
 

@@ -265,10 +265,7 @@ public partial class WallOpeningPlacementManager
             selectedWall.IsStartSplitPoint,
             selectedWall.IsEndSplitPoint,
             true);
-        if (selectedWall.Data != null)
-        {
-            container.SetPersistentWallId(selectedWall.Data.id);
-        }
+        ApplyPersistentWallId(container, selectedWall);
 
         if (handleManager != null)
         {
@@ -280,6 +277,16 @@ public partial class WallOpeningPlacementManager
         selectedWall.ClearLengthDisplay(wallLengthDisplay);
         DestroyWallObject(selectedWall);
         return container.transform;
+    }
+
+    private static void ApplyPersistentWallId(WallOpeningContainer container, Wall selectedWall)
+    {
+        if (container == null || selectedWall == null || selectedWall.Data == null)
+        {
+            return;
+        }
+
+        container.SetPersistentWallId(selectedWall.Data.id);
     }
 
     private void DestroyWallObject(Wall wall)
