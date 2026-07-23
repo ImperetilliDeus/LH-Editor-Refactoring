@@ -356,6 +356,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ShouldPreserveContainerChildDuringVisualClear`.
   - Moved container child preservation checks out of `ClearGeneratedContainerVisuals`.
   - Kept reverse child iteration, null-child skip behavior, direct `WallOpening` preservation, nested `WallOpening` preservation, segment-group preservation, and orphan child destroy behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ClearSelectedGeneratedWallDuringDrag`.
+  - Moved drag-only selected generated-wall clearing out of `ClearGeneratedContainerVisuals`.
+  - Kept null-wall skip behavior, drag-only selection clearing, selected-wall comparison, opening-selection-preserving clear call, length-display clearing order, and drag/non-drag cleanup order unchanged.
 
 ## Verification State
 
@@ -631,6 +635,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container child preserve helper, Unity script compilation succeeded.
 - After extracting container child preserve helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting drag selected-wall clear helper, Unity script compilation succeeded.
+- After extracting drag selected-wall clear helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -971,6 +979,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-child-preserve-helper-catalog-tests.xml`
   - `Logs/opening-container-child-preserve-helper-rail-regression.log`
   - `Logs/opening-container-child-preserve-helper-rail-regression.xml`
+  - `Logs/opening-drag-selected-wall-clear-helper-compile.log`
+  - `Logs/opening-drag-selected-wall-clear-helper-catalog-tests.log`
+  - `Logs/opening-drag-selected-wall-clear-helper-catalog-tests.xml`
+  - `Logs/opening-drag-selected-wall-clear-helper-rail-regression.log`
+  - `Logs/opening-drag-selected-wall-clear-helper-rail-regression.xml`
 
 ## Important Context
 

@@ -764,10 +764,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 continue;
             }
 
-            if (isDragging && wallSelectionManager != null && wallSelectionManager.SelectedWall == walls[i].gameObject)
-            {
-                wallSelectionManager.SetSelectedWallPreservingOpeningSelection(null);
-            }
+            ClearSelectedGeneratedWallDuringDrag(walls[i], isDragging);
 
             walls[i].ClearLengthDisplay(wallLengthDisplay);
 
@@ -795,6 +792,14 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             }
 
             Destroy(child.gameObject);
+        }
+    }
+
+    private void ClearSelectedGeneratedWallDuringDrag(Wall wall, bool isDragging)
+    {
+        if (isDragging && wallSelectionManager != null && wallSelectionManager.SelectedWall == wall.gameObject)
+        {
+            wallSelectionManager.SetSelectedWallPreservingOpeningSelection(null);
         }
     }
 
