@@ -344,6 +344,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CalculateSelectionSegmentDistanceDelta`.
   - Moved selection-refresh midpoint projection and preferred-distance delta calculation out of `FindClosestSegmentToDistance`.
   - Kept segment candidate filtering, wall direction projection, absolute delta scoring, best-wall update, and null fallback unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `MoveWallToDeactivatedHolderForDrag`.
+  - Moved drag rebuild wall handle/UI cleanup and deactivated-holder reparenting out of `ClearGeneratedContainerVisuals`.
+  - Kept null-wall skip behavior, selected-wall clearing order, length-display clearing order, handle unregistration, selection proxy cleanup, drag/non-drag branching, and non-drag destroy behavior unchanged.
 
 ## Verification State
 
@@ -607,6 +611,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting selection segment distance helper, Unity script compilation succeeded.
 - After extracting selection segment distance helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting drag wall deactivation helper, Unity script compilation succeeded.
+- After extracting drag wall deactivation helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -932,6 +940,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-selection-segment-distance-helper-catalog-tests.xml`
   - `Logs/opening-selection-segment-distance-helper-rail-regression.log`
   - `Logs/opening-selection-segment-distance-helper-rail-regression.xml`
+  - `Logs/opening-drag-wall-deactivation-helper-compile.log`
+  - `Logs/opening-drag-wall-deactivation-helper-catalog-tests.log`
+  - `Logs/opening-drag-wall-deactivation-helper-catalog-tests.xml`
+  - `Logs/opening-drag-wall-deactivation-helper-rail-regression.log`
+  - `Logs/opening-drag-wall-deactivation-helper-rail-regression.xml`
 
 ## Important Context
 

@@ -773,19 +773,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
             if (isDragging)
             {
-                if (handleManager != null)
-                {
-                    handleManager.UnregisterWall(walls[i].gameObject);
-                }
-
-                WallSelectionUIProxy selectionProxy = walls[i].GetComponent<WallSelectionUIProxy>();
-                if (selectionProxy != null)
-                {
-                    selectionProxy.DestroyUI();
-                    Destroy(selectionProxy);
-                }
-
-                walls[i].transform.SetParent(deactivatedWallsHolder, false);
+                MoveWallToDeactivatedHolderForDrag(walls[i]);
             }
             else
             {
@@ -822,6 +810,23 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
             Destroy(child.gameObject);
         }
+    }
+
+    private void MoveWallToDeactivatedHolderForDrag(Wall wall)
+    {
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(wall.gameObject);
+        }
+
+        WallSelectionUIProxy selectionProxy = wall.GetComponent<WallSelectionUIProxy>();
+        if (selectionProxy != null)
+        {
+            selectionProxy.DestroyUI();
+            Destroy(selectionProxy);
+        }
+
+        wall.transform.SetParent(deactivatedWallsHolder, false);
     }
 
     private GameObject CreateStandaloneWallSegment(
