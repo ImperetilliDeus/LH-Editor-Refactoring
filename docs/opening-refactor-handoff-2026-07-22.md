@@ -260,6 +260,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added an internal helper for creating and initializing `WallOpeningContainer` objects.
   - Moved repeated container `GameObject` creation, transform reset, optional wall-layer application, component creation, and `Initialize` calls out of `WallOpeningPlacementManager.LayoutContainers.cs` and `WallOpeningPlacementManager.LayoutSnapshots.cs`.
   - Preserved the existing layer behavior: selected-wall and split-container creation still apply the wall layer, while snapshot container restore keeps the prior no-layer path.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Reused `RestoreWallFromSnapshot` inside `RestoreContainerIfEmpty`.
+  - Removed the local duplicate restored-wall creation and handle-manager registration block.
+  - Kept empty-container detection, snapshot capture/removal, topology refresh, wall registry refresh, and marker dirty behavior unchanged.
 
 ## Verification State
 
@@ -440,6 +444,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
   - Unity initially reported another instance had the project open; waiting for Unity cleanup and rerunning with `Unity.com` resolved it.
+- After reusing the restored-wall helper in empty-container restore, Unity script compilation succeeded.
+- After reusing the restored-wall helper in empty-container restore, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -658,6 +666,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-factory-catalog-tests.xml`
   - `Logs/opening-container-factory-rail-regression.log`
   - `Logs/opening-container-factory-rail-regression.xml`
+  - `Logs/opening-empty-restore-wall-helper-compile.log`
+  - `Logs/opening-empty-restore-wall-helper-catalog-tests.log`
+  - `Logs/opening-empty-restore-wall-helper-catalog-tests.xml`
+  - `Logs/opening-empty-restore-wall-helper-rail-regression.log`
+  - `Logs/opening-empty-restore-wall-helper-rail-regression.xml`
 
 ## Important Context
 

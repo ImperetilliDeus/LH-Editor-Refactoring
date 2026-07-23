@@ -124,11 +124,7 @@ public partial class WallOpeningPlacementManager
 
         UndoRedoManager.WallStateSnapshot wallSnapshot = BuildWallSnapshotFromContainer(container);
         RemoveLayout(CaptureLayoutSnapshot(container));
-        GameObject restoredWall = CreateRestoredWall(wallSnapshot);
-        if (restoredWall != null && handleManager != null)
-        {
-            handleManager.RegisterWall(restoredWall);
-        }
+        GameObject restoredWall = RestoreWallFromSnapshot(wallSnapshot);
 
         RoomTopologyEvents.RequestRefreshAll();
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
