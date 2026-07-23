@@ -131,8 +131,7 @@ public partial class WallOpeningPlacementManager
             return null;
         }
 
-        CollectOpenings(container, cachedOpenings);
-        if (cachedOpenings.Count > 0)
+        if (!IsContainerEmpty(container))
         {
             return null;
         }
@@ -146,6 +145,12 @@ public partial class WallOpeningPlacementManager
 
         MarkMarkerVisualsDirty();
         return restoredWall;
+    }
+
+    private bool IsContainerEmpty(WallOpeningContainer container)
+    {
+        CollectOpenings(container, cachedOpenings);
+        return cachedOpenings.Count == 0;
     }
 
     private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(WallOpeningContainer container)

@@ -392,6 +392,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `DestroyWallObject`.
   - Moved repeated wall GameObject deactivate/destroy calls out of standalone layout removal and opening-container conversion.
   - Kept handle unregister order, pending room-refresh tracking, length-display clearing, GameObject active-state change, and destroy timing unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `IsContainerEmpty`.
+  - Moved empty-container opening collection/count check out of `RestoreContainerIfEmpty`.
+  - Kept null-container guard, cached opening collection, restore skip behavior, snapshot capture, layout removal, wall restore, registry refresh, and marker-dirty timing unchanged.
 
 ## Verification State
 
@@ -703,6 +707,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting wall destroy helper, Unity script compilation succeeded.
 - After extracting wall destroy helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting empty-container check helper, Unity script compilation succeeded.
+- After extracting empty-container check helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1088,6 +1096,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-wall-destroy-helper-catalog-tests.xml`
   - `Logs/opening-wall-destroy-helper-rail-regression.log`
   - `Logs/opening-wall-destroy-helper-rail-regression.xml`
+  - `Logs/opening-empty-container-check-helper-compile.log`
+  - `Logs/opening-empty-container-check-helper-catalog-tests.log`
+  - `Logs/opening-empty-container-check-helper-catalog-tests.xml`
+  - `Logs/opening-empty-container-check-helper-rail-regression.log`
+  - `Logs/opening-empty-container-check-helper-rail-regression.xml`
 
 ## Important Context
 
