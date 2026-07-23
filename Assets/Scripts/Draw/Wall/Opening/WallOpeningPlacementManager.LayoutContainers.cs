@@ -88,16 +88,21 @@ public partial class WallOpeningPlacementManager
                 continue;
             }
 
-            if (wall.name == snapshot.name &&
-                snapshot.wallData != null &&
-                (wall.Data.startPoint - snapshot.wallData.startPoint).sqrMagnitude <= 0.0001f &&
-                (wall.Data.endPoint - snapshot.wallData.endPoint).sqrMagnitude <= 0.0001f)
+            if (IsMatchingStandaloneWall(wall, snapshot))
             {
                 return wall;
             }
         }
 
         return null;
+    }
+
+    private static bool IsMatchingStandaloneWall(Wall wall, UndoRedoManager.WallStateSnapshot snapshot)
+    {
+        return wall.name == snapshot.name &&
+            snapshot.wallData != null &&
+            (wall.Data.startPoint - snapshot.wallData.startPoint).sqrMagnitude <= 0.0001f &&
+            (wall.Data.endPoint - snapshot.wallData.endPoint).sqrMagnitude <= 0.0001f;
     }
 
     private bool HasOtherOpenings(WallOpeningContainer container, WallOpening excludedOpening)
