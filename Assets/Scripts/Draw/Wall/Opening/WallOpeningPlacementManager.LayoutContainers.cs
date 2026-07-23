@@ -30,6 +30,14 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
+        ClearContainerWallRegistrations(container);
+
+        container.gameObject.SetActive(false);
+        Destroy(container.gameObject);
+    }
+
+    private void ClearContainerWallRegistrations(Transform container)
+    {
         WallHierarchyUtility.CollectWalls(container, cachedWalls);
         for (int i = 0; i < cachedWalls.Count; i++)
         {
@@ -44,9 +52,6 @@ public partial class WallOpeningPlacementManager
                 handleManager.UnregisterWall(cachedWalls[i].gameObject);
             }
         }
-
-        container.gameObject.SetActive(false);
-        Destroy(container.gameObject);
     }
 
     private void RemoveStandaloneLayout(UndoRedoManager.WallStateSnapshot wallSnapshot)

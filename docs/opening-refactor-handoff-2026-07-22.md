@@ -416,6 +416,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RemoveOriginalWallAfterContainerCreation`.
   - Moved original selected-wall cleanup out of `GetOrCreateOpeningContainer` after opening-container creation.
   - Kept persistent id application order, handle unregister guard, pending room-refresh tracking, length-display clearing, wall GameObject deactivate/destroy behavior, and returned container transform unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `ClearContainerWallRegistrations`.
+  - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
+  - Kept missing-container guard, cached wall collection, null-wall skip behavior, clear-before-unregister order, handle manager guard, container deactivate/destroy behavior, and remove-layout caller behavior unchanged.
 
 ## Verification State
 
@@ -751,6 +755,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting original wall removal helper, Unity script compilation succeeded.
 - After extracting original wall removal helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container wall registration cleanup helper, Unity script compilation succeeded.
+- After extracting container wall registration cleanup helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1166,6 +1174,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-original-wall-removal-helper-catalog-tests.xml`
   - `Logs/opening-original-wall-removal-helper-rail-regression.log`
   - `Logs/opening-original-wall-removal-helper-rail-regression.xml`
+  - `Logs/opening-container-wall-registration-helper-compile.log`
+  - `Logs/opening-container-wall-registration-helper-catalog-tests.log`
+  - `Logs/opening-container-wall-registration-helper-catalog-tests.xml`
+  - `Logs/opening-container-wall-registration-helper-rail-regression.log`
+  - `Logs/opening-container-wall-registration-helper-rail-regression.xml`
 
 ## Important Context
 
