@@ -442,13 +442,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         RebuildContainer(container, true);
 
-        if (wallSelectionManager != null && wallSelectionManager.SelectedWall == null)
-        {
-            // After clearing selection during drag, re-select the appropriate segment
-            bool startDragged = (newStart - baselineSnapshot.wallStart).sqrMagnitude > 0.001f;
-            float preferredDistance = startDragged ? 0f : newLength;
-            RefreshSelectedWallForContainer(container, preferredDistance);
-        }
+        RefreshSelectedWallAfterContainerSpanDrag(container, newStart, newLength, baselineSnapshot);
     }
 
     private static float ResolveOpeningCenterDistanceAfterSpanChange(
@@ -486,6 +480,23 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private static bool HasValidContainerSpanLength(float spanLength)
     {
         return spanLength > MinimumWallSegmentLength;
+    }
+
+    private void RefreshSelectedWallAfterContainerSpanDrag(
+        WallOpeningContainer container,
+        Vector3 newStart,
+        float newLength,
+        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot)
+    {
+        if (wallSelectionManager == null || wallSelectionManager.SelectedWall != null)
+        {
+            return;
+        }
+
+        // After clearing selection during drag, re-select the appropriate segment.
+        bool startDragged = (newStart - baselineSnapshot.wallStart).sqrMagnitude > 0.001f;
+        float preferredDistance = startDragged ? 0f : newLength;
+        RefreshSelectedWallForContainer(container, preferredDistance);
     }
 
     private static bool IsContainerSpanTranslated(
