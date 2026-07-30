@@ -387,8 +387,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return;
         }
 
-        container.SetOuterSplitPointFlags(baselineSnapshot.outerStartSplitPoint, baselineSnapshot.outerEndSplitPoint);
-        container.SetHandleSuppression(baselineSnapshot.suppressOuterStartHandle, baselineSnapshot.suppressOuterEndHandle);
+        RestoreContainerSpanDragSnapshotSettings(container, baselineSnapshot);
 
         float oldLength = Vector3.Distance(baselineSnapshot.wallStart, baselineSnapshot.wallEnd);
         float newLength = Vector3.Distance(newStart, newEnd);
@@ -461,6 +460,14 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
             opening.SetCenterDistance(ClampOpeningCenterDistance(container, opening, nextCenterDistance, opening.Width));
         }
+    }
+
+    private static void RestoreContainerSpanDragSnapshotSettings(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot)
+    {
+        container.SetOuterSplitPointFlags(baselineSnapshot.outerStartSplitPoint, baselineSnapshot.outerEndSplitPoint);
+        container.SetHandleSuppression(baselineSnapshot.suppressOuterStartHandle, baselineSnapshot.suppressOuterEndHandle);
     }
 
     private static float ResolveOpeningCenterDistanceAfterSpanChange(

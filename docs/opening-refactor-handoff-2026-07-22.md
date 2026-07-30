@@ -480,6 +480,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RepositionOpeningsAfterContainerSpanChange`.
   - Moved collected opening sort, baseline opening count clamp, center-distance resolution, clamping, and `SetCenterDistance` loop out of `ApplyContainerSpanFromExternalDrag`.
   - Kept cached opening reuse, sort order, baseline snapshot pairing, moved-start/moved-end/translated inputs, old/new length inputs, and opening reposition behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `RestoreContainerSpanDragSnapshotSettings`.
+  - Moved baseline outer split point flag and handle suppression restoration out of `ApplyContainerSpanFromExternalDrag`.
+  - Kept snapshot inputs, container flag restoration order, handle suppression restoration order, and span drag behavior unchanged.
 
 ## Verification State
 
@@ -879,6 +883,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container span opening reposition helper, Unity script compilation succeeded.
 - After extracting container span opening reposition helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container span snapshot settings helper, Unity script compilation succeeded.
+- After extracting container span snapshot settings helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1374,6 +1382,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-span-reposition-helper-catalog-tests.xml`
   - `Logs/opening-container-span-reposition-helper-rail-regression.log`
   - `Logs/opening-container-span-reposition-helper-rail-regression.xml`
+  - `Logs/opening-container-span-snapshot-settings-helper-compile.log`
+  - `Logs/opening-container-span-snapshot-settings-helper-catalog-tests.log`
+  - `Logs/opening-container-span-snapshot-settings-helper-catalog-tests.xml`
+  - `Logs/opening-container-span-snapshot-settings-helper-rail-regression.log`
+  - `Logs/opening-container-span-snapshot-settings-helper-rail-regression.xml`
 
 ## Important Context
 
