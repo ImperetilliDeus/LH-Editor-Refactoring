@@ -406,8 +406,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             newStart = constrainedStart;
         }
 
-        if (!movedStart && movedEnd &&
-            TryConstrainContainerOuterSplitPointDrag(container, container.OuterEndVertexId, newEnd, out Vector3 constrainedEnd))
+        if (TryConstrainContainerEndEndpointDrag(container, newEnd, movedStart, movedEnd, out Vector3 constrainedEnd))
         {
             newEnd = constrainedEnd;
         }
@@ -506,6 +505,18 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         constrainedStart = newStart;
         return movedStart && !movedEnd &&
             TryConstrainContainerOuterSplitPointDrag(container, container.OuterStartVertexId, newStart, out constrainedStart);
+    }
+
+    private bool TryConstrainContainerEndEndpointDrag(
+        WallOpeningContainer container,
+        Vector3 newEnd,
+        bool movedStart,
+        bool movedEnd,
+        out Vector3 constrainedEnd)
+    {
+        constrainedEnd = newEnd;
+        return !movedStart && movedEnd &&
+            TryConstrainContainerOuterSplitPointDrag(container, container.OuterEndVertexId, newEnd, out constrainedEnd);
     }
 
     internal bool TryConstrainContainerOuterSplitPointDrag(
