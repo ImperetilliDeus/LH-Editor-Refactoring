@@ -468,6 +468,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `TryConstrainContainerEndEndpointDrag`.
   - Moved end endpoint outer split constraint guard and apply call out of `ApplyContainerSpanFromExternalDrag`.
   - Kept moved-start/moved-end guard, dragged vertex id, desired end point, constrained end assignment, out default value, and container span drag behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `HasValidContainerSpanLength`.
+  - Moved container span minimum length checks out of `ApplyContainerSpanFromExternalDrag`.
+  - Kept old/new span distance calculation, `MinimumWallSegmentLength` threshold semantics, pre-constraint guard, post-constraint guard, and early-return behavior unchanged.
 
 ## Verification State
 
@@ -855,6 +859,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container end endpoint constraint helper, Unity script compilation succeeded.
 - After extracting container end endpoint constraint helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container span length helper, Unity script compilation succeeded.
+- After extracting container span length helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1335,6 +1343,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-end-endpoint-constraint-helper-catalog-tests.xml`
   - `Logs/opening-container-end-endpoint-constraint-helper-rail-regression.log`
   - `Logs/opening-container-end-endpoint-constraint-helper-rail-regression.xml`
+  - `Logs/opening-container-span-length-helper-compile.log`
+  - `Logs/opening-container-span-length-helper-catalog-tests.log`
+  - `Logs/opening-container-span-length-helper-catalog-tests.xml`
+  - `Logs/opening-container-span-length-helper-rail-regression.log`
+  - `Logs/opening-container-span-length-helper-rail-regression.xml`
 
 ## Important Context
 

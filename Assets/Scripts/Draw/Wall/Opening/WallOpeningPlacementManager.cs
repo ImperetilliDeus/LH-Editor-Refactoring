@@ -392,7 +392,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         float oldLength = Vector3.Distance(baselineSnapshot.wallStart, baselineSnapshot.wallEnd);
         float newLength = Vector3.Distance(newStart, newEnd);
-        if (oldLength <= MinimumWallSegmentLength || newLength <= MinimumWallSegmentLength)
+        if (!HasValidContainerSpanLength(oldLength) || !HasValidContainerSpanLength(newLength))
         {
             return;
         }
@@ -412,7 +412,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
 
         newLength = Vector3.Distance(newStart, newEnd);
-        if (newLength <= MinimumWallSegmentLength)
+        if (!HasValidContainerSpanLength(newLength))
         {
             return;
         }
@@ -481,6 +481,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private static bool HasContainerSpanEndpointMoved(Vector3 currentPoint, Vector3 baselinePoint)
     {
         return (currentPoint - baselinePoint).sqrMagnitude > 0.000001f;
+    }
+
+    private static bool HasValidContainerSpanLength(float spanLength)
+    {
+        return spanLength > MinimumWallSegmentLength;
     }
 
     private static bool IsContainerSpanTranslated(
