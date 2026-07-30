@@ -495,6 +495,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
   - Moved `TryConstrainContainerOuterSplitPointDrag` and its outer split constraint calculation helpers from the main `WallOpeningPlacementManager.cs`.
   - Kept cached opening collection, empty-opening return behavior, side-wall/minimum-length calculations, drag target resolution, minimum-length fallback point resolution, constrained distance clamping, and constrained point output behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+  - Added `AccumulateOuterSplitOpeningConstraints`.
+  - Moved outer split cached-opening iteration, null-opening skip, and per-opening constraint accumulation call out of `TryConstrainContainerOuterSplitPointDrag`.
+  - Kept cached opening source, iteration order, null skip behavior, wall length input, effective side-wall input, and ref constraint accumulation behavior unchanged.
 
 ## Verification State
 
@@ -910,6 +914,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving outer split constraint helpers into the container span drag partial file, Unity script compilation succeeded.
 - After moving outer split constraint helpers into the container span drag partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting outer split constraint accumulation helper, Unity script compilation succeeded.
+- After extracting outer split constraint accumulation helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1425,6 +1433,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-outer-split-constraint-partial-catalog-tests.xml`
   - `Logs/opening-container-outer-split-constraint-partial-rail-regression.log`
   - `Logs/opening-container-outer-split-constraint-partial-rail-regression.xml`
+  - `Logs/opening-outer-split-constraint-accumulation-helper-compile.log`
+  - `Logs/opening-outer-split-constraint-accumulation-helper-catalog-tests.log`
+  - `Logs/opening-outer-split-constraint-accumulation-helper-catalog-tests.xml`
+  - `Logs/opening-outer-split-constraint-accumulation-helper-rail-regression.log`
+  - `Logs/opening-outer-split-constraint-accumulation-helper-rail-regression.xml`
 
 ## Important Context
 

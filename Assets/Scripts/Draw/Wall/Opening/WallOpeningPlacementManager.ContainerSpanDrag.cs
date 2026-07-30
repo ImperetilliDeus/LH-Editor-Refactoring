@@ -224,23 +224,13 @@ public partial class WallOpeningPlacementManager
         float maxStartDistance = float.PositiveInfinity;
         float minEndDistance = float.NegativeInfinity;
 
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            ApplyOuterSplitOpeningConstraint(
-                opening,
-                draggingStart,
-                container.WallLength,
-                effectiveSideWall,
-                ref minimumRequiredLength,
-                ref maxStartDistance,
-                ref minEndDistance);
-        }
+        AccumulateOuterSplitOpeningConstraints(
+            container,
+            draggingStart,
+            effectiveSideWall,
+            ref minimumRequiredLength,
+            ref maxStartDistance,
+            ref minEndDistance);
 
         if (!TryResolveOuterSplitMinimumLengthPoint(
             desiredPoint,
@@ -265,6 +255,33 @@ public partial class WallOpeningPlacementManager
         constrainedPoint = container.WallStart + wallDirection * desiredDistance;
         constrainedPoint.y = desiredPoint.y;
         return true;
+    }
+
+    private void AccumulateOuterSplitOpeningConstraints(
+        WallOpeningContainer container,
+        bool draggingStart,
+        float effectiveSideWall,
+        ref float minimumRequiredLength,
+        ref float maxStartDistance,
+        ref float minEndDistance)
+    {
+        for (int i = 0; i < cachedOpenings.Count; i++)
+        {
+            WallOpening opening = cachedOpenings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            ApplyOuterSplitOpeningConstraint(
+                opening,
+                draggingStart,
+                container.WallLength,
+                effectiveSideWall,
+                ref minimumRequiredLength,
+                ref maxStartDistance,
+                ref minEndDistance);
+        }
     }
 
     private static bool TryResolveOuterSplitDragTarget(
