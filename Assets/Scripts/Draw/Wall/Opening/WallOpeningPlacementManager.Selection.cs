@@ -217,4 +217,70 @@ public partial class WallOpeningPlacementManager
             wallSelectionManager.SetSelectedWallPreservingOpeningSelection(restoredWall);
         }
     }
+
+    private void RefreshSelectedWallForContainer(WallOpeningContainer container, float preferredDistance)
+    {
+        if (container == null || wallSelectionManager == null)
+        {
+            return;
+        }
+
+        GameObject preferredWall = FindClosestSegmentToDistance(container, preferredDistance);
+        if (preferredWall != null)
+        {
+            wallSelectionManager.SetSelectedWallPreservingOpeningSelection(preferredWall);
+        }
+    }
+
+    private GameObject FindClosestSegmentToDistance(WallOpeningContainer container, float preferredDistance)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        GameObject bestWall = null;
+        float bestDelta = float.MaxValue;
+
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (!CanUseSegmentForSelectionRefresh(wall))
+            {
+                continue;
+            }
+
+            float delta = CalculateSelectionSegmentDistanceDelta(
+                wall,
+                container.WallStart,
+                container.WallDirection,
+                preferredDistance);
+            if (delta >= bestDelta)
+            {
+                continue;
+            }
+
+            bestDelta = delta;
+            bestWall = wall.gameObject;
+        }
+
+        return bestWall;
+    }
+
+    private static float CalculateSelectionSegmentDistanceDelta(
+        Wall wall,
+        Vector3 wallStart,
+        Vector3 wallDirection,
+        float preferredDistance)
+    {
+        Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
+        float distanceAlongWall = Vector3.Dot(midpoint - wallStart, wallDirection);
+        return Mathf.Abs(distanceAlongWall - preferredDistance);
+    }
+
+    private static bool CanUseSegmentForSelectionRefresh(Wall wall)
+    {
+        return wall != null && !WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall);
+    }
 }
