@@ -288,18 +288,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return;
         }
 
-        Wall firstWallComponent = firstWall.GetComponent<Wall>();
-        Wall secondWallComponent = secondWall.GetComponent<Wall>();
-        List<Wall> createdWalls = new List<Wall>();
-        if (firstWallComponent != null)
-        {
-            createdWalls.Add(firstWallComponent);
-        }
-
-        if (secondWallComponent != null)
-        {
-            createdWalls.Add(secondWallComponent);
-        }
+        List<Wall> createdWalls = CollectCreatedStandaloneSplitWalls(firstWall, secondWall);
 
         if (handleManager != null)
         {
@@ -332,6 +321,24 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private static List<Wall> CollectCreatedStandaloneSplitWalls(GameObject firstWall, GameObject secondWall)
+    {
+        Wall firstWallComponent = firstWall.GetComponent<Wall>();
+        Wall secondWallComponent = secondWall.GetComponent<Wall>();
+        List<Wall> createdWalls = new List<Wall>();
+        if (firstWallComponent != null)
+        {
+            createdWalls.Add(firstWallComponent);
+        }
+
+        if (secondWallComponent != null)
+        {
+            createdWalls.Add(secondWallComponent);
+        }
+
+        return createdWalls;
     }
 
     private void DestroyCreatedStandaloneSplitWall(GameObject wallObject)

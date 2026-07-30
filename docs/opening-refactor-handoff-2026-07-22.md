@@ -428,6 +428,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `DestroyCreatedStandaloneSplitWall`.
   - Moved first split-wall unregister/destroy rollback out of `SplitSelectedWall` when second wall creation fails.
   - Kept second-wall failure guard, handle manager guard, unregister-before-destroy order, destroy call, early return behavior, and standalone split behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `CollectCreatedStandaloneSplitWalls`.
+  - Moved created split-wall `Wall` component lookup and list construction out of `SplitSelectedWall`.
+  - Kept first/second wall lookup order, null component skip behavior, created wall list order, topology refresh input, undo recording timing, and standalone split behavior unchanged.
 
 ## Verification State
 
@@ -775,6 +779,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting standalone split failure cleanup helper, Unity script compilation succeeded.
 - After extracting standalone split failure cleanup helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting created split walls helper, Unity script compilation succeeded.
+- After extracting created split walls helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1205,6 +1213,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-split-failure-cleanup-helper-catalog-tests.xml`
   - `Logs/opening-standalone-split-failure-cleanup-helper-rail-regression.log`
   - `Logs/opening-standalone-split-failure-cleanup-helper-rail-regression.xml`
+  - `Logs/opening-created-split-walls-helper-compile.log`
+  - `Logs/opening-created-split-walls-helper-catalog-tests.log`
+  - `Logs/opening-created-split-walls-helper-catalog-tests.xml`
+  - `Logs/opening-created-split-walls-helper-rail-regression.log`
+  - `Logs/opening-created-split-walls-helper-rail-regression.xml`
 
 ## Important Context
 
