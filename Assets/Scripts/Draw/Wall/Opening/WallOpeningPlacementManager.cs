@@ -418,7 +418,29 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
 
         container.SetWallSpan(newStart, newEnd);
+        RepositionOpeningsAfterContainerSpanChange(
+            container,
+            baselineSnapshot,
+            oldLength,
+            newLength,
+            movedStart,
+            movedEnd,
+            translated);
 
+        RebuildContainer(container, true);
+
+        RefreshSelectedWallAfterContainerSpanDrag(container, newStart, newLength, baselineSnapshot);
+    }
+
+    private void RepositionOpeningsAfterContainerSpanChange(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot,
+        float oldLength,
+        float newLength,
+        bool movedStart,
+        bool movedEnd,
+        bool translated)
+    {
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
 
@@ -439,10 +461,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
             opening.SetCenterDistance(ClampOpeningCenterDistance(container, opening, nextCenterDistance, opening.Width));
         }
-
-        RebuildContainer(container, true);
-
-        RefreshSelectedWallAfterContainerSpanDrag(container, newStart, newLength, baselineSnapshot);
     }
 
     private static float ResolveOpeningCenterDistanceAfterSpanChange(
