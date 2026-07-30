@@ -400,15 +400,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         bool movedEnd = HasContainerSpanEndpointMoved(newEnd, baselineSnapshot.wallEnd);
         bool translated = IsContainerSpanTranslated(newStart, newEnd, baselineSnapshot, movedStart, movedEnd);
 
-        if (TryConstrainContainerStartEndpointDrag(container, newStart, movedStart, movedEnd, out Vector3 constrainedStart))
-        {
-            newStart = constrainedStart;
-        }
-
-        if (TryConstrainContainerEndEndpointDrag(container, newEnd, movedStart, movedEnd, out Vector3 constrainedEnd))
-        {
-            newEnd = constrainedEnd;
-        }
+        ApplyContainerSpanEndpointConstraints(container, ref newStart, ref newEnd, movedStart, movedEnd);
 
         newLength = Vector3.Distance(newStart, newEnd);
         if (!HasValidContainerSpanLength(newLength))
@@ -505,6 +497,24 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private static bool HasValidContainerSpanLength(float spanLength)
     {
         return spanLength > MinimumWallSegmentLength;
+    }
+
+    private void ApplyContainerSpanEndpointConstraints(
+        WallOpeningContainer container,
+        ref Vector3 newStart,
+        ref Vector3 newEnd,
+        bool movedStart,
+        bool movedEnd)
+    {
+        if (TryConstrainContainerStartEndpointDrag(container, newStart, movedStart, movedEnd, out Vector3 constrainedStart))
+        {
+            newStart = constrainedStart;
+        }
+
+        if (TryConstrainContainerEndEndpointDrag(container, newEnd, movedStart, movedEnd, out Vector3 constrainedEnd))
+        {
+            newEnd = constrainedEnd;
+        }
     }
 
     private void RefreshSelectedWallAfterContainerSpanDrag(

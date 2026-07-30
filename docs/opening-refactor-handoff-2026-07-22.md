@@ -484,6 +484,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RestoreContainerSpanDragSnapshotSettings`.
   - Moved baseline outer split point flag and handle suppression restoration out of `ApplyContainerSpanFromExternalDrag`.
   - Kept snapshot inputs, container flag restoration order, handle suppression restoration order, and span drag behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ApplyContainerSpanEndpointConstraints`.
+  - Moved start/end endpoint constraint helper calls and constrained endpoint assignments out of `ApplyContainerSpanFromExternalDrag`.
+  - Kept moved-start/moved-end inputs, start constraint order, end constraint order, ref endpoint updates, and post-constraint length validation behavior unchanged.
 
 ## Verification State
 
@@ -887,6 +891,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container span snapshot settings helper, Unity script compilation succeeded.
 - After extracting container span snapshot settings helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container span endpoint constraints helper, Unity script compilation succeeded.
+- After extracting container span endpoint constraints helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1387,6 +1395,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-span-snapshot-settings-helper-catalog-tests.xml`
   - `Logs/opening-container-span-snapshot-settings-helper-rail-regression.log`
   - `Logs/opening-container-span-snapshot-settings-helper-rail-regression.xml`
+  - `Logs/opening-container-span-endpoint-constraints-helper-compile.log`
+  - `Logs/opening-container-span-endpoint-constraints-helper-catalog-tests.log`
+  - `Logs/opening-container-span-endpoint-constraints-helper-catalog-tests.xml`
+  - `Logs/opening-container-span-endpoint-constraints-helper-rail-regression.log`
+  - `Logs/opening-container-span-endpoint-constraints-helper-rail-regression.xml`
 
 ## Important Context
 
