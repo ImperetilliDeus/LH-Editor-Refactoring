@@ -399,9 +399,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         bool movedStart = HasContainerSpanEndpointMoved(newStart, baselineSnapshot.wallStart);
         bool movedEnd = HasContainerSpanEndpointMoved(newEnd, baselineSnapshot.wallEnd);
-        Vector3 startDelta = newStart - baselineSnapshot.wallStart;
-        Vector3 endDelta = newEnd - baselineSnapshot.wallEnd;
-        bool translated = movedStart && movedEnd && (startDelta - endDelta).sqrMagnitude <= 0.000001f;
+        bool translated = IsContainerSpanTranslated(newStart, newEnd, baselineSnapshot, movedStart, movedEnd);
 
         if (movedStart && !movedEnd &&
             TryConstrainContainerOuterSplitPointDrag(container, container.OuterStartVertexId, newStart, out Vector3 constrainedStart))
@@ -485,6 +483,18 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private static bool HasContainerSpanEndpointMoved(Vector3 currentPoint, Vector3 baselinePoint)
     {
         return (currentPoint - baselinePoint).sqrMagnitude > 0.000001f;
+    }
+
+    private static bool IsContainerSpanTranslated(
+        Vector3 newStart,
+        Vector3 newEnd,
+        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot,
+        bool movedStart,
+        bool movedEnd)
+    {
+        Vector3 startDelta = newStart - baselineSnapshot.wallStart;
+        Vector3 endDelta = newEnd - baselineSnapshot.wallEnd;
+        return movedStart && movedEnd && (startDelta - endDelta).sqrMagnitude <= 0.000001f;
     }
 
     internal bool TryConstrainContainerOuterSplitPointDrag(

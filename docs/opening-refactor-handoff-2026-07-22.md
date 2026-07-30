@@ -456,6 +456,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `HasContainerSpanEndpointMoved`.
   - Moved container span endpoint moved threshold check out of `ApplyContainerSpanFromExternalDrag`.
   - Kept baseline point comparison, squared-distance threshold, moved-start/moved-end values, translated calculation inputs, drag constraint behavior, and container span drag behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `IsContainerSpanTranslated`.
+  - Moved container span translation delta calculation and threshold check out of `ApplyContainerSpanFromExternalDrag`.
+  - Kept moved-start/moved-end inputs, baseline delta comparisons, squared-distance threshold, translated value, opening center-distance resolution inputs, and container span drag behavior unchanged.
 
 ## Verification State
 
@@ -831,6 +835,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container span endpoint moved helper, Unity script compilation succeeded.
 - After extracting container span endpoint moved helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container span translated helper, Unity script compilation succeeded.
+- After extracting container span translated helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1296,6 +1304,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-span-endpoint-moved-helper-catalog-tests.xml`
   - `Logs/opening-container-span-endpoint-moved-helper-rail-regression.log`
   - `Logs/opening-container-span-endpoint-moved-helper-rail-regression.xml`
+  - `Logs/opening-container-span-translated-helper-compile.log`
+  - `Logs/opening-container-span-translated-helper-catalog-tests.log`
+  - `Logs/opening-container-span-translated-helper-catalog-tests.xml`
+  - `Logs/opening-container-span-translated-helper-rail-regression.log`
+  - `Logs/opening-container-span-translated-helper-rail-regression.xml`
 
 ## Important Context
 
