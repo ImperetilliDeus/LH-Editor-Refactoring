@@ -530,6 +530,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added a new partial file with `.meta`.
   - Moved `RebuildContainer`, `RebuildContainerLayout`, and `ClearDeactivatedWallsHolder` from the main `WallOpeningPlacementManager.cs`.
   - Kept transient drag begin/end scope, non-drag deactivated holder clearing, rebuild controller callback wiring, cached list inputs, and destroy behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `ResolveOpeningUIControllers` and `CreateDeactivatedWallsHolder`.
+  - Moved UI controller fallback lookup and drag deactivated-wall holder creation out of `Awake`.
+  - Kept initialization order, lookup type, holder name, parent, inactive state, assigned transform, and awake registration flow unchanged.
 
 ## Verification State
 
@@ -985,6 +989,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving rebuild helpers into a partial file, Unity script compilation succeeded.
 - After moving rebuild helpers into a partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting awake initialization helpers, Unity script compilation succeeded.
+- After extracting awake initialization helpers, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1550,6 +1558,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-rebuild-partial-move-catalog-tests.xml`
   - `Logs/opening-rebuild-partial-move-rail-regression.log`
   - `Logs/opening-rebuild-partial-move-rail-regression.xml`
+  - `Logs/opening-awake-initialization-helpers-compile.log`
+  - `Logs/opening-awake-initialization-helpers-catalog-tests.log`
+  - `Logs/opening-awake-initialization-helpers-catalog-tests.xml`
+  - `Logs/opening-awake-initialization-helpers-rail-regression.log`
+  - `Logs/opening-awake-initialization-helpers-rail-regression.xml`
 
 ## Important Context
 

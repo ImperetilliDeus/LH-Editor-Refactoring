@@ -115,25 +115,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         ResolveReferences();
 
-        if (doorUIController == null)
-        {
-            doorUIController = GetComponentInChildren<DoorOpeningUIController>(true);
-        }
-
-        if (windowUIController == null)
-        {
-            windowUIController = GetComponentInChildren<WindowOpeningUIController>(true);
-        }
+        ResolveOpeningUIControllers();
 
         LayerUtility.ResolveCanvasByNameOrFirst(ref previewCanvas, LayerUtility.DefaultCanvasName);
 
-        // Create a holder for objects that are deactivated during a drag.
-        // This prevents them from being found by GetComponentsInChildren while keeping them
-        // alive for the HandleManager's drag operation.
-        GameObject tempHolder = new GameObject("DeactivatedWallHolder");
-        tempHolder.transform.SetParent(transform, false);
-        tempHolder.SetActive(false);
-        deactivatedWallsHolder = tempHolder.transform;
+        CreateDeactivatedWallsHolder();
         EnsureWallRoot();
         EnsureCachedResources();
         BindButtons();
@@ -145,6 +131,28 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         RefreshOpeningDetailInputs(true);
         CacheCameraState();
         EditorInputManager.Instance.RegisterHandler(EditorMode.DetailEdit, this);
+    }
+
+    private void ResolveOpeningUIControllers()
+    {
+        if (doorUIController == null)
+        {
+            doorUIController = GetComponentInChildren<DoorOpeningUIController>(true);
+        }
+
+        if (windowUIController == null)
+        {
+            windowUIController = GetComponentInChildren<WindowOpeningUIController>(true);
+        }
+    }
+
+    private void CreateDeactivatedWallsHolder()
+    {
+        // This holder keeps drag-deactivated walls alive for HandleManager while hiding them from child scans.
+        GameObject tempHolder = new GameObject("DeactivatedWallHolder");
+        tempHolder.transform.SetParent(transform, false);
+        tempHolder.SetActive(false);
+        deactivatedWallsHolder = tempHolder.transform;
     }
 
     private void OnValidate()
