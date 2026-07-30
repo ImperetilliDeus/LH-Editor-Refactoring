@@ -32,6 +32,16 @@ public partial class WallOpeningPlacementManager
 
         ClearContainerWallRegistrations(container);
 
+        DestroyContainerObject(container);
+    }
+
+    private void DestroyContainerObject(Transform container)
+    {
+        if (container == null)
+        {
+            return;
+        }
+
         container.gameObject.SetActive(false);
         Destroy(container.gameObject);
     }

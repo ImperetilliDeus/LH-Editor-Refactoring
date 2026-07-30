@@ -420,6 +420,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
   - Kept missing-container guard, cached wall collection, null-wall skip behavior, clear-before-unregister order, handle manager guard, container deactivate/destroy behavior, and remove-layout caller behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `DestroyContainerObject`.
+  - Moved container GameObject deactivate/destroy calls out of `RemoveContainerLayout`.
+  - Kept missing-container guard, wall registration cleanup order, null-container guard, active-state change, destroy call, and remove-layout caller behavior unchanged.
 
 ## Verification State
 
@@ -759,6 +763,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container wall registration cleanup helper, Unity script compilation succeeded.
 - After extracting container wall registration cleanup helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container destroy helper, Unity script compilation succeeded.
+- After extracting container destroy helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1179,6 +1187,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-wall-registration-helper-catalog-tests.xml`
   - `Logs/opening-container-wall-registration-helper-rail-regression.log`
   - `Logs/opening-container-wall-registration-helper-rail-regression.xml`
+  - `Logs/opening-container-destroy-helper-compile.log`
+  - `Logs/opening-container-destroy-helper-catalog-tests.log`
+  - `Logs/opening-container-destroy-helper-catalog-tests.xml`
+  - `Logs/opening-container-destroy-helper-rail-regression.log`
+  - `Logs/opening-container-destroy-helper-rail-regression.xml`
 
 ## Important Context
 
