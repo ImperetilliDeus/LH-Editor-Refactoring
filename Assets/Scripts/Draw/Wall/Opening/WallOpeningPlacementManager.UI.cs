@@ -17,6 +17,28 @@ public partial class WallOpeningPlacementManager
         return wallSelectionManager.SelectedWall.GetComponent<Wall>();
     }
 
+    public float UnitsToMillimeters(float units)
+    {
+        return MeasurementUnits.UnitsToMillimeters(units);
+    }
+
+    public float GetSelectedOpeningBottomOffsetMillimeters(float fallbackValue, OpeningPlacementType requiredType)
+    {
+        if (!CanUseSelectedOpeningBottomOffset(requiredType))
+        {
+            return fallbackValue;
+        }
+
+        return UnitsToMillimeters(SelectedOpening.BottomY - SelectedOpening.Container.WallBottomY);
+    }
+
+    private bool CanUseSelectedOpeningBottomOffset(OpeningPlacementType requiredType)
+    {
+        return SelectedOpening != null
+            && SelectedOpening.Type == requiredType
+            && SelectedOpening.Container != null;
+    }
+
     public void ApplySelectedDoorWidthFromInput(string inputText)
     {
         ApplySelectedOpeningDimensionFromInput(

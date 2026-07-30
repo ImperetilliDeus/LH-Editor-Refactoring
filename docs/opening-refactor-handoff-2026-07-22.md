@@ -519,6 +519,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Moved `CreateStandaloneWallSegment` from the main `WallOpeningPlacementManager.cs`.
   - Kept standalone wall geometry factory delegation, wall root/cube mesh/length display/handle manager inputs, vertex/handle/split flags, visual state, minimum segment length, and dragging flag behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Moved `UnitsToMillimeters`, `GetSelectedOpeningBottomOffsetMillimeters`, and `CanUseSelectedOpeningBottomOffset` from the main `WallOpeningPlacementManager.cs`.
+  - Kept public UI-facing API names, selected opening/type/container guard, fallback return behavior, bottom offset calculation, and unit conversion behavior unchanged.
 
 ## Verification State
 
@@ -962,6 +965,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving standalone wall segment wrapper into the layout containers partial file, Unity script compilation succeeded.
 - After moving standalone wall segment wrapper into the layout containers partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving UI measurement helper APIs into the UI partial file, Unity script compilation succeeded.
+- After moving UI measurement helper APIs into the UI partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1512,6 +1519,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-wall-segment-wrapper-partial-move-catalog-tests.xml`
   - `Logs/opening-standalone-wall-segment-wrapper-partial-move-rail-regression.log`
   - `Logs/opening-standalone-wall-segment-wrapper-partial-move-rail-regression.xml`
+  - `Logs/opening-ui-measurement-helper-partial-move-compile.log`
+  - `Logs/opening-ui-measurement-helper-partial-move-catalog-tests.log`
+  - `Logs/opening-ui-measurement-helper-partial-move-catalog-tests.xml`
+  - `Logs/opening-ui-measurement-helper-partial-move-rail-regression.log`
+  - `Logs/opening-ui-measurement-helper-partial-move-rail-regression.xml`
 
 ## Important Context
 
