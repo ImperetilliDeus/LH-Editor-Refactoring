@@ -243,6 +243,26 @@ public partial class WallOpeningPlacementManager
             return true;
         }
 
+        constrainedPoint = ApplyOuterSplitDistanceConstraints(
+            container,
+            constrainedPoint,
+            desiredPoint.y,
+            draggingStart,
+            draggingEnd,
+            maxStartDistance,
+            minEndDistance);
+        return true;
+    }
+
+    private static Vector3 ApplyOuterSplitDistanceConstraints(
+        WallOpeningContainer container,
+        Vector3 constrainedPoint,
+        float desiredY,
+        bool draggingStart,
+        bool draggingEnd,
+        float maxStartDistance,
+        float minEndDistance)
+    {
         Vector3 wallDirection = container.WallDirection;
         float desiredDistance = Vector3.Dot(constrainedPoint - container.WallStart, wallDirection);
         desiredDistance = ClampOuterSplitConstrainedDistance(
@@ -252,9 +272,9 @@ public partial class WallOpeningPlacementManager
             maxStartDistance,
             minEndDistance);
 
-        constrainedPoint = container.WallStart + wallDirection * desiredDistance;
-        constrainedPoint.y = desiredPoint.y;
-        return true;
+        Vector3 result = container.WallStart + wallDirection * desiredDistance;
+        result.y = desiredY;
+        return result;
     }
 
     private void AccumulateOuterSplitOpeningConstraints(

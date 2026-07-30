@@ -499,6 +499,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `AccumulateOuterSplitOpeningConstraints`.
   - Moved outer split cached-opening iteration, null-opening skip, and per-opening constraint accumulation call out of `TryConstrainContainerOuterSplitPointDrag`.
   - Kept cached opening source, iteration order, null skip behavior, wall length input, effective side-wall input, and ref constraint accumulation behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+  - Added `ApplyOuterSplitDistanceConstraints`.
+  - Moved constrained point wall-distance projection, distance clamp call, wall point reconstruction, and desired Y restoration out of `TryConstrainContainerOuterSplitPointDrag`.
+  - Kept wall direction/start inputs, drag side flags, max/min distance constraints, clamp order, returned point coordinates, and constrained point behavior unchanged.
 
 ## Verification State
 
@@ -918,6 +922,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting outer split constraint accumulation helper, Unity script compilation succeeded.
 - After extracting outer split constraint accumulation helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting outer split distance constraints helper, Unity script compilation succeeded.
+- After extracting outer split distance constraints helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1438,6 +1446,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-outer-split-constraint-accumulation-helper-catalog-tests.xml`
   - `Logs/opening-outer-split-constraint-accumulation-helper-rail-regression.log`
   - `Logs/opening-outer-split-constraint-accumulation-helper-rail-regression.xml`
+  - `Logs/opening-outer-split-distance-constraints-helper-compile.log`
+  - `Logs/opening-outer-split-distance-constraints-helper-catalog-tests.log`
+  - `Logs/opening-outer-split-distance-constraints-helper-catalog-tests.xml`
+  - `Logs/opening-outer-split-distance-constraints-helper-rail-regression.log`
+  - `Logs/opening-outer-split-distance-constraints-helper-rail-regression.xml`
 
 ## Important Context
 
