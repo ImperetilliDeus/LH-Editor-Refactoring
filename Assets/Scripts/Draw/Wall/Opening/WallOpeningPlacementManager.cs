@@ -284,12 +284,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         if (secondWall == null)
         {
-            if (handleManager != null)
-            {
-                handleManager.UnregisterWall(firstWall);
-            }
-
-            Destroy(firstWall);
+            DestroyCreatedStandaloneSplitWall(firstWall);
             return;
         }
 
@@ -337,6 +332,16 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private void DestroyCreatedStandaloneSplitWall(GameObject wallObject)
+    {
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(wallObject);
+        }
+
+        Destroy(wallObject);
     }
 
     public void ApplyContainerSpanFromExternalDrag(
