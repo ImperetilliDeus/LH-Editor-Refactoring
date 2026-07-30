@@ -526,6 +526,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added a new partial file with `.meta`.
   - Moved `SplitSelectedWall` and focused standalone split helper methods from the main `WallOpeningPlacementManager.cs`.
   - Kept edit-mode guard, selected wall/container branch, midpoint guard, standalone segment creation, failure cleanup, undo recording, source wall removal, topology refresh, registry refresh coroutine, and first-wall selection behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Rebuild.cs`
+  - Added a new partial file with `.meta`.
+  - Moved `RebuildContainer`, `RebuildContainerLayout`, and `ClearDeactivatedWallsHolder` from the main `WallOpeningPlacementManager.cs`.
+  - Kept transient drag begin/end scope, non-drag deactivated holder clearing, rebuild controller callback wiring, cached list inputs, and destroy behavior unchanged.
 
 ## Verification State
 
@@ -977,6 +981,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving standalone split helpers into a partial file, Unity script compilation succeeded.
 - After moving standalone split helpers into a partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving rebuild helpers into a partial file, Unity script compilation succeeded.
+- After moving rebuild helpers into a partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1537,6 +1545,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-split-partial-move-catalog-tests.xml`
   - `Logs/opening-standalone-split-partial-move-rail-regression.log`
   - `Logs/opening-standalone-split-partial-move-rail-regression.xml`
+  - `Logs/opening-rebuild-partial-move-compile.log`
+  - `Logs/opening-rebuild-partial-move-catalog-tests.log`
+  - `Logs/opening-rebuild-partial-move-catalog-tests.xml`
+  - `Logs/opening-rebuild-partial-move-rail-regression.log`
+  - `Logs/opening-rebuild-partial-move-rail-regression.xml`
 
 ## Important Context
 
