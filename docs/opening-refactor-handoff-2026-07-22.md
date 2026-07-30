@@ -436,6 +436,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RecordStandaloneSplitReplacement`.
   - Moved selected-wall unregister and undo split recording out of `SplitSelectedWall`.
   - Kept created-wall collection timing, handle manager guard, unregister-before-undo order, undo manager guard, record inputs, selected-wall cleanup, topology refresh, and standalone split behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `RemoveStandaloneSplitSourceWall`.
+  - Moved selected source wall length-display clearing and GameObject destroy out of `SplitSelectedWall`.
+  - Kept removed-wall reference capture timing, clear-before-destroy order, topology refresh input, registry refresh timing, selected-wall update, and standalone split behavior unchanged.
 
 ## Verification State
 
@@ -791,6 +795,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting standalone split record helper, Unity script compilation succeeded.
 - After extracting standalone split record helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting standalone split source removal helper, Unity script compilation succeeded.
+- After extracting standalone split source removal helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1231,6 +1239,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-split-record-helper-catalog-tests.xml`
   - `Logs/opening-standalone-split-record-helper-rail-regression.log`
   - `Logs/opening-standalone-split-record-helper-rail-regression.xml`
+  - `Logs/opening-standalone-split-source-removal-helper-compile.log`
+  - `Logs/opening-standalone-split-source-removal-helper-catalog-tests.log`
+  - `Logs/opening-standalone-split-source-removal-helper-catalog-tests.xml`
+  - `Logs/opening-standalone-split-source-removal-helper-rail-regression.log`
+  - `Logs/opening-standalone-split-source-removal-helper-rail-regression.xml`
 
 ## Important Context
 

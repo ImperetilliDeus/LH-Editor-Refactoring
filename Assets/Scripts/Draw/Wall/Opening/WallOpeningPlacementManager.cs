@@ -292,9 +292,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         RecordStandaloneSplitReplacement(selectedWallComponent, firstWall, secondWall);
 
-        selectedWallComponent.ClearLengthDisplay(wallLengthDisplay);
         Wall removedWall = selectedWallComponent;
-        Destroy(selectedWallComponent.gameObject);
+        RemoveStandaloneSplitSourceWall(selectedWallComponent);
 
         if (createdWalls.Count > 0)
         {
@@ -313,6 +312,12 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private void RemoveStandaloneSplitSourceWall(Wall selectedWallComponent)
+    {
+        selectedWallComponent.ClearLengthDisplay(wallLengthDisplay);
+        Destroy(selectedWallComponent.gameObject);
     }
 
     private void RecordStandaloneSplitReplacement(Wall selectedWallComponent, GameObject firstWall, GameObject secondWall)
