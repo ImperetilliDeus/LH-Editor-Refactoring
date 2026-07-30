@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public partial class WallOpeningPlacementManager
@@ -53,6 +54,100 @@ public partial class WallOpeningPlacementManager
             opening.BottomY + opening.Height);
 
         opening.EnsureMarker(previewCanvas, mainCamera);
+    }
+
+    private void ClearGeneratedContainerVisuals(WallOpeningContainer container, List<Wall> wallsInContainer = null, bool isDragging = false)
+    {
+        if (container == null)
+        {
+            return;
+        }
+
+        List<Wall> walls = wallsInContainer;
+        if (walls == null)
+        {
+            WallHierarchyUtility.CollectWalls(container.transform, cachedWalls);
+            walls = cachedWalls;
+        }
+
+        for (int i = 0; i < walls.Count; i++)
+        {
+            if (walls[i] == null)
+            {
+                continue;
+            }
+
+            ClearSelectedGeneratedWallDuringDrag(walls[i], isDragging);
+
+            walls[i].ClearLengthDisplay(wallLengthDisplay);
+
+            if (isDragging)
+            {
+                MoveWallToDeactivatedHolderForDrag(walls[i]);
+            }
+            else
+            {
+                DestroyGeneratedWall(walls[i]);
+            }
+        }
+
+        for (int i = container.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = container.transform.GetChild(i);
+            if (child == null)
+            {
+                continue;
+            }
+
+            if (ShouldPreserveContainerChildDuringVisualClear(child))
+            {
+                continue;
+            }
+
+            Destroy(child.gameObject);
+        }
+    }
+
+    private void ClearSelectedGeneratedWallDuringDrag(Wall wall, bool isDragging)
+    {
+        if (isDragging && wallSelectionManager != null && wallSelectionManager.SelectedWall == wall.gameObject)
+        {
+            wallSelectionManager.SetSelectedWallPreservingOpeningSelection(null);
+        }
+    }
+
+    private static bool ShouldPreserveContainerChildDuringVisualClear(Transform child)
+    {
+        return child.GetComponent<WallOpening>() != null
+            || child.GetComponentInChildren<WallOpening>(true) != null
+            || child.name == SegmentGroupName;
+    }
+
+    private void MoveWallToDeactivatedHolderForDrag(Wall wall)
+    {
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(wall.gameObject);
+        }
+
+        WallSelectionUIProxy selectionProxy = wall.GetComponent<WallSelectionUIProxy>();
+        if (selectionProxy != null)
+        {
+            selectionProxy.DestroyUI();
+            Destroy(selectionProxy);
+        }
+
+        wall.transform.SetParent(deactivatedWallsHolder, false);
+    }
+
+    private void DestroyGeneratedWall(Wall wall)
+    {
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(wall.gameObject);
+        }
+
+        Destroy(wall.gameObject);
     }
 
     private void EnsureCachedResources()

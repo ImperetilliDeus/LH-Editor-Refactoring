@@ -510,6 +510,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Selection.cs`
   - Moved `RefreshSelectedWallForContainer` and its segment selection helper methods from the main `WallOpeningPlacementManager.cs`.
   - Kept container/null guards, closest segment search, hidden opening base segment filter, midpoint distance calculation, preferred distance comparison, and preserving-opening-selection call unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Visuals.cs`
+  - Moved `ClearGeneratedContainerVisuals` and its generated wall visual cleanup helpers from the main `WallOpeningPlacementManager.cs`.
+  - Kept optional wall list reuse, cached wall collection fallback, selected generated-wall clear during drag, length display clearing, drag deactivation path, destroy path, preserved child filtering, and handle unregister behavior unchanged.
 
 ## Verification State
 
@@ -941,6 +944,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving selection refresh helpers into the selection partial file, Unity script compilation succeeded.
 - After moving selection refresh helpers into the selection partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving generated visual clear helpers into the visuals partial file, Unity script compilation succeeded.
+- After moving generated visual clear helpers into the visuals partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1476,6 +1483,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-selection-refresh-partial-move-catalog-tests.xml`
   - `Logs/opening-selection-refresh-partial-move-rail-regression.log`
   - `Logs/opening-selection-refresh-partial-move-rail-regression.xml`
+  - `Logs/opening-generated-visual-clear-partial-move-compile.log`
+  - `Logs/opening-generated-visual-clear-partial-move-catalog-tests.log`
+  - `Logs/opening-generated-visual-clear-partial-move-catalog-tests.xml`
+  - `Logs/opening-generated-visual-clear-partial-move-rail-regression.log`
+  - `Logs/opening-generated-visual-clear-partial-move-rail-regression.xml`
 
 ## Important Context
 
