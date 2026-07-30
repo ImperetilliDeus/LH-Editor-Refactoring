@@ -544,6 +544,45 @@ public partial class WallOpeningPlacementManager
             sourceSnapshot.visualState);
     }
 
+    private GameObject CreateStandaloneWallSegment(
+        string segmentName,
+        Vector3 startPoint,
+        Vector3 endPoint,
+        float thickness,
+        float height,
+        float centerY,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle,
+        bool startSplitPoint,
+        bool endSplitPoint,
+        WallVisualState visualState,
+        bool isDragging = false)
+    {
+        return geometryFactory.CreateStandaloneWallSegment(
+            wallRoot,
+            GetCubeMesh(),
+            wallLengthDisplay,
+            handleManager,
+            Destroy,
+            segmentName,
+            startPoint,
+            endPoint,
+            thickness,
+            height,
+            centerY,
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            startSplitPoint,
+            endSplitPoint,
+            visualState, // No change here
+            MinimumWallSegmentLength,
+            isDragging); // Pass isDragging
+    }
+
     private WallOpeningContainer CreateSplitOpeningContainer(
         string layoutName,
         UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,

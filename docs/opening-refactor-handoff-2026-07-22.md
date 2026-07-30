@@ -516,6 +516,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Visuals.cs`
   - Moved `CreateFillerSegment` and `CreateCubeObject` from the main `WallOpeningPlacementManager.cs`.
   - Kept geometry factory delegation, cube mesh lookup, filler segment inputs, cube object inputs, and visual creation behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Moved `CreateStandaloneWallSegment` from the main `WallOpeningPlacementManager.cs`.
+  - Kept standalone wall geometry factory delegation, wall root/cube mesh/length display/handle manager inputs, vertex/handle/split flags, visual state, minimum segment length, and dragging flag behavior unchanged.
 
 ## Verification State
 
@@ -955,6 +958,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving visual geometry wrapper helpers into the visuals partial file, Unity script compilation succeeded.
 - After moving visual geometry wrapper helpers into the visuals partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving standalone wall segment wrapper into the layout containers partial file, Unity script compilation succeeded.
+- After moving standalone wall segment wrapper into the layout containers partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1500,6 +1507,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-visual-geometry-wrapper-partial-move-catalog-tests.xml`
   - `Logs/opening-visual-geometry-wrapper-partial-move-rail-regression.log`
   - `Logs/opening-visual-geometry-wrapper-partial-move-rail-regression.xml`
+  - `Logs/opening-standalone-wall-segment-wrapper-partial-move-compile.log`
+  - `Logs/opening-standalone-wall-segment-wrapper-partial-move-catalog-tests.log`
+  - `Logs/opening-standalone-wall-segment-wrapper-partial-move-catalog-tests.xml`
+  - `Logs/opening-standalone-wall-segment-wrapper-partial-move-rail-regression.log`
+  - `Logs/opening-standalone-wall-segment-wrapper-partial-move-rail-regression.xml`
 
 ## Important Context
 
