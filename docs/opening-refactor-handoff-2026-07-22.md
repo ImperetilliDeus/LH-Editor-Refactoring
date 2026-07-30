@@ -444,6 +444,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RequestStandaloneSplitTopologyRefresh`.
   - Moved standalone split wall replacement topology refresh request out of `SplitSelectedWall`.
   - Kept created-wall count guard, removed-wall array construction, created wall list input, registry refresh timing, selected-wall update, and standalone split behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `SelectStandaloneSplitFirstWall`.
+  - Moved standalone split first-wall selection out of `SplitSelectedWall`.
+  - Kept registry refresh timing, wall selection manager guard, selected GameObject, selection update order, and standalone split behavior unchanged.
 
 ## Verification State
 
@@ -807,6 +811,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting standalone split topology refresh helper, Unity script compilation succeeded.
 - After extracting standalone split topology refresh helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting standalone split selection helper, Unity script compilation succeeded.
+- After extracting standalone split selection helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1257,6 +1265,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-split-topology-refresh-helper-catalog-tests.xml`
   - `Logs/opening-standalone-split-topology-refresh-helper-rail-regression.log`
   - `Logs/opening-standalone-split-topology-refresh-helper-rail-regression.xml`
+  - `Logs/opening-standalone-split-selection-helper-compile.log`
+  - `Logs/opening-standalone-split-selection-helper-catalog-tests.log`
+  - `Logs/opening-standalone-split-selection-helper-catalog-tests.xml`
+  - `Logs/opening-standalone-split-selection-helper-rail-regression.log`
+  - `Logs/opening-standalone-split-selection-helper-rail-regression.xml`
 
 ## Important Context
 

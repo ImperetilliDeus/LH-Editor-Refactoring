@@ -299,16 +299,21 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
-        if (wallSelectionManager != null)
-        {
-            wallSelectionManager.SetSelectedWall(firstWall);
-        }
+        SelectStandaloneSplitFirstWall(firstWall);
     }
 
     private IEnumerator RefreshWallRegistryAfterSplit(bool isDragging)
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private void SelectStandaloneSplitFirstWall(GameObject firstWall)
+    {
+        if (wallSelectionManager != null)
+        {
+            wallSelectionManager.SetSelectedWall(firstWall);
+        }
     }
 
     private static void RequestStandaloneSplitTopologyRefresh(Wall removedWall, List<Wall> createdWalls)
