@@ -488,6 +488,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyContainerSpanEndpointConstraints`.
   - Moved start/end endpoint constraint helper calls and constrained endpoint assignments out of `ApplyContainerSpanFromExternalDrag`.
   - Kept moved-start/moved-end inputs, start constraint order, end constraint order, ref endpoint updates, and post-constraint length validation behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+  - Added a new partial file with `.meta`.
+  - Moved `ApplyContainerSpanFromExternalDrag` and its focused span drag helpers out of the main `WallOpeningPlacementManager.cs`.
+  - Kept method bodies, access modifiers, helper call order, endpoint constraint flow, opening reposition flow, rebuild call, and selection refresh behavior unchanged.
 
 ## Verification State
 
@@ -895,6 +899,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting container span endpoint constraints helper, Unity script compilation succeeded.
 - After extracting container span endpoint constraints helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving container span drag helpers into a partial file, Unity script compilation succeeded.
+- After moving container span drag helpers into a partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1400,6 +1408,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-span-endpoint-constraints-helper-catalog-tests.xml`
   - `Logs/opening-container-span-endpoint-constraints-helper-rail-regression.log`
   - `Logs/opening-container-span-endpoint-constraints-helper-rail-regression.xml`
+  - `Logs/opening-container-span-drag-partial-compile.log`
+  - `Logs/opening-container-span-drag-partial-catalog-tests.log`
+  - `Logs/opening-container-span-drag-partial-catalog-tests.xml`
+  - `Logs/opening-container-span-drag-partial-rail-regression.log`
+  - `Logs/opening-container-span-drag-partial-rail-regression.xml`
 
 ## Important Context
 
