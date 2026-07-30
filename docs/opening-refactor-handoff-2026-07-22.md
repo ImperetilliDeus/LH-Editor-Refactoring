@@ -432,6 +432,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CollectCreatedStandaloneSplitWalls`.
   - Moved created split-wall `Wall` component lookup and list construction out of `SplitSelectedWall`.
   - Kept first/second wall lookup order, null component skip behavior, created wall list order, topology refresh input, undo recording timing, and standalone split behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `RecordStandaloneSplitReplacement`.
+  - Moved selected-wall unregister and undo split recording out of `SplitSelectedWall`.
+  - Kept created-wall collection timing, handle manager guard, unregister-before-undo order, undo manager guard, record inputs, selected-wall cleanup, topology refresh, and standalone split behavior unchanged.
 
 ## Verification State
 
@@ -783,6 +787,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting created split walls helper, Unity script compilation succeeded.
 - After extracting created split walls helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting standalone split record helper, Unity script compilation succeeded.
+- After extracting standalone split record helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1218,6 +1226,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-created-split-walls-helper-catalog-tests.xml`
   - `Logs/opening-created-split-walls-helper-rail-regression.log`
   - `Logs/opening-created-split-walls-helper-rail-regression.xml`
+  - `Logs/opening-standalone-split-record-helper-compile.log`
+  - `Logs/opening-standalone-split-record-helper-catalog-tests.log`
+  - `Logs/opening-standalone-split-record-helper-catalog-tests.xml`
+  - `Logs/opening-standalone-split-record-helper-rail-regression.log`
+  - `Logs/opening-standalone-split-record-helper-rail-regression.xml`
 
 ## Important Context
 

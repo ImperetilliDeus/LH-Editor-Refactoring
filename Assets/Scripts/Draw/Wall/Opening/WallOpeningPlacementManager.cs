@@ -290,15 +290,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
         List<Wall> createdWalls = CollectCreatedStandaloneSplitWalls(firstWall, secondWall);
 
-        if (handleManager != null)
-        {
-            handleManager.UnregisterWall(selectedWallComponent.gameObject);
-        }
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordWallSplit(selectedWallComponent.gameObject, firstWall, secondWall);
-        }
+        RecordStandaloneSplitReplacement(selectedWallComponent, firstWall, secondWall);
 
         selectedWallComponent.ClearLengthDisplay(wallLengthDisplay);
         Wall removedWall = selectedWallComponent;
@@ -321,6 +313,19 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private void RecordStandaloneSplitReplacement(Wall selectedWallComponent, GameObject firstWall, GameObject secondWall)
+    {
+        if (handleManager != null)
+        {
+            handleManager.UnregisterWall(selectedWallComponent.gameObject);
+        }
+
+        if (undoRedoManager != null)
+        {
+            undoRedoManager.RecordWallSplit(selectedWallComponent.gameObject, firstWall, secondWall);
+        }
     }
 
     private static List<Wall> CollectCreatedStandaloneSplitWalls(GameObject firstWall, GameObject secondWall)
