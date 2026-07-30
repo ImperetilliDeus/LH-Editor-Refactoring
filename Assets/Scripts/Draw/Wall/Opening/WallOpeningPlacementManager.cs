@@ -295,10 +295,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         Wall removedWall = selectedWallComponent;
         RemoveStandaloneSplitSourceWall(selectedWallComponent);
 
-        if (createdWalls.Count > 0)
-        {
-            RoomTopologyEvents.RequestRefreshForWallReplacement(new[] { removedWall }, createdWalls);
-        }
+        RequestStandaloneSplitTopologyRefresh(removedWall, createdWalls);
 
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
@@ -312,6 +309,14 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private static void RequestStandaloneSplitTopologyRefresh(Wall removedWall, List<Wall> createdWalls)
+    {
+        if (createdWalls.Count > 0)
+        {
+            RoomTopologyEvents.RequestRefreshForWallReplacement(new[] { removedWall }, createdWalls);
+        }
     }
 
     private void RemoveStandaloneSplitSourceWall(Wall selectedWallComponent)
