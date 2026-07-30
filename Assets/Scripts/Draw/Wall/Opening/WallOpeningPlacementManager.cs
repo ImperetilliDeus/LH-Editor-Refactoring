@@ -390,20 +390,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 ClearDeactivatedWallsHolder();
             }
 
-            layoutRebuildController.RebuildContainer(
-                container: container,
-                pendingRoomRefreshRemovedWalls: pendingRoomRefreshRemovedWalls,
-                cachedWalls: cachedWalls,
-                cachedOpenings: cachedOpenings,
-                collectOpenings: CollectOpenings,
-                clearGeneratedContainerVisuals: ClearGeneratedContainerVisuals,
-                getSegmentsRoot: GetOrCreateSegmentsRoot,
-                createWallSegment: CreateWallSegment,
-                updateOpeningVisual: UpdateOpeningVisual,
-                collectWalls: (targetTransform, result, includeInactive) => WallHierarchyUtility.CollectWalls(targetTransform, result, includeInactive),
-                requestRefreshForWallReplacement: RoomTopologyEvents.RequestRefreshForWallReplacement,
-                markMarkerVisualsDirty: MarkMarkerVisualsDirty,
-                isDragging: isDragging);
+            RebuildContainerLayout(container, isDragging);
         }
         finally
         {
@@ -412,6 +399,24 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
                 handleManager?.EndTransientDragRebuild();
             }
         }
+    }
+
+    private void RebuildContainerLayout(WallOpeningContainer container, bool isDragging)
+    {
+        layoutRebuildController.RebuildContainer(
+            container: container,
+            pendingRoomRefreshRemovedWalls: pendingRoomRefreshRemovedWalls,
+            cachedWalls: cachedWalls,
+            cachedOpenings: cachedOpenings,
+            collectOpenings: CollectOpenings,
+            clearGeneratedContainerVisuals: ClearGeneratedContainerVisuals,
+            getSegmentsRoot: GetOrCreateSegmentsRoot,
+            createWallSegment: CreateWallSegment,
+            updateOpeningVisual: UpdateOpeningVisual,
+            collectWalls: (targetTransform, result, includeInactive) => WallHierarchyUtility.CollectWalls(targetTransform, result, includeInactive),
+            requestRefreshForWallReplacement: RoomTopologyEvents.RequestRefreshForWallReplacement,
+            markMarkerVisualsDirty: MarkMarkerVisualsDirty,
+            isDragging: isDragging);
     }
 
     private void ClearDeactivatedWallsHolder()

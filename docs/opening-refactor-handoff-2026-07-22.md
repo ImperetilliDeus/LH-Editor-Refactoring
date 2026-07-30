@@ -503,6 +503,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplyOuterSplitDistanceConstraints`.
   - Moved constrained point wall-distance projection, distance clamp call, wall point reconstruction, and desired Y restoration out of `TryConstrainContainerOuterSplitPointDrag`.
   - Kept wall direction/start inputs, drag side flags, max/min distance constraints, clamp order, returned point coordinates, and constrained point behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `RebuildContainerLayout`.
+  - Moved the `WallOpeningLayoutRebuildController.RebuildContainer` argument wiring out of `RebuildContainer`.
+  - Kept transient drag begin/end scope, deactivated wall clearing guard, rebuild controller inputs, callback wiring, and `isDragging` propagation unchanged.
 
 ## Verification State
 
@@ -926,6 +930,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting outer split distance constraints helper, Unity script compilation succeeded.
 - After extracting outer split distance constraints helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container rebuild layout helper, Unity script compilation succeeded.
+- After extracting container rebuild layout helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1451,6 +1459,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-outer-split-distance-constraints-helper-catalog-tests.xml`
   - `Logs/opening-outer-split-distance-constraints-helper-rail-regression.log`
   - `Logs/opening-outer-split-distance-constraints-helper-rail-regression.xml`
+  - `Logs/opening-container-rebuild-layout-helper-compile.log`
+  - `Logs/opening-container-rebuild-layout-helper-catalog-tests.log`
+  - `Logs/opening-container-rebuild-layout-helper-catalog-tests.xml`
+  - `Logs/opening-container-rebuild-layout-helper-rail-regression.log`
+  - `Logs/opening-container-rebuild-layout-helper-rail-regression.xml`
 
 ## Important Context
 
