@@ -522,6 +522,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
   - Moved `UnitsToMillimeters`, `GetSelectedOpeningBottomOffsetMillimeters`, and `CanUseSelectedOpeningBottomOffset` from the main `WallOpeningPlacementManager.cs`.
   - Kept public UI-facing API names, selected opening/type/container guard, fallback return behavior, bottom offset calculation, and unit conversion behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.StandaloneSplit.cs`
+  - Added a new partial file with `.meta`.
+  - Moved `SplitSelectedWall` and focused standalone split helper methods from the main `WallOpeningPlacementManager.cs`.
+  - Kept edit-mode guard, selected wall/container branch, midpoint guard, standalone segment creation, failure cleanup, undo recording, source wall removal, topology refresh, registry refresh coroutine, and first-wall selection behavior unchanged.
 
 ## Verification State
 
@@ -969,6 +973,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving UI measurement helper APIs into the UI partial file, Unity script compilation succeeded.
 - After moving UI measurement helper APIs into the UI partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving standalone split helpers into a partial file, Unity script compilation succeeded.
+- After moving standalone split helpers into a partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1524,6 +1532,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-ui-measurement-helper-partial-move-catalog-tests.xml`
   - `Logs/opening-ui-measurement-helper-partial-move-rail-regression.log`
   - `Logs/opening-ui-measurement-helper-partial-move-rail-regression.xml`
+  - `Logs/opening-standalone-split-partial-move-compile.log`
+  - `Logs/opening-standalone-split-partial-move-catalog-tests.log`
+  - `Logs/opening-standalone-split-partial-move-catalog-tests.xml`
+  - `Logs/opening-standalone-split-partial-move-rail-regression.log`
+  - `Logs/opening-standalone-split-partial-move-rail-regression.xml`
 
 ## Important Context
 
