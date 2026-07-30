@@ -495,29 +495,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             isDragging); // Pass isDragging
     }
 
-    private void CreateFillerSegment(
-        Transform parent,
-        string fillerName,
-        WallOpeningContainer container,
-        WallOpening opening,
-        float segmentHeight,
-        float segmentBottomY)
-    {
-        geometryFactory.CreateFillerSegment(
-            parent,
-            GetCubeMesh(),
-            fillerName,
-            container,
-            opening,
-            segmentHeight,
-            segmentBottomY);
-    }
-
-    private GameObject CreateCubeObject(string objectName, Transform parent, bool withCollider)
-    {
-        return geometryFactory.CreateCubeObject(GetCubeMesh(), objectName, parent, withCollider);
-    }
-
     private void EnsureWallRoot()
     {
         LayerUtility.ResolveWallRoot(ref wallRoot, true);

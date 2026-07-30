@@ -150,6 +150,29 @@ public partial class WallOpeningPlacementManager
         Destroy(wall.gameObject);
     }
 
+    private void CreateFillerSegment(
+        Transform parent,
+        string fillerName,
+        WallOpeningContainer container,
+        WallOpening opening,
+        float segmentHeight,
+        float segmentBottomY)
+    {
+        geometryFactory.CreateFillerSegment(
+            parent,
+            GetCubeMesh(),
+            fillerName,
+            container,
+            opening,
+            segmentHeight,
+            segmentBottomY);
+    }
+
+    private GameObject CreateCubeObject(string objectName, Transform parent, bool withCollider)
+    {
+        return geometryFactory.CreateCubeObject(GetCubeMesh(), objectName, parent, withCollider);
+    }
+
     private void EnsureCachedResources()
     {
         visualResources.EnsureCachedResources();

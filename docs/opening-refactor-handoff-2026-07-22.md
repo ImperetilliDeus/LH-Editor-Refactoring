@@ -513,6 +513,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Visuals.cs`
   - Moved `ClearGeneratedContainerVisuals` and its generated wall visual cleanup helpers from the main `WallOpeningPlacementManager.cs`.
   - Kept optional wall list reuse, cached wall collection fallback, selected generated-wall clear during drag, length display clearing, drag deactivation path, destroy path, preserved child filtering, and handle unregister behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Visuals.cs`
+  - Moved `CreateFillerSegment` and `CreateCubeObject` from the main `WallOpeningPlacementManager.cs`.
+  - Kept geometry factory delegation, cube mesh lookup, filler segment inputs, cube object inputs, and visual creation behavior unchanged.
 
 ## Verification State
 
@@ -948,6 +951,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving generated visual clear helpers into the visuals partial file, Unity script compilation succeeded.
 - After moving generated visual clear helpers into the visuals partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving visual geometry wrapper helpers into the visuals partial file, Unity script compilation succeeded.
+- After moving visual geometry wrapper helpers into the visuals partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1488,6 +1495,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-generated-visual-clear-partial-move-catalog-tests.xml`
   - `Logs/opening-generated-visual-clear-partial-move-rail-regression.log`
   - `Logs/opening-generated-visual-clear-partial-move-rail-regression.xml`
+  - `Logs/opening-visual-geometry-wrapper-partial-move-compile.log`
+  - `Logs/opening-visual-geometry-wrapper-partial-move-catalog-tests.log`
+  - `Logs/opening-visual-geometry-wrapper-partial-move-catalog-tests.xml`
+  - `Logs/opening-visual-geometry-wrapper-partial-move-rail-regression.log`
+  - `Logs/opening-visual-geometry-wrapper-partial-move-rail-regression.xml`
 
 ## Important Context
 
