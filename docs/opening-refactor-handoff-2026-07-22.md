@@ -448,6 +448,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `SelectStandaloneSplitFirstWall`.
   - Moved standalone split first-wall selection out of `SplitSelectedWall`.
   - Kept registry refresh timing, wall selection manager guard, selected GameObject, selection update order, and standalone split behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `CanSplitStandaloneWallAtMidpoint`.
+  - Moved standalone split midpoint minimum-length guard out of `SplitSelectedWall`.
+  - Kept start/end/midpoint calculation, squared-distance comparisons, minimum segment threshold, early return behavior, and standalone split behavior unchanged.
 
 ## Verification State
 
@@ -815,6 +819,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting standalone split selection helper, Unity script compilation succeeded.
 - After extracting standalone split selection helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting standalone split midpoint guard helper, Unity script compilation succeeded.
+- After extracting standalone split midpoint guard helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1270,6 +1278,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-split-selection-helper-catalog-tests.xml`
   - `Logs/opening-standalone-split-selection-helper-rail-regression.log`
   - `Logs/opening-standalone-split-selection-helper-rail-regression.xml`
+  - `Logs/opening-standalone-split-midpoint-guard-helper-compile.log`
+  - `Logs/opening-standalone-split-midpoint-guard-helper-catalog-tests.log`
+  - `Logs/opening-standalone-split-midpoint-guard-helper-catalog-tests.xml`
+  - `Logs/opening-standalone-split-midpoint-guard-helper-rail-regression.log`
+  - `Logs/opening-standalone-split-midpoint-guard-helper-rail-regression.xml`
 
 ## Important Context
 

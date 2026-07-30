@@ -234,8 +234,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         Vector3 midpoint = (startPoint + endPoint) * 0.5f;
         midpoint.y = startPoint.y;
 
-        if ((midpoint - startPoint).sqrMagnitude <= MinimumWallSegmentLength * MinimumWallSegmentLength ||
-            (endPoint - midpoint).sqrMagnitude <= MinimumWallSegmentLength * MinimumWallSegmentLength)
+        if (!CanSplitStandaloneWallAtMidpoint(startPoint, midpoint, endPoint))
         {
             return;
         }
@@ -306,6 +305,12 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (isDragging) yield return null; // Only defer if dragging, otherwise refresh immediately
         handleManager?.RefreshRegisteredWalls();
+    }
+
+    private static bool CanSplitStandaloneWallAtMidpoint(Vector3 startPoint, Vector3 midpoint, Vector3 endPoint)
+    {
+        return (midpoint - startPoint).sqrMagnitude > MinimumWallSegmentLength * MinimumWallSegmentLength &&
+            (endPoint - midpoint).sqrMagnitude > MinimumWallSegmentLength * MinimumWallSegmentLength;
     }
 
     private void SelectStandaloneSplitFirstWall(GameObject firstWall)
