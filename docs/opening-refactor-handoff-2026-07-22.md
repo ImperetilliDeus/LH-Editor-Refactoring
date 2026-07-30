@@ -492,6 +492,9 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added a new partial file with `.meta`.
   - Moved `ApplyContainerSpanFromExternalDrag` and its focused span drag helpers out of the main `WallOpeningPlacementManager.cs`.
   - Kept method bodies, access modifiers, helper call order, endpoint constraint flow, opening reposition flow, rebuild call, and selection refresh behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+  - Moved `TryConstrainContainerOuterSplitPointDrag` and its outer split constraint calculation helpers from the main `WallOpeningPlacementManager.cs`.
+  - Kept cached opening collection, empty-opening return behavior, side-wall/minimum-length calculations, drag target resolution, minimum-length fallback point resolution, constrained distance clamping, and constrained point output behavior unchanged.
 
 ## Verification State
 
@@ -903,6 +906,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After moving container span drag helpers into a partial file, Unity script compilation succeeded.
 - After moving container span drag helpers into a partial file, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After moving outer split constraint helpers into the container span drag partial file, Unity script compilation succeeded.
+- After moving outer split constraint helpers into the container span drag partial file, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1413,6 +1420,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-span-drag-partial-catalog-tests.xml`
   - `Logs/opening-container-span-drag-partial-rail-regression.log`
   - `Logs/opening-container-span-drag-partial-rail-regression.xml`
+  - `Logs/opening-container-outer-split-constraint-partial-compile.log`
+  - `Logs/opening-container-outer-split-constraint-partial-catalog-tests.log`
+  - `Logs/opening-container-outer-split-constraint-partial-catalog-tests.xml`
+  - `Logs/opening-container-outer-split-constraint-partial-rail-regression.log`
+  - `Logs/opening-container-outer-split-constraint-partial-rail-regression.xml`
 
 ## Important Context
 
