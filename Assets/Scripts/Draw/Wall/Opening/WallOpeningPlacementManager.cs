@@ -397,8 +397,8 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             return;
         }
 
-        bool movedStart = (newStart - baselineSnapshot.wallStart).sqrMagnitude > 0.000001f;
-        bool movedEnd = (newEnd - baselineSnapshot.wallEnd).sqrMagnitude > 0.000001f;
+        bool movedStart = HasContainerSpanEndpointMoved(newStart, baselineSnapshot.wallStart);
+        bool movedEnd = HasContainerSpanEndpointMoved(newEnd, baselineSnapshot.wallEnd);
         Vector3 startDelta = newStart - baselineSnapshot.wallStart;
         Vector3 endDelta = newEnd - baselineSnapshot.wallEnd;
         bool translated = movedStart && movedEnd && (startDelta - endDelta).sqrMagnitude <= 0.000001f;
@@ -480,6 +480,11 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         }
 
         return oldLength > 0.001f ? (openingSnapshot.centerDistance / oldLength) * newLength : newLength * 0.5f;
+    }
+
+    private static bool HasContainerSpanEndpointMoved(Vector3 currentPoint, Vector3 baselinePoint)
+    {
+        return (currentPoint - baselinePoint).sqrMagnitude > 0.000001f;
     }
 
     internal bool TryConstrainContainerOuterSplitPointDrag(

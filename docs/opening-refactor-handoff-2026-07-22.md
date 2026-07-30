@@ -452,6 +452,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CanSplitStandaloneWallAtMidpoint`.
   - Moved standalone split midpoint minimum-length guard out of `SplitSelectedWall`.
   - Kept start/end/midpoint calculation, squared-distance comparisons, minimum segment threshold, early return behavior, and standalone split behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - Added `HasContainerSpanEndpointMoved`.
+  - Moved container span endpoint moved threshold check out of `ApplyContainerSpanFromExternalDrag`.
+  - Kept baseline point comparison, squared-distance threshold, moved-start/moved-end values, translated calculation inputs, drag constraint behavior, and container span drag behavior unchanged.
 
 ## Verification State
 
@@ -823,6 +827,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting standalone split midpoint guard helper, Unity script compilation succeeded.
 - After extracting standalone split midpoint guard helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container span endpoint moved helper, Unity script compilation succeeded.
+- After extracting container span endpoint moved helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1283,6 +1291,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-standalone-split-midpoint-guard-helper-catalog-tests.xml`
   - `Logs/opening-standalone-split-midpoint-guard-helper-rail-regression.log`
   - `Logs/opening-standalone-split-midpoint-guard-helper-rail-regression.xml`
+  - `Logs/opening-container-span-endpoint-moved-helper-compile.log`
+  - `Logs/opening-container-span-endpoint-moved-helper-catalog-tests.log`
+  - `Logs/opening-container-span-endpoint-moved-helper-catalog-tests.xml`
+  - `Logs/opening-container-span-endpoint-moved-helper-rail-regression.log`
+  - `Logs/opening-container-span-endpoint-moved-helper-rail-regression.xml`
 
 ## Important Context
 
