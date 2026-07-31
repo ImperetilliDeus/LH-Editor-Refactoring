@@ -1091,6 +1091,12 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting marker geometry hash helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningContainerSplitPlanner`, Unity script compilation succeeded.
+- `OpeningContainerSplitPlanner` now owns container split distance calculation, split/opening-span overlap detection, and opening snapshot partitioning for container splits.
+- `WallOpeningPlacementManager.LayoutContainers.cs` delegates those pure split-planning operations to the helper and still owns Unity object removal/creation, topology refresh, and selection orchestration.
+- After extracting `OpeningContainerSplitPlanner`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1719,6 +1725,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-marker-geometry-hash-helper-catalog-tests.xml`
   - `Logs/opening-marker-geometry-hash-helper-rail-regression.log`
   - `Logs/opening-marker-geometry-hash-helper-rail-regression.xml`
+  - `Logs/opening-container-split-planner-compile.log`
+  - `Logs/opening-container-split-planner-catalog-tests.log`
+  - `Logs/opening-container-split-planner-catalog-tests.xml`
+  - `Logs/opening-container-split-planner-rail-regression.log`
+  - `Logs/opening-container-split-planner-rail-regression.xml`
 
 ## Important Context
 
@@ -1834,14 +1845,26 @@ Do not do a large rewrite in one step. First move code with minimal behavior cha
 
 Do after tests are stable.
 
+Current state:
+
+- `ParametricOpeningModel.cs` is about 131 lines and should stay at public entrypoints, serialized fields/constants, and high-level dispatch for now.
+- `WallOpeningPlacementManager.LayoutContainers.cs` is about 769 lines after `OpeningContainerSplitPlanner` extraction.
+- `WallOpeningPlacementManager.UI.cs` is about 603 lines after marker/camera/hash helper cleanup.
+- The remaining `WallOpeningPlacementManager` work should be judged by clear responsibility gain; avoid splitting tiny wrapper methods only to reduce line count.
+
 Suggested extraction order:
 
 1. `OpeningTypeResolver` - started with catalog definition lookup and door/window key resolution.
 2. `OpeningLayoutService` - started with opening clamp calculations and new-opening span calculation.
 3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
 4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, marker registration cleanup, delete rebuild extraction, and restored-wall selection extraction.
+5. `OpeningContainerSplitPlanner` - started with split distance calculation, split overlap detection, and opening snapshot partitioning for container splits.
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
+
+Next recommended step:
+
+- Inspect `WallOpeningPlacementManager.LayoutContainers.cs` once more for cohesive helpers around restored wall/container removal or segment-root creation. If the remaining candidates are mostly wrappers around fields and Unity lifecycle calls, pause `WallOpeningPlacementManager` splitting and move to `HandleManager` before touching `FurniturePlacementManager`.
 
 ## Suggested First Message For A New Chat
 

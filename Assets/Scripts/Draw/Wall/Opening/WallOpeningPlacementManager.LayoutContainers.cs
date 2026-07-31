@@ -332,7 +332,11 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        if (!TryGetContainerSplitDistance(container, selectedSegment, out float splitDistance))
+        if (!OpeningContainerSplitPlanner.TryGetSplitDistance(
+                container,
+                selectedSegment,
+                MinimumWallSegmentLength,
+                out float splitDistance))
         {
             return;
         }
@@ -340,7 +344,7 @@ public partial class WallOpeningPlacementManager
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
 
-        if (SplitDistanceOverlapsOpeningSpan(cachedOpenings, splitDistance))
+        if (OpeningContainerSplitPlanner.SplitDistanceOverlapsOpeningSpan(cachedOpenings, splitDistance))
         {
             Debug.LogWarning("Wall split point overlaps an opening span.", selectedSegment);
             return;
@@ -349,7 +353,11 @@ public partial class WallOpeningPlacementManager
         UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot = CaptureLayoutSnapshot(container);
         List<UndoRedoManager.OpeningStateSnapshot> leftOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
         List<UndoRedoManager.OpeningStateSnapshot> rightOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
-        PartitionOpeningsForSplit(cachedOpenings, splitDistance, leftOpenings, rightOpenings);
+        OpeningContainerSplitPlanner.PartitionOpeningsForSplit(
+            cachedOpenings,
+            splitDistance,
+            leftOpenings,
+            rightOpenings);
 
         RemoveLayout(sourceSnapshot);
 
@@ -360,17 +368,6 @@ public partial class WallOpeningPlacementManager
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
         SelectClosestVisibleWallAfterContainerSplit(splitPoint);
-    }
-
-    private bool TryGetContainerSplitDistance(
-        WallOpeningContainer container,
-        Wall selectedSegment,
-        out float splitDistance)
-    {
-        Vector3 segmentMidpoint = (selectedSegment.Data.startPoint + selectedSegment.Data.endPoint) * 0.5f;
-        splitDistance = Vector3.Dot(segmentMidpoint - container.WallStart, container.WallDirection);
-        return splitDistance > MinimumWallSegmentLength &&
-            splitDistance < container.WallLength - MinimumWallSegmentLength;
     }
 
     private void SelectClosestVisibleWallAfterContainerSplit(Vector3 splitPoint)
@@ -418,69 +415,6 @@ public partial class WallOpeningPlacementManager
             true,
             container.OuterEndSplitPoint,
             rightOpenings);
-    }
-
-    private static bool SplitDistanceOverlapsOpeningSpan(
-        IReadOnlyList<WallOpening> openings,
-        float splitDistance)
-    {
-        const float splitEpsilon = 0.0001f;
-        for (int i = 0; i < openings.Count; i++)
-        {
-            WallOpening opening = openings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            float openingStart = opening.CenterDistance - opening.Width * 0.5f;
-            float openingEnd = opening.CenterDistance + opening.Width * 0.5f;
-            if (splitDistance >= openingStart - splitEpsilon && splitDistance <= openingEnd + splitEpsilon)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static void PartitionOpeningsForSplit(
-        IReadOnlyList<WallOpening> openings,
-        float splitDistance,
-        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
-        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
-    {
-        for (int i = 0; i < openings.Count; i++)
-        {
-            WallOpening opening = openings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            UndoRedoManager.OpeningStateSnapshot snapshot = new UndoRedoManager.OpeningStateSnapshot
-            {
-                type = opening.Type,
-                doorTypeKey = opening.DoorTypeKey,
-                windowTypeKey = opening.WindowTypeKey,
-                doorOpensRight = opening.DoorOpensRight,
-                doorVerticalFlip = opening.DoorVerticalFlip,
-                centerDistance = opening.CenterDistance,
-                width = opening.Width,
-                height = opening.Height,
-                depth = opening.Depth,
-                bottomY = opening.BottomY,
-            };
-
-            if (opening.CenterDistance < splitDistance)
-            {
-                leftOpenings.Add(snapshot);
-                continue;
-            }
-
-            snapshot.centerDistance -= splitDistance;
-            rightOpenings.Add(snapshot);
-        }
     }
 
     private void CreateSplitContainerLayout(
