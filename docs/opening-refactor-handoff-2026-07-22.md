@@ -452,6 +452,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `RefreshMarkerVisualOrQueueRemoval`.
   - Moved per-marker null handling, stale marker queueing, and visual refresh call out of `RefreshOpeningMarkerVisuals`.
   - Kept empty marker guard, removed-marker list clearing, null marker removal behavior, marker refresh order, and post-loop removal behavior unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `HasMainCameraStateChanged`, `HasScreenStateChanged`, and `HasPreviewCanvasStateChanged`.
+  - Moved camera transform/ortho comparison, screen size comparison, and preview canvas comparison out of `HasCameraStateChanged`.
+  - Kept null camera behavior, position/rotation/ortho comparisons, screen width/height comparisons, preview canvas fallback values, canvas camera comparison, and final OR aggregation unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
@@ -1075,6 +1079,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting marker refresh helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting camera state comparison helpers, Unity script compilation succeeded.
+- After extracting camera state comparison helpers, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1693,6 +1701,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-marker-refresh-helper-catalog-tests.xml`
   - `Logs/opening-marker-refresh-helper-rail-regression.log`
   - `Logs/opening-marker-refresh-helper-rail-regression.xml`
+  - `Logs/opening-camera-state-helpers-compile.log`
+  - `Logs/opening-camera-state-helpers-catalog-tests.log`
+  - `Logs/opening-camera-state-helpers-catalog-tests.xml`
+  - `Logs/opening-camera-state-helpers-rail-regression.log`
+  - `Logs/opening-camera-state-helpers-rail-regression.xml`
 
 ## Important Context
 

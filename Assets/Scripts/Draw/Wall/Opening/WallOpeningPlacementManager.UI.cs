@@ -515,23 +515,37 @@ public partial class WallOpeningPlacementManager
 
     private bool HasCameraStateChanged()
     {
-        bool cameraChanged = false;
+        bool cameraChanged = HasMainCameraStateChanged();
+        bool screenChanged = HasScreenStateChanged();
+        bool canvasChanged = HasPreviewCanvasStateChanged();
+
+        return cameraChanged || screenChanged || canvasChanged;
+    }
+
+    private bool HasMainCameraStateChanged()
+    {
         if (mainCamera != null)
         {
             Transform cameraTransform = mainCamera.transform;
-            cameraChanged = cameraTransform.position != lastCameraPosition ||
-                            cameraTransform.rotation != lastCameraRotation ||
-                            !Mathf.Approximately(mainCamera.orthographicSize, lastCameraOrthoSize);
+            return cameraTransform.position != lastCameraPosition ||
+                cameraTransform.rotation != lastCameraRotation ||
+                !Mathf.Approximately(mainCamera.orthographicSize, lastCameraOrthoSize);
         }
 
-        bool screenChanged = Screen.width != lastScreenWidth || Screen.height != lastScreenHeight;
+        return false;
+    }
 
+    private bool HasScreenStateChanged()
+    {
+        return Screen.width != lastScreenWidth || Screen.height != lastScreenHeight;
+    }
+
+    private bool HasPreviewCanvasStateChanged()
+    {
         float currentCanvasScale = previewCanvas != null ? previewCanvas.scaleFactor : 0f;
         Camera currentCanvasCamera = previewCanvas != null ? previewCanvas.worldCamera : null;
-        bool canvasChanged = !Mathf.Approximately(currentCanvasScale, lastCanvasScaleFactor) ||
-                             currentCanvasCamera != lastPreviewCanvasWorldCamera;
-
-        return cameraChanged || screenChanged || canvasChanged;
+        return !Mathf.Approximately(currentCanvasScale, lastCanvasScaleFactor) ||
+            currentCanvasCamera != lastPreviewCanvasWorldCamera;
     }
 
     private bool HasMarkerGeometryChanged()
