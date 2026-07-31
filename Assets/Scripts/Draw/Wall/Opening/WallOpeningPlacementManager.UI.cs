@@ -303,12 +303,18 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
+        ApplySelectedOpeningBottomOffset(container, millimeters);
+        RebuildSelectedOpeningWithUndo();
+    }
+
+    private void ApplySelectedOpeningBottomOffset(WallOpeningContainer container, float millimeters)
+    {
         float bottomY = container.WallBottomY + MillimetersToUnits(millimeters);
         bottomY = ClampOpeningBottomY(container, SelectedOpening, bottomY);
         SelectedOpening.SetBottomY(bottomY);
+
         float clampedHeight = ClampOpeningHeight(container, SelectedOpening, SelectedOpening.Height, bottomY);
         SelectedOpening.SetHeight(clampedHeight);
-        RebuildSelectedOpeningWithUndo();
     }
 
     private void UpdateDefaultBottomOffsetMillimeters(OpeningPlacementType requiredType, float millimeters)
