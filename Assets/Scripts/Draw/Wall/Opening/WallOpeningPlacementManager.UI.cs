@@ -573,24 +573,31 @@ public partial class WallOpeningPlacementManager
                     continue;
                 }
 
-                Transform openingTransform = opening.transform;
-                hash = hash * 31 + openingTransform.position.GetHashCode();
-                hash = hash * 31 + openingTransform.rotation.GetHashCode();
-                hash = hash * 31 + openingTransform.localScale.GetHashCode();
-                hash = hash * 31 + opening.CenterDistance.GetHashCode();
-                hash = hash * 31 + opening.Width.GetHashCode();
-                hash = hash * 31 + opening.Depth.GetHashCode();
-
-                WallOpeningContainer container = opening.Container;
-                if (container != null)
-                {
-                    hash = hash * 31 + container.WallStart.GetHashCode();
-                    hash = hash * 31 + container.WallEnd.GetHashCode();
-                    hash = hash * 31 + container.WallThickness.GetHashCode();
-                }
+                hash = AddOpeningGeometryToHash(hash, opening);
             }
 
             return hash;
         }
+    }
+
+    private static int AddOpeningGeometryToHash(int hash, WallOpening opening)
+    {
+        Transform openingTransform = opening.transform;
+        hash = hash * 31 + openingTransform.position.GetHashCode();
+        hash = hash * 31 + openingTransform.rotation.GetHashCode();
+        hash = hash * 31 + openingTransform.localScale.GetHashCode();
+        hash = hash * 31 + opening.CenterDistance.GetHashCode();
+        hash = hash * 31 + opening.Width.GetHashCode();
+        hash = hash * 31 + opening.Depth.GetHashCode();
+
+        WallOpeningContainer container = opening.Container;
+        if (container != null)
+        {
+            hash = hash * 31 + container.WallStart.GetHashCode();
+            hash = hash * 31 + container.WallEnd.GetHashCode();
+            hash = hash * 31 + container.WallThickness.GetHashCode();
+        }
+
+        return hash;
     }
 }

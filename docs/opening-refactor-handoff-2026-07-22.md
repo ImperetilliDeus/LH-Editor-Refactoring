@@ -456,6 +456,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `HasMainCameraStateChanged`, `HasScreenStateChanged`, and `HasPreviewCanvasStateChanged`.
   - Moved camera transform/ortho comparison, screen size comparison, and preview canvas comparison out of `HasCameraStateChanged`.
   - Kept null camera behavior, position/rotation/ortho comparisons, screen width/height comparisons, preview canvas fallback values, canvas camera comparison, and final OR aggregation unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `AddOpeningGeometryToHash`.
+  - Moved per-opening transform, opening dimension, and container geometry hash accumulation out of `CalculateMarkerGeometryHash`.
+  - Kept wall-root guard, opening collection, opening count hash seed, inactive/null opening skip behavior, hash multiplication order, included fields, and final hash result unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
@@ -1083,6 +1087,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting camera state comparison helpers, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting marker geometry hash helper, Unity script compilation succeeded.
+- After extracting marker geometry hash helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1706,6 +1714,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-camera-state-helpers-catalog-tests.xml`
   - `Logs/opening-camera-state-helpers-rail-regression.log`
   - `Logs/opening-camera-state-helpers-rail-regression.xml`
+  - `Logs/opening-marker-geometry-hash-helper-compile.log`
+  - `Logs/opening-marker-geometry-hash-helper-catalog-tests.log`
+  - `Logs/opening-marker-geometry-hash-helper-catalog-tests.xml`
+  - `Logs/opening-marker-geometry-hash-helper-rail-regression.log`
+  - `Logs/opening-marker-geometry-hash-helper-rail-regression.xml`
 
 ## Important Context
 
