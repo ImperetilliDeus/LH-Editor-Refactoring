@@ -436,6 +436,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplySelectedOpeningBottomOffset`.
   - Moved bottom-offset unit conversion, bottom clamp, bottom assignment, height reclamp, and height assignment out of `ApplySelectedOpeningBottomOffsetFromInput`.
   - Kept parsing behavior, default bottom-offset updates, selected-opening/container guards, setter order, and undo rebuild flow unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `ApplySelectedOpeningTypeFromDropdown`.
+  - Moved repeated door/window dropdown type-key resolution, type-key assignment, size constraint application, and undo rebuild flow out of the public dropdown entrypoints.
+  - Kept public methods, selected-opening type guards, option index inputs, key resolver calls, setter calls, size constraint timing, and undo rebuild flow unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
@@ -1043,6 +1047,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting selected-opening bottom-offset apply helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting selected-opening type dropdown helper, Unity script compilation succeeded.
+- After extracting selected-opening type dropdown helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1641,6 +1649,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-bottom-offset-apply-helper-catalog-tests.xml`
   - `Logs/opening-bottom-offset-apply-helper-rail-regression.log`
   - `Logs/opening-bottom-offset-apply-helper-rail-regression.xml`
+  - `Logs/opening-type-dropdown-helper-compile.log`
+  - `Logs/opening-type-dropdown-helper-catalog-tests.log`
+  - `Logs/opening-type-dropdown-helper-catalog-tests.xml`
+  - `Logs/opening-type-dropdown-helper-rail-regression.log`
+  - `Logs/opening-type-dropdown-helper-rail-regression.xml`
 
 ## Important Context
 

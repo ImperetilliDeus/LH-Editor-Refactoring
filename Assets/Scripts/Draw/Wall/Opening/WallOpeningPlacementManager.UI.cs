@@ -162,15 +162,11 @@ public partial class WallOpeningPlacementManager
 
     public void ApplySelectedDoorTypeFromDropdown(int optionIndex)
     {
-        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Door)
-        {
-            return;
-        }
-
-        string nextTypeKey = GetDoorTypeKeyForOption(optionIndex);
-        SelectedOpening.SetDoorTypeKey(nextTypeKey);
-        ApplySelectedOpeningTypeSizeConstraints();
-        RebuildSelectedOpeningWithUndo();
+        ApplySelectedOpeningTypeFromDropdown(
+            optionIndex,
+            OpeningPlacementType.Door,
+            GetDoorTypeKeyForOption,
+            key => SelectedOpening.SetDoorTypeKey(key));
     }
 
     public void ApplySelectedDoorSwingDirection(bool opensRight)
@@ -183,13 +179,26 @@ public partial class WallOpeningPlacementManager
 
     public void ApplySelectedWindowTypeFromDropdown(int optionIndex)
     {
-        if (SelectedOpening == null || SelectedOpening.Type != OpeningPlacementType.Window)
+        ApplySelectedOpeningTypeFromDropdown(
+            optionIndex,
+            OpeningPlacementType.Window,
+            GetWindowTypeKeyForOption,
+            key => SelectedOpening.SetWindowTypeKey(key));
+    }
+
+    private void ApplySelectedOpeningTypeFromDropdown(
+        int optionIndex,
+        OpeningPlacementType requiredType,
+        System.Func<int, string> resolveTypeKey,
+        System.Action<string> applyTypeKey)
+    {
+        if (SelectedOpening == null || SelectedOpening.Type != requiredType)
         {
             return;
         }
 
-        string nextTypeKey = GetWindowTypeKeyForOption(optionIndex);
-        SelectedOpening.SetWindowTypeKey(nextTypeKey);
+        string nextTypeKey = resolveTypeKey(optionIndex);
+        applyTypeKey(nextTypeKey);
         ApplySelectedOpeningTypeSizeConstraints();
         RebuildSelectedOpeningWithUndo();
     }
