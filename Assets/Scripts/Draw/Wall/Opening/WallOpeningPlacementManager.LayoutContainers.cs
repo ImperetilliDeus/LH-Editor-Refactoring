@@ -332,9 +332,7 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        Vector3 segmentMidpoint = (selectedSegment.Data.startPoint + selectedSegment.Data.endPoint) * 0.5f;
-        float splitDistance = Vector3.Dot(segmentMidpoint - container.WallStart, container.WallDirection);
-        if (splitDistance <= MinimumWallSegmentLength || splitDistance >= container.WallLength - MinimumWallSegmentLength)
+        if (!TryGetContainerSplitDistance(container, selectedSegment, out float splitDistance))
         {
             return;
         }
@@ -362,6 +360,17 @@ public partial class WallOpeningPlacementManager
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
         SelectClosestVisibleWallAfterContainerSplit(splitPoint);
+    }
+
+    private bool TryGetContainerSplitDistance(
+        WallOpeningContainer container,
+        Wall selectedSegment,
+        out float splitDistance)
+    {
+        Vector3 segmentMidpoint = (selectedSegment.Data.startPoint + selectedSegment.Data.endPoint) * 0.5f;
+        splitDistance = Vector3.Dot(segmentMidpoint - container.WallStart, container.WallDirection);
+        return splitDistance > MinimumWallSegmentLength &&
+            splitDistance < container.WallLength - MinimumWallSegmentLength;
     }
 
     private void SelectClosestVisibleWallAfterContainerSplit(Vector3 splitPoint)
