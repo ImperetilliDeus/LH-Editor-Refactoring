@@ -282,63 +282,33 @@ public partial class HandleManager
 
             requiredLength = Mathf.Max(
                 requiredLength,
-                GetMinimumLengthForContainerPoint(
+                HandleGeometryUtility.GetMinimumLengthForContainerPoint(
                     wall.Data.startPoint,
                     wall.StartVertexId,
-                    container,
                     isDraggingStart,
+                    container.OuterStartVertexId,
+                    container.OuterEndVertexId,
                     oldStart,
                     oldEnd,
-                    oldDirection));
+                    oldDirection,
+                    minimumWallLength,
+                    dragPlaneHeight));
             requiredLength = Mathf.Max(
                 requiredLength,
-                GetMinimumLengthForContainerPoint(
+                HandleGeometryUtility.GetMinimumLengthForContainerPoint(
                     wall.Data.endPoint,
                     wall.EndVertexId,
-                    container,
                     isDraggingStart,
+                    container.OuterStartVertexId,
+                    container.OuterEndVertexId,
                     oldStart,
                     oldEnd,
-                    oldDirection));
+                    oldDirection,
+                    minimumWallLength,
+                    dragPlaneHeight));
         }
 
         return requiredLength;
-    }
-
-    private float GetMinimumLengthForContainerPoint(
-        Vector3 point,
-        int vertexId,
-        WallOpeningContainer container,
-        bool isDraggingStart,
-        Vector3 oldStart,
-        Vector3 oldEnd,
-        Vector3 oldDirection)
-    {
-        point.y = dragPlaneHeight;
-
-        if (container == null)
-        {
-            return minimumWallLength;
-        }
-
-        if (isDraggingStart)
-        {
-            if (vertexId == container.OuterStartVertexId)
-            {
-                return minimumWallLength;
-            }
-
-            float distanceFromEnd = Vector3.Dot(oldEnd - point, oldDirection);
-            return distanceFromEnd + minimumWallLength;
-        }
-
-        if (vertexId == container.OuterEndVertexId)
-        {
-            return minimumWallLength;
-        }
-
-        float distanceFromStart = Vector3.Dot(point - oldStart, oldDirection);
-        return distanceFromStart + minimumWallLength;
     }
 
     private bool TryGetContainerOuterWalls(WallOpeningContainer container, out Wall startWall, out Wall endWall)
@@ -461,28 +431,32 @@ public partial class HandleManager
                 continue;
             }
 
-            Vector3 nextStart = ResolveContainerEndpoint(
+            Vector3 nextStart = HandleGeometryUtility.ResolveContainerEndpoint(
                 wall.Data.startPoint,
                 wall.StartVertexId,
                 isDraggingStart,
-                container,
+                container != null ? container.OuterStartVertexId : 0,
+                container != null ? container.OuterEndVertexId : 0,
                 oldStart,
                 oldEnd,
                 newStart,
                 newEnd,
                 oldDirection,
-                newDirection);
-            Vector3 nextEnd = ResolveContainerEndpoint(
+                newDirection,
+                dragPlaneHeight);
+            Vector3 nextEnd = HandleGeometryUtility.ResolveContainerEndpoint(
                 wall.Data.endPoint,
                 wall.EndVertexId,
                 isDraggingStart,
-                container,
+                container != null ? container.OuterStartVertexId : 0,
+                container != null ? container.OuterEndVertexId : 0,
                 oldStart,
                 oldEnd,
                 newStart,
                 newEnd,
                 oldDirection,
-                newDirection);
+                newDirection,
+                dragPlaneHeight);
             wall.TryApplyCurrentProfileAndRefresh(nextStart, nextEnd, minimumWallLength, wallLengthDisplay, false);
         }
 
@@ -529,44 +503,4 @@ public partial class HandleManager
         }
     }
 
-    private Vector3 ResolveContainerEndpoint(
-        Vector3 oldPoint,
-        int endpointVertexId,
-        bool isDraggingStart,
-        WallOpeningContainer container,
-        Vector3 oldStart,
-        Vector3 oldEnd,
-        Vector3 newStart,
-        Vector3 newEnd,
-        Vector3 oldDirection,
-        Vector3 newDirection)
-    {
-        oldPoint.y = dragPlaneHeight;
-
-        if (container != null)
-        {
-            if (isDraggingStart && endpointVertexId == container.OuterStartVertexId)
-            {
-                return newStart;
-            }
-
-            if (!isDraggingStart && endpointVertexId == container.OuterEndVertexId)
-            {
-                return newEnd;
-            }
-        }
-
-        if (isDraggingStart)
-        {
-            float distanceFromEnd = Vector3.Dot(oldEnd - oldPoint, oldDirection);
-            Vector3 resolved = newEnd - newDirection * distanceFromEnd;
-            resolved.y = dragPlaneHeight;
-            return resolved;
-        }
-
-        float distanceFromStart = Vector3.Dot(oldPoint - oldStart, oldDirection);
-        Vector3 next = newStart + newDirection * distanceFromStart;
-        next.y = dragPlaneHeight;
-        return next;
-    }
 }

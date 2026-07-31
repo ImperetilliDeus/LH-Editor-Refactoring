@@ -89,6 +89,80 @@ internal static class HandleGeometryUtility
         return true;
     }
 
+    public static float GetMinimumLengthForContainerPoint(
+        Vector3 point,
+        int vertexId,
+        bool isDraggingStart,
+        int outerStartVertexId,
+        int outerEndVertexId,
+        Vector3 oldStart,
+        Vector3 oldEnd,
+        Vector3 oldDirection,
+        float minimumWallLength,
+        float planeHeight)
+    {
+        point.y = planeHeight;
+
+        if (isDraggingStart)
+        {
+            if (vertexId == outerStartVertexId)
+            {
+                return minimumWallLength;
+            }
+
+            float distanceFromEnd = Vector3.Dot(oldEnd - point, oldDirection);
+            return distanceFromEnd + minimumWallLength;
+        }
+
+        if (vertexId == outerEndVertexId)
+        {
+            return minimumWallLength;
+        }
+
+        float distanceFromStart = Vector3.Dot(point - oldStart, oldDirection);
+        return distanceFromStart + minimumWallLength;
+    }
+
+    public static Vector3 ResolveContainerEndpoint(
+        Vector3 oldPoint,
+        int endpointVertexId,
+        bool isDraggingStart,
+        int outerStartVertexId,
+        int outerEndVertexId,
+        Vector3 oldStart,
+        Vector3 oldEnd,
+        Vector3 newStart,
+        Vector3 newEnd,
+        Vector3 oldDirection,
+        Vector3 newDirection,
+        float planeHeight)
+    {
+        oldPoint.y = planeHeight;
+
+        if (isDraggingStart && endpointVertexId == outerStartVertexId)
+        {
+            return newStart;
+        }
+
+        if (!isDraggingStart && endpointVertexId == outerEndVertexId)
+        {
+            return newEnd;
+        }
+
+        if (isDraggingStart)
+        {
+            float distanceFromEnd = Vector3.Dot(oldEnd - oldPoint, oldDirection);
+            Vector3 resolved = newEnd - newDirection * distanceFromEnd;
+            resolved.y = planeHeight;
+            return resolved;
+        }
+
+        float distanceFromStart = Vector3.Dot(oldPoint - oldStart, oldDirection);
+        Vector3 next = newStart + newDirection * distanceFromStart;
+        next.y = planeHeight;
+        return next;
+    }
+
     private static bool IsFinite(float value)
     {
         return !float.IsNaN(value) && !float.IsInfinity(value);
