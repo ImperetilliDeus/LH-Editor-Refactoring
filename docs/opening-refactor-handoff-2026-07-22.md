@@ -1103,6 +1103,12 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting `OpeningContainerSnapshotBuilder`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningWallLookup`, Unity script compilation succeeded.
+- `OpeningWallLookup` now owns standalone wall matching for layout removal and closest visible replacement wall lookup after container split.
+- `WallOpeningPlacementManager.LayoutContainers.cs` delegates wall search/filter logic to the helper while keeping unregister, destroy, selection, and refresh orchestration unchanged.
+- After extracting `OpeningWallLookup`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1741,6 +1747,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-snapshot-builder-catalog-tests.xml`
   - `Logs/opening-container-snapshot-builder-rail-regression.log`
   - `Logs/opening-container-snapshot-builder-rail-regression.xml`
+  - `Logs/opening-wall-lookup-compile.log`
+  - `Logs/opening-wall-lookup-catalog-tests.log`
+  - `Logs/opening-wall-lookup-catalog-tests.xml`
+  - `Logs/opening-wall-lookup-rail-regression.log`
+  - `Logs/opening-wall-lookup-rail-regression.xml`
 
 ## Important Context
 
@@ -1859,7 +1870,7 @@ Do after tests are stable.
 Current state:
 
 - `ParametricOpeningModel.cs` is about 131 lines and should stay at public entrypoints, serialized fields/constants, and high-level dispatch for now.
-- `WallOpeningPlacementManager.LayoutContainers.cs` is about 723 lines after `OpeningContainerSplitPlanner` and `OpeningContainerSnapshotBuilder` extraction.
+- `WallOpeningPlacementManager.LayoutContainers.cs` is about 646 lines after `OpeningContainerSplitPlanner`, `OpeningContainerSnapshotBuilder`, and `OpeningWallLookup` extraction.
 - `WallOpeningPlacementManager.UI.cs` is about 603 lines after marker/camera/hash helper cleanup.
 - The remaining `WallOpeningPlacementManager` work should be judged by clear responsibility gain; avoid splitting tiny wrapper methods only to reduce line count.
 
@@ -1871,12 +1882,14 @@ Suggested extraction order:
 4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, marker registration cleanup, delete rebuild extraction, and restored-wall selection extraction.
 5. `OpeningContainerSplitPlanner` - started with split distance calculation, split overlap detection, and opening snapshot partitioning for container splits.
 6. `OpeningContainerSnapshotBuilder` - started with empty container/layout snapshot to wall-snapshot conversion.
+7. `OpeningWallLookup` - started with standalone wall matching and closest visible replacement wall lookup.
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
 
 Next recommended step:
 
-- Inspect `WallOpeningPlacementManager.LayoutContainers.cs` once more for cohesive helpers around standalone wall matching/removal or segment-root creation. If the remaining candidates are mostly wrappers around fields and Unity lifecycle calls, pause `WallOpeningPlacementManager` splitting and move to `HandleManager` before touching `FurniturePlacementManager`.
+- `WallOpeningPlacementManager.LayoutContainers.cs` has now had the obvious pure helpers moved out. Remaining candidates are mostly Unity object creation/removal wrappers and segment-root plumbing. Prefer pausing further `WallOpeningPlacementManager` splitting unless a concrete bug or cohesive responsibility appears.
+- Next recommended target is `HandleManager`: inspect its partial files and choose a small behavior-preserving extraction around lookup/filter/constraint helpers before considering `FurniturePlacementManager`.
 
 ## Suggested First Message For A New Chat
 
