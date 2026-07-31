@@ -70,6 +70,25 @@ internal static class HandleGeometryUtility
         return constrainedPoint;
     }
 
+    public static bool TryProjectPointerToPlane(
+        Camera camera,
+        Vector2 pointerScreenPosition,
+        Plane plane,
+        float planeHeight,
+        out Vector3 worldPoint)
+    {
+        worldPoint = Vector3.zero;
+        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(camera, pointerScreenPosition);
+        if (!plane.Raycast(ray, out float enter))
+        {
+            return false;
+        }
+
+        worldPoint = ray.GetPoint(enter);
+        worldPoint.y = planeHeight;
+        return true;
+    }
+
     private static bool IsFinite(float value)
     {
         return !float.IsNaN(value) && !float.IsInfinity(value);

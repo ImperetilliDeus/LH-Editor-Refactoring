@@ -472,15 +472,12 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        Ray ray = EditorScreenCoordinateUtility.ScreenPointToRay(mainCamera, pointerScreenPosition);
-        if (!dragPlane.Raycast(ray, out float enter))
-        {
-            return false;
-        }
-
-        worldPoint = ray.GetPoint(enter);
-        worldPoint.y = dragPlaneHeight;
-        return true;
+        return HandleGeometryUtility.TryProjectPointerToPlane(
+            mainCamera,
+            pointerScreenPosition,
+            dragPlane,
+            dragPlaneHeight,
+            out worldPoint);
     }
 
     private void CollectDragWallSegmentSnapCandidates(Vector3 aroundPoint, List<SnapManager.WallSnapSegment> segments, VertexGroup draggingSource)
