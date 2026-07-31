@@ -282,7 +282,7 @@ public partial class WallOpeningPlacementManager
 
     private GameObject RestoreWallFromEmptyContainerSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
     {
-        return RestoreWallFromSnapshot(BuildWallSnapshotFromContainer(layoutSnapshot));
+        return RestoreWallFromSnapshot(OpeningContainerSnapshotBuilder.BuildWallSnapshot(layoutSnapshot));
     }
 
     private void RestoreContainerLayoutFromSnapshot(

@@ -1097,6 +1097,12 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting `OpeningContainerSplitPlanner`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `OpeningContainerSnapshotBuilder`, Unity script compilation succeeded.
+- `OpeningContainerSnapshotBuilder` now owns empty opening-container to wall-snapshot conversion and opening-layout-snapshot to wall-snapshot conversion.
+- `WallOpeningPlacementManager.LayoutContainers.cs` and `WallOpeningPlacementManager.LayoutSnapshots.cs` delegate those data conversions to the helper while keeping restore/remove/rebuild orchestration unchanged.
+- After extracting `OpeningContainerSnapshotBuilder`, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1730,6 +1736,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-split-planner-catalog-tests.xml`
   - `Logs/opening-container-split-planner-rail-regression.log`
   - `Logs/opening-container-split-planner-rail-regression.xml`
+  - `Logs/opening-container-snapshot-builder-compile.log`
+  - `Logs/opening-container-snapshot-builder-catalog-tests.log`
+  - `Logs/opening-container-snapshot-builder-catalog-tests.xml`
+  - `Logs/opening-container-snapshot-builder-rail-regression.log`
+  - `Logs/opening-container-snapshot-builder-rail-regression.xml`
 
 ## Important Context
 
@@ -1848,7 +1859,7 @@ Do after tests are stable.
 Current state:
 
 - `ParametricOpeningModel.cs` is about 131 lines and should stay at public entrypoints, serialized fields/constants, and high-level dispatch for now.
-- `WallOpeningPlacementManager.LayoutContainers.cs` is about 769 lines after `OpeningContainerSplitPlanner` extraction.
+- `WallOpeningPlacementManager.LayoutContainers.cs` is about 723 lines after `OpeningContainerSplitPlanner` and `OpeningContainerSnapshotBuilder` extraction.
 - `WallOpeningPlacementManager.UI.cs` is about 603 lines after marker/camera/hash helper cleanup.
 - The remaining `WallOpeningPlacementManager` work should be judged by clear responsibility gain; avoid splitting tiny wrapper methods only to reduce line count.
 
@@ -1859,12 +1870,13 @@ Suggested extraction order:
 3. `OpeningVisualBuilder` - started with visual resource cache, placeholder component setup, model prefab application, and visual transform extraction.
 4. `OpeningSelectionController` - started with selection presentation refresh cleanup, detach/destroy extraction, post-delete snapshot extraction, delete undo extraction, marker registration cleanup, delete rebuild extraction, and restored-wall selection extraction.
 5. `OpeningContainerSplitPlanner` - started with split distance calculation, split overlap detection, and opening snapshot partitioning for container splits.
+6. `OpeningContainerSnapshotBuilder` - started with empty container/layout snapshot to wall-snapshot conversion.
 
 Keep `WallOpeningPlacementManager` as Unity lifecycle/input orchestration.
 
 Next recommended step:
 
-- Inspect `WallOpeningPlacementManager.LayoutContainers.cs` once more for cohesive helpers around restored wall/container removal or segment-root creation. If the remaining candidates are mostly wrappers around fields and Unity lifecycle calls, pause `WallOpeningPlacementManager` splitting and move to `HandleManager` before touching `FurniturePlacementManager`.
+- Inspect `WallOpeningPlacementManager.LayoutContainers.cs` once more for cohesive helpers around standalone wall matching/removal or segment-root creation. If the remaining candidates are mostly wrappers around fields and Unity lifecycle calls, pause `WallOpeningPlacementManager` splitting and move to `HandleManager` before touching `FurniturePlacementManager`.
 
 ## Suggested First Message For A New Chat
 

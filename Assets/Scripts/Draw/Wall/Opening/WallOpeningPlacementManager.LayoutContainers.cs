@@ -151,7 +151,7 @@ public partial class WallOpeningPlacementManager
             return null;
         }
 
-        UndoRedoManager.WallStateSnapshot wallSnapshot = BuildWallSnapshotFromContainer(container);
+        UndoRedoManager.WallStateSnapshot wallSnapshot = OpeningContainerSnapshotBuilder.BuildWallSnapshot(container);
         RemoveLayout(CaptureLayoutSnapshot(container));
         GameObject restoredWall = RestoreWallFromSnapshot(wallSnapshot);
 
@@ -171,52 +171,6 @@ public partial class WallOpeningPlacementManager
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
         MarkMarkerVisualsDirty();
-    }
-
-    private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(WallOpeningContainer container)
-    {
-        return BuildWallSnapshotFromContainer(BuildLayoutSnapshotFromContainer(container));
-    }
-
-    private static UndoRedoManager.OpeningLayoutSnapshot BuildLayoutSnapshotFromContainer(WallOpeningContainer container)
-    {
-        return new UndoRedoManager.OpeningLayoutSnapshot
-        {
-            layoutName = container != null ? container.name : "Wall",
-            wallStart = container != null ? container.WallStart : Vector3.zero,
-            wallEnd = container != null ? container.WallEnd : Vector3.right,
-            wallThickness = container != null ? container.WallThickness : 0.1f,
-            wallHeight = container != null ? container.WallHeight : 1f,
-            centerY = container != null ? container.CenterY : 0.5f,
-            visualState = container != null ? container.VisualState : default,
-            outerStartVertexId = container != null ? container.OuterStartVertexId : 0,
-            outerEndVertexId = container != null ? container.OuterEndVertexId : 0,
-            suppressOuterStartHandle = container != null && container.SuppressOuterStartHandle,
-            suppressOuterEndHandle = container != null && container.SuppressOuterEndHandle,
-            outerStartSplitPoint = container != null && container.OuterStartSplitPoint,
-            outerEndSplitPoint = container != null && container.OuterEndSplitPoint,
-        };
-    }
-
-    private UndoRedoManager.WallStateSnapshot BuildWallSnapshotFromContainer(UndoRedoManager.OpeningLayoutSnapshot snapshot)
-    {
-        return new UndoRedoManager.WallStateSnapshot
-        {
-            name = snapshot.layoutName,
-            visualState = snapshot.visualState,
-            wallData = BuildWallDataFromLayoutSnapshot(snapshot),
-            startVertexId = snapshot.outerStartVertexId,
-            endVertexId = snapshot.outerEndVertexId,
-            suppressStartHandle = snapshot.suppressOuterStartHandle,
-            suppressEndHandle = snapshot.suppressOuterEndHandle,
-            startSplitPoint = snapshot.outerStartSplitPoint,
-            endSplitPoint = snapshot.outerEndSplitPoint,
-        };
-    }
-
-    private static WallData BuildWallDataFromLayoutSnapshot(UndoRedoManager.OpeningLayoutSnapshot snapshot)
-    {
-        return new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY);
     }
 
     private GameObject CreateRestoredWall(UndoRedoManager.WallStateSnapshot snapshot)
