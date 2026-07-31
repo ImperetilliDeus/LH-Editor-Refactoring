@@ -518,6 +518,33 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
+        CreatePopulatedSplitOpeningContainer(
+            layoutName,
+            sourceSnapshot,
+            startPoint,
+            endPoint,
+            startVertexId,
+            endVertexId,
+            suppressStartHandle,
+            suppressEndHandle,
+            startSplitPoint,
+            endSplitPoint,
+            openings);
+    }
+
+    private void CreatePopulatedSplitOpeningContainer(
+        string layoutName,
+        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        Vector3 startPoint,
+        Vector3 endPoint,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle,
+        bool startSplitPoint,
+        bool endSplitPoint,
+        List<UndoRedoManager.OpeningStateSnapshot> openings)
+    {
         WallOpeningContainer nextContainer = CreateSplitOpeningContainer(
             layoutName,
             sourceSnapshot,
