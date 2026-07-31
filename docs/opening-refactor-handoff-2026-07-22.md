@@ -1109,6 +1109,14 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting `OpeningWallLookup`, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After pausing `WallOpeningPlacementManager` splitting and moving to `HandleManager`, extracted `HandleGeometryUtility`.
+- `HandleGeometryUtility` now owns finite world-point validation, wall handle geometry validation, and XZ-plane squared distance calculation.
+- `HandleManager.Registry.cs`, `HandleManager.UI.cs`, and `HandleManager.cs` delegate those pure geometry checks to the helper while keeping vertex id allocation, group merge, UI positioning, and registration orchestration unchanged.
+- After extracting `HandleGeometryUtility`, Unity script compilation succeeded.
+- After extracting `HandleGeometryUtility`, corrected Test Runner verification passed:
+  - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1752,6 +1760,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-wall-lookup-catalog-tests.xml`
   - `Logs/opening-wall-lookup-rail-regression.log`
   - `Logs/opening-wall-lookup-rail-regression.xml`
+  - `Logs/handle-geometry-utility-compile.log`
+  - `Logs/handle-geometry-utility-handle-tests.log`
+  - `Logs/handle-geometry-utility-handle-tests.xml`
+  - `Logs/handle-geometry-utility-catalog-tests.log`
+  - `Logs/handle-geometry-utility-catalog-tests.xml`
+  - `Logs/handle-geometry-utility-rail-regression.log`
+  - `Logs/handle-geometry-utility-rail-regression.xml`
 
 ## Important Context
 
@@ -1808,7 +1823,7 @@ These are the highest-risk code health items found during project review:
   - Problem: placement, layout snapshots, UI, selection, visuals, type catalog resolution, and undo recording are strongly coupled.
   - Risk: split/drag/opening delete behavior can regress because state transitions cross partial-file boundaries.
 - `HandleManager`
-  - Current total: about 3129 lines across 5 partial files.
+  - Current total: about 3098 lines across 5 partial files, plus `HandleGeometryUtility`.
   - Problem: handle input, drag rules, registry refresh, UI state, and container drag behavior are mixed.
   - Risk: wall vertex drag, split point drag, opening container rebuild, and undo capture are tightly coupled.
 - `FurniturePlacementManager`
@@ -1890,6 +1905,20 @@ Next recommended step:
 
 - `WallOpeningPlacementManager.LayoutContainers.cs` has now had the obvious pure helpers moved out. Remaining candidates are mostly Unity object creation/removal wrappers and segment-root plumbing. Prefer pausing further `WallOpeningPlacementManager` splitting unless a concrete bug or cohesive responsibility appears.
 - Next recommended target is `HandleManager`: inspect its partial files and choose a small behavior-preserving extraction around lookup/filter/constraint helpers before considering `FurniturePlacementManager`.
+
+### 5. Continue `HandleManager` split
+
+Current state:
+
+- `HandleManager.Drag.cs` is about 1534 lines and remains the highest-risk file.
+- `HandleManager.ContainerDrag.cs` is about 572 lines.
+- `HandleManager.Registry.cs` is about 484 lines after `HandleGeometryUtility` extraction.
+- Avoid moving private nested `VertexGroup`, `EndpointRef`, or drag state objects out unless there is a clear behavior-preserving seam.
+
+Next recommended step:
+
+- Inspect `HandleManager.Drag.cs` for pure calculation helpers such as drag threshold checks, camera/plane ray projection, or snap candidate scoring.
+- Prefer extracting stateless helpers that accept primitives/Unity structs and return values. Keep wall mutation, undo capture, container rebuild, and mode/input orchestration inside `HandleManager`.
 
 ## Suggested First Message For A New Chat
 

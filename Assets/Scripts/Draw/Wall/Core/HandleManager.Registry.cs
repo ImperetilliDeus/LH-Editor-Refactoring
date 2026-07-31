@@ -38,25 +38,6 @@ public partial class HandleManager
         wall.SetVertexIds(startId, endId);
     }
 
-    private bool HasValidWallHandleGeometry(Wall wall)
-    {
-        if (wall == null || wall.Data == null)
-        {
-            return false;
-        }
-
-        Vector3 startPoint = wall.Data.startPoint;
-        Vector3 endPoint = wall.Data.endPoint;
-        if (!IsValidHandleWorldPoint(startPoint) || !IsValidHandleWorldPoint(endPoint))
-        {
-            return false;
-        }
-
-        Vector3 delta = endPoint - startPoint;
-        delta.y = 0f;
-        return delta.sqrMagnitude >= minimumWallLength * minimumWallLength;
-    }
-
     private int FindNearestVertexId(Vector3 point)
     {
         float thresholdSqr = endpointMergeThreshold * endpointMergeThreshold;
@@ -66,7 +47,7 @@ public partial class HandleManager
         for (int i = 0; i < vertexGroups.Count; i++)
         {
             VertexGroup group = vertexGroups[i];
-            float distanceSqr = (new Vector2(group.worldPoint.x - point.x, group.worldPoint.z - point.z)).sqrMagnitude;
+            float distanceSqr = HandleGeometryUtility.DistanceSqrXZ(group.worldPoint, point);
             if (distanceSqr > closestSqr)
             {
                 continue;
@@ -109,7 +90,7 @@ public partial class HandleManager
         }
 
         Vector3 point = isStart ? entry.wallComponent.Data.startPoint : entry.wallComponent.Data.endPoint;
-        if (!IsValidHandleWorldPoint(point))
+        if (!HandleGeometryUtility.IsValidWorldPoint(point))
         {
             return;
         }
@@ -203,7 +184,7 @@ public partial class HandleManager
             Vector3 point = endpointRef.isStart
                 ? endpointRef.entry.wallComponent.Data.startPoint
                 : endpointRef.entry.wallComponent.Data.endPoint;
-            if (!IsValidHandleWorldPoint(point))
+            if (!HandleGeometryUtility.IsValidWorldPoint(point))
             {
                 continue;
             }
@@ -236,7 +217,7 @@ public partial class HandleManager
         for (int i = vertexGroups.Count - 1; i >= 0; i--)
         {
             VertexGroup group = vertexGroups[i];
-            if (group != null && group.endpoints.Count > 0 && IsValidHandleWorldPoint(group.worldPoint))
+            if (group != null && group.endpoints.Count > 0 && HandleGeometryUtility.IsValidWorldPoint(group.worldPoint))
             {
                 continue;
             }
@@ -250,16 +231,6 @@ public partial class HandleManager
 
             vertexGroups.RemoveAt(i);
         }
-    }
-
-    private static bool IsValidHandleWorldPoint(Vector3 point)
-    {
-        return IsFinite(point.x) && IsFinite(point.y) && IsFinite(point.z);
-    }
-
-    private static bool IsFinite(float value)
-    {
-        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     private VertexGroup TryMergeDraggedGroupToNearby(VertexGroup source)
@@ -281,7 +252,7 @@ public partial class HandleManager
                 continue;
             }
 
-            float distanceSqr = (new Vector2(candidate.worldPoint.x - source.worldPoint.x, candidate.worldPoint.z - source.worldPoint.z)).sqrMagnitude;
+            float distanceSqr = HandleGeometryUtility.DistanceSqrXZ(candidate.worldPoint, source.worldPoint);
             if (distanceSqr > closestSqr)
             {
                 continue;
@@ -342,9 +313,7 @@ public partial class HandleManager
                 continue;
             }
 
-            float dx = group.worldPoint.x - point.x;
-            float dz = group.worldPoint.z - point.z;
-            float distanceSqr = dx * dx + dz * dz;
+            float distanceSqr = HandleGeometryUtility.DistanceSqrXZ(group.worldPoint, point);
             if (distanceSqr > closestSqr)
             {
                 continue;

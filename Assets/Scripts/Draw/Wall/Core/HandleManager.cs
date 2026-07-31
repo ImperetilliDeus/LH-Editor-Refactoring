@@ -221,7 +221,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        if (!HasValidWallHandleGeometry(wallComponent))
+        if (!HandleGeometryUtility.HasValidWallHandleGeometry(wallComponent, minimumWallLength))
         {
             return;
         }

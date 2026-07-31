@@ -32,7 +32,7 @@ public partial class HandleManager
                 continue;
             }
 
-            if (group.endpoints.Count == 0 || !IsValidHandleWorldPoint(group.worldPoint))
+            if (group.endpoints.Count == 0 || !HandleGeometryUtility.IsValidWorldPoint(group.worldPoint))
             {
                 group.handleRect.gameObject.SetActive(false);
                 continue;
@@ -77,7 +77,7 @@ public partial class HandleManager
 
     private void SetHandleScreenPosition(RectTransform handleRect, Vector3 worldPoint)
     {
-        if (handleRect == null || mainCamera == null || !IsValidHandleWorldPoint(worldPoint))
+        if (handleRect == null || mainCamera == null || !HandleGeometryUtility.IsValidWorldPoint(worldPoint))
         {
             if (handleRect != null)
             {
