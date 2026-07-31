@@ -277,15 +277,22 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        WallOpeningContainer container = CreateContainerFromSnapshot(target);
-        RestoreOpeningsFromSnapshot(container, target.openings, openingCount);
-
-        RebuildContainer(container, false);
+        RestoreContainerLayoutFromSnapshot(target, openingCount);
     }
 
     private GameObject RestoreWallFromEmptyContainerSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
     {
         return RestoreWallFromSnapshot(BuildWallSnapshotFromContainer(layoutSnapshot));
+    }
+
+    private void RestoreContainerLayoutFromSnapshot(
+        UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot,
+        int openingCount)
+    {
+        WallOpeningContainer container = CreateContainerFromSnapshot(layoutSnapshot);
+        RestoreOpeningsFromSnapshot(container, layoutSnapshot.openings, openingCount);
+
+        RebuildContainer(container, false);
     }
 
     private static bool CanRestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)

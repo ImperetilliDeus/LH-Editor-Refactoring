@@ -440,6 +440,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ApplySelectedOpeningTypeFromDropdown`.
   - Moved repeated door/window dropdown type-key resolution, type-key assignment, size constraint application, and undo rebuild flow out of the public dropdown entrypoints.
   - Kept public methods, selected-opening type guards, option index inputs, key resolver calls, setter calls, size constraint timing, and undo rebuild flow unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutSnapshots.cs`
+  - Added `RestoreContainerLayoutFromSnapshot`.
+  - Moved container snapshot creation, opening snapshot restore loop, and rebuild call out of `ApplyLayoutSnapshot`.
+  - Kept current/target layout removal order, wall-only restore branches, opening count handling, container creation inputs, opening restore order, and rebuild argument unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
@@ -1051,6 +1055,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting selected-opening type dropdown helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container layout snapshot restore helper, Unity script compilation succeeded.
+- After extracting container layout snapshot restore helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1654,6 +1662,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-type-dropdown-helper-catalog-tests.xml`
   - `Logs/opening-type-dropdown-helper-rail-regression.log`
   - `Logs/opening-type-dropdown-helper-rail-regression.xml`
+  - `Logs/opening-container-layout-restore-helper-compile.log`
+  - `Logs/opening-container-layout-restore-helper-catalog-tests.log`
+  - `Logs/opening-container-layout-restore-helper-catalog-tests.xml`
+  - `Logs/opening-container-layout-restore-helper-rail-regression.log`
+  - `Logs/opening-container-layout-restore-helper-rail-regression.xml`
 
 ## Important Context
 
