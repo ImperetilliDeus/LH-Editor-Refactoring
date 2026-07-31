@@ -468,19 +468,24 @@ public partial class WallOpeningPlacementManager
         removedMarkerUIs.Clear();
         foreach (WallOpeningMarkerUI markerUI in markerUIs)
         {
-            if (markerUI == null)
-            {
-                removedMarkerUIs.Add(markerUI);
-                continue;
-            }
-
-            markerUI.RefreshVisual();
+            RefreshMarkerVisualOrQueueRemoval(markerUI);
         }
 
         for (int i = 0; i < removedMarkerUIs.Count; i++)
         {
             markerUIs.Remove(removedMarkerUIs[i]);
         }
+    }
+
+    private void RefreshMarkerVisualOrQueueRemoval(WallOpeningMarkerUI markerUI)
+    {
+        if (markerUI == null)
+        {
+            removedMarkerUIs.Add(markerUI);
+            return;
+        }
+
+        markerUI.RefreshVisual();
     }
 
     private void CacheCameraState()

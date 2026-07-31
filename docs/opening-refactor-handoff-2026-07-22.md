@@ -448,6 +448,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreateOpeningObjectFromSnapshot`.
   - Moved snapshot-restored opening `GameObject` creation, parent assignment, and layer application out of `CreateOpeningFromSnapshot`.
   - Kept door/window object naming, parent transform assignment, layer selection, `WallOpening` component creation, initialize arguments, and restore order unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `RefreshMarkerVisualOrQueueRemoval`.
+  - Moved per-marker null handling, stale marker queueing, and visual refresh call out of `RefreshOpeningMarkerVisuals`.
+  - Kept empty marker guard, removed-marker list clearing, null marker removal behavior, marker refresh order, and post-loop removal behavior unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
@@ -1067,6 +1071,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting snapshot opening object helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting marker refresh helper, Unity script compilation succeeded.
+- After extracting marker refresh helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1680,6 +1688,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-snapshot-object-helper-catalog-tests.xml`
   - `Logs/opening-snapshot-object-helper-rail-regression.log`
   - `Logs/opening-snapshot-object-helper-rail-regression.xml`
+  - `Logs/opening-marker-refresh-helper-compile.log`
+  - `Logs/opening-marker-refresh-helper-catalog-tests.log`
+  - `Logs/opening-marker-refresh-helper-catalog-tests.xml`
+  - `Logs/opening-marker-refresh-helper-rail-regression.log`
+  - `Logs/opening-marker-refresh-helper-rail-regression.xml`
 
 ## Important Context
 
