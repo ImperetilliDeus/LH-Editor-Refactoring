@@ -331,13 +331,7 @@ public partial class WallOpeningPlacementManager
         WallOpeningContainer container,
         UndoRedoManager.OpeningStateSnapshot openingSnapshot)
     {
-        GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
-        openingObject.transform.SetParent(container.transform, false);
-        LayerUtility.ApplyLayer(
-            openingObject,
-            openingSnapshot.type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
-            false);
-
+        GameObject openingObject = CreateOpeningObjectFromSnapshot(container, openingSnapshot);
         WallOpening opening = openingObject.AddComponent<WallOpening>();
         opening.Initialize(
             this,
@@ -353,6 +347,19 @@ public partial class WallOpeningPlacementManager
             openingSnapshot.depth,
             openingSnapshot.bottomY);
         return opening;
+    }
+
+    private static GameObject CreateOpeningObjectFromSnapshot(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningStateSnapshot openingSnapshot)
+    {
+        GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
+        openingObject.transform.SetParent(container.transform, false);
+        LayerUtility.ApplyLayer(
+            openingObject,
+            openingSnapshot.type == OpeningPlacementType.Door ? LayerUtility.DoorLayerName : LayerUtility.WindowLayerName,
+            false);
+        return openingObject;
     }
 
     public void RebuildOpeningContainer(WallOpeningContainer container)
