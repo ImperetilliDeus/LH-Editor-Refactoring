@@ -263,6 +263,13 @@ public partial class WallOpeningPlacementManager
             return existingContainer.transform;
         }
 
+        WallOpeningContainer container = CreateOpeningContainerFromWall(selectedWall);
+        RemoveOriginalWallAfterContainerCreation(selectedWall);
+        return container.transform;
+    }
+
+    private WallOpeningContainer CreateOpeningContainerFromWall(Wall selectedWall)
+    {
         WallGeometryData geometry = CaptureGeometry(selectedWall);
         WallOpeningContainer container = OpeningContainerFactory.Create(
             selectedWall.name,
@@ -281,8 +288,7 @@ public partial class WallOpeningPlacementManager
             selectedWall.IsEndSplitPoint,
             true);
         ApplyPersistentWallId(container, selectedWall);
-        RemoveOriginalWallAfterContainerCreation(selectedWall);
-        return container.transform;
+        return container;
     }
 
     private void RemoveOriginalWallAfterContainerCreation(Wall selectedWall)

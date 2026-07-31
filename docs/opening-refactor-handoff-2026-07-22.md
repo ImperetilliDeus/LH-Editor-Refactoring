@@ -417,6 +417,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Moved original selected-wall cleanup out of `GetOrCreateOpeningContainer` after opening-container creation.
   - Kept persistent id application order, handle unregister guard, pending room-refresh tracking, length-display clearing, wall GameObject deactivate/destroy behavior, and returned container transform unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `CreateOpeningContainerFromWall`.
+  - Moved selected-wall geometry capture, opening-container factory creation, and persistent wall-id application out of `GetOrCreateOpeningContainer`.
+  - Kept existing-container reuse guard, factory arguments, persistent id application timing, original-wall removal order, and returned container transform unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
   - Kept missing-container guard, cached wall collection, null-wall skip behavior, clear-before-unregister order, handle manager guard, container deactivate/destroy behavior, and remove-layout caller behavior unchanged.
@@ -1003,6 +1007,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting container split selection helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting opening-container creation helper, Unity script compilation succeeded.
+- After extracting opening-container creation helper, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1576,6 +1584,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-container-split-selection-helper-catalog-tests.xml`
   - `Logs/opening-container-split-selection-helper-rail-regression.log`
   - `Logs/opening-container-split-selection-helper-rail-regression.xml`
+  - `Logs/opening-container-create-helper-compile.log`
+  - `Logs/opening-container-create-helper-catalog-tests.log`
+  - `Logs/opening-container-create-helper-catalog-tests.xml`
+  - `Logs/opening-container-create-helper-rail-regression.log`
+  - `Logs/opening-container-create-helper-rail-regression.xml`
 
 ## Important Context
 
