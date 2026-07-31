@@ -41,48 +41,33 @@ public partial class WallOpeningPlacementManager
 
     public void ApplySelectedDoorWidthFromInput(string inputText)
     {
-        ApplySelectedOpeningDimensionFromInput(
-            inputText,
-            OpeningPlacementType.Door,
-            value => defaultDoorWidthMillimeters = value,
-            (opening, container, valueInUnits) =>
-            {
-                float clampedWidth = ClampOpeningWidth(container, opening, valueInUnits);
-                if (clampedWidth <= MinimumWallSegmentLength)
-                {
-                    return false;
-                }
-
-                opening.SetWidth(clampedWidth);
-                return true;
-            });
+        ApplySelectedOpeningWidthFromInput(inputText, OpeningPlacementType.Door, value => defaultDoorWidthMillimeters = value);
     }
 
     public void ApplySelectedDoorHeightFromInput(string inputText)
     {
-        ApplySelectedOpeningDimensionFromInput(
-            inputText,
-            OpeningPlacementType.Door,
-            value => defaultDoorHeightMillimeters = value,
-            (opening, container, valueInUnits) =>
-            {
-                float clampedHeight = ClampOpeningHeight(container, opening, valueInUnits, opening.BottomY);
-                if (clampedHeight <= MinimumWallSegmentLength)
-                {
-                    return false;
-                }
-
-                opening.SetHeight(clampedHeight);
-                return true;
-            });
+        ApplySelectedOpeningHeightFromInput(inputText, OpeningPlacementType.Door, value => defaultDoorHeightMillimeters = value);
     }
 
     public void ApplySelectedWindowWidthFromInput(string inputText)
     {
+        ApplySelectedOpeningWidthFromInput(inputText, OpeningPlacementType.Window, value => defaultWindowWidthMillimeters = value);
+    }
+
+    public void ApplySelectedWindowHeightFromInput(string inputText)
+    {
+        ApplySelectedOpeningHeightFromInput(inputText, OpeningPlacementType.Window, value => defaultWindowHeightMillimeters = value);
+    }
+
+    private void ApplySelectedOpeningWidthFromInput(
+        string inputText,
+        OpeningPlacementType requiredType,
+        System.Action<float> updateDefaultValue)
+    {
         ApplySelectedOpeningDimensionFromInput(
             inputText,
-            OpeningPlacementType.Window,
-            value => defaultWindowWidthMillimeters = value,
+            requiredType,
+            updateDefaultValue,
             (opening, container, valueInUnits) =>
             {
                 float clampedWidth = ClampOpeningWidth(container, opening, valueInUnits);
@@ -96,12 +81,15 @@ public partial class WallOpeningPlacementManager
             });
     }
 
-    public void ApplySelectedWindowHeightFromInput(string inputText)
+    private void ApplySelectedOpeningHeightFromInput(
+        string inputText,
+        OpeningPlacementType requiredType,
+        System.Action<float> updateDefaultValue)
     {
         ApplySelectedOpeningDimensionFromInput(
             inputText,
-            OpeningPlacementType.Window,
-            value => defaultWindowHeightMillimeters = value,
+            requiredType,
+            updateDefaultValue,
             (opening, container, valueInUnits) =>
             {
                 float clampedHeight = ClampOpeningHeight(container, opening, valueInUnits, opening.BottomY);

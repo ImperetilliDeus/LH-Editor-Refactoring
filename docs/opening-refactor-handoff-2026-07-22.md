@@ -428,6 +428,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `CreatePopulatedSplitOpeningContainer`.
   - Moved split opening-container creation, opening snapshot restore loop, and rebuild call out of `CreateSplitContainerLayout`.
   - Kept minimum length guard, empty-opening standalone branch, container factory inputs, opening restore order, and rebuild argument unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+  - Added `ApplySelectedOpeningWidthFromInput` and `ApplySelectedOpeningHeightFromInput`.
+  - Moved repeated door/window width and height dimension-input lambdas out of the public input entrypoints.
+  - Kept public methods, default-value update delegates, parsing/refresh behavior, clamp calls, minimum segment threshold, setter calls, and undo rebuild flow unchanged.
 - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
   - Added `ClearContainerWallRegistrations`.
   - Moved container child wall collection, length-display clearing, and handle unregister loop out of `RemoveContainerLayout`.
@@ -1027,6 +1031,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 - After extracting populated split opening-container helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting selected-opening width/height input helpers, Unity script compilation succeeded.
+- After extracting selected-opening width/height input helpers, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1615,6 +1623,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-populated-split-container-helper-catalog-tests.xml`
   - `Logs/opening-populated-split-container-helper-rail-regression.log`
   - `Logs/opening-populated-split-container-helper-rail-regression.xml`
+  - `Logs/opening-ui-width-height-input-helper-compile.log`
+  - `Logs/opening-ui-width-height-input-helper-catalog-tests.log`
+  - `Logs/opening-ui-width-height-input-helper-catalog-tests.xml`
+  - `Logs/opening-ui-width-height-input-helper-rail-regression.log`
+  - `Logs/opening-ui-width-height-input-helper-rail-regression.xml`
 
 ## Important Context
 
