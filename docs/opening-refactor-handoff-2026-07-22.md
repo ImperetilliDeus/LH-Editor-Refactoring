@@ -534,6 +534,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Added `ResolveOpeningUIControllers` and `CreateDeactivatedWallsHolder`.
   - Moved UI controller fallback lookup and drag deactivated-wall holder creation out of `Awake`.
   - Kept initialization order, lookup type, holder name, parent, inactive state, assigned transform, and awake registration flow unchanged.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+  - Added `SelectClosestVisibleWallAfterContainerSplit`.
+  - Moved post-container-split closest visible wall lookup and selection update out of `SplitContainerWallSegment`.
+  - Kept selection-manager guard, split point input, closest visible wall lookup, null replacement guard, and selected wall assignment behavior unchanged.
 
 ## Verification State
 
@@ -993,6 +997,10 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - After extracting awake initialization helpers, Unity script compilation succeeded.
 - After extracting awake initialization helpers, corrected Test Runner verification passed:
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting container split selection helper, Unity script compilation succeeded.
+- After extracting container split selection helper, corrected Test Runner verification passed:
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
@@ -1563,6 +1571,11 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/opening-awake-initialization-helpers-catalog-tests.xml`
   - `Logs/opening-awake-initialization-helpers-rail-regression.log`
   - `Logs/opening-awake-initialization-helpers-rail-regression.xml`
+  - `Logs/opening-container-split-selection-helper-compile.log`
+  - `Logs/opening-container-split-selection-helper-catalog-tests.log`
+  - `Logs/opening-container-split-selection-helper-catalog-tests.xml`
+  - `Logs/opening-container-split-selection-helper-rail-regression.log`
+  - `Logs/opening-container-split-selection-helper-rail-regression.xml`
 
 ## Important Context
 

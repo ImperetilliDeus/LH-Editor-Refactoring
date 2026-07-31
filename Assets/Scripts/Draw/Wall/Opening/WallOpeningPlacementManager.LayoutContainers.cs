@@ -355,13 +355,20 @@ public partial class WallOpeningPlacementManager
         RoomTopologyEvents.RequestRefreshAll();
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
-        if (wallSelectionManager != null)
+        SelectClosestVisibleWallAfterContainerSplit(splitPoint);
+    }
+
+    private void SelectClosestVisibleWallAfterContainerSplit(Vector3 splitPoint)
+    {
+        if (wallSelectionManager == null)
         {
-            Wall replacementWall = FindClosestVisibleWallToPoint(splitPoint);
-            if (replacementWall != null)
-            {
-                wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
-            }
+            return;
+        }
+
+        Wall replacementWall = FindClosestVisibleWallToPoint(splitPoint);
+        if (replacementWall != null)
+        {
+            wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
         }
     }
 
