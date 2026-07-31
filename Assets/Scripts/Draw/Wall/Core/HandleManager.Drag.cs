@@ -25,9 +25,10 @@ public partial class HandleManager
 
         if (pendingGroup != null && draggingGroup == null && pointerFrame.LeftPressed)
         {
-            float thresholdSqr = clickAllowanceSensitivityPixels * clickAllowanceSensitivityPixels;
-            float movedSqr = (mousePosition - pendingStartMousePosition).sqrMagnitude;
-            if (movedSqr >= thresholdSqr)
+            if (HandleGeometryUtility.HasPointerMovedBeyondThreshold(
+                    mousePosition,
+                    pendingStartMousePosition,
+                    clickAllowanceSensitivityPixels))
             {
                 BeginHandleDragFromPending();
             }
@@ -53,7 +54,12 @@ public partial class HandleManager
         bool snapped = false;
         if (IsSplitPointGroup(draggingGroup) && TryGetSplitPointDragSegment(draggingGroup, out Vector3 segmentStart, out Vector3 segmentEnd))
         {
-            snappedPoint = ConstrainPointToSegment(dragPoint, segmentStart, segmentEnd);
+            snappedPoint = HandleGeometryUtility.ConstrainPointToSegment(
+                dragPoint,
+                segmentStart,
+                segmentEnd,
+                minimumWallLength,
+                dragPlaneHeight);
             SetGroupColor(draggingGroup, GetActiveColor(draggingGroup));
         }
         else
@@ -1510,25 +1516,4 @@ public partial class HandleManager
         return false;
     }
 
-    private Vector3 ConstrainPointToSegment(Vector3 point, Vector3 segmentStart, Vector3 segmentEnd)
-    {
-        Vector3 direction = segmentEnd - segmentStart;
-        direction.y = 0f;
-        float length = direction.magnitude;
-        if (length <= 0.0001f)
-        {
-            point = segmentStart;
-            point.y = dragPlaneHeight;
-            return point;
-        }
-
-        direction /= length;
-        float minDistance = Mathf.Min(minimumWallLength, length * 0.5f);
-        float maxDistance = Mathf.Max(minDistance, length - minimumWallLength);
-        float projectedDistance = Vector3.Dot(point - segmentStart, direction);
-        float clampedDistance = Mathf.Clamp(projectedDistance, minDistance, maxDistance);
-        Vector3 constrainedPoint = segmentStart + direction * clampedDistance;
-        constrainedPoint.y = dragPlaneHeight;
-        return constrainedPoint;
-    }
 }

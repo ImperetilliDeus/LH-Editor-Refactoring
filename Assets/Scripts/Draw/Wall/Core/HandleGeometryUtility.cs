@@ -33,6 +33,43 @@ internal static class HandleGeometryUtility
         return dx * dx + dz * dz;
     }
 
+    public static bool HasPointerMovedBeyondThreshold(
+        Vector2 currentPosition,
+        Vector2 startPosition,
+        float thresholdPixels)
+    {
+        float thresholdSqr = thresholdPixels * thresholdPixels;
+        float movedSqr = (currentPosition - startPosition).sqrMagnitude;
+        return movedSqr >= thresholdSqr;
+    }
+
+    public static Vector3 ConstrainPointToSegment(
+        Vector3 point,
+        Vector3 segmentStart,
+        Vector3 segmentEnd,
+        float minimumDistanceFromEndpoint,
+        float planeHeight)
+    {
+        Vector3 direction = segmentEnd - segmentStart;
+        direction.y = 0f;
+        float length = direction.magnitude;
+        if (length <= 0.0001f)
+        {
+            point = segmentStart;
+            point.y = planeHeight;
+            return point;
+        }
+
+        direction /= length;
+        float minDistance = Mathf.Min(minimumDistanceFromEndpoint, length * 0.5f);
+        float maxDistance = Mathf.Max(minDistance, length - minimumDistanceFromEndpoint);
+        float projectedDistance = Vector3.Dot(point - segmentStart, direction);
+        float clampedDistance = Mathf.Clamp(projectedDistance, minDistance, maxDistance);
+        Vector3 constrainedPoint = segmentStart + direction * clampedDistance;
+        constrainedPoint.y = planeHeight;
+        return constrainedPoint;
+    }
+
     private static bool IsFinite(float value)
     {
         return !float.IsNaN(value) && !float.IsInfinity(value);

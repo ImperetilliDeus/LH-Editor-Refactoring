@@ -1117,6 +1117,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extending `HandleGeometryUtility` with drag calculations, Unity script compilation succeeded.
+- `HandleGeometryUtility` now also owns pointer drag-threshold comparison and split-point drag projection/clamping to a segment.
+- `HandleManager.Drag.cs` delegates those calculations to the helper while keeping input state, snap lookup, wall mutation, undo, and UI color updates unchanged.
+- After extending `HandleGeometryUtility` with drag calculations, corrected Test Runner verification passed:
+  - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1767,6 +1774,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/handle-geometry-utility-catalog-tests.xml`
   - `Logs/handle-geometry-utility-rail-regression.log`
   - `Logs/handle-geometry-utility-rail-regression.xml`
+  - `Logs/handle-drag-geometry-helpers-compile.log`
+  - `Logs/handle-drag-geometry-helpers-handle-tests.log`
+  - `Logs/handle-drag-geometry-helpers-handle-tests.xml`
+  - `Logs/handle-drag-geometry-helpers-catalog-tests.log`
+  - `Logs/handle-drag-geometry-helpers-catalog-tests.xml`
+  - `Logs/handle-drag-geometry-helpers-rail-regression.log`
+  - `Logs/handle-drag-geometry-helpers-rail-regression.xml`
 
 ## Important Context
 
@@ -1910,7 +1924,7 @@ Next recommended step:
 
 Current state:
 
-- `HandleManager.Drag.cs` is about 1534 lines and remains the highest-risk file.
+- `HandleManager.Drag.cs` is about 1519 lines and remains the highest-risk file.
 - `HandleManager.ContainerDrag.cs` is about 572 lines.
 - `HandleManager.Registry.cs` is about 484 lines after `HandleGeometryUtility` extraction.
 - Avoid moving private nested `VertexGroup`, `EndpointRef`, or drag state objects out unless there is a clear behavior-preserving seam.
@@ -1919,6 +1933,7 @@ Next recommended step:
 
 - Inspect `HandleManager.Drag.cs` for pure calculation helpers such as drag threshold checks, camera/plane ray projection, or snap candidate scoring.
 - Prefer extracting stateless helpers that accept primitives/Unity structs and return values. Keep wall mutation, undo capture, container rebuild, and mode/input orchestration inside `HandleManager`.
+- The obvious drag threshold and split-point segment projection helpers are now in `HandleGeometryUtility`; next inspect ray/plane projection or linear-chain element identity helpers, but avoid moving private chain state out prematurely.
 
 ## Suggested First Message For A New Chat
 
