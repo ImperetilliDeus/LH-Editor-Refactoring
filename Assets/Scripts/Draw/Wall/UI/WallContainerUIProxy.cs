@@ -103,6 +103,11 @@ public class WallContainerUIProxy : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
+        {
+            return;
+        }
+
         if (selectionManager != null &&
             selectionManager.IsWallUIInteractionEnabled &&
             !selectionManager.IsPointerBlockedByNonWallUI(gameObject))

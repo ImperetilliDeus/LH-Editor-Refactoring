@@ -689,7 +689,11 @@ internal sealed class WallLengthLabelClickHandler : MonoBehaviour, IPointerClick
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (!interactable || owner == null || wallTransform == null)
+        if (eventData == null ||
+            eventData.button != PointerEventData.InputButton.Left ||
+            !interactable ||
+            owner == null ||
+            wallTransform == null)
         {
             return;
         }

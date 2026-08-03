@@ -37,7 +37,7 @@ public sealed class TopPlanSegmentBatchGraphic : MaskableGraphic, IPointerClickH
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (eventData == null)
+        if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
         {
             return;
         }

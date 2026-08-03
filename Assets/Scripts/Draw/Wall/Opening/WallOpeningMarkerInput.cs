@@ -24,6 +24,11 @@ public class WallOpeningMarkerInput : MonoBehaviour, IPointerClickHandler, IBegi
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
+        {
+            return;
+        }
+
         if (placementManager != null)
         {
             placementManager.SelectOpening(ownerOpening);
