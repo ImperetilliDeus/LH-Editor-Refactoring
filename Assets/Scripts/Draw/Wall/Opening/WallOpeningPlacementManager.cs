@@ -27,6 +27,18 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
         public WallVisualState visualState;
     }
 
+    private struct ContainerPreviewSegment
+    {
+        public Vector3 startPoint;
+        public Vector3 endPoint;
+        public int startVertexId;
+        public int endVertexId;
+        public bool suppressStartHandle;
+        public bool suppressEndHandle;
+        public bool startSplitPoint;
+        public bool endSplitPoint;
+    }
+
     [Header("References")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Transform wallRoot;
@@ -66,6 +78,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     private readonly List<WallOpening> cachedOpenings = new List<WallOpening>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
+    private readonly List<ContainerPreviewSegment> cachedPreviewSegments = new List<ContainerPreviewSegment>();
     private readonly List<Wall> pendingRoomRefreshRemovedWalls = new List<Wall>();
     private readonly List<OpeningTypeOption> doorTypeOptions = new List<OpeningTypeOption>();
     private readonly List<OpeningTypeOption> windowTypeOptions = new List<OpeningTypeOption>();

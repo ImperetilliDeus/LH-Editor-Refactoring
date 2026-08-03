@@ -1463,7 +1463,12 @@ public partial class HandleManager
                 return false;
             }
 
-            wallOpeningPlacementManager.ApplyContainerSpanFromExternalDrag(element.container, startPoint, endPoint, snapshot);
+            wallOpeningPlacementManager.ApplyContainerSpanFromExternalDrag(
+                element.container,
+                startPoint,
+                endPoint,
+                snapshot,
+                rebuildDuringDrag: false);
             return true;
         }
 

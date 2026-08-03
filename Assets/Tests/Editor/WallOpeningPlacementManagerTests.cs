@@ -281,6 +281,90 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
+    public void ApplyContainerSpanFromExternalDrag_LightweightPreview_ReusesGeneratedSegments()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallType = GetAssemblyType("Wall");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(10f, 0f, 0f),
+                0.1f,
+                3f,
+                1.5f,
+                visualState,
+                11,
+                12,
+                false,
+                false,
+                true,
+                false,
+            });
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Window"), openingType);
+        object windowEnumValue = Enum.Parse(openingPlacementType, "Window");
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                windowEnumValue,
+                string.Empty,
+                "S003",
+                false,
+                false,
+                3f,
+                2f,
+                2f,
+                0.1f,
+                0f,
+            });
+
+        managerType.GetMethod("RebuildOpeningContainer")?.Invoke(manager, new object[] { container });
+        Component[] beforeWalls = container.GetComponentsInChildren(wallType, true);
+        Assert.That(beforeWalls, Has.Length.EqualTo(3));
+
+        object baselineSnapshot = managerType.GetMethod("CaptureLayoutSnapshot", new[] { containerType })
+            ?.Invoke(manager, new object[] { container });
+        managerType.GetMethod(
+                "ApplyContainerSpanFromExternalDrag",
+                new[]
+                {
+                    containerType,
+                    typeof(Vector3),
+                    typeof(Vector3),
+                    GetAssemblyType("UndoRedoManager+OpeningLayoutSnapshot"),
+                    typeof(bool),
+                })
+            ?.Invoke(
+                manager,
+                new[]
+                {
+                    container,
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(12f, 0f, 0f),
+                    baselineSnapshot,
+                    false,
+                });
+
+        Component[] afterWalls = container.GetComponentsInChildren(wallType, true);
+        Assert.That(afterWalls, Has.Length.EqualTo(3));
+        CollectionAssert.AreEquivalent(beforeWalls, afterWalls);
+        Assert.That(GetPropertyValue<Vector3>(GetPropertyValue<object>(afterWalls[2], "Data"), "endPoint").x, Is.EqualTo(12f).Within(0.0001f));
+    }
+
+    [Test]
     public void UpdateOpeningVisual_DoesNotOverlayDoorMaterial_WhenDoorPrefabExists()
     {
         Type managerType = GetAssemblyType("WallOpeningPlacementManager");
@@ -859,6 +943,13 @@ public class WallOpeningPlacementManagerTests
         MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.That(method, Is.Not.Null);
         method.Invoke(target, args);
+    }
+
+    private static T GetPropertyValue<T>(object target, string propertyName)
+    {
+        PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        Assert.That(property, Is.Not.Null);
+        return (T)property.GetValue(target);
     }
 
     private static Type GetAssemblyType(string typeName)

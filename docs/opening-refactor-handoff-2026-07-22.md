@@ -162,6 +162,43 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Dragging an opening-container outer split point can still call `ApplyContainerSpanFromExternalDrag` and `RebuildContainer(container, true)` during drag.
   - If frame drops remain after this movement fix, the next focused change should defer/heavily lighten container rebuild during split-handle drag, then do the full rebuild and opening ownership transfer on drag end.
 
+## Completed In Split Container Lightweight Preview Follow-up
+
+- User-reported issue:
+  - Creating a split point on a wall with openings is slow.
+  - Dragging that split point is severely slow.
+  - The split point still may feel blocked around openings.
+- Root cause confirmed:
+  - The largest drag-time cost was `ApplyContainerSpanFromExternalDrag` calling `RebuildContainer(container, true)` on every split-handle drag tick.
+  - `RebuildContainer` clears/recreates generated wall segments, updates opening visuals, creates filler segments, marks marker visuals, and syncs container metadata.
+  - With multiple openings, this was doing Unity object/renderer/marker churn continuously while the pointer moved.
+- Implementation:
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+    - Added optional `rebuildDuringDrag` parameter to `ApplyContainerSpanFromExternalDrag`.
+    - Added lightweight span preview path that reuses existing generated wall segment objects.
+    - The preview path updates segment endpoints, handle metadata, split flags, and opening transforms without clearing/recreating the container layout.
+    - It falls back to the existing full rebuild if the generated segment count/layout is not the expected `openings * 2 + 1`.
+  - `Assets/Scripts/Draw/Wall/Core/HandleManager.Drag.cs`
+    - Split-handle container span drag now calls `ApplyContainerSpanFromExternalDrag(..., rebuildDuringDrag: false)`.
+    - Other container endpoint drag call sites keep the default full rebuild behavior.
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+    - Added reusable preview segment storage for the lightweight preview.
+  - `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+    - Added a regression test proving lightweight preview reuses generated segment objects and updates endpoint geometry.
+- Verification:
+  - Unity compile passed with `Logs/split-container-lightweight-preview-compile.log`.
+  - `dotnet build Assembly-CSharp.csproj` passed.
+  - `dotnet build LH.Editor.Tests.csproj` passed.
+  - Targeted Unity EditMode tests passed with `Logs/split-container-lightweight-preview-tests.xml`: 8 total, 8 passed, 0 failed.
+    - `HandleManagerModeTests`: 4 total, 4 passed, 0 failed.
+    - `WallOpeningPlacementManagerTests.ApplyContainerSpanFromExternalDrag_LightweightPreview_ReusesGeneratedSegments`
+    - `WallOpeningPlacementManagerTests.RepartitionContainerWithAdjacentWallAtSplit_MovesCrossedOpeningToAdjacentLayout`
+    - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary`
+    - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary`
+- Remaining behavior note:
+  - Opening ownership transfer is still drag-end based and primarily covers container plus adjacent standalone wall.
+  - If crossing remains blocked in a specific layout after this performance fix, inspect whether both sides of the split point are opening containers and extend repartition to container+container.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public partial class WallOpeningPlacementManager
@@ -6,7 +7,8 @@ public partial class WallOpeningPlacementManager
         WallOpeningContainer container,
         Vector3 newStart,
         Vector3 newEnd,
-        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot)
+        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot,
+        bool rebuildDuringDrag = true)
     {
         if (container == null || !baselineSnapshot.hasContainer)
         {
@@ -44,9 +46,216 @@ public partial class WallOpeningPlacementManager
             movedEnd,
             translated);
 
-        RebuildContainer(container, true);
+        if (rebuildDuringDrag || !TryUpdateContainerSpanDragPreview(container))
+        {
+            RebuildContainer(container, true);
+        }
+        else
+        {
+            MarkMarkerVisualsDirty();
+        }
 
         RefreshSelectedWallAfterContainerSpanDrag(container, newStart, newLength, baselineSnapshot);
+    }
+
+    private bool TryUpdateContainerSpanDragPreview(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return false;
+        }
+
+        CollectOpenings(container, cachedOpenings);
+        cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
+
+        WallHierarchyUtility.CollectWalls(container.transform, cachedWalls, true);
+        int expectedSegmentCount = cachedOpenings.Count * 2 + 1;
+        if (cachedWalls.Count != expectedSegmentCount)
+        {
+            return false;
+        }
+
+        SortWallsByContainerDistance(container, cachedWalls);
+        if (!BuildContainerPreviewSegments(container, cachedOpenings, cachedPreviewSegments))
+        {
+            return false;
+        }
+
+        if (cachedPreviewSegments.Count != cachedWalls.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < cachedWalls.Count; i++)
+        {
+            Wall wall = cachedWalls[i];
+            if (wall == null)
+            {
+                return false;
+            }
+
+            ContainerPreviewSegment segment = cachedPreviewSegments[i];
+            wall.SetVertexIds(segment.startVertexId, segment.endVertexId);
+            wall.SetHandleSuppressed(segment.suppressStartHandle, segment.suppressEndHandle);
+            wall.SetSplitPointFlags(segment.startSplitPoint, segment.endSplitPoint);
+            if (!wall.TryApplyCurrentProfileAndRefresh(
+                    segment.startPoint,
+                    segment.endPoint,
+                    MinimumWallSegmentLength,
+                    wallLengthDisplay,
+                    true))
+            {
+                return false;
+            }
+        }
+
+        for (int i = 0; i < cachedOpenings.Count; i++)
+        {
+            int openingSegmentIndex = i * 2 + 1;
+            Transform segmentRoot = openingSegmentIndex >= 0 && openingSegmentIndex < cachedWalls.Count
+                ? cachedWalls[openingSegmentIndex].transform
+                : null;
+            OpeningVisualTransformBuilder.Apply(container, cachedOpenings[i], segmentRoot);
+        }
+
+        return true;
+    }
+
+    private static void SortWallsByContainerDistance(WallOpeningContainer container, List<Wall> walls)
+    {
+        if (container == null || walls == null)
+        {
+            return;
+        }
+
+        Vector3 startPoint = container.WallStart;
+        Vector3 direction = container.WallDirection;
+        walls.Sort((left, right) =>
+        {
+            float leftDistance = GetWallMidDistance(left, startPoint, direction);
+            float rightDistance = GetWallMidDistance(right, startPoint, direction);
+            return leftDistance.CompareTo(rightDistance);
+        });
+    }
+
+    private static float GetWallMidDistance(Wall wall, Vector3 startPoint, Vector3 direction)
+    {
+        if (wall == null || wall.Data == null)
+        {
+            return float.MaxValue;
+        }
+
+        Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
+        return Vector3.Dot(midpoint - startPoint, direction);
+    }
+
+    private static bool BuildContainerPreviewSegments(
+        WallOpeningContainer container,
+        List<WallOpening> openings,
+        List<ContainerPreviewSegment> segments)
+    {
+        if (container == null || openings == null || segments == null)
+        {
+            return false;
+        }
+
+        segments.Clear();
+
+        Vector3 startPoint = container.WallStart;
+        Vector3 direction = container.WallDirection;
+        float currentDistance = 0f;
+        for (int i = 0; i < openings.Count; i++)
+        {
+            WallOpening opening = openings[i];
+            if (opening == null)
+            {
+                return false;
+            }
+
+            float halfWidth = opening.Width * 0.5f;
+            float openingStartDistance = opening.CenterDistance - halfWidth;
+            float openingEndDistance = opening.CenterDistance + halfWidth;
+            if (openingStartDistance < currentDistance - 0.0001f ||
+                openingEndDistance <= openingStartDistance + MinimumWallSegmentLength)
+            {
+                return false;
+            }
+
+            Vector3 segmentStart = startPoint + direction * currentDistance;
+            Vector3 segmentEnd = startPoint + direction * openingStartDistance;
+            if (!TryAddContainerPreviewSegment(
+                    segments,
+                    segmentStart,
+                    segmentEnd,
+                    currentDistance <= 0.001f ? container.OuterStartVertexId : 0,
+                    0,
+                    currentDistance > 0.001f || container.SuppressOuterStartHandle,
+                    true,
+                    currentDistance <= 0.001f && container.OuterStartSplitPoint,
+                    false))
+            {
+                return false;
+            }
+
+            if (!TryAddContainerPreviewSegment(
+                    segments,
+                    startPoint + direction * openingStartDistance,
+                    startPoint + direction * openingEndDistance,
+                    0,
+                    0,
+                    true,
+                    true,
+                    false,
+                    false))
+            {
+                return false;
+            }
+
+            currentDistance = openingEndDistance;
+        }
+
+        return TryAddContainerPreviewSegment(
+            segments,
+            startPoint + direction * currentDistance,
+            container.WallEnd,
+            0,
+            container.OuterEndVertexId,
+            true,
+            container.SuppressOuterEndHandle,
+            false,
+            container.OuterEndSplitPoint);
+    }
+
+    private static bool TryAddContainerPreviewSegment(
+        List<ContainerPreviewSegment> segments,
+        Vector3 startPoint,
+        Vector3 endPoint,
+        int startVertexId,
+        int endVertexId,
+        bool suppressStartHandle,
+        bool suppressEndHandle,
+        bool startSplitPoint,
+        bool endSplitPoint)
+    {
+        Vector3 delta = endPoint - startPoint;
+        delta.y = 0f;
+        if (delta.magnitude < MinimumWallSegmentLength)
+        {
+            return false;
+        }
+
+        segments.Add(new ContainerPreviewSegment
+        {
+            startPoint = startPoint,
+            endPoint = endPoint,
+            startVertexId = startVertexId,
+            endVertexId = endVertexId,
+            suppressStartHandle = suppressStartHandle,
+            suppressEndHandle = suppressEndHandle,
+            startSplitPoint = startSplitPoint,
+            endSplitPoint = endSplitPoint,
+        });
+        return true;
     }
 
     private void RepositionOpeningsAfterContainerSpanChange(
