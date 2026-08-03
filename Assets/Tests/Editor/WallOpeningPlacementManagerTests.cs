@@ -170,6 +170,13 @@ public class WallOpeningPlacementManagerTests
         Vector3 constrainedPoint = (Vector3)arguments[3];
         Assert.That(constrainedPoint.x, Is.LessThan(2f));
         Assert.That(constrainedPoint.x, Is.EqualTo(2f - 0.01f).Within(0.0001f));
+
+        arguments[2] = new Vector3(4.5f, 0f, 0f);
+        invoked = method.Invoke(manager, arguments);
+        Assert.That(invoked, Is.EqualTo(true));
+
+        constrainedPoint = (Vector3)arguments[3];
+        Assert.That(constrainedPoint.x, Is.EqualTo(4.5f).Within(0.0001f));
     }
 
     [Test]

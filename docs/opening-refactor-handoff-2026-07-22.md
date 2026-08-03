@@ -61,6 +61,19 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
 
+## Completed In Split Handle Opening-Crossing Follow-up
+
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+  - Removed opening spans from the outer split minimum-length calculation.
+  - The split handle now avoids only the active opening span itself; if the pointer is beyond the opening span, the split point can continue to that side.
+  - If the pointer lands inside an opening span, the split point is moved to the nearest opening boundary.
+- `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+  - Extended the outer split constraint test to verify that a desired point beyond an opening span is not clamped back to the original side.
+- Verification:
+  - Unity compile passed with `Logs/split-handle-opening-crossing-compile.log`.
+  - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

@@ -221,16 +221,6 @@ public partial class WallOpeningPlacementManager
 
         float effectiveSideWall = MinimumWallSegmentLength;
         float minimumRequiredLength = MinimumWallSegmentLength;
-        float maxStartDistance = float.PositiveInfinity;
-        float minEndDistance = float.NegativeInfinity;
-
-        AccumulateOuterSplitOpeningConstraints(
-            container,
-            draggingStart,
-            effectiveSideWall,
-            ref minimumRequiredLength,
-            ref maxStartDistance,
-            ref minEndDistance);
 
         if (!TryResolveOuterSplitMinimumLengthPoint(
             desiredPoint,
@@ -247,10 +237,8 @@ public partial class WallOpeningPlacementManager
             container,
             constrainedPoint,
             desiredPoint.y,
-            draggingStart,
-            draggingEnd,
-            maxStartDistance,
-            minEndDistance);
+            cachedOpenings,
+            effectiveSideWall);
         return true;
     }
 
@@ -258,50 +246,19 @@ public partial class WallOpeningPlacementManager
         WallOpeningContainer container,
         Vector3 constrainedPoint,
         float desiredY,
-        bool draggingStart,
-        bool draggingEnd,
-        float maxStartDistance,
-        float minEndDistance)
+        System.Collections.Generic.IReadOnlyList<WallOpening> openings,
+        float clearance)
     {
         Vector3 wallDirection = container.WallDirection;
         float desiredDistance = Vector3.Dot(constrainedPoint - container.WallStart, wallDirection);
-        desiredDistance = ClampOuterSplitConstrainedDistance(
+        desiredDistance = MoveOuterSplitDistanceOutsideOpeningSpan(
             desiredDistance,
-            draggingStart,
-            draggingEnd,
-            maxStartDistance,
-            minEndDistance);
+            openings,
+            clearance);
 
         Vector3 result = container.WallStart + wallDirection * desiredDistance;
         result.y = desiredY;
         return result;
-    }
-
-    private void AccumulateOuterSplitOpeningConstraints(
-        WallOpeningContainer container,
-        bool draggingStart,
-        float effectiveSideWall,
-        ref float minimumRequiredLength,
-        ref float maxStartDistance,
-        ref float minEndDistance)
-    {
-        for (int i = 0; i < cachedOpenings.Count; i++)
-        {
-            WallOpening opening = cachedOpenings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            ApplyOuterSplitOpeningConstraint(
-                opening,
-                draggingStart,
-                container.WallLength,
-                effectiveSideWall,
-                ref minimumRequiredLength,
-                ref maxStartDistance,
-                ref minEndDistance);
-        }
     }
 
     private static bool TryResolveOuterSplitDragTarget(
@@ -348,45 +305,35 @@ public partial class WallOpeningPlacementManager
         return true;
     }
 
-    private static float ClampOuterSplitConstrainedDistance(
+    private static float MoveOuterSplitDistanceOutsideOpeningSpan(
         float desiredDistance,
-        bool draggingStart,
-        bool draggingEnd,
-        float maxStartDistance,
-        float minEndDistance)
+        System.Collections.Generic.IReadOnlyList<WallOpening> openings,
+        float clearance)
     {
-        if (draggingStart && maxStartDistance != float.PositiveInfinity)
+        if (openings == null)
         {
-            return Mathf.Min(desiredDistance, maxStartDistance);
+            return desiredDistance;
         }
 
-        if (draggingEnd && minEndDistance != float.NegativeInfinity)
+        for (int i = 0; i < openings.Count; i++)
         {
-            return Mathf.Max(desiredDistance, minEndDistance);
+            WallOpening opening = openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            float openingStart = opening.CenterDistance - opening.Width * 0.5f - clearance;
+            float openingEnd = opening.CenterDistance + opening.Width * 0.5f + clearance;
+            if (desiredDistance < openingStart || desiredDistance > openingEnd)
+            {
+                continue;
+            }
+
+            return desiredDistance < opening.CenterDistance ? openingStart : openingEnd;
         }
 
         return desiredDistance;
     }
 
-    private static void ApplyOuterSplitOpeningConstraint(
-        WallOpening opening,
-        bool draggingStart,
-        float wallLength,
-        float effectiveSideWall,
-        ref float minimumRequiredLength,
-        ref float maxStartDistance,
-        ref float minEndDistance)
-    {
-        float halfWidth = opening.Width * 0.5f;
-        if (draggingStart)
-        {
-            float distanceFromEnd = wallLength - opening.CenterDistance;
-            minimumRequiredLength = Mathf.Max(minimumRequiredLength, distanceFromEnd + halfWidth + effectiveSideWall);
-            maxStartDistance = Mathf.Min(maxStartDistance, opening.CenterDistance - halfWidth - effectiveSideWall);
-            return;
-        }
-
-        minimumRequiredLength = Mathf.Max(minimumRequiredLength, opening.CenterDistance + halfWidth + effectiveSideWall);
-        minEndDistance = Mathf.Max(minEndDistance, opening.CenterDistance + halfWidth + effectiveSideWall);
-    }
 }
