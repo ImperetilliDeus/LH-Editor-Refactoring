@@ -68,7 +68,7 @@ public partial class HandleManager
             return true;
         }
 
-        if (!TryGetContainerOuterWalls(container, out Wall startWall, out Wall endWall))
+        if (!HandleContainerLookupUtility.TryGetOuterWalls(container, out Wall startWall, out Wall endWall))
         {
             return false;
         }
@@ -309,100 +309,6 @@ public partial class HandleManager
         }
 
         return requiredLength;
-    }
-
-    private bool TryGetContainerOuterWalls(WallOpeningContainer container, out Wall startWall, out Wall endWall)
-    {
-        startWall = null;
-        endWall = null;
-        if (container == null)
-        {
-            return false;
-        }
-
-        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
-        for (int i = 0; i < walls.Length; i++)
-        {
-            Wall wall = walls[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            if (startWall == null && wall.StartVertexId == container.OuterStartVertexId)
-            {
-                startWall = wall;
-            }
-
-            if (endWall == null && wall.EndVertexId == container.OuterEndVertexId)
-            {
-                endWall = wall;
-            }
-        }
-
-        return startWall != null && endWall != null;
-    }
-
-    private Transform GetContainerSegmentParent(WallOpeningContainer container)
-    {
-        if (container == null)
-        {
-            return null;
-        }
-
-        Transform segmentParent = container.transform.Find("Segments");
-        return segmentParent != null ? segmentParent : container.transform;
-    }
-
-    private bool TryGetContainerChildReferenceCenter(Transform child, out Vector3 center)
-    {
-        center = Vector3.zero;
-        if (child == null)
-        {
-            return false;
-        }
-
-        Wall[] walls = child.GetComponentsInChildren<Wall>(true);
-        Wall bestWall = null;
-        float bestLengthSqr = float.MinValue;
-        for (int i = 0; i < walls.Length; i++)
-        {
-            Wall wall = walls[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            float lengthSqr = (wall.Data.endPoint - wall.Data.startPoint).sqrMagnitude;
-            if (lengthSqr <= bestLengthSqr)
-            {
-                continue;
-            }
-
-            bestLengthSqr = lengthSqr;
-            bestWall = wall;
-        }
-
-        if (bestWall != null)
-        {
-            center = (bestWall.Data.startPoint + bestWall.Data.endPoint) * 0.5f;
-            return true;
-        }
-
-        WallOpening[] openings = child.GetComponentsInChildren<WallOpening>(true);
-        for (int i = 0; i < openings.Length; i++)
-        {
-            WallOpening opening = openings[i];
-            if (opening == null)
-            {
-                continue;
-            }
-
-            center = opening.transform.position;
-            return true;
-        }
-
-        return false;
     }
 
     private void ApplyContainerChildTransform(

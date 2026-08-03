@@ -1138,6 +1138,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting `HandleContainerLookupUtility`, Unity script compilation succeeded.
+- `HandleContainerLookupUtility` now owns opening-container outer wall lookup by container outer vertex ids.
+- `HandleManager.ContainerDrag.cs` delegates that lookup to the helper while keeping child transform mutation, wall/opening mutation, renderer movement, undo, and rebuild orchestration unchanged.
+- After extracting handle container lookup, corrected Test Runner verification passed:
+  - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1809,6 +1816,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/handle-container-endpoint-geometry-catalog-tests.xml`
   - `Logs/handle-container-endpoint-geometry-rail-regression.log`
   - `Logs/handle-container-endpoint-geometry-rail-regression.xml`
+  - `Logs/handle-container-lookup-utility-compile.log`
+  - `Logs/handle-container-lookup-utility-handle-tests.log`
+  - `Logs/handle-container-lookup-utility-handle-tests.xml`
+  - `Logs/handle-container-lookup-utility-catalog-tests.log`
+  - `Logs/handle-container-lookup-utility-catalog-tests.xml`
+  - `Logs/handle-container-lookup-utility-rail-regression.log`
+  - `Logs/handle-container-lookup-utility-rail-regression.xml`
 
 ## Important Context
 
@@ -1953,7 +1967,7 @@ Next recommended step:
 Current state:
 
 - `HandleManager.Drag.cs` is about 1519 lines and remains the highest-risk file.
-- `HandleManager.ContainerDrag.cs` is about 506 lines after container endpoint geometry extraction.
+- `HandleManager.ContainerDrag.cs` is about 412 lines after container endpoint geometry and lookup utility extraction.
 - `HandleManager.Registry.cs` is about 484 lines after `HandleGeometryUtility` extraction.
 - `HandleManager.cs` is about 789 lines after handle plane projection extraction.
 - Avoid moving private nested `VertexGroup`, `EndpointRef`, or drag state objects out unless there is a clear behavior-preserving seam.
@@ -1962,7 +1976,9 @@ Next recommended step:
 
 - Inspect `HandleManager.Drag.cs` for pure calculation helpers such as drag threshold checks, camera/plane ray projection, or snap candidate scoring.
 - Prefer extracting stateless helpers that accept primitives/Unity structs and return values. Keep wall mutation, undo capture, container rebuild, and mode/input orchestration inside `HandleManager`.
-- The obvious drag threshold, split-point segment projection, handle plane projection, and container endpoint geometry helpers are now in `HandleGeometryUtility`; next inspect `HandleManager.ContainerDrag.cs` for lookup-only helpers such as child reference-center selection, or stop if remaining work is mostly Unity mutation.
+- The obvious drag threshold, split-point segment projection, handle plane projection, and container endpoint geometry helpers are now in `HandleGeometryUtility`; container outer-wall lookup is now in `HandleContainerLookupUtility`.
+- Remaining `HandleManager.ContainerDrag.cs` code is mostly Unity object mutation, renderer movement, undo, and rebuild orchestration. Prefer pausing `ContainerDrag` extraction unless another clearly stateless helper appears.
+- Next inspect `HandleManager.Drag.cs` for a narrow lookup/filter/constraint helper. If the remaining candidates are also mutation-heavy, move to `FurniturePlacementManager` for the next large-class cleanup pass.
 
 ## Suggested First Message For A New Chat
 
