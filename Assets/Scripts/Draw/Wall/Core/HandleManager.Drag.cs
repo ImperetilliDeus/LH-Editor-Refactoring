@@ -408,31 +408,9 @@ public partial class HandleManager
             return false;
         }
 
-        float originalTotalLength = 0f;
-        float minimumRequiredTotalLength = 0f;
-        List<float> originalSegmentLengths = new List<float>(splitChainWalls.Count);
-        for (int i = 0; i < splitChainWalls.Count; i++)
-        {
-            float segmentLength = Vector3.Distance(splitChainPoints[i], splitChainPoints[i + 1]);
-            originalTotalLength += segmentLength;
-            originalSegmentLengths.Add(segmentLength);
-        }
-
-        if (originalTotalLength <= 0.0001f)
+        if (!TryResolveOriginalSegmentLengths(splitChainPoints, splitChainWalls.Count, minimumWallLength, out float originalTotalLength, out List<float> originalSegmentLengths, out float minimumRequiredTotalLength))
         {
             return false;
-        }
-
-        for (int i = 0; i < splitChainWalls.Count; i++)
-        {
-            float segmentLength = originalSegmentLengths[i];
-            if (segmentLength <= 0.0001f)
-            {
-                return false;
-            }
-
-            float segmentRatio = segmentLength / originalTotalLength;
-            minimumRequiredTotalLength = Mathf.Max(minimumRequiredTotalLength, minimumWallLength / segmentRatio);
         }
 
         Vector3 terminalPoint = splitChainPoints[splitChainPoints.Count - 1];
@@ -527,21 +505,7 @@ public partial class HandleManager
             return false;
         }
 
-        float originalTotalLength = 0f;
-        List<float> originalSegmentLengths = new List<float>(orderedWalls.Count);
-        for (int i = 0; i < orderedWalls.Count; i++)
-        {
-            float segmentLength = Vector3.Distance(orderedPoints[i], orderedPoints[i + 1]);
-            if (segmentLength <= 0.0001f)
-            {
-                return false;
-            }
-
-            originalTotalLength += segmentLength;
-            originalSegmentLengths.Add(segmentLength);
-        }
-
-        if (originalTotalLength <= 0.0001f)
+        if (!TryResolveOriginalSegmentLengths(orderedPoints, orderedWalls.Count, minimumWallLength, out float originalTotalLength, out List<float> originalSegmentLengths, out float minimumRequiredTotalLength))
         {
             return false;
         }
@@ -556,13 +520,6 @@ public partial class HandleManager
         if (newTotalLength <= minimumWallLength)
         {
             return false;
-        }
-
-        float minimumRequiredTotalLength = 0f;
-        for (int i = 0; i < originalSegmentLengths.Count; i++)
-        {
-            float segmentRatio = originalSegmentLengths[i] / originalTotalLength;
-            minimumRequiredTotalLength = Mathf.Max(minimumRequiredTotalLength, minimumWallLength / segmentRatio);
         }
 
         if (newTotalLength < minimumRequiredTotalLength)
@@ -1216,6 +1173,48 @@ public partial class HandleManager
         return false;
     }
 
+    private static bool TryResolveOriginalSegmentLengths(
+        List<Vector3> points,
+        int segmentCount,
+        float minimumSegmentLength,
+        out float originalTotalLength,
+        out List<float> originalSegmentLengths,
+        out float minimumRequiredTotalLength)
+    {
+        originalTotalLength = 0f;
+        minimumRequiredTotalLength = 0f;
+        originalSegmentLengths = new List<float>(segmentCount);
+        if (points == null || segmentCount <= 0 || points.Count != segmentCount + 1)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < segmentCount; i++)
+        {
+            float segmentLength = Vector3.Distance(points[i], points[i + 1]);
+            if (segmentLength <= 0.0001f)
+            {
+                return false;
+            }
+
+            originalTotalLength += segmentLength;
+            originalSegmentLengths.Add(segmentLength);
+        }
+
+        if (originalTotalLength <= 0.0001f)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < originalSegmentLengths.Count; i++)
+        {
+            float segmentRatio = originalSegmentLengths[i] / originalTotalLength;
+            minimumRequiredTotalLength = Mathf.Max(minimumRequiredTotalLength, minimumSegmentLength / segmentRatio);
+        }
+
+        return true;
+    }
+
     private bool TryApplyLinearSplitChainKeepingDraggedEndpoint(
         List<LinearChainElement> orderedElements,
         List<int> orderedVertexIds,
@@ -1232,21 +1231,7 @@ public partial class HandleManager
             return false;
         }
 
-        float originalTotalLength = 0f;
-        List<float> originalSegmentLengths = new List<float>(orderedElements.Count);
-        for (int i = 0; i < orderedElements.Count; i++)
-        {
-            float segmentLength = Vector3.Distance(orderedPoints[i], orderedPoints[i + 1]);
-            if (segmentLength <= 0.0001f)
-            {
-                return false;
-            }
-
-            originalTotalLength += segmentLength;
-            originalSegmentLengths.Add(segmentLength);
-        }
-
-        if (originalTotalLength <= 0.0001f)
+        if (!TryResolveOriginalSegmentLengths(orderedPoints, orderedElements.Count, minimumWallLength, out float originalTotalLength, out List<float> originalSegmentLengths, out float minimumRequiredTotalLength))
         {
             return false;
         }
@@ -1261,13 +1246,6 @@ public partial class HandleManager
         if (newTotalLength <= minimumWallLength)
         {
             return false;
-        }
-
-        float minimumRequiredTotalLength = 0f;
-        for (int i = 0; i < originalSegmentLengths.Count; i++)
-        {
-            float segmentRatio = originalSegmentLengths[i] / originalTotalLength;
-            minimumRequiredTotalLength = Mathf.Max(minimumRequiredTotalLength, minimumWallLength / segmentRatio);
         }
 
         if (newTotalLength < minimumRequiredTotalLength)
