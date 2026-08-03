@@ -44,6 +44,7 @@ public class WallLengthDisplay : MonoBehaviour
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
     private Vector4 lastViewportSignature;
+    private ModeManager subscribedModeManager;
 
     private void OnValidate()
     {
@@ -58,6 +59,12 @@ public class WallLengthDisplay : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+    }
+
+    private void OnEnable()
+    {
+        ResolveReferences();
+        RefreshLengthLabelVisibilityStates();
     }
 
     public void SetWallLength(Transform wallTransform, float wallLengthUnits, float wallHeight, bool isPreview)
@@ -94,6 +101,7 @@ public class WallLengthDisplay : MonoBehaviour
         entry.labelRect.sizeDelta = labelSize;
         entry.labelRect.localScale = Vector3.one * labelScale;
         entry.labelText.enabled = true;
+        ApplyLabelVisibilityState(entry);
         ApplyLabelInteractionState(entry);
 
         labelPositionsDirty = true;
@@ -154,6 +162,7 @@ public class WallLengthDisplay : MonoBehaviour
         }
 
         RefreshLabelInteractionStates();
+        RefreshLengthLabelVisibilityStates();
 
         bool cameraChanged = HasCameraStateChanged();
         bool viewportChanged = HasViewportChanged();
@@ -487,6 +496,7 @@ public class WallLengthDisplay : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnsubscribeModeManager();
         ClearAllLabels();
     }
 
@@ -543,6 +553,67 @@ public class WallLengthDisplay : MonoBehaviour
     private void ResolveReferences()
     {
         LayerUtility.ResolveObject(ref modeManager);
+        SubscribeModeManager();
+    }
+
+    private void SubscribeModeManager()
+    {
+        if (subscribedModeManager == modeManager)
+        {
+            return;
+        }
+
+        UnsubscribeModeManager();
+        subscribedModeManager = modeManager;
+        if (subscribedModeManager != null)
+        {
+            subscribedModeManager.ModeChanged += HandleModeChanged;
+        }
+    }
+
+    private void UnsubscribeModeManager()
+    {
+        if (subscribedModeManager != null)
+        {
+            subscribedModeManager.ModeChanged -= HandleModeChanged;
+            subscribedModeManager = null;
+        }
+    }
+
+    private void HandleModeChanged(EditorMode mode)
+    {
+        RefreshLengthLabelVisibilityStates();
+    }
+
+    private void RefreshLengthLabelVisibilityStates()
+    {
+        bool showLengthLabels = ShouldShowLengthLabels();
+        foreach (KeyValuePair<int, LabelEntry> pair in labelEntries)
+        {
+            ApplyLabelVisibilityState(pair.Value, showLengthLabels);
+        }
+
+        labelPositionsDirty = true;
+    }
+
+    private void ApplyLabelVisibilityState(LabelEntry entry)
+    {
+        ApplyLabelVisibilityState(entry, ShouldShowLengthLabels());
+    }
+
+    private static void ApplyLabelVisibilityState(LabelEntry entry, bool showLengthLabels)
+    {
+        if (entry == null || entry.labelRect == null)
+        {
+            return;
+        }
+
+        entry.labelRect.gameObject.SetActive(showLengthLabels);
+    }
+
+    private bool ShouldShowLengthLabels()
+    {
+        return modeManager == null || modeManager.CurrentMode == EditorMode.Default;
     }
 
     private void RefreshLabelInteractionStates()
