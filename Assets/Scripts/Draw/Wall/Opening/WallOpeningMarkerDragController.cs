@@ -26,9 +26,9 @@ internal sealed class WallOpeningMarkerDragController
         Vector2 screenPosition,
         Camera mainCamera,
         System.Func<WallOpeningContainer, WallOpening, float, float> clampOpeningCenterDistance,
-        System.Action<WallOpeningContainer, bool> rebuildContainer)
+        System.Action<WallOpeningContainer, WallOpening> updateDragPreview)
     {
-        if (opening == null || mainCamera == null || clampOpeningCenterDistance == null || rebuildContainer == null)
+        if (opening == null || mainCamera == null || clampOpeningCenterDistance == null || updateDragPreview == null)
         {
             return;
         }
@@ -56,7 +56,7 @@ internal sealed class WallOpeningMarkerDragController
         }
 
         opening.SetCenterDistance(clampedDistance);
-        rebuildContainer(container, true);
+        updateDragPreview(container, opening);
     }
 
     public void EndDrag(

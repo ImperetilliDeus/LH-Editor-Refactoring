@@ -182,11 +182,21 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
 
     private void Update()
     {
-        if (markerVisualsDirty || HasCameraStateChanged() || HasMarkerGeometryChanged())
+        bool isDraggingMarker = markerDragState.IsDraggingMarker;
+        bool shouldRefreshMarkerVisuals = markerVisualsDirty || HasCameraStateChanged();
+        if (!isDraggingMarker && HasMarkerGeometryChanged())
+        {
+            shouldRefreshMarkerVisuals = true;
+        }
+
+        if (shouldRefreshMarkerVisuals)
         {
             RefreshOpeningMarkerVisuals();
             markerVisualsDirty = false;
-            lastMarkerGeometryHash = CalculateMarkerGeometryHash();
+            if (!isDraggingMarker)
+            {
+                lastMarkerGeometryHash = CalculateMarkerGeometryHash();
+            }
         }
 
         CacheCameraState();

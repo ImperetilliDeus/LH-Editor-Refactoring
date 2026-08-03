@@ -56,6 +56,17 @@ public partial class WallOpeningPlacementManager
         opening.EnsureMarker(previewCanvas, mainCamera);
     }
 
+    private void UpdateOpeningDragPreview(WallOpeningContainer container, WallOpening opening)
+    {
+        if (container == null || opening == null)
+        {
+            return;
+        }
+
+        OpeningVisualTransformBuilder.Apply(container, opening, null);
+        MarkMarkerVisualsDirty();
+    }
+
     private void ClearGeneratedContainerVisuals(WallOpeningContainer container, List<Wall> wallsInContainer = null, bool isDragging = false)
     {
         if (container == null)

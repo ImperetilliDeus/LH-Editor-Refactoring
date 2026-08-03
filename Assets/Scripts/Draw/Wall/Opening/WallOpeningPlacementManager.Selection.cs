@@ -130,7 +130,7 @@ public partial class WallOpeningPlacementManager
             screenPosition,
             mainCamera,
             (container, targetOpening, projectedDistance) => ClampOpeningCenterDistance(container, targetOpening, projectedDistance),
-            RebuildContainer);
+            UpdateOpeningDragPreview);
     }
 
     public void EndMarkerDrag(WallOpening opening)

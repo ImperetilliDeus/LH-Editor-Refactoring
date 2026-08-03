@@ -4,6 +4,29 @@
 
 Reduce risk and code growth around opening models, especially `OpeningTypeCatalog`, `ParametricOpeningModel`, and `WallOpeningPlacementManager`.
 
+## Completed In Marker Drag Performance Fix Follow-up
+
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningMarkerDragController.cs`
+  - Changed marker drag to update `WallOpening.CenterDistance` and call a lightweight preview callback.
+  - Removed the per-drag-event `RebuildContainer(container, true)` call from the drag path.
+  - End drag still performs the existing full `RebuildContainer(opening.Container, false)` and undo snapshot recording.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.Visuals.cs`
+  - Added `UpdateOpeningDragPreview` to apply the opening transform directly under the container and mark marker visuals dirty.
+  - This moves the dragged door/window and marker without clearing/recreating generated wall segments every pointer movement.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.cs`
+  - `Update()` now skips the marker geometry hash scan while marker drag is active.
+  - Marker geometry hash is recalculated again after drag when the full rebuild has completed.
+- Verification:
+  - Unity compile passed with `Logs/opening-marker-drag-preview-compile.log`.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+  - XML results:
+    - `Logs/opening-marker-drag-preview-catalog-tests.xml`
+    - `Logs/opening-marker-drag-preview-rail-regression.xml`
+- Note:
+  - A full `WallOpeningPlacementManagerTests` run was attempted during investigation and exposed existing unrelated failures in `ApplyLayoutSnapshot_DeactivatesRemovedStandaloneWallImmediately` and `ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars`.
+  - Those were not included in the final performance-fix commit scope.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.
