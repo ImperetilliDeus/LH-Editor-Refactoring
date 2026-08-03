@@ -104,6 +104,38 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
     - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary`
     - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary`
 
+## Completed In WorkState Nested Opening Wall Normalization Follow-up
+
+- User-reported issue with `WorkStates/lh_work_state0803.json`:
+  - Loading the workstate feels slow.
+  - A roughly 12.45m wall that should contain 4 windows behaves like only the left segment is selected.
+  - Adding a split point places it around the logical wall midpoint over a window.
+  - Dragging the split point causes frame drops, crossed openings can become wall-like in 3D, and crossed openings can stop receiving clicks until another opening is selected.
+- Workstate inspection:
+  - The file has 37 walls, 4 rooms, 0 furniture.
+  - The reported 12.45m wall is not stored as one wall with 4 openings.
+  - It is stored as multiple overlapping opening-container walls on the same line, all sharing the right endpoint:
+    - `wall32`: ~12.468m, 1 window
+    - `wall33`: ~10.416m, 1 window
+    - `wall34`: ~8.118m, 1 window
+    - `wall35`: ~4.427m, 1 window
+  - This causes selection overlay, split default segment resolution, handle drag, and opening ownership transfer to operate on overlapping containers instead of one logical wall.
+- Implementation:
+  - `Assets/Scripts/ProjectPersistence/LhWorkStateLoader.cs`
+    - Added load-time normalization for nested/overlapping opening walls.
+    - If two opening walls are collinear, have compatible wall metadata, one is contained in the other, and they share an endpoint, the shorter wall's openings are converted to the longer wall's distance space and merged.
+    - Merged wall ids are remapped in room wall id lists so room restoration still resolves the surviving wall.
+  - `Assets/Tests/Editor/LhWorkStateOpeningRestoreTests.cs`
+    - Added a regression test for loading nested same-endpoint opening walls as one container with four openings.
+- Verification:
+  - Unity compile passed with `Logs/workstate-overlap-opening-merge-compile.log`.
+  - `dotnet build Assembly-CSharp.csproj` passed.
+  - `dotnet build LH.Editor.Tests.csproj` passed.
+  - Targeted Unity EditMode tests passed with `Logs/workstate-overlap-opening-merge-tests.xml`: 2 total, 2 passed, 0 failed.
+    - `LhWorkStateOpeningRestoreTests.Load_CoalescesNestedOpeningWallsSharingEndpoint`
+    - `LhWorkStateOpeningRestoreTests.Load_RestoresDoorOpeningOnWall`
+  - Broader WorkState loader regression tests passed with `Logs/workstate-loader-overlap-regression-tests.xml`: 19 total, 19 passed, 0 failed.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

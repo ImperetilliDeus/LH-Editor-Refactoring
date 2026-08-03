@@ -59,6 +59,55 @@ public class LhWorkStateOpeningRestoreTests
         Assert.That(GetPropertyValue<float>(opening, "BottomY"), Is.EqualTo(0f));
     }
 
+    [Test]
+    public void Load_CoalescesNestedOpeningWallsSharingEndpoint()
+    {
+        object state = CreateState();
+        object fullWall = AddWall(
+            state,
+            "full-wall",
+            "wall32",
+            new Vector3(0f, 0f, 0f),
+            new Vector3(12f, 0f, 0f));
+        AddOpening(fullWall, "Window", string.Empty, "S003", false, false, 1.5f, 1f, 1f, 0.1f, 1f);
+
+        object secondWall = AddWall(
+            state,
+            "second-wall",
+            "wall33",
+            new Vector3(2f, 0f, 0f),
+            new Vector3(12f, 0f, 0f));
+        AddOpening(secondWall, "Window", string.Empty, "S003", false, false, 2f, 1f, 1f, 0.1f, 1f);
+
+        object thirdWall = AddWall(
+            state,
+            "third-wall",
+            "wall34",
+            new Vector3(5f, 0f, 0f),
+            new Vector3(12f, 0f, 0f));
+        AddOpening(thirdWall, "Window", string.Empty, "B001", false, false, 2f, 1f, 1f, 0.1f, 1f);
+
+        object fourthWall = AddWall(
+            state,
+            "fourth-wall",
+            "wall35",
+            new Vector3(8f, 0f, 0f),
+            new Vector3(12f, 0f, 0f));
+        AddOpening(fourthWall, "Window", string.Empty, "S003", false, false, 2f, 1f, 1f, 0.1f, 1f);
+
+        object result = Load(state, wallRoot.transform);
+
+        Assert.That(GetPropertyValue<bool>(result, "Success"), Is.True);
+        Array containers = wallRoot.GetComponentsInChildren(GetAssemblyType("WallOpeningContainer"), true);
+        Assert.That(containers, Has.Length.EqualTo(1));
+        Component[] openings = wallRoot.GetComponentsInChildren(GetAssemblyType("WallOpening"), true);
+        Assert.That(openings, Has.Length.EqualTo(4));
+        Assert.That(GetPropertyValue<float>(openings[0], "CenterDistance"), Is.EqualTo(1.5f).Within(0.0001f));
+        Assert.That(GetPropertyValue<float>(openings[1], "CenterDistance"), Is.EqualTo(4f).Within(0.0001f));
+        Assert.That(GetPropertyValue<float>(openings[2], "CenterDistance"), Is.EqualTo(7f).Within(0.0001f));
+        Assert.That(GetPropertyValue<float>(openings[3], "CenterDistance"), Is.EqualTo(10f).Within(0.0001f));
+    }
+
     private static object Load(object state, Transform wallRoot)
     {
         Type loaderType = GetAssemblyType("LhWorkStateLoader");

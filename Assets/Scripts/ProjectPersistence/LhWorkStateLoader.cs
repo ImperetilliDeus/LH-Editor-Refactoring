@@ -111,6 +111,8 @@ public static class LhWorkStateLoader
             ClearChildren(furnitureRoot);
         }
 
+        Dictionary<string, string> mergedWallIds = NormalizeOverlappingOpeningWalls(state.walls);
+        NormalizeRoomWallIds(state.rooms, mergedWallIds);
         NormalizeWallVertexIds(state.walls);
         if (!RestoreWalls(state.walls, wallRoot, services, out Dictionary<string, Wall> wallsById))
         {
@@ -735,6 +737,310 @@ public static class LhWorkStateLoader
     private static bool HasOpenings(LhWorkWallDto wallDto)
     {
         return wallDto != null && wallDto.openings != null && wallDto.openings.Count > 0;
+    }
+
+    private static Dictionary<string, string> NormalizeOverlappingOpeningWalls(List<LhWorkWallDto> walls)
+    {
+        Dictionary<string, string> mergedWallIds = new Dictionary<string, string>(System.StringComparer.Ordinal);
+        if (walls == null || walls.Count < 2)
+        {
+            return mergedWallIds;
+        }
+
+        List<int> wallIndices = new List<int>(walls.Count);
+        for (int i = 0; i < walls.Count; i++)
+        {
+            wallIndices.Add(i);
+        }
+
+        wallIndices.Sort((left, right) => GetWallLength(walls[right]).CompareTo(GetWallLength(walls[left])));
+
+        bool[] merged = new bool[walls.Count];
+        for (int i = 0; i < wallIndices.Count; i++)
+        {
+            int targetIndex = wallIndices[i];
+            if (merged[targetIndex])
+            {
+                continue;
+            }
+
+            LhWorkWallDto target = walls[targetIndex];
+            if (!HasOpenings(target))
+            {
+                continue;
+            }
+
+            for (int j = 0; j < wallIndices.Count; j++)
+            {
+                int sourceIndex = wallIndices[j];
+                if (sourceIndex == targetIndex || merged[sourceIndex])
+                {
+                    continue;
+                }
+
+                LhWorkWallDto source = walls[sourceIndex];
+                if (!CanMergeNestedOpeningWall(target, source))
+                {
+                    continue;
+                }
+
+                MergeOpeningsIntoWall(target, source);
+                if (!string.IsNullOrWhiteSpace(source.id) && !string.IsNullOrWhiteSpace(target.id))
+                {
+                    mergedWallIds[source.id] = target.id;
+                }
+
+                merged[sourceIndex] = true;
+            }
+        }
+
+        for (int i = walls.Count - 1; i >= 0; i--)
+        {
+            if (merged[i])
+            {
+                walls.RemoveAt(i);
+            }
+        }
+
+        return mergedWallIds;
+    }
+
+    private static void NormalizeRoomWallIds(IReadOnlyList<LhWorkRoomDto> rooms, Dictionary<string, string> mergedWallIds)
+    {
+        if (rooms == null || mergedWallIds == null || mergedWallIds.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            LhWorkRoomDto room = rooms[i];
+            if (room == null)
+            {
+                continue;
+            }
+
+            NormalizeWallIdList(room.wallIds, mergedWallIds);
+            NormalizeWallIdList(room.manualWallIds, mergedWallIds);
+        }
+    }
+
+    private static void NormalizeWallIdList(List<string> wallIds, Dictionary<string, string> mergedWallIds)
+    {
+        if (wallIds == null || mergedWallIds == null || mergedWallIds.Count == 0)
+        {
+            return;
+        }
+
+        HashSet<string> seenIds = new HashSet<string>(System.StringComparer.Ordinal);
+        for (int i = wallIds.Count - 1; i >= 0; i--)
+        {
+            string wallId = wallIds[i] ?? string.Empty;
+            if (mergedWallIds.TryGetValue(wallId, out string mergedWallId))
+            {
+                wallId = mergedWallId;
+                wallIds[i] = mergedWallId;
+            }
+
+            if (!seenIds.Add(wallId))
+            {
+                wallIds.RemoveAt(i);
+            }
+        }
+    }
+
+    private static bool CanMergeNestedOpeningWall(LhWorkWallDto target, LhWorkWallDto source)
+    {
+        if (!HasOpenings(target) ||
+            !HasOpenings(source) ||
+            target == source ||
+            !HasCompatibleWallMetadata(target, source))
+        {
+            return false;
+        }
+
+        Vector3 targetStart = target.start.ToVector3();
+        Vector3 targetEnd = target.end.ToVector3();
+        Vector3 sourceStart = source.start.ToVector3();
+        Vector3 sourceEnd = source.end.ToVector3();
+
+        Vector3 targetDirection = targetEnd - targetStart;
+        targetDirection.y = 0f;
+        float targetLength = targetDirection.magnitude;
+        if (targetLength <= MinimumWallLength)
+        {
+            return false;
+        }
+
+        targetDirection /= targetLength;
+
+        Vector3 sourceDirection = sourceEnd - sourceStart;
+        sourceDirection.y = 0f;
+        float sourceLength = sourceDirection.magnitude;
+        if (sourceLength <= MinimumWallLength || sourceLength >= targetLength - 0.0001f)
+        {
+            return false;
+        }
+
+        sourceDirection /= sourceLength;
+        if (Mathf.Abs(Vector3.Dot(targetDirection, sourceDirection)) < 0.9999f)
+        {
+            return false;
+        }
+
+        float sourceStartDistance = Vector3.Dot(sourceStart - targetStart, targetDirection);
+        float sourceEndDistance = Vector3.Dot(sourceEnd - targetStart, targetDirection);
+        float sourceMin = Mathf.Min(sourceStartDistance, sourceEndDistance);
+        float sourceMax = Mathf.Max(sourceStartDistance, sourceEndDistance);
+        if (sourceMin < -0.001f || sourceMax > targetLength + 0.001f)
+        {
+            return false;
+        }
+
+        return SharesEndpointXZ(targetStart, targetEnd, sourceStart, sourceEnd);
+    }
+
+    private static bool HasCompatibleWallMetadata(LhWorkWallDto left, LhWorkWallDto right)
+    {
+        return Mathf.Abs(left.thickness - right.thickness) <= 0.0001f &&
+            Mathf.Abs(left.height - right.height) <= 0.0001f &&
+            Mathf.Abs(left.centerY - right.centerY) <= 0.0001f &&
+            string.Equals(left.textureCode ?? string.Empty, right.textureCode ?? string.Empty, System.StringComparison.Ordinal);
+    }
+
+    private static bool SharesEndpointXZ(Vector3 targetStart, Vector3 targetEnd, Vector3 sourceStart, Vector3 sourceEnd)
+    {
+        return ArePointsNearXZ(targetStart, sourceStart) ||
+            ArePointsNearXZ(targetStart, sourceEnd) ||
+            ArePointsNearXZ(targetEnd, sourceStart) ||
+            ArePointsNearXZ(targetEnd, sourceEnd);
+    }
+
+    private static bool ArePointsNearXZ(Vector3 left, Vector3 right)
+    {
+        float dx = left.x - right.x;
+        float dz = left.z - right.z;
+        return dx * dx + dz * dz <= 0.0001f;
+    }
+
+    private static void MergeOpeningsIntoWall(LhWorkWallDto target, LhWorkWallDto source)
+    {
+        if (target == null || source == null || source.openings == null)
+        {
+            return;
+        }
+
+        if (target.openings == null)
+        {
+            target.openings = new List<LhWorkOpeningDto>();
+        }
+
+        Vector3 targetStart = target.start.ToVector3();
+        Vector3 targetEnd = target.end.ToVector3();
+        Vector3 targetDirection = targetEnd - targetStart;
+        targetDirection.y = 0f;
+        float targetLength = targetDirection.magnitude;
+        if (targetLength <= MinimumWallLength)
+        {
+            return;
+        }
+
+        targetDirection /= targetLength;
+
+        Vector3 sourceStart = source.start.ToVector3();
+        Vector3 sourceEnd = source.end.ToVector3();
+        Vector3 sourceDirection = sourceEnd - sourceStart;
+        sourceDirection.y = 0f;
+        float sourceLength = sourceDirection.magnitude;
+        if (sourceLength <= MinimumWallLength)
+        {
+            return;
+        }
+
+        sourceDirection /= sourceLength;
+        for (int i = 0; i < source.openings.Count; i++)
+        {
+            LhWorkOpeningDto opening = source.openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            Vector3 openingWorldPoint = sourceStart + sourceDirection * opening.centerDistance;
+            float targetCenterDistance = Vector3.Dot(openingWorldPoint - targetStart, targetDirection);
+            if (targetCenterDistance < -0.001f || targetCenterDistance > targetLength + 0.001f)
+            {
+                continue;
+            }
+
+            LhWorkOpeningDto mergedOpening = CloneOpening(opening);
+            mergedOpening.centerDistance = Mathf.Clamp(targetCenterDistance, 0f, targetLength);
+            if (!ContainsEquivalentOpening(target.openings, mergedOpening))
+            {
+                target.openings.Add(mergedOpening);
+            }
+        }
+
+        target.openings.Sort((left, right) => left.centerDistance.CompareTo(right.centerDistance));
+    }
+
+    private static LhWorkOpeningDto CloneOpening(LhWorkOpeningDto source)
+    {
+        return new LhWorkOpeningDto
+        {
+            type = source.type ?? string.Empty,
+            doorTypeKey = source.doorTypeKey ?? string.Empty,
+            windowTypeKey = source.windowTypeKey ?? string.Empty,
+            prefabKey = source.prefabKey ?? string.Empty,
+            doorOpensRight = source.doorOpensRight,
+            doorVerticalFlip = source.doorVerticalFlip,
+            centerDistance = source.centerDistance,
+            width = source.width,
+            height = source.height,
+            depth = source.depth,
+            bottomY = source.bottomY,
+        };
+    }
+
+    private static bool ContainsEquivalentOpening(IReadOnlyList<LhWorkOpeningDto> openings, LhWorkOpeningDto candidate)
+    {
+        if (openings == null || candidate == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < openings.Count; i++)
+        {
+            LhWorkOpeningDto opening = openings[i];
+            if (opening == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(opening.type ?? string.Empty, candidate.type ?? string.Empty, System.StringComparison.Ordinal) &&
+                string.Equals(opening.doorTypeKey ?? string.Empty, candidate.doorTypeKey ?? string.Empty, System.StringComparison.Ordinal) &&
+                string.Equals(opening.windowTypeKey ?? string.Empty, candidate.windowTypeKey ?? string.Empty, System.StringComparison.Ordinal) &&
+                string.Equals(opening.prefabKey ?? string.Empty, candidate.prefabKey ?? string.Empty, System.StringComparison.Ordinal) &&
+                Mathf.Abs(opening.centerDistance - candidate.centerDistance) <= 0.001f &&
+                Mathf.Abs(opening.width - candidate.width) <= 0.001f)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static float GetWallLength(LhWorkWallDto wall)
+    {
+        if (wall == null)
+        {
+            return 0f;
+        }
+
+        Vector3 delta = wall.end.ToVector3() - wall.start.ToVector3();
+        delta.y = 0f;
+        return delta.magnitude;
     }
 
     private static void NormalizeWallVertexIds(IReadOnlyList<LhWorkWallDto> walls)
