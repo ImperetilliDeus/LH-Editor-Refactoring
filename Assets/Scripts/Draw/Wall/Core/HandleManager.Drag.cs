@@ -125,6 +125,7 @@ public partial class HandleManager
         dragAnchorPoint = draggingGroup.worldPoint;
 
         dragStartStates.Clear();
+        dragStartOpeningLayoutSnapshots.Clear();
         CollectAffectedWallsForGroup(draggingGroup, affectedWallObjects, affectedWallComponents);
         for (int i = 0; i < affectedWallComponents.Count; i++)
         {
@@ -135,6 +136,16 @@ public partial class HandleManager
             }
 
             dragStartStates[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
+
+            WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+            if (container != null && wallOpeningPlacementManager != null && !dragStartOpeningLayoutSnapshots.ContainsKey(container))
+            {
+                UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
+                if (snapshot.hasContainer)
+                {
+                    dragStartOpeningLayoutSnapshots[container] = snapshot;
+                }
+            }
         }
 
         SetGroupColor(draggingGroup, GetActiveColor(draggingGroup));
@@ -176,6 +187,7 @@ public partial class HandleManager
         draggingGroup = null;
         pendingGroup = null;
         dragStartStates.Clear();
+        dragStartOpeningLayoutSnapshots.Clear();
 
         RefreshAllGroupWorldPoints();
         RoomTopologyEvents.RequestRefreshAll();
@@ -226,6 +238,11 @@ public partial class HandleManager
 
             preferredDistance = Mathf.Clamp(preferredDistance, 0f, container.WallLength);
 
+            if (TryRepartitionDraggedOpeningContainer(group, draggedVertexId, container, groupWorldPoint))
+            {
+                continue;
+            }
+
             wallOpeningPlacementManager.RebuildOpeningContainer(container);
             wallOpeningPlacementManager.SelectPreferredWallForContainer(container, preferredDistance);
         }
@@ -234,6 +251,72 @@ public partial class HandleManager
         {
             RefreshRegisteredWalls();
         }
+    }
+
+    private bool TryRepartitionDraggedOpeningContainer(
+        VertexGroup group,
+        int draggedVertexId,
+        WallOpeningContainer container,
+        Vector3 splitPoint)
+    {
+        if (group == null ||
+            container == null ||
+            wallOpeningPlacementManager == null ||
+            !dragStartOpeningLayoutSnapshots.TryGetValue(container, out UndoRedoManager.OpeningLayoutSnapshot containerStartSnapshot))
+        {
+            return false;
+        }
+
+        if (!containerStartSnapshot.hasContainer ||
+            containerStartSnapshot.openings == null ||
+            containerStartSnapshot.openings.Length == 0)
+        {
+            return false;
+        }
+
+        Wall adjacentWall = FindStandaloneSplitAdjacentWall(group, container);
+        if (adjacentWall == null)
+        {
+            return false;
+        }
+
+        UndoRedoManager.OpeningLayoutSnapshot adjacentSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(adjacentWall);
+        if (adjacentSnapshot.hasContainer)
+        {
+            return false;
+        }
+
+        return wallOpeningPlacementManager.TryRepartitionContainerWithAdjacentWallAtSplit(
+            container,
+            containerStartSnapshot,
+            adjacentWall,
+            adjacentSnapshot,
+            draggedVertexId,
+            splitPoint);
+    }
+
+    private static Wall FindStandaloneSplitAdjacentWall(VertexGroup group, WallOpeningContainer container)
+    {
+        if (group == null || container == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < group.endpoints.Count; i++)
+        {
+            Wall wall = group.endpoints[i]?.entry?.wallComponent;
+            if (wall == null)
+            {
+                continue;
+            }
+
+            if (wall.GetComponentInParent<WallOpeningContainer>() == null)
+            {
+                return wall;
+            }
+        }
+
+        return null;
     }
 
     private void BuildVertexDragStateChangeRecords()
@@ -1359,7 +1442,11 @@ public partial class HandleManager
                 return false;
             }
 
-            UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(element.container);
+            UndoRedoManager.OpeningLayoutSnapshot snapshot = dragStartOpeningLayoutSnapshots.TryGetValue(
+                element.container,
+                out UndoRedoManager.OpeningLayoutSnapshot dragStartSnapshot)
+                ? dragStartSnapshot
+                : wallOpeningPlacementManager.CaptureLayoutSnapshot(element.container);
             if (!snapshot.hasContainer)
             {
                 return false;

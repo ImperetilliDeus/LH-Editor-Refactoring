@@ -103,6 +103,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private readonly List<LinearChainElement> connectedChainElements = new List<LinearChainElement>();
     private readonly List<int> removedWallEntryKeys = new List<int>();
     private readonly List<UndoRedoManager.WallStateChangeRecord> dragStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
+    private readonly Dictionary<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> dragStartOpeningLayoutSnapshots = new Dictionary<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot>();
 
     private IEditorInputProvider inputProvider;
     private int nextVertexId = 1;

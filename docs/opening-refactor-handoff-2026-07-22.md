@@ -74,6 +74,36 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
 
+## Completed In Split Handle Opening Ownership Transfer Follow-up
+
+- User-reported regression after allowing split handles to cross openings:
+  - Top view still showed openings after crossing, but 3D view rebuilt the crossed opening area as wall.
+  - Opening positions could jump after the split handle passed a door/window.
+- Root cause:
+  - Split dragging resized the existing `WallOpeningContainer` every drag frame.
+  - `RepositionOpeningsAfterContainerSpanChange` clamped opening `CenterDistance` into the resized container.
+  - When the split point crossed an opening, the opening needed to move to the adjacent layout, but ownership stayed in the old container.
+- Implementation:
+  - `Assets/Scripts/Draw/Wall/Core/HandleManager.cs`
+    - Added drag-start opening layout snapshot storage for opening containers touched by a handle drag.
+  - `Assets/Scripts/Draw/Wall/Core/HandleManager.Drag.cs`
+    - Container span preview now uses the drag-start opening layout snapshot when available instead of repeatedly using the already-mutated container state.
+    - Drag end attempts to repartition an opening container with an adjacent standalone wall when an opening crossed the split point.
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+    - Added `TryRepartitionContainerWithAdjacentWallAtSplit`.
+    - The helper partitions opening snapshots by final split position using the drag-start world positions, removes the current container/adjacent wall layout, then recreates left/right layouts through the existing split layout creation path.
+    - It refuses to repartition if the final split point is inside an opening span.
+  - `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+    - Added a regression test for moving a crossed opening into the adjacent layout while preserving its world position-derived center distance.
+- Verification:
+  - Unity compile passed with `Logs/split-opening-cross-layout-compile.log`.
+  - `dotnet build Assembly-CSharp.csproj` passed.
+  - `dotnet build LH.Editor.Tests.csproj` passed.
+  - Targeted Unity EditMode tests passed with `Logs/split-opening-cross-layout-tests.xml`: 3 total, 3 passed, 0 failed.
+    - `WallOpeningPlacementManagerTests.RepartitionContainerWithAdjacentWallAtSplit_MovesCrossedOpeningToAdjacentLayout`
+    - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary`
+    - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary`
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

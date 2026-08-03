@@ -333,6 +333,227 @@ public partial class WallOpeningPlacementManager
             rightOpenings);
     }
 
+    public bool TryRepartitionContainerWithAdjacentWallAtSplit(
+        WallOpeningContainer container,
+        UndoRedoManager.OpeningLayoutSnapshot containerStartSnapshot,
+        Wall adjacentWall,
+        UndoRedoManager.OpeningLayoutSnapshot adjacentCurrentSnapshot,
+        int splitVertexId,
+        Vector3 splitPoint)
+    {
+        if (container == null ||
+            adjacentWall == null ||
+            !containerStartSnapshot.hasContainer ||
+            adjacentCurrentSnapshot.hasContainer ||
+            containerStartSnapshot.openings == null ||
+            containerStartSnapshot.openings.Length == 0)
+        {
+            return false;
+        }
+
+        bool draggingStart = splitVertexId == containerStartSnapshot.outerStartVertexId;
+        bool draggingEnd = splitVertexId == containerStartSnapshot.outerEndVertexId;
+        if (!draggingStart && !draggingEnd)
+        {
+            return false;
+        }
+
+        if (!TryResolveAdjacentSplitEndpoint(adjacentWall, splitVertexId, out Vector3 adjacentOuterPoint, out int adjacentOuterVertexId, out bool suppressAdjacentOuterHandle, out bool adjacentOuterSplitPoint))
+        {
+            return false;
+        }
+
+        Vector3 leftStart;
+        Vector3 leftEnd;
+        Vector3 rightStart;
+        Vector3 rightEnd;
+        int leftStartVertexId;
+        int rightEndVertexId;
+        bool suppressLeftStartHandle;
+        bool suppressRightEndHandle;
+        bool leftStartSplitPoint;
+        bool rightEndSplitPoint;
+
+        if (draggingStart)
+        {
+            leftStart = adjacentOuterPoint;
+            leftEnd = splitPoint;
+            rightStart = splitPoint;
+            rightEnd = container.WallEnd;
+            leftStartVertexId = adjacentOuterVertexId;
+            rightEndVertexId = container.OuterEndVertexId;
+            suppressLeftStartHandle = suppressAdjacentOuterHandle;
+            suppressRightEndHandle = container.SuppressOuterEndHandle;
+            leftStartSplitPoint = adjacentOuterSplitPoint;
+            rightEndSplitPoint = container.OuterEndSplitPoint;
+        }
+        else
+        {
+            leftStart = container.WallStart;
+            leftEnd = splitPoint;
+            rightStart = splitPoint;
+            rightEnd = adjacentOuterPoint;
+            leftStartVertexId = container.OuterStartVertexId;
+            rightEndVertexId = adjacentOuterVertexId;
+            suppressLeftStartHandle = container.SuppressOuterStartHandle;
+            suppressRightEndHandle = suppressAdjacentOuterHandle;
+            leftStartSplitPoint = container.OuterStartSplitPoint;
+            rightEndSplitPoint = adjacentOuterSplitPoint;
+        }
+
+        if (!TryPartitionStartSnapshotOpeningsForSplit(
+                containerStartSnapshot,
+                leftStart,
+                rightEnd,
+                splitPoint,
+                draggingStart,
+                out List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
+                out List<UndoRedoManager.OpeningStateSnapshot> rightOpenings))
+        {
+            return false;
+        }
+
+        UndoRedoManager.OpeningLayoutSnapshot currentContainerSnapshot = CaptureLayoutSnapshot(container);
+        RemoveLayout(currentContainerSnapshot);
+        RemoveLayout(adjacentCurrentSnapshot);
+
+        CreateSplitContainerLayout(
+            containerStartSnapshot,
+            containerStartSnapshot.layoutName + "_A",
+            leftStart,
+            leftEnd,
+            leftStartVertexId,
+            splitVertexId,
+            suppressLeftStartHandle,
+            false,
+            leftStartSplitPoint,
+            true,
+            leftOpenings);
+        CreateSplitContainerLayout(
+            containerStartSnapshot,
+            containerStartSnapshot.layoutName + "_B",
+            rightStart,
+            rightEnd,
+            splitVertexId,
+            rightEndVertexId,
+            false,
+            suppressRightEndHandle,
+            true,
+            rightEndSplitPoint,
+            rightOpenings);
+
+        RoomTopologyEvents.RequestRefreshAll();
+        MarkMarkerVisualsDirty();
+        StartCoroutine(RefreshWallRegistryAfterSplit(false));
+        return true;
+    }
+
+    private static bool TryResolveAdjacentSplitEndpoint(
+        Wall adjacentWall,
+        int splitVertexId,
+        out Vector3 adjacentOuterPoint,
+        out int adjacentOuterVertexId,
+        out bool suppressAdjacentOuterHandle,
+        out bool adjacentOuterSplitPoint)
+    {
+        adjacentOuterPoint = Vector3.zero;
+        adjacentOuterVertexId = 0;
+        suppressAdjacentOuterHandle = false;
+        adjacentOuterSplitPoint = false;
+
+        if (adjacentWall == null)
+        {
+            return false;
+        }
+
+        if (adjacentWall.StartVertexId == splitVertexId)
+        {
+            adjacentOuterPoint = adjacentWall.Data.endPoint;
+            adjacentOuterVertexId = adjacentWall.EndVertexId;
+            suppressAdjacentOuterHandle = adjacentWall.SuppressEndHandle;
+            adjacentOuterSplitPoint = adjacentWall.IsEndSplitPoint;
+            return true;
+        }
+
+        if (adjacentWall.EndVertexId == splitVertexId)
+        {
+            adjacentOuterPoint = adjacentWall.Data.startPoint;
+            adjacentOuterVertexId = adjacentWall.StartVertexId;
+            suppressAdjacentOuterHandle = adjacentWall.SuppressStartHandle;
+            adjacentOuterSplitPoint = adjacentWall.IsStartSplitPoint;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryPartitionStartSnapshotOpeningsForSplit(
+        UndoRedoManager.OpeningLayoutSnapshot containerStartSnapshot,
+        Vector3 combinedStart,
+        Vector3 combinedEnd,
+        Vector3 splitPoint,
+        bool draggingStart,
+        out List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
+        out List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
+    {
+        leftOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
+        rightOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
+
+        Vector3 combinedDirection = combinedEnd - combinedStart;
+        combinedDirection.y = 0f;
+        float combinedLength = combinedDirection.magnitude;
+        if (combinedLength <= MinimumWallSegmentLength)
+        {
+            return false;
+        }
+
+        combinedDirection /= combinedLength;
+        float splitDistance = Vector3.Dot(splitPoint - combinedStart, combinedDirection);
+        if (splitDistance <= MinimumWallSegmentLength || splitDistance >= combinedLength - MinimumWallSegmentLength)
+        {
+            return false;
+        }
+
+        Vector3 sourceDirection = containerStartSnapshot.wallEnd - containerStartSnapshot.wallStart;
+        sourceDirection.y = 0f;
+        float sourceLength = sourceDirection.magnitude;
+        if (sourceLength <= MinimumWallSegmentLength)
+        {
+            return false;
+        }
+
+        sourceDirection /= sourceLength;
+
+        bool movedOpeningAcrossSplit = false;
+        for (int i = 0; i < containerStartSnapshot.openings.Length; i++)
+        {
+            UndoRedoManager.OpeningStateSnapshot openingSnapshot = containerStartSnapshot.openings[i];
+            Vector3 openingWorldPoint = containerStartSnapshot.wallStart + sourceDirection * openingSnapshot.centerDistance;
+            float openingDistance = Vector3.Dot(openingWorldPoint - combinedStart, combinedDirection);
+            float openingStart = openingDistance - openingSnapshot.width * 0.5f;
+            float openingEnd = openingDistance + openingSnapshot.width * 0.5f;
+            if (splitDistance >= openingStart - 0.0001f && splitDistance <= openingEnd + 0.0001f)
+            {
+                return false;
+            }
+
+            UndoRedoManager.OpeningStateSnapshot nextSnapshot = openingSnapshot;
+            if (openingDistance < splitDistance)
+            {
+                nextSnapshot.centerDistance = openingDistance;
+                leftOpenings.Add(nextSnapshot);
+                movedOpeningAcrossSplit |= draggingStart;
+                continue;
+            }
+
+            nextSnapshot.centerDistance = openingDistance - splitDistance;
+            rightOpenings.Add(nextSnapshot);
+            movedOpeningAcrossSplit |= !draggingStart;
+        }
+
+        return movedOpeningAcrossSplit;
+    }
+
     private void CreateSplitContainerLayout(
         UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
         string layoutName,

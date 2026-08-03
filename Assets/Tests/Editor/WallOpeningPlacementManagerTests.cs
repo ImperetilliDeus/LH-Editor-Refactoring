@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 public class WallOpeningPlacementManagerTests
 {
@@ -177,6 +178,106 @@ public class WallOpeningPlacementManagerTests
 
         constrainedPoint = (Vector3)arguments[3];
         Assert.That(constrainedPoint.x, Is.EqualTo(4.5f).Within(0.0001f));
+    }
+
+    [Test]
+    public void RepartitionContainerWithAdjacentWallAtSplit_MovesCrossedOpeningToAdjacentLayout()
+    {
+        Type managerType = GetAssemblyType("WallOpeningPlacementManager");
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type openingType = GetAssemblyType("WallOpening");
+        Type wallType = GetAssemblyType("Wall");
+        Type wallDataType = GetAssemblyType("WallData");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type openingPlacementType = managerType.GetNestedType("OpeningPlacementType", BindingFlags.Public);
+
+        Component manager = CreateComponent("OpeningManager", managerType);
+        GameObject wallRoot = CreateGameObject("WallRoot");
+        SetPrivateField(manager, "wallRoot", wallRoot.transform);
+
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        Component container = AddComponent(CreateChildGameObject(wallRoot.transform, "OpeningContainer"), containerType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(10f, 0f, 0f),
+                0.1f,
+                3f,
+                1.5f,
+                visualState,
+                11,
+                12,
+                false,
+                false,
+                true,
+                false,
+            });
+
+        Component opening = AddComponent(CreateChildGameObject(container.transform, "Door"), openingType);
+        object doorEnumValue = Enum.Parse(openingPlacementType, "Door");
+        openingType.GetMethod("Initialize")?.Invoke(
+            opening,
+            new object[]
+            {
+                manager,
+                container,
+                doorEnumValue,
+                string.Empty,
+                string.Empty,
+                false,
+                false,
+                3f,
+                1f,
+                2f,
+                0.1f,
+                0f,
+            });
+
+        object startSnapshot = managerType.GetMethod("CaptureLayoutSnapshot", new[] { containerType })
+            ?.Invoke(manager, new object[] { container });
+
+        containerType.GetMethod("SetWallSpan")?.Invoke(
+            container,
+            new object[] { new Vector3(5f, 0f, 0f), new Vector3(10f, 0f, 0f) });
+        openingType.GetMethod("SetCenterDistance")?.Invoke(opening, new object[] { 0.5f });
+
+        Component adjacentWall = AddComponent(CreateChildGameObject(wallRoot.transform, "AdjacentWall"), wallType);
+        object wallData = Activator.CreateInstance(
+            wallDataType,
+            new Vector3(-2f, 0f, 0f),
+            new Vector3(5f, 0f, 0f),
+            0.1f,
+            3f,
+            1.5f);
+        wallType.GetMethod("Initialize")?.Invoke(adjacentWall, new[] { wallData });
+        wallType.GetMethod("SetVertexIds")?.Invoke(adjacentWall, new object[] { 21, 11 });
+        wallType.GetMethod("SetSplitPointFlags")?.Invoke(adjacentWall, new object[] { false, true });
+
+        object adjacentSnapshot = managerType.GetMethod("CaptureLayoutSnapshot", new[] { wallType })
+            ?.Invoke(manager, new object[] { adjacentWall });
+
+        LogAssert.Expect(LogType.Error, "Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently.");
+        LogAssert.Expect(LogType.Error, "Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently.");
+        object didRepartition = managerType.GetMethod("TryRepartitionContainerWithAdjacentWallAtSplit")
+            ?.Invoke(
+                manager,
+                new[]
+                {
+                    container,
+                    startSnapshot,
+                    adjacentWall,
+                    adjacentSnapshot,
+                    (object)11,
+                    new Vector3(5f, 0f, 0f),
+                });
+
+        Assert.That(didRepartition, Is.True);
+        Component[] activeOpenings = wallRoot.GetComponentsInChildren(openingType, false);
+        Assert.That(activeOpenings.Length, Is.EqualTo(1));
+        Assert.That((float)openingType.GetProperty("CenterDistance")?.GetValue(activeOpenings[0]), Is.EqualTo(5f).Within(0.0001f));
+        Assert.That(activeOpenings[0].GetComponentInParent(containerType).name, Does.EndWith("_A"));
     }
 
     [Test]
