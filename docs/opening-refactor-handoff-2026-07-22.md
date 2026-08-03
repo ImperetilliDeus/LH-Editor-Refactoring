@@ -1145,6 +1145,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After extracting linear-chain span resolution inside `HandleManager.Drag.cs`, Unity script compilation succeeded.
+- `TryApplyLinearSplitChainKeepingDraggedEndpoint` now delegates repeated vertex-order to start/end point resolution to `TryResolveLinearChainElementSpan`.
+- Wall/container mutation order, deferred container application, undo capture, and rebuild orchestration were left unchanged.
+- After extracting linear-chain span resolution, corrected Test Runner verification passed:
+  - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1823,6 +1830,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/handle-container-lookup-utility-catalog-tests.xml`
   - `Logs/handle-container-lookup-utility-rail-regression.log`
   - `Logs/handle-container-lookup-utility-rail-regression.xml`
+  - `Logs/handle-linear-chain-span-helper-compile.log`
+  - `Logs/handle-linear-chain-span-helper-handle-tests.log`
+  - `Logs/handle-linear-chain-span-helper-handle-tests.xml`
+  - `Logs/handle-linear-chain-span-helper-catalog-tests.log`
+  - `Logs/handle-linear-chain-span-helper-catalog-tests.xml`
+  - `Logs/handle-linear-chain-span-helper-rail-regression.log`
+  - `Logs/handle-linear-chain-span-helper-rail-regression.xml`
 
 ## Important Context
 
@@ -1966,7 +1980,7 @@ Next recommended step:
 
 Current state:
 
-- `HandleManager.Drag.cs` is about 1519 lines and remains the highest-risk file.
+- `HandleManager.Drag.cs` is about 1511 lines and remains the highest-risk file.
 - `HandleManager.ContainerDrag.cs` is about 412 lines after container endpoint geometry and lookup utility extraction.
 - `HandleManager.Registry.cs` is about 484 lines after `HandleGeometryUtility` extraction.
 - `HandleManager.cs` is about 789 lines after handle plane projection extraction.
@@ -1978,7 +1992,8 @@ Next recommended step:
 - Prefer extracting stateless helpers that accept primitives/Unity structs and return values. Keep wall mutation, undo capture, container rebuild, and mode/input orchestration inside `HandleManager`.
 - The obvious drag threshold, split-point segment projection, handle plane projection, and container endpoint geometry helpers are now in `HandleGeometryUtility`; container outer-wall lookup is now in `HandleContainerLookupUtility`.
 - Remaining `HandleManager.ContainerDrag.cs` code is mostly Unity object mutation, renderer movement, undo, and rebuild orchestration. Prefer pausing `ContainerDrag` extraction unless another clearly stateless helper appears.
-- Next inspect `HandleManager.Drag.cs` for a narrow lookup/filter/constraint helper. If the remaining candidates are also mutation-heavy, move to `FurniturePlacementManager` for the next large-class cleanup pass.
+- The repeated linear-chain vertex-order to start/end span resolution is now centralized in `TryResolveLinearChainElementSpan`.
+- Next inspect `HandleManager.Drag.cs` one more time for a similarly small duplicate calculation. If the remaining candidates are mutation-heavy, move to `FurniturePlacementManager` for the next large-class cleanup pass.
 
 ## Suggested First Message For A New Chat
 

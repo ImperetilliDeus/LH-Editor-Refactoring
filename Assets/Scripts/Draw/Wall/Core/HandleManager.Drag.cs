@@ -1310,19 +1310,7 @@ public partial class HandleManager
             Vector3 firstPoint = orderedPoints[i];
             Vector3 secondPoint = orderedPoints[i + 1];
 
-            Vector3 startPoint;
-            Vector3 endPoint;
-            if (element.startVertexId == firstVertexId && element.endVertexId == secondVertexId)
-            {
-                startPoint = firstPoint;
-                endPoint = secondPoint;
-            }
-            else if (element.startVertexId == secondVertexId && element.endVertexId == firstVertexId)
-            {
-                startPoint = secondPoint;
-                endPoint = firstPoint;
-            }
-            else
+            if (!TryResolveLinearChainElementSpan(element, firstVertexId, secondVertexId, firstPoint, secondPoint, out Vector3 startPoint, out Vector3 endPoint))
             {
                 return false;
             }
@@ -1347,19 +1335,7 @@ public partial class HandleManager
             Vector3 firstPoint = orderedPoints[elementIndex];
             Vector3 secondPoint = orderedPoints[elementIndex + 1];
 
-            Vector3 startPoint;
-            Vector3 endPoint;
-            if (element.startVertexId == firstVertexId && element.endVertexId == secondVertexId)
-            {
-                startPoint = firstPoint;
-                endPoint = secondPoint;
-            }
-            else if (element.startVertexId == secondVertexId && element.endVertexId == firstVertexId)
-            {
-                startPoint = secondPoint;
-                endPoint = firstPoint;
-            }
-            else
+            if (!TryResolveLinearChainElementSpan(element, firstVertexId, secondVertexId, firstPoint, secondPoint, out Vector3 startPoint, out Vector3 endPoint))
             {
                 return false;
             }
@@ -1371,6 +1347,22 @@ public partial class HandleManager
         }
 
         return true;
+    }
+
+    private static bool TryResolveLinearChainElementSpan(
+        LinearChainElement element,
+        int firstVertexId,
+        int secondVertexId,
+        Vector3 firstPoint,
+        Vector3 secondPoint,
+        out Vector3 startPoint,
+        out Vector3 endPoint)
+    {
+        bool forward = element != null && element.startVertexId == firstVertexId && element.endVertexId == secondVertexId;
+        bool reverse = element != null && element.startVertexId == secondVertexId && element.endVertexId == firstVertexId;
+        startPoint = forward ? firstPoint : reverse ? secondPoint : Vector3.zero;
+        endPoint = forward ? secondPoint : reverse ? firstPoint : Vector3.zero;
+        return forward || reverse;
     }
 
 
