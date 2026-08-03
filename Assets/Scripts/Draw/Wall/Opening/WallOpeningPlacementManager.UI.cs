@@ -9,12 +9,18 @@ public partial class WallOpeningPlacementManager
 
     private Wall GetSelectedWallComponent()
     {
-        if (wallSelectionManager == null || wallSelectionManager.SelectedWall == null)
+        if (wallSelectionManager == null)
         {
             return null;
         }
 
-        return wallSelectionManager.SelectedWall.GetComponent<Wall>();
+        if (wallSelectionManager.SelectedWall != null)
+        {
+            return wallSelectionManager.SelectedWall.GetComponent<Wall>();
+        }
+
+        WallOpeningContainer selectedContainer = wallSelectionManager.GetSingleSelectedContainer();
+        return selectedContainer != null ? ResolveDefaultSplitSegment(selectedContainer) : null;
     }
 
     public float UnitsToMillimeters(float units)

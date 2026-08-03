@@ -27,6 +27,27 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - A full `WallOpeningPlacementManagerTests` run was attempted during investigation and exposed existing unrelated failures in `ApplyLayoutSnapshot_DeactivatesRemovedStandaloneWallImmediately` and `ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars`.
   - Those were not included in the final performance-fix commit scope.
 
+## Completed In Split Handle/Opening Container Follow-up
+
+- `Assets/Scripts/Draw/Wall/Core/HandleManager.Drag.cs`
+  - Split-point handle dragging no longer requests full room-topology and top-view refresh every drag frame.
+  - The existing drag-end refresh still requests the full topology/top-view update after the final split position is committed.
+- `Assets/Scripts/Draw/Wall/Core/WallSelectionState.cs`
+- `Assets/Scripts/Draw/Wall/Core/WallSelectionManager.cs`
+  - Added a single selected-container lookup for DetailEdit selection state.
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.StandaloneSplit.cs`
+  - `SplitSelectedWall` can now resolve a default valid split segment from a selected `WallOpeningContainer`.
+  - Container selection chooses the longest usable generated wall segment, avoiding hidden opening-base segments.
+- Verification:
+  - Unity compile passed with `Logs/split-handle-container-fix-compile.log`.
+  - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
+  - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
+- Remaining performance note:
+  - Opening-container span drag still calls `ApplyContainerSpanFromExternalDrag`, which can rebuild the container during drag.
+  - If the red split handle still drops frames on opening-heavy walls, the next target is a lightweight container-span drag preview that defers full `RebuildContainer` until drag end.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

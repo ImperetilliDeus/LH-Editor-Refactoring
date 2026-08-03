@@ -102,6 +102,58 @@ public partial class WallOpeningPlacementManager
         handleManager?.RefreshRegisteredWalls();
     }
 
+    private Wall ResolveDefaultSplitSegment(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        Wall[] walls = container.GetComponentsInChildren<Wall>(true);
+        Wall bestWall = null;
+        float bestLength = 0f;
+        for (int i = 0; i < walls.Length; i++)
+        {
+            Wall wall = walls[i];
+            if (!CanUseWallAsDefaultSplitSegment(container, wall, out float length))
+            {
+                continue;
+            }
+
+            if (length <= bestLength)
+            {
+                continue;
+            }
+
+            bestLength = length;
+            bestWall = wall;
+        }
+
+        return bestWall;
+    }
+
+    private static bool CanUseWallAsDefaultSplitSegment(WallOpeningContainer container, Wall wall, out float length)
+    {
+        length = 0f;
+        if (container == null || wall == null || WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+        {
+            return false;
+        }
+
+        Vector3 startPoint = wall.Data.startPoint;
+        Vector3 endPoint = wall.Data.endPoint;
+        length = Vector3.Distance(startPoint, endPoint);
+        if (length <= MinimumWallSegmentLength * 2f)
+        {
+            return false;
+        }
+
+        Vector3 midpoint = (startPoint + endPoint) * 0.5f;
+        float splitDistance = Vector3.Dot(midpoint - container.WallStart, container.WallDirection);
+        return splitDistance > MinimumWallSegmentLength &&
+            splitDistance < container.WallLength - MinimumWallSegmentLength;
+    }
+
     private static bool CanSplitStandaloneWallAtMidpoint(Vector3 startPoint, Vector3 midpoint, Vector3 endPoint)
     {
         return (midpoint - startPoint).sqrMagnitude > MinimumWallSegmentLength * MinimumWallSegmentLength &&

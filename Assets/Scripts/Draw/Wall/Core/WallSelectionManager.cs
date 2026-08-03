@@ -123,6 +123,11 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         return selectionState.IsContainerSelected(container);
     }
 
+    public WallOpeningContainer GetSingleSelectedContainer()
+    {
+        return selectionState.GetSingleSelectedContainer();
+    }
+
     public void SetSelectedWallPreservingOpeningSelection(GameObject wall)
     {
         SelectWall(wall, true);

@@ -78,6 +78,27 @@ internal sealed class WallSelectionState
         return container != null && detailSelectedContainers.Contains(container);
     }
 
+    public WallOpeningContainer GetSingleSelectedContainer()
+    {
+        WallOpeningContainer result = null;
+        foreach (WallOpeningContainer container in detailSelectedContainers)
+        {
+            if (container == null)
+            {
+                continue;
+            }
+
+            if (result != null)
+            {
+                return null;
+            }
+
+            result = container;
+        }
+
+        return result;
+    }
+
     public bool ToggleDetailSelection(GameObject wallObject)
     {
         if (wallObject == null)

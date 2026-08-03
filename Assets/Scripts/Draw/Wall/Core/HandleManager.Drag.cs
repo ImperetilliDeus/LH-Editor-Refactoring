@@ -278,8 +278,6 @@ public partial class HandleManager
             if (TryApplyLogicalSplitPointDrag(group, newPoint))
             {
                 RefreshAllGroupWorldPoints();
-                RoomTopologyEvents.RequestRefreshAll();
-                EditorVisualEvents.RequestTopViewRefresh();
                 MarkHandlePositionsDirty();
             }
 
