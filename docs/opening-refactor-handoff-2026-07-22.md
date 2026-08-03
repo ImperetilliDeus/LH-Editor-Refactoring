@@ -136,6 +136,32 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
     - `LhWorkStateOpeningRestoreTests.Load_RestoresDoorOpeningOnWall`
   - Broader WorkState loader regression tests passed with `Logs/workstate-loader-overlap-regression-tests.xml`: 19 total, 19 passed, 0 failed.
 
+## Completed In Split Outer Handle Minimum-Length Follow-up
+
+- User-reported issue after loading the corrected workstate:
+  - A split point near the first window could not be dragged beyond the wall segment immediately to its right.
+  - Dragging the split point also still felt like it dropped frames.
+- Root cause:
+  - `HandleManager.CanApplySplitPointDrag` and `ConstrainSplitPointDragAgainstOpeningContainers` used `GetMinimumContainerLengthForEndpointDrag` for opening-container outer split points.
+  - That helper considers generated internal wall segment endpoints in the container, including points around openings.
+  - For an outer split handle, this preserved all generated opening segments inside the current container during drag, so the handle could be blocked before it crossed the first opening/short segment.
+  - Opening ownership transfer already repairs crossed openings at drag end using the drag-start snapshot, so this minimum-length preservation is too strict for outer split handles.
+- Implementation:
+  - `Assets/Scripts/Draw/Wall/Core/HandleManager.Drag.cs`
+    - Added `IsDraggingOuterSplitPoint`.
+    - For container outer split-point drag only, minimum container length now falls back to `minimumWallLength` instead of internal generated-segment preservation.
+    - Non-split container endpoint drags still use the stricter existing generated-segment minimum-length calculation.
+- Verification:
+  - Unity compile passed with `Logs/split-outer-handle-minlength-compile.log`.
+  - Targeted Unity EditMode tests passed with `Logs/split-outer-handle-minlength-tests.xml`: 7 total, 7 passed, 0 failed.
+    - `HandleManagerModeTests`: 4 total, 4 passed, 0 failed.
+    - `WallOpeningPlacementManagerTests.RepartitionContainerWithAdjacentWallAtSplit_MovesCrossedOpeningToAdjacentLayout`
+    - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary`
+    - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary`
+- Remaining performance note:
+  - Dragging an opening-container outer split point can still call `ApplyContainerSpanFromExternalDrag` and `RebuildContainer(container, true)` during drag.
+  - If frame drops remain after this movement fix, the next focused change should defer/heavily lighten container rebuild during split-handle drag, then do the full rebuild and opening ownership transfer on drag end.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

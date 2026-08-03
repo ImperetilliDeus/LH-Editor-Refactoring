@@ -999,12 +999,14 @@ public partial class HandleManager
                 Vector3 newDirection = isDraggingStart ? (fixedPoint - movedPoint) : (movedPoint - fixedPoint);
                 newDirection.y = 0f;
                 float newLength = newDirection.magnitude;
-                float minimumContainerLength = GetMinimumContainerLengthForEndpointDrag(
-                    element.container,
-                    isDraggingStart,
-                    oldStart,
-                    oldEnd,
-                    oldDirection);
+                float minimumContainerLength = IsDraggingOuterSplitPoint(element.container, draggedVertexId)
+                    ? minimumWallLength
+                    : GetMinimumContainerLengthForEndpointDrag(
+                        element.container,
+                        isDraggingStart,
+                        oldStart,
+                        oldEnd,
+                        oldDirection);
                 if (newLength < minimumContainerLength)
                 {
                     return false;
@@ -1088,12 +1090,14 @@ public partial class HandleManager
 
             newDirection /= newLength;
 
-            float minimumContainerLength = GetMinimumContainerLengthForEndpointDrag(
-                element.container,
-                isDraggingStart,
-                oldStart,
-                oldEnd,
-                oldDirection);
+            float minimumContainerLength = IsDraggingOuterSplitPoint(element.container, draggedVertexId)
+                ? minimumWallLength
+                : GetMinimumContainerLengthForEndpointDrag(
+                    element.container,
+                    isDraggingStart,
+                    oldStart,
+                    oldEnd,
+                    oldDirection);
             if (newLength < minimumContainerLength)
             {
                 newLength = minimumContainerLength;
@@ -1106,6 +1110,13 @@ public partial class HandleManager
         }
 
         return constrainedPoint;
+    }
+
+    private static bool IsDraggingOuterSplitPoint(WallOpeningContainer container, int draggedVertexId)
+    {
+        return container != null &&
+            ((draggedVertexId == container.OuterStartVertexId && container.OuterStartSplitPoint) ||
+             (draggedVertexId == container.OuterEndVertexId && container.OuterEndSplitPoint));
     }
 
     private bool TryCreateLinearChainElement(Wall sourceWall, int vertexId, out LinearChainElement element)
