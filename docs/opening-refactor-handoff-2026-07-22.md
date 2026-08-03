@@ -48,6 +48,19 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Opening-container span drag still calls `ApplyContainerSpanFromExternalDrag`, which can rebuild the container during drag.
   - If the red split handle still drops frames on opening-heavy walls, the next target is a lightweight container-span drag preview that defers full `RebuildContainer` until drag end.
 
+## Completed In Split Handle Opening-Boundary Follow-up
+
+- `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.ContainerSpanDrag.cs`
+  - Split-handle constraints now reserve only `MinimumWallSegmentLength` around opening spans during outer container endpoint drag.
+  - This lets a split point slide freely along door/window walls except directly over a door/window span.
+  - Opening distance constraints are applied even when the dragged endpoint already satisfies the minimum container length.
+- `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+  - Updated the outer split constraint expectation from `minimumSideWallMillimeters` clearance to the smaller split-handle opening-boundary clearance.
+- Verification:
+  - Unity compile passed with `Logs/split-handle-opening-boundary-compile.log`.
+  - `WallOpeningPlacementManagerTests.ConstrainContainerOuterSplitPointDrag_ClampsDraggedStartBeforeOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary` passed: 1 total, 1 passed, 0 failed.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

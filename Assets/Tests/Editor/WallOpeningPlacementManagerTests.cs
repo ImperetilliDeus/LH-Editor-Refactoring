@@ -168,9 +168,8 @@ public class WallOpeningPlacementManagerTests
         Assert.That(invoked, Is.EqualTo(true));
 
         Vector3 constrainedPoint = (Vector3)arguments[3];
-        float minimumSideWallUnits = (float)managerType.GetProperty("MinimumSideWallUnits")?.GetValue(manager);
         Assert.That(constrainedPoint.x, Is.LessThan(2f));
-        Assert.That(constrainedPoint.x, Is.EqualTo(2f - minimumSideWallUnits).Within(0.0001f));
+        Assert.That(constrainedPoint.x, Is.EqualTo(2f - 0.01f).Within(0.0001f));
     }
 
     [Test]

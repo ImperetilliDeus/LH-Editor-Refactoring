@@ -219,7 +219,7 @@ public partial class WallOpeningPlacementManager
             return true;
         }
 
-        float effectiveSideWall = Mathf.Max(MillimetersToUnits(minimumSideWallMillimeters), MinimumWallSegmentLength);
+        float effectiveSideWall = MinimumWallSegmentLength;
         float minimumRequiredLength = MinimumWallSegmentLength;
         float maxStartDistance = float.PositiveInfinity;
         float minEndDistance = float.NegativeInfinity;
@@ -240,7 +240,7 @@ public partial class WallOpeningPlacementManager
             minimumRequiredLength,
             out constrainedPoint))
         {
-            return true;
+            constrainedPoint = desiredPoint;
         }
 
         constrainedPoint = ApplyOuterSplitDistanceConstraints(
