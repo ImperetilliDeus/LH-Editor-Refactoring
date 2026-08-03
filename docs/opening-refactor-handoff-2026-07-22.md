@@ -1159,6 +1159,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `HandleManagerModeTests` passed: 4 total, 4 passed, 0 failed.
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After reusing the furniture bounds footprint helper, Unity script compilation succeeded.
+- `FurniturePlacementManager.IsBoundsFootprintInsidePolygonXZ` now reuses `GetBoundsFootprintPoints` instead of rebuilding the same five footprint points inline.
+- Bounds containment behavior, room resolution, placement validation, selection, and placement lifecycle flow were left unchanged.
+- After reusing the furniture bounds footprint helper, corrected Test Runner verification passed:
+  - `EditorViewModeManagerTests.FurniturePlacement*` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1851,6 +1858,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/handle-original-segment-length-helper-catalog-tests.xml`
   - `Logs/handle-original-segment-length-helper-rail-regression.log`
   - `Logs/handle-original-segment-length-helper-rail-regression.xml`
+  - `Logs/furniture-bounds-footprint-helper-compile.log`
+  - `Logs/furniture-bounds-footprint-helper-placement-tests.log`
+  - `Logs/furniture-bounds-footprint-helper-placement-tests.xml`
+  - `Logs/furniture-bounds-footprint-helper-catalog-tests.log`
+  - `Logs/furniture-bounds-footprint-helper-catalog-tests.xml`
+  - `Logs/furniture-bounds-footprint-helper-rail-regression.log`
+  - `Logs/furniture-bounds-footprint-helper-rail-regression.xml`
 
 ## Important Context
 
@@ -1911,7 +1925,7 @@ These are the highest-risk code health items found during project review:
   - Problem: handle input, drag rules, registry refresh, UI state, and container drag behavior are mixed.
   - Risk: wall vertex drag, split point drag, opening container rebuild, and undo capture are tightly coupled.
 - `FurniturePlacementManager`
-  - Current total: about 1075 lines in one file.
+  - Current total: about 1251 lines in one file.
   - Problem: input, placement validation, room containment, overlap checks, selection, deletion, preview tinting, and debug logging live together.
   - Risk: validation and input changes can easily affect selection and mode transitions.
 - `OpeningModelViewerSyncWindow`
@@ -2009,6 +2023,19 @@ Next recommended step:
 - The repeated linear-chain vertex-order to start/end span resolution is now centralized in `TryResolveLinearChainElementSpan`.
 - The repeated original segment length and minimum required total length calculation is now centralized in `TryResolveOriginalSegmentLengths`.
 - Pause further `HandleManager.Drag.cs` cleanup unless a concrete bug or clearly pure duplicate calculation appears. Next recommended target is `FurniturePlacementManager` for the next large-class cleanup pass.
+
+### 6. Continue `FurniturePlacementManager` split
+
+Current state:
+
+- `FurniturePlacementManager.cs` is about 1251 lines after reusing `GetBoundsFootprintPoints` inside bounds containment.
+- The file still mixes input handling, placement validation, room containment, overlap checks, selection/reposition, preview tinting, debug logging, and mode lifecycle.
+- Avoid moving Unity object creation, mode transitions, active selection state, or placement lifecycle code unless there is a clear behavior-preserving seam.
+
+Next recommended step:
+
+- Inspect placement validation and room containment first for existing duplicate helpers before creating new abstractions.
+- Good candidates should be pure calculations or lookup/formatting helpers that reduce net code lines. If candidates only wrap single-use mutation code, leave them in place.
 
 ## Suggested First Message For A New Chat
 

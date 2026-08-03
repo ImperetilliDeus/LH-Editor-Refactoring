@@ -748,16 +748,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return false;
         }
 
-        float y = bounds.center.y;
-        Vector3[] testPoints =
-        {
-            new Vector3(bounds.center.x, y, bounds.center.z),
-            new Vector3(bounds.min.x, y, bounds.min.z),
-            new Vector3(bounds.min.x, y, bounds.max.z),
-            new Vector3(bounds.max.x, y, bounds.min.z),
-            new Vector3(bounds.max.x, y, bounds.max.z),
-        };
-
+        Vector3[] testPoints = GetBoundsFootprintPoints(bounds);
         for (int i = 0; i < testPoints.Length; i++)
         {
             if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
