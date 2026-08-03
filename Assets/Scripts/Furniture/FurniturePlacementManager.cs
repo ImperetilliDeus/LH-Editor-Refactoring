@@ -42,7 +42,6 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private float validationDebugLogIntervalSeconds = 0.25f;
 
     private readonly List<Renderer> previewRenderers = new List<Renderer>();
-    private readonly List<Collider> currentColliders = new List<Collider>();
     private readonly List<Room> cachedRooms = new List<Room>();
     private readonly List<Vector3> cachedRoomFootprint = new List<Vector3>();
     private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
@@ -664,12 +663,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     private Room ResolvePlacementRoom(Bounds bounds, Room placementPointRoom, Room boundsRoom)
     {
-        if (placementPointRoom != null)
-        {
-            return placementPointRoom;
-        }
-
-        return boundsRoom;
+        return placementPointRoom != null ? placementPointRoom : boundsRoom;
     }
 
     private bool TryBuildRoomPlacementFootprint(Room room, List<Vector3> results)

@@ -1166,6 +1166,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `EditorViewModeManagerTests.FurniturePlacement*` passed: 4 total, 4 passed, 0 failed.
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After simplifying furniture placement room resolution, Unity script compilation succeeded.
+- Removed the unused `currentColliders` cache field and collapsed `ResolvePlacementRoom` to its existing pointer-room-first rule while keeping the reflected private helper available for tests.
+- Placement validation, room containment lookup, active selection state, and placement lifecycle flow were left unchanged.
+- After simplifying furniture placement room resolution, corrected Test Runner verification passed:
+  - `EditorViewModeManagerTests.FurniturePlacement*` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1865,6 +1872,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/furniture-bounds-footprint-helper-catalog-tests.xml`
   - `Logs/furniture-bounds-footprint-helper-rail-regression.log`
   - `Logs/furniture-bounds-footprint-helper-rail-regression.xml`
+  - `Logs/furniture-room-resolution-helper-compile.log`
+  - `Logs/furniture-room-resolution-helper-placement-tests.log`
+  - `Logs/furniture-room-resolution-helper-placement-tests.xml`
+  - `Logs/furniture-room-resolution-helper-catalog-tests.log`
+  - `Logs/furniture-room-resolution-helper-catalog-tests.xml`
+  - `Logs/furniture-room-resolution-helper-rail-regression.log`
+  - `Logs/furniture-room-resolution-helper-rail-regression.xml`
 
 ## Important Context
 
@@ -2028,7 +2042,7 @@ Next recommended step:
 
 Current state:
 
-- `FurniturePlacementManager.cs` is about 1251 lines after reusing `GetBoundsFootprintPoints` inside bounds containment.
+- `FurniturePlacementManager.cs` is about 1245 lines after reusing `GetBoundsFootprintPoints` inside bounds containment and simplifying room resolution.
 - The file still mixes input handling, placement validation, room containment, overlap checks, selection/reposition, preview tinting, debug logging, and mode lifecycle.
 - Avoid moving Unity object creation, mode transitions, active selection state, or placement lifecycle code unless there is a clear behavior-preserving seam.
 
