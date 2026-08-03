@@ -887,32 +887,24 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return "NoSurface";
         }
 
-        if (placementRoom == null)
+        if (placementRoom != null)
         {
-            if (pointerRoom == null && boundsRoom == null)
-            {
-                return "PointerAndBoundsOutsideRooms";
-            }
-
-            if (pointerRoom != null && boundsRoom == null)
-            {
-                return "BoundsOutsidePointerRoom";
-            }
-
-            if (pointerRoom != null && boundsRoom != null && pointerRoom != boundsRoom)
-            {
-                return "PointerRoomAndBoundsRoomMismatch";
-            }
-
-            return "RoomRejected";
+            return overlaps ? "Overlap" : "Valid";
         }
 
-        if (overlaps)
+        if (pointerRoom == null && boundsRoom == null)
         {
-            return "Overlap";
+            return "PointerAndBoundsOutsideRooms";
         }
 
-        return "Valid";
+        if (pointerRoom != null && boundsRoom == null)
+        {
+            return "BoundsOutsidePointerRoom";
+        }
+
+        return pointerRoom != null && pointerRoom != boundsRoom
+            ? "PointerRoomAndBoundsRoomMismatch"
+            : "RoomRejected";
     }
 
     private string BuildRoomContainmentDebug(Vector3 placementPoint, Bounds bounds)

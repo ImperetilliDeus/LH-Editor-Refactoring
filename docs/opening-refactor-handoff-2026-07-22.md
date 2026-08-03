@@ -1173,6 +1173,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `EditorViewModeManagerTests.FurniturePlacement*` passed: 4 total, 4 passed, 0 failed.
   - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
   - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
+- After flattening furniture placement debug reason resolution, Unity script compilation succeeded.
+- `ResolvePlacementDebugReason` now returns valid/overlap outcomes through the placement-room-present branch and handles rejected room cases with a flatter condition order.
+- Debug reason strings, placement validation, room containment lookup, and placement lifecycle flow were left unchanged.
+- After flattening furniture placement debug reason resolution, corrected Test Runner verification passed:
+  - `EditorViewModeManagerTests.FurniturePlacement*` passed: 4 total, 4 passed, 0 failed.
+  - `OpeningTypeCatalogTests` passed: 4 total, 4 passed, 0 failed.
+  - `WallOpeningPlacementManagerTests.ParametricOpeningModel_WhiteGlassFrameDoor_ResizesRailsFromAuthoredRailSize` passed: 1 total, 1 passed, 0 failed.
 - Relevant logs:
   - `Logs/opening-catalog-tests.log`
   - `Logs/wall-opening-placement-tests-rerun.log`
@@ -1879,6 +1886,13 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - `Logs/furniture-room-resolution-helper-catalog-tests.xml`
   - `Logs/furniture-room-resolution-helper-rail-regression.log`
   - `Logs/furniture-room-resolution-helper-rail-regression.xml`
+  - `Logs/furniture-debug-reason-helper-compile.log`
+  - `Logs/furniture-debug-reason-helper-placement-tests.log`
+  - `Logs/furniture-debug-reason-helper-placement-tests.xml`
+  - `Logs/furniture-debug-reason-helper-catalog-tests.log`
+  - `Logs/furniture-debug-reason-helper-catalog-tests.xml`
+  - `Logs/furniture-debug-reason-helper-rail-regression.log`
+  - `Logs/furniture-debug-reason-helper-rail-regression.xml`
 
 ## Important Context
 
@@ -2042,7 +2056,7 @@ Next recommended step:
 
 Current state:
 
-- `FurniturePlacementManager.cs` is about 1245 lines after reusing `GetBoundsFootprintPoints` inside bounds containment and simplifying room resolution.
+- `FurniturePlacementManager.cs` is about 1237 lines after reusing `GetBoundsFootprintPoints`, simplifying room resolution, and flattening debug reason resolution.
 - The file still mixes input handling, placement validation, room containment, overlap checks, selection/reposition, preview tinting, debug logging, and mode lifecycle.
 - Avoid moving Unity object creation, mode transitions, active selection state, or placement lifecycle code unless there is a clear behavior-preserving seam.
 
