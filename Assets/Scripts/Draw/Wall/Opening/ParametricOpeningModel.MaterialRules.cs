@@ -106,16 +106,22 @@ internal static class ParametricOpeningMaterialRules
 
         if (SharedProfileMaterials.TryGetValue(resourcePath, out Material cachedMaterial) && cachedMaterial != null)
         {
-            return cachedMaterial;
+            if (IsCompatibleProfileShader(cachedMaterial.shader))
+            {
+                return cachedMaterial;
+            }
+
+            SharedProfileMaterials.Remove(resourcePath);
         }
 
         Material material = Resources.Load<Material>(resourcePath);
-        if (material != null)
+        if (material != null && IsCompatibleProfileShader(material.shader))
         {
             SharedProfileMaterials[resourcePath] = material;
+            return material;
         }
 
-        return material;
+        return null;
     }
 
     private static Material GetProfileMaterial(string materialName, Color color, float metallic, float smoothness)
@@ -208,7 +214,7 @@ internal static class ParametricOpeningMaterialRules
 
         bool usesScriptableRenderPipeline = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null;
         bool isUrpShader = shader.name.StartsWith("Universal Render Pipeline/", StringComparison.Ordinal);
-        return usesScriptableRenderPipeline || !isUrpShader;
+        return usesScriptableRenderPipeline ? isUrpShader : !isUrpShader;
     }
 
     private static Material GetTransparentProfileMaterial(string materialName, Color color, float metallic, float smoothness)

@@ -249,6 +249,35 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - A full `WallOpeningPlacementManagerTests` run was also attempted and still includes pre-existing unrelated failures in `ApplyLayoutSnapshot_DeactivatesRemovedStandaloneWallImmediately` and `ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars`.
   - The old `SplitContainerWallSegment` reflection ambiguity from this change was fixed in the test helper and the targeted split boundary test now passes.
 
+## Completed In Split Creation/Material Follow-up
+
+- User-reported issues:
+  - Split-point creation works but has a small delay after clicking a wall in split placement mode.
+  - S003 glass suddenly renders hot pink, indicating an incompatible or missing shader.
+- Root cause:
+  - Container split creation still did full synchronous layout replacement work, then requested a global topology refresh and scanned the entire wall root to reselect the nearest replacement wall.
+  - `WhiteWindow_ClearGlass.mat` is a resource material using the built-in `Standard` shader. In SRP/URP projects that material can render as hot pink, and the material rule code reused it without checking pipeline compatibility.
+- Implementation:
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+    - Container split now captures removed container walls and directly tracks the walls created by the split layouts.
+    - After split creation, it requests `RoomTopologyEvents.RequestRefreshForWallReplacement` when replacement walls are available instead of always calling `RequestRefreshAll`.
+    - Replacement selection now picks from the newly created walls instead of scanning the full wall root.
+  - `Assets/Scripts/Draw/Wall/Opening/ParametricOpeningModel.MaterialRules.cs`
+    - Resource profile materials are cached/used only when their shader is compatible with the current render pipeline.
+    - In SRP/URP, built-in non-URP shaders are rejected so S003 glass falls back to a runtime URP-compatible transparent material.
+  - `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+    - Added a regression test that white-window glass resolves to a compatible shader in the current render pipeline.
+- Verification:
+  - Unity compile passed with `Logs/split-material-followup-final-compile.log`.
+  - `dotnet build Assembly-CSharp.csproj` passed.
+  - `dotnet build LH.Editor.Tests.csproj` passed.
+  - Targeted Unity EditMode tests passed:
+    - `Logs/split-material-followup-final-material-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-material-followup-final-click-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-material-followup-final-boundary-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-material-followup-final-repartition-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-material-followup-final-handle-mode-tests.xml`: 4 total, 4 passed, 0 failed.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

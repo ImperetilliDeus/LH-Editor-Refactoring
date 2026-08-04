@@ -299,29 +299,96 @@ public partial class WallOpeningPlacementManager
             leftOpenings,
             rightOpenings);
 
+        List<Wall> removedWalls = CollectContainerLayoutWalls(container);
         RemoveLayout(sourceSnapshot);
 
         Vector3 splitPoint = container.WallStart + container.WallDirection * splitDistance;
-        CreateSplitLayouts(container, sourceSnapshot, splitPoint, leftOpenings, rightOpenings);
+        List<Wall> createdWalls = new List<Wall>();
+        CreateSplitLayouts(container, sourceSnapshot, splitPoint, leftOpenings, rightOpenings, createdWalls);
 
-        RoomTopologyEvents.RequestRefreshAll();
+        RequestSplitContainerTopologyRefresh(removedWalls, createdWalls);
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
 
-        SelectClosestVisibleWallAfterContainerSplit(splitPoint);
+        SelectClosestVisibleWallAfterContainerSplit(splitPoint, createdWalls);
     }
 
-    private void SelectClosestVisibleWallAfterContainerSplit(Vector3 splitPoint)
+    private static List<Wall> CollectContainerLayoutWalls(WallOpeningContainer container)
+    {
+        List<Wall> walls = new List<Wall>();
+        if (container == null)
+        {
+            return walls;
+        }
+
+        Wall[] containerWalls = container.GetComponentsInChildren<Wall>(true);
+        for (int i = 0; i < containerWalls.Length; i++)
+        {
+            if (containerWalls[i] != null)
+            {
+                walls.Add(containerWalls[i]);
+            }
+        }
+
+        return walls;
+    }
+
+    private static void RequestSplitContainerTopologyRefresh(List<Wall> removedWalls, List<Wall> createdWalls)
+    {
+        if (removedWalls != null && removedWalls.Count > 0 && createdWalls != null && createdWalls.Count > 0)
+        {
+            RoomTopologyEvents.RequestRefreshForWallReplacement(removedWalls, createdWalls);
+            return;
+        }
+
+        RoomTopologyEvents.RequestRefreshAll();
+    }
+
+    private void SelectClosestVisibleWallAfterContainerSplit(Vector3 splitPoint, List<Wall> createdWalls)
     {
         if (wallSelectionManager == null)
         {
             return;
         }
 
-        Wall replacementWall = OpeningWallLookup.FindClosestVisibleWallToPoint(wallRoot, cachedWalls, splitPoint);
+        Wall replacementWall = FindClosestVisibleWallToPoint(createdWalls, splitPoint);
         if (replacementWall != null)
         {
             wallSelectionManager.SetSelectedWall(replacementWall.gameObject);
         }
+    }
+
+    private static Wall FindClosestVisibleWallToPoint(List<Wall> walls, Vector3 splitPoint)
+    {
+        if (walls == null || walls.Count == 0)
+        {
+            return null;
+        }
+
+        Wall closestWall = null;
+        float closestDistanceSqr = float.PositiveInfinity;
+        for (int i = 0; i < walls.Count; i++)
+        {
+            Wall wall = walls[i];
+            if (wall == null ||
+                !wall.gameObject.activeInHierarchy ||
+                WallHierarchyUtility.IsHiddenOpeningBaseSegment(wall))
+            {
+                continue;
+            }
+
+            Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
+            midpoint.y = splitPoint.y;
+            float distanceSqr = (midpoint - splitPoint).sqrMagnitude;
+            if (distanceSqr >= closestDistanceSqr)
+            {
+                continue;
+            }
+
+            closestDistanceSqr = distanceSqr;
+            closestWall = wall;
+        }
+
+        return closestWall;
     }
 
     private void CreateSplitLayouts(
@@ -329,7 +396,8 @@ public partial class WallOpeningPlacementManager
         UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
         Vector3 splitPoint,
         List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
-        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
+        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings,
+        List<Wall> createdWalls = null)
     {
         CreateSplitContainerLayout(
             sourceSnapshot,
@@ -342,7 +410,8 @@ public partial class WallOpeningPlacementManager
             false,
             container.OuterStartSplitPoint,
             true,
-            leftOpenings);
+            leftOpenings,
+            createdWalls);
         CreateSplitContainerLayout(
             sourceSnapshot,
             container.name + "_B",
@@ -354,7 +423,8 @@ public partial class WallOpeningPlacementManager
             container.SuppressOuterEndHandle,
             true,
             container.OuterEndSplitPoint,
-            rightOpenings);
+            rightOpenings,
+            createdWalls);
     }
 
     public bool TryRepartitionContainerWithAdjacentWallAtSplit(
@@ -589,7 +659,8 @@ public partial class WallOpeningPlacementManager
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        List<UndoRedoManager.OpeningStateSnapshot> openings)
+        List<UndoRedoManager.OpeningStateSnapshot> openings,
+        List<Wall> createdWalls = null)
     {
         float length = Vector3.Distance(startPoint, endPoint);
         if (length <= MinimumWallSegmentLength)
@@ -609,7 +680,8 @@ public partial class WallOpeningPlacementManager
                 suppressStartHandle,
                 suppressEndHandle,
                 startSplitPoint,
-                endSplitPoint);
+                endSplitPoint,
+                createdWalls);
             return;
         }
 
@@ -624,7 +696,8 @@ public partial class WallOpeningPlacementManager
             suppressEndHandle,
             startSplitPoint,
             endSplitPoint,
-            openings);
+            openings,
+            createdWalls);
     }
 
     private void CreatePopulatedSplitOpeningContainer(
@@ -638,7 +711,8 @@ public partial class WallOpeningPlacementManager
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        List<UndoRedoManager.OpeningStateSnapshot> openings)
+        List<UndoRedoManager.OpeningStateSnapshot> openings,
+        List<Wall> createdWalls = null)
     {
         WallOpeningContainer nextContainer = CreateSplitOpeningContainer(
             layoutName,
@@ -658,6 +732,7 @@ public partial class WallOpeningPlacementManager
         }
 
         RebuildContainer(nextContainer, false);
+        AddWallsToList(nextContainer.GetComponentsInChildren<Wall>(true), createdWalls);
     }
 
     private void CreateStandaloneSplitWallLayout(
@@ -670,9 +745,10 @@ public partial class WallOpeningPlacementManager
         bool suppressStartHandle,
         bool suppressEndHandle,
         bool startSplitPoint,
-        bool endSplitPoint)
+        bool endSplitPoint,
+        List<Wall> createdWalls = null)
     {
-        CreateStandaloneWallSegment(
+        GameObject wallObject = CreateStandaloneWallSegment(
             layoutName,
             startPoint,
             endPoint,
@@ -686,6 +762,28 @@ public partial class WallOpeningPlacementManager
             startSplitPoint,
             endSplitPoint,
             sourceSnapshot.visualState);
+        AddWallToList(wallObject != null ? wallObject.GetComponent<Wall>() : null, createdWalls);
+    }
+
+    private static void AddWallsToList(Wall[] walls, List<Wall> results)
+    {
+        if (walls == null || results == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < walls.Length; i++)
+        {
+            AddWallToList(walls[i], results);
+        }
+    }
+
+    private static void AddWallToList(Wall wall, List<Wall> results)
+    {
+        if (wall != null && results != null && !results.Contains(wall))
+        {
+            results.Add(wall);
+        }
     }
 
     private GameObject CreateStandaloneWallSegment(

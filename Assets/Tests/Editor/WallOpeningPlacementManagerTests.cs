@@ -25,6 +25,35 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
+    public void ParametricOpeningMaterialRules_WhiteWindowGlass_UsesCompatibleShader()
+    {
+        Type materialRulesType = GetAssemblyType("ParametricOpeningMaterialRules");
+        Type profileKeysType = GetAssemblyType("ParametricOpeningProfileKeys");
+        string profileKey = (string)profileKeysType.GetField("WhiteTwoPanelWindow")?.GetValue(null);
+
+        MethodInfo method = materialRulesType.GetMethod(
+            "ResolveMaterial",
+            BindingFlags.Public | BindingFlags.Static);
+        Assert.That(method, Is.Not.Null);
+
+        Material material = method.Invoke(
+            null,
+            new object[] { "Stretch_DoorPanel_LeftGlass", profileKey }) as Material;
+
+        Assert.That(material, Is.Not.Null);
+        Assert.That(material.shader, Is.Not.Null);
+        Assert.That(material.shader.name, Is.Not.EqualTo("Hidden/InternalErrorShader"));
+
+        if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+        {
+            Assert.That(
+                material.shader.name,
+                Does.StartWith("Universal Render Pipeline/"),
+                "SRP projects should not reuse incompatible built-in glass materials.");
+        }
+    }
+
+    [Test]
     public void OpeningContainerSplitPlanner_UsesClickedWorldPointForSplitDistance()
     {
         Type containerType = GetAssemblyType("WallOpeningContainer");
