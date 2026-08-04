@@ -393,7 +393,7 @@ public partial class WallOpeningPlacementManager
 
         if (addSplitPointButton != null)
         {
-            addSplitPointButton.onClick.AddListener(SplitSelectedWall);
+            addSplitPointButton.onClick.AddListener(BeginSplitPointPlacementMode);
         }
     }
 
@@ -411,7 +411,7 @@ public partial class WallOpeningPlacementManager
 
         if (addSplitPointButton != null)
         {
-            addSplitPointButton.onClick.RemoveListener(SplitSelectedWall);
+            addSplitPointButton.onClick.RemoveListener(BeginSplitPointPlacementMode);
         }
     }
 

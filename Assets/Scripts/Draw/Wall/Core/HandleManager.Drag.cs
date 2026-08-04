@@ -783,67 +783,124 @@ public partial class HandleManager
             return false;
         }
 
+        connectedChainElements.Clear();
         GetWallsConnectedToVertex(group.vertexId, cachedWalls, null);
-        if (cachedWalls.Count < 2)
-        {
-            return false;
-        }
-
-        const float uniquePointThresholdSqr = 0.0001f;
-        List<Vector3> uniqueOppositePoints = new List<Vector3>();
         for (int i = 0; i < cachedWalls.Count; i++)
         {
             Wall wall = cachedWalls[i];
-            if (wall == null)
+            if (!TryCreateLinearChainElement(wall, group.vertexId, out LinearChainElement element) ||
+                ContainsElement(connectedChainElements, element))
             {
                 continue;
             }
 
-            Vector3 oppositePoint = wall.StartVertexId == group.vertexId ? wall.Data.endPoint : wall.Data.startPoint;
-            oppositePoint.y = dragPlaneHeight;
-
-            bool alreadyAdded = false;
-            for (int j = 0; j < uniqueOppositePoints.Count; j++)
-            {
-                if ((uniqueOppositePoints[j] - oppositePoint).sqrMagnitude <= uniquePointThresholdSqr)
-                {
-                    alreadyAdded = true;
-                    break;
-                }
-            }
-
-            if (!alreadyAdded)
-            {
-                uniqueOppositePoints.Add(oppositePoint);
-            }
+            connectedChainElements.Add(element);
         }
 
-        if (uniqueOppositePoints.Count < 2)
+        return TryGetLinearChainSplitPointDragSegment(
+            group.vertexId,
+            connectedChainElements,
+            out segmentStart,
+            out segmentEnd);
+    }
+
+    private bool TryGetLinearChainSplitPointDragSegment(
+        int vertexId,
+        List<LinearChainElement> elements,
+        out Vector3 segmentStart,
+        out Vector3 segmentEnd)
+    {
+        segmentStart = Vector3.zero;
+        segmentEnd = Vector3.zero;
+        if (elements == null || elements.Count == 0)
         {
             return false;
         }
 
-        float maxDistanceSqr = -1f;
-        for (int i = 0; i < uniqueOppositePoints.Count - 1; i++)
+        LinearChainElement primaryElement = ResolvePrimarySplitDragElement(vertexId, elements);
+        if (primaryElement == null)
         {
-            for (int j = i + 1; j < uniqueOppositePoints.Count; j++)
-            {
-                float distanceSqr = (uniqueOppositePoints[i] - uniqueOppositePoints[j]).sqrMagnitude;
-                if (distanceSqr <= maxDistanceSqr)
-                {
-                    continue;
-                }
+            return false;
+        }
 
-                maxDistanceSqr = distanceSqr;
-                segmentStart = uniqueOppositePoints[i];
-                segmentEnd = uniqueOppositePoints[j];
+        Vector3 axis = primaryElement.endPoint - primaryElement.startPoint;
+        axis.y = 0f;
+        float axisLength = axis.magnitude;
+        if (axisLength <= minimumWallLength)
+        {
+            return false;
+        }
+
+        axis /= axisLength;
+        Vector3 origin = primaryElement.startPoint;
+        origin.y = dragPlaneHeight;
+        float minDistance = 0f;
+        float maxDistance = axisLength;
+
+        const float collinearDotThreshold = 0.999f;
+        for (int i = 0; i < elements.Count; i++)
+        {
+            LinearChainElement element = elements[i];
+            if (element == null || !ContainsVertexId(element, vertexId))
+            {
+                continue;
+            }
+
+            Vector3 direction = element.endPoint - element.startPoint;
+            direction.y = 0f;
+            float length = direction.magnitude;
+            if (length <= minimumWallLength)
+            {
+                continue;
+            }
+
+            direction /= length;
+            if (Mathf.Abs(Vector3.Dot(direction, axis)) < collinearDotThreshold)
+            {
+                continue;
+            }
+
+            float startDistance = Vector3.Dot(element.startPoint - origin, axis);
+            float endDistance = Vector3.Dot(element.endPoint - origin, axis);
+            minDistance = Mathf.Min(minDistance, startDistance, endDistance);
+            maxDistance = Mathf.Max(maxDistance, startDistance, endDistance);
+        }
+
+        if (maxDistance - minDistance <= minimumWallLength * 2f)
+        {
+            return false;
+        }
+
+        segmentStart = origin + axis * minDistance;
+        segmentEnd = origin + axis * maxDistance;
+        segmentStart.y = dragPlaneHeight;
+        segmentEnd.y = dragPlaneHeight;
+        return true;
+    }
+
+    private static LinearChainElement ResolvePrimarySplitDragElement(int vertexId, List<LinearChainElement> elements)
+    {
+        for (int i = 0; i < elements.Count; i++)
+        {
+            LinearChainElement element = elements[i];
+            if (element != null &&
+                element.IsContainer &&
+                IsDraggingOuterSplitPoint(element.container, vertexId))
+            {
+                return element;
             }
         }
 
-        segmentStart.y = dragPlaneHeight;
-        segmentEnd.y = dragPlaneHeight;
+        for (int i = 0; i < elements.Count; i++)
+        {
+            LinearChainElement element = elements[i];
+            if (element != null && ContainsVertexId(element, vertexId))
+            {
+                return element;
+            }
+        }
 
-        return maxDistanceSqr > minimumWallLength * minimumWallLength;
+        return null;
     }
 
     private bool TryApplyLogicalSplitPointDrag(VertexGroup group, Vector3 newPoint)

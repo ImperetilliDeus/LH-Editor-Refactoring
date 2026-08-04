@@ -11,6 +11,35 @@ internal static class OpeningContainerSplitPlanner
     {
         Vector3 segmentMidpoint = (selectedSegment.Data.startPoint + selectedSegment.Data.endPoint) * 0.5f;
         splitDistance = Vector3.Dot(segmentMidpoint - container.WallStart, container.WallDirection);
+        return IsValidSplitDistance(container, splitDistance, minimumWallSegmentLength);
+    }
+
+    public static bool TryGetSplitDistance(
+        WallOpeningContainer container,
+        Vector3 worldPoint,
+        float minimumWallSegmentLength,
+        out float splitDistance)
+    {
+        splitDistance = 0f;
+        if (container == null)
+        {
+            return false;
+        }
+
+        splitDistance = Vector3.Dot(worldPoint - container.WallStart, container.WallDirection);
+        return IsValidSplitDistance(container, splitDistance, minimumWallSegmentLength);
+    }
+
+    public static bool IsValidSplitDistance(
+        WallOpeningContainer container,
+        float splitDistance,
+        float minimumWallSegmentLength)
+    {
+        if (container == null)
+        {
+            return false;
+        }
+
         return splitDistance > minimumWallSegmentLength &&
             splitDistance < container.WallLength - minimumWallSegmentLength;
     }

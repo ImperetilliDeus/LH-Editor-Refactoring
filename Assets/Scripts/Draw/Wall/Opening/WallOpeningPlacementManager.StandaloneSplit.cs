@@ -4,6 +4,24 @@ using UnityEngine;
 
 public partial class WallOpeningPlacementManager
 {
+    public void BeginSplitPointPlacementMode()
+    {
+        if (!CanEditOpenings())
+        {
+            return;
+        }
+
+        splitPointPlacementMode = true;
+        splitPointPlacementAwaitingPointerRelease = true;
+        SetOpeningDetailMenuVisible(false);
+    }
+
+    private void CancelSplitPointPlacementMode()
+    {
+        splitPointPlacementMode = false;
+        splitPointPlacementAwaitingPointerRelease = false;
+    }
+
     public void SplitSelectedWall()
     {
         if (!CanEditOpenings())
@@ -29,7 +47,36 @@ public partial class WallOpeningPlacementManager
         Vector3 midpoint = (startPoint + endPoint) * 0.5f;
         midpoint.y = startPoint.y;
 
-        if (!CanSplitStandaloneWallAtMidpoint(startPoint, midpoint, endPoint))
+        SplitStandaloneWallAtPoint(selectedWallComponent, midpoint);
+    }
+
+    private void SplitWallAtPoint(Wall selectedWallComponent, Vector3 worldPoint)
+    {
+        if (!CanEditOpenings() || selectedWallComponent == null || wallRoot == null)
+        {
+            return;
+        }
+
+        WallOpeningContainer selectedContainer = selectedWallComponent.GetComponentInParent<WallOpeningContainer>();
+        if (selectedContainer != null)
+        {
+            SplitContainerWallSegment(selectedContainer, worldPoint);
+            return;
+        }
+
+        SplitStandaloneWallAtPoint(selectedWallComponent, worldPoint);
+    }
+
+    private void SplitStandaloneWallAtPoint(Wall selectedWallComponent, Vector3 worldPoint)
+    {
+        if (selectedWallComponent == null)
+        {
+            return;
+        }
+
+        Vector3 startPoint = selectedWallComponent.Data.startPoint;
+        Vector3 endPoint = selectedWallComponent.Data.endPoint;
+        if (!TryProjectPointToStandaloneSplitPoint(startPoint, endPoint, worldPoint, out Vector3 splitPoint))
         {
             return;
         }
@@ -44,7 +91,7 @@ public partial class WallOpeningPlacementManager
         GameObject firstWall = CreateStandaloneWallSegment(
             $"{selectedWallComponent.name}_A",
             startPoint,
-            midpoint,
+            splitPoint,
             thickness,
             height,
             centerY,
@@ -63,7 +110,7 @@ public partial class WallOpeningPlacementManager
 
         GameObject secondWall = CreateStandaloneWallSegment(
             $"{selectedWallComponent.name}_B",
-            midpoint,
+            splitPoint,
             endPoint,
             thickness,
             height,
@@ -154,10 +201,32 @@ public partial class WallOpeningPlacementManager
             splitDistance < container.WallLength - MinimumWallSegmentLength;
     }
 
-    private static bool CanSplitStandaloneWallAtMidpoint(Vector3 startPoint, Vector3 midpoint, Vector3 endPoint)
+    private static bool TryProjectPointToStandaloneSplitPoint(
+        Vector3 startPoint,
+        Vector3 endPoint,
+        Vector3 worldPoint,
+        out Vector3 splitPoint)
     {
-        return (midpoint - startPoint).sqrMagnitude > MinimumWallSegmentLength * MinimumWallSegmentLength &&
-            (endPoint - midpoint).sqrMagnitude > MinimumWallSegmentLength * MinimumWallSegmentLength;
+        splitPoint = Vector3.zero;
+        Vector3 direction = endPoint - startPoint;
+        direction.y = 0f;
+        float length = direction.magnitude;
+        if (length <= MinimumWallSegmentLength * 2f)
+        {
+            return false;
+        }
+
+        direction /= length;
+        float splitDistance = Vector3.Dot(worldPoint - startPoint, direction);
+        if (splitDistance <= MinimumWallSegmentLength ||
+            splitDistance >= length - MinimumWallSegmentLength)
+        {
+            return false;
+        }
+
+        splitPoint = startPoint + direction * splitDistance;
+        splitPoint.y = startPoint.y;
+        return true;
     }
 
     private void SelectStandaloneSplitFirstWall(GameObject firstWall)

@@ -25,6 +25,51 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
+    public void OpeningContainerSplitPlanner_UsesClickedWorldPointForSplitDistance()
+    {
+        Type containerType = GetAssemblyType("WallOpeningContainer");
+        Type wallVisualStateType = GetAssemblyType("WallVisualState");
+        Type plannerType = GetAssemblyType("OpeningContainerSplitPlanner");
+
+        Component container = AddComponent(CreateGameObject("OpeningContainer"), containerType);
+        object visualState = Activator.CreateInstance(wallVisualStateType);
+        containerType.GetMethod("Initialize")?.Invoke(
+            container,
+            new object[]
+            {
+                new Vector3(2f, 0f, 2f),
+                new Vector3(8f, 0f, 2f),
+                0.1f,
+                3f,
+                1.5f,
+                visualState,
+                11,
+                12,
+                false,
+                false,
+                false,
+                false,
+            });
+
+        object[] arguments =
+        {
+            container,
+            new Vector3(5.25f, 0f, 4f),
+            0.01f,
+            null,
+        };
+
+        MethodInfo method = plannerType.GetMethod(
+            "TryGetSplitDistance",
+            new[] { containerType, typeof(Vector3), typeof(float), typeof(float).MakeByRefType() });
+        Assert.That(method, Is.Not.Null);
+
+        object invoked = method.Invoke(null, arguments);
+        Assert.That(invoked, Is.EqualTo(true));
+        Assert.That((float)arguments[3], Is.EqualTo(3.25f).Within(0.0001f));
+    }
+
+    [Test]
     public void SplitContainerWallSegment_DoesNotSplit_WhenSplitPointTouchesOpeningBoundary()
     {
         Type managerType = GetAssemblyType("WallOpeningPlacementManager");
@@ -940,9 +985,45 @@ public class WallOpeningPlacementManagerTests
 
     private static void InvokePrivate(object target, string methodName, params object[] args)
     {
-        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo method = ResolvePrivateMethod(target.GetType(), methodName, args);
         Assert.That(method, Is.Not.Null);
         method.Invoke(target, args);
+    }
+
+    private static MethodInfo ResolvePrivateMethod(Type targetType, string methodName, object[] args)
+    {
+        MethodInfo[] methods = targetType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
+        for (int i = 0; i < methods.Length; i++)
+        {
+            MethodInfo method = methods[i];
+            if (method.Name != methodName)
+            {
+                continue;
+            }
+
+            ParameterInfo[] parameters = method.GetParameters();
+            if (parameters.Length != args.Length)
+            {
+                continue;
+            }
+
+            bool matches = true;
+            for (int j = 0; j < parameters.Length; j++)
+            {
+                if (args[j] != null && !parameters[j].ParameterType.IsInstanceOfType(args[j]))
+                {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches)
+            {
+                return method;
+            }
+        }
+
+        return null;
     }
 
     private static T GetPropertyValue<T>(object target, string propertyName)

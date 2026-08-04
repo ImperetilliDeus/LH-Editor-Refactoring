@@ -199,6 +199,45 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
   - Opening ownership transfer is still drag-end based and primarily covers container plus adjacent standalone wall.
   - If crossing remains blocked in a specific layout after this performance fix, inspect whether both sides of the split point are opening containers and extend repartition to container+container.
 
+## Completed In Split Click Placement Follow-up
+
+- User-requested UX change:
+  - The wall split button no longer immediately creates a split point at an inferred midpoint.
+  - Pressing the split button now enters split-point placement mode; the next wall click creates the split point at the clicked wall position.
+  - Escape or right click cancels split-point placement mode.
+- Implementation:
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
+    - Changed the split button listener to enter placement mode.
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.SplitPlacement.cs`
+    - Added DetailEdit input handling for split-point placement mode.
+    - Placement ignores non-wall UI, allows wall UI/world wall clicks, raycasts to the wall, and passes the hit point into split creation.
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.StandaloneSplit.cs`
+    - Split creation now supports an explicit world point.
+    - Standalone walls project the clicked point onto the wall axis and reject positions too close to endpoints.
+  - `Assets/Scripts/Draw/Wall/Opening/OpeningContainerSplitPlanner.cs`
+  - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.LayoutContainers.cs`
+    - Opening containers now support explicit clicked-point split distance instead of only selected-segment midpoint distance.
+    - Existing opening-span rejection remains in place, so split points are not created directly on a door/window span.
+  - `Assets/Scripts/Draw/Wall/Core/HandleManager.Drag.cs`
+    - Split handle drag constraint now uses the logical linear wall/container axis.
+    - It no longer picks the farthest pair among all connected opposite endpoints, which could produce an off-wall slider axis when generated opening segments or perpendicular walls are connected.
+  - `Assets/Tests/Editor/WallOpeningPlacementManagerTests.cs`
+    - Added a regression test for clicked world-point projection into opening-container split distance.
+    - Updated the private reflection helper to resolve overloaded private methods by parameter compatibility.
+- Verification:
+  - Unity compile passed with `Logs/split-click-placement-final-compile.log`.
+  - `dotnet build Assembly-CSharp.csproj` passed.
+  - `dotnet build LH.Editor.Tests.csproj` passed.
+  - Targeted Unity EditMode tests passed:
+    - `Logs/split-click-placement-final-new-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-click-placement-final-boundary-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-click-placement-final-constraint-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-click-placement-final-repartition-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-click-placement-final-handle-mode-tests.xml`: 4 total, 4 passed, 0 failed.
+- Note:
+  - A full `WallOpeningPlacementManagerTests` run was also attempted and still includes pre-existing unrelated failures in `ApplyLayoutSnapshot_DeactivatesRemovedStandaloneWallImmediately` and `ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars`.
+  - The old `SplitContainerWallSegment` reflection ambiguity from this change was fixed in the test helper and the targeted split boundary test now passes.
+
 ## Completed In This Session
 
 - `S003` was confirmed as a window-like pass-through opening.

@@ -257,12 +257,36 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
+        SplitContainerWallAtDistance(container, selectedSegment, splitDistance);
+    }
+
+    private void SplitContainerWallSegment(WallOpeningContainer container, Vector3 worldPoint)
+    {
+        if (container == null || wallRoot == null)
+        {
+            return;
+        }
+
+        if (!OpeningContainerSplitPlanner.TryGetSplitDistance(
+                container,
+                worldPoint,
+                MinimumWallSegmentLength,
+                out float splitDistance))
+        {
+            return;
+        }
+
+        SplitContainerWallAtDistance(container, container, splitDistance);
+    }
+
+    private void SplitContainerWallAtDistance(WallOpeningContainer container, Object logContext, float splitDistance)
+    {
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
 
         if (OpeningContainerSplitPlanner.SplitDistanceOverlapsOpeningSpan(cachedOpenings, splitDistance))
         {
-            Debug.LogWarning("Wall split point overlaps an opening span.", selectedSegment);
+            Debug.LogWarning("Wall split point overlaps an opening span.", logContext);
             return;
         }
 

@@ -231,6 +231,13 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         if (modeManager != null && !modeManager.IsMode(EditorMode.DetailEdit))
         {
+            CancelSplitPointPlacementMode();
+            return;
+        }
+
+        if (splitPointPlacementMode)
+        {
+            HandleSplitPointPlacementInput(inputFrame);
             return;
         }
 
