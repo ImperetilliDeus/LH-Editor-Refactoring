@@ -203,7 +203,7 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
 
 - User-requested UX change:
   - The wall split button no longer immediately creates a split point at an inferred midpoint.
-  - Pressing the split button now enters split-point placement mode; the next wall click creates the split point at the clicked wall position.
+  - Pressing the split button now enters split-point placement mode; each wall click creates a split point at the clicked wall position.
   - Escape or right click cancels split-point placement mode.
 - Implementation:
   - `Assets/Scripts/Draw/Wall/Opening/WallOpeningPlacementManager.UI.cs`
@@ -234,6 +234,17 @@ Reduce risk and code growth around opening models, especially `OpeningTypeCatalo
     - `Logs/split-click-placement-final-constraint-test.xml`: 1 total, 1 passed, 0 failed.
     - `Logs/split-click-placement-final-repartition-test.xml`: 1 total, 1 passed, 0 failed.
     - `Logs/split-click-placement-final-handle-mode-tests.xml`: 4 total, 4 passed, 0 failed.
+- Follow-up adjustment:
+  - Split-point placement mode now stays active after a successful split point is created.
+  - This allows continuous split placement across multiple wall clicks until the user exits with right click or Escape.
+- Follow-up verification:
+  - Unity compile passed with `Logs/split-continuous-placement-compile.log`.
+  - `dotnet build Assembly-CSharp.csproj` passed.
+  - `dotnet build LH.Editor.Tests.csproj` passed.
+  - Targeted Unity EditMode tests passed:
+    - `Logs/split-continuous-placement-new-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-continuous-placement-boundary-test.xml`: 1 total, 1 passed, 0 failed.
+    - `Logs/split-continuous-placement-handle-mode-tests.xml`: 4 total, 4 passed, 0 failed.
 - Note:
   - A full `WallOpeningPlacementManagerTests` run was also attempted and still includes pre-existing unrelated failures in `ApplyLayoutSnapshot_DeactivatesRemovedStandaloneWallImmediately` and `ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars`.
   - The old `SplitContainerWallSegment` reflection ambiguity from this change was fixed in the test helper and the targeted split boundary test now passes.

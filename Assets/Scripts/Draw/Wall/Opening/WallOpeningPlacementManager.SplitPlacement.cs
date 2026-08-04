@@ -48,7 +48,6 @@ public partial class WallOpeningPlacementManager
         }
 
         SplitWallAtPoint(wall, hitPoint);
-        CancelSplitPointPlacementMode();
     }
 
     private bool IsSplitPlacementBlockedByNonWallUI(Vector2 pointerScreenPosition)
