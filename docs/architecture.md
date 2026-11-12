@@ -31,7 +31,7 @@ flowchart LR
 |---|---|---|
 | 입력 | `Assets/Scripts/Input` | Unity Input System, 포인터/키보드 상태, UI hit 여부를 `EditorInputFrame`으로 변환합니다. |
 | 모드 | `ModeManager.cs` | `EditorMode` 전환, 모드 버튼 바인딩, legacy room mode 정규화를 담당합니다. |
-| 벽 편집 | `Assets/Scripts/Draw/Wall` | 벽 생성/선택/이동/삭제, 스냅, 핸들, opening, Undo/Redo, Top view 렌더링을 담당합니다. |
+| 벽 편집 | `Assets/Scripts/Draw/Wall` | 벽 생성/선택/이동/삭제, 스냅, 핸들, opening, Top view 렌더링을 담당합니다. Undo/Redo는 제거되었습니다(`UndoRedoManager`는 씬 버튼 연결용 빈 컴포넌트로만 남아 있음). |
 | 방 편집 | `Assets/Scripts/Room` | 방 생성, 방 폴리곤 검증, 벽 연결, 가상 경계, 방 메타데이터를 담당합니다. |
 | 도면 오버레이 | `Assets/Scripts/Overlay` | 이미지/PDF import, 보정, 월드 좌표 변환, 오버레이 표시를 담당합니다. |
 | CAD import | `Assets/Scripts/Import` | ACadSharp 기반 DWG/DXF 파싱, 레이어 선택, 벽 오브젝트 생성을 담당합니다. |
@@ -53,7 +53,7 @@ flowchart LR
     Mode --> ViewMode["Top / Perspective View"]
 
     WallEdit --> WallCore["Wall / WallData / WallObjectFactory"]
-    WallCore --> HandleSnapUndo["HandleManager / SnapManager / UndoRedoManager"]
+    WallCore --> HandleSnapUndo["HandleManager / SnapManager"]
     WallCore --> Opening["Door / Window Opening"]
     WallCore --> TopView["TopViewRenderManager"]
 
@@ -94,7 +94,6 @@ flowchart LR
 | 방 polygon, room code, texture code | `Room`, `RoomData` | 예 | 예 |
 | 가구 배치 transform, code, defect tuple | `FurnitureInstance` | 예 | 예 |
 | 도면 오버레이 문서/보정값 | `DrawingOverlayManager`, `DrawingOverlayRuntime` | 현재 아니오 | 아니오 |
-| 편집 명령 이력 | `UndoRedoManager` | 아니오 | 아니오 |
 | 모바일 business element | Export adapter | 부분 구현 | 후속 과제 |
 
 작업 상태(`.lhscene`)는 편집 재개를 위한 내부 상태이고, export JSON은 외부 모바일 뷰어 계약입니다. 두 계약은 같은 데이터에서 만들어지지만 서로 다른 목적을 가지므로 DTO를 분리해야 합니다.
@@ -121,7 +120,6 @@ Default 모드
 -> WallObjectFactory
 -> Wall / WallData 생성
 -> HandleManager 등록
--> UndoRedoManager 기록
 -> TopViewRenderManager 갱신
 ```
 

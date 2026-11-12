@@ -6,7 +6,7 @@ public partial class WallOpeningPlacementManager
     private const string SegmentGroupName = "Segments";
     private const string SegmentObjectName = "Segment";
 
-    private void RemoveLayout(UndoRedoManager.OpeningLayoutSnapshot snapshot)
+    private void RemoveLayout(OpeningLayoutSnapshot snapshot)
     {
         if (wallRoot == null)
         {
@@ -64,7 +64,7 @@ public partial class WallOpeningPlacementManager
         }
     }
 
-    private void RemoveStandaloneLayout(UndoRedoManager.WallStateSnapshot wallSnapshot)
+    private void RemoveStandaloneLayout(WallStateSnapshot wallSnapshot)
     {
         Wall wall = OpeningWallLookup.FindMatchingStandaloneWall(wallRoot, cachedWalls, wallSnapshot);
         if (wall == null)
@@ -113,7 +113,7 @@ public partial class WallOpeningPlacementManager
             return null;
         }
 
-        UndoRedoManager.WallStateSnapshot wallSnapshot = OpeningContainerSnapshotBuilder.BuildWallSnapshot(container);
+        WallStateSnapshot wallSnapshot = OpeningContainerSnapshotBuilder.BuildWallSnapshot(container);
         RemoveLayout(CaptureLayoutSnapshot(container));
         GameObject restoredWall = RestoreWallFromSnapshot(wallSnapshot);
 
@@ -135,7 +135,7 @@ public partial class WallOpeningPlacementManager
         MarkMarkerVisualsDirty();
     }
 
-    private GameObject CreateRestoredWall(UndoRedoManager.WallStateSnapshot snapshot)
+    private GameObject CreateRestoredWall(WallStateSnapshot snapshot)
     {
         if (wallRoot == null)
         {
@@ -290,9 +290,9 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot = CaptureLayoutSnapshot(container);
-        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
-        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
+        OpeningLayoutSnapshot sourceSnapshot = CaptureLayoutSnapshot(container);
+        List<OpeningStateSnapshot> leftOpenings = new List<OpeningStateSnapshot>();
+        List<OpeningStateSnapshot> rightOpenings = new List<OpeningStateSnapshot>();
         OpeningContainerSplitPlanner.PartitionOpeningsForSplit(
             cachedOpenings,
             splitDistance,
@@ -393,10 +393,10 @@ public partial class WallOpeningPlacementManager
 
     private void CreateSplitLayouts(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        OpeningLayoutSnapshot sourceSnapshot,
         Vector3 splitPoint,
-        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
-        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings,
+        List<OpeningStateSnapshot> leftOpenings,
+        List<OpeningStateSnapshot> rightOpenings,
         List<Wall> createdWalls = null)
     {
         CreateSplitContainerLayout(
@@ -429,9 +429,9 @@ public partial class WallOpeningPlacementManager
 
     public bool TryRepartitionContainerWithAdjacentWallAtSplit(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningLayoutSnapshot containerStartSnapshot,
+        OpeningLayoutSnapshot containerStartSnapshot,
         Wall adjacentWall,
-        UndoRedoManager.OpeningLayoutSnapshot adjacentCurrentSnapshot,
+        OpeningLayoutSnapshot adjacentCurrentSnapshot,
         int splitVertexId,
         Vector3 splitPoint)
     {
@@ -501,13 +501,13 @@ public partial class WallOpeningPlacementManager
                 rightEnd,
                 splitPoint,
                 draggingStart,
-                out List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
-                out List<UndoRedoManager.OpeningStateSnapshot> rightOpenings))
+                out List<OpeningStateSnapshot> leftOpenings,
+                out List<OpeningStateSnapshot> rightOpenings))
         {
             return false;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot currentContainerSnapshot = CaptureLayoutSnapshot(container);
+        OpeningLayoutSnapshot currentContainerSnapshot = CaptureLayoutSnapshot(container);
         RemoveLayout(currentContainerSnapshot);
         RemoveLayout(adjacentCurrentSnapshot);
 
@@ -582,16 +582,16 @@ public partial class WallOpeningPlacementManager
     }
 
     private static bool TryPartitionStartSnapshotOpeningsForSplit(
-        UndoRedoManager.OpeningLayoutSnapshot containerStartSnapshot,
+        OpeningLayoutSnapshot containerStartSnapshot,
         Vector3 combinedStart,
         Vector3 combinedEnd,
         Vector3 splitPoint,
         bool draggingStart,
-        out List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
-        out List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
+        out List<OpeningStateSnapshot> leftOpenings,
+        out List<OpeningStateSnapshot> rightOpenings)
     {
-        leftOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
-        rightOpenings = new List<UndoRedoManager.OpeningStateSnapshot>();
+        leftOpenings = new List<OpeningStateSnapshot>();
+        rightOpenings = new List<OpeningStateSnapshot>();
 
         Vector3 combinedDirection = combinedEnd - combinedStart;
         combinedDirection.y = 0f;
@@ -621,7 +621,7 @@ public partial class WallOpeningPlacementManager
         bool movedOpeningAcrossSplit = false;
         for (int i = 0; i < containerStartSnapshot.openings.Length; i++)
         {
-            UndoRedoManager.OpeningStateSnapshot openingSnapshot = containerStartSnapshot.openings[i];
+            OpeningStateSnapshot openingSnapshot = containerStartSnapshot.openings[i];
             Vector3 openingWorldPoint = containerStartSnapshot.wallStart + sourceDirection * openingSnapshot.centerDistance;
             float openingDistance = Vector3.Dot(openingWorldPoint - combinedStart, combinedDirection);
             float openingStart = openingDistance - openingSnapshot.width * 0.5f;
@@ -631,7 +631,7 @@ public partial class WallOpeningPlacementManager
                 return false;
             }
 
-            UndoRedoManager.OpeningStateSnapshot nextSnapshot = openingSnapshot;
+            OpeningStateSnapshot nextSnapshot = openingSnapshot;
             if (openingDistance < splitDistance)
             {
                 nextSnapshot.centerDistance = openingDistance;
@@ -649,7 +649,7 @@ public partial class WallOpeningPlacementManager
     }
 
     private void CreateSplitContainerLayout(
-        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        OpeningLayoutSnapshot sourceSnapshot,
         string layoutName,
         Vector3 startPoint,
         Vector3 endPoint,
@@ -659,7 +659,7 @@ public partial class WallOpeningPlacementManager
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        List<UndoRedoManager.OpeningStateSnapshot> openings,
+        List<OpeningStateSnapshot> openings,
         List<Wall> createdWalls = null)
     {
         float length = Vector3.Distance(startPoint, endPoint);
@@ -702,7 +702,7 @@ public partial class WallOpeningPlacementManager
 
     private void CreatePopulatedSplitOpeningContainer(
         string layoutName,
-        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        OpeningLayoutSnapshot sourceSnapshot,
         Vector3 startPoint,
         Vector3 endPoint,
         int startVertexId,
@@ -711,7 +711,7 @@ public partial class WallOpeningPlacementManager
         bool suppressEndHandle,
         bool startSplitPoint,
         bool endSplitPoint,
-        List<UndoRedoManager.OpeningStateSnapshot> openings,
+        List<OpeningStateSnapshot> openings,
         List<Wall> createdWalls = null)
     {
         WallOpeningContainer nextContainer = CreateSplitOpeningContainer(
@@ -737,7 +737,7 @@ public partial class WallOpeningPlacementManager
 
     private void CreateStandaloneSplitWallLayout(
         string layoutName,
-        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        OpeningLayoutSnapshot sourceSnapshot,
         Vector3 startPoint,
         Vector3 endPoint,
         int startVertexId,
@@ -827,7 +827,7 @@ public partial class WallOpeningPlacementManager
 
     private WallOpeningContainer CreateSplitOpeningContainer(
         string layoutName,
-        UndoRedoManager.OpeningLayoutSnapshot sourceSnapshot,
+        OpeningLayoutSnapshot sourceSnapshot,
         Vector3 startPoint,
         Vector3 endPoint,
         int startVertexId,

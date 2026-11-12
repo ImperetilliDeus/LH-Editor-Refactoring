@@ -6,10 +6,9 @@ internal sealed class WallOpeningMarkerDragController
         WallOpening opening,
         WallOpeningMarkerDragState dragState,
         System.Action<bool> setOpeningDetailMenuVisible,
-        System.Action<bool> refreshOpeningDetailInputs,
-        System.Func<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> captureLayoutSnapshot)
+        System.Action<bool> refreshOpeningDetailInputs)
     {
-        if (opening == null || dragState == null || captureLayoutSnapshot == null)
+        if (opening == null || dragState == null)
         {
             return;
         }
@@ -17,8 +16,6 @@ internal sealed class WallOpeningMarkerDragController
         dragState.IsDraggingMarker = true;
         setOpeningDetailMenuVisible?.Invoke(true);
         refreshOpeningDetailInputs?.Invoke(true);
-        dragState.DragStartSnapshot = captureLayoutSnapshot(opening.Container);
-        dragState.HasDragStartSnapshot = true;
     }
 
     public void Drag(
@@ -62,10 +59,8 @@ internal sealed class WallOpeningMarkerDragController
     public void EndDrag(
         WallOpening opening,
         WallOpeningMarkerDragState dragState,
-        UndoRedoManager undoRedoManager,
         System.Action<WallOpeningContainer, bool> rebuildContainer,
-        System.Action<WallOpeningContainer, float> refreshSelectedWallForContainer,
-        System.Func<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> captureLayoutSnapshot)
+        System.Action<WallOpeningContainer, float> refreshSelectedWallForContainer)
     {
         if (dragState == null)
         {
@@ -81,13 +76,5 @@ internal sealed class WallOpeningMarkerDragController
         dragState.IsDraggingMarker = false;
         rebuildContainer?.Invoke(opening.Container, false);
         refreshSelectedWallForContainer?.Invoke(opening.Container, opening.CenterDistance);
-
-        if (dragState.HasDragStartSnapshot && undoRedoManager != null && captureLayoutSnapshot != null)
-        {
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = captureLayoutSnapshot(opening.Container);
-            undoRedoManager.RecordOpeningLayoutChange(dragState.DragStartSnapshot, afterSnapshot);
-        }
-
-        dragState.ClearSnapshot();
     }
 }

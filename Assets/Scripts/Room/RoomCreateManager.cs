@@ -21,7 +21,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
     [SerializeField] private RoomHandleManager roomHandleManager;
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private EditorViewModeManager viewModeManager;
-    [SerializeField] private UndoRedoManager undoRedoManager;
 
     [Header("Input")]
     [SerializeField] private RoomCreationShapeMode creationShapeMode = RoomCreationShapeMode.RectangleDrag;
@@ -111,7 +110,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         }
 
         List<Room> createdRooms = new List<Room>();
-        List<Room> deletedRooms = new List<Room>();
         Room createdRoom = roomManager != null
             ? roomManager.CreateRoomFromPolygon(polygonVertices)
             : null;
@@ -119,21 +117,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         if (createdRoom != null)
         {
             createdRooms.Add(createdRoom);
-        }
-
-        if (undoRedoManager != null)
-        {
-            if (deletedRooms.Count > 0)
-            {
-                undoRedoManager.RecordRoomsReplaced(deletedRooms, createdRooms);
-            }
-            else
-            {
-                for (int i = 0; i < createdRooms.Count; i++)
-                {
-                    undoRedoManager.RecordRoomCreated(createdRooms[i]);
-                }
-            }
         }
 
         if (createdRooms.Count > 0)
@@ -172,7 +155,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
 
         if (createdRoom != null)
         {
-            undoRedoManager?.RecordRoomCreated(createdRoom);
             SetSelectedRoom(createdRoom);
             polygonDraftVertices.Clear();
             HidePreviewObjects();
@@ -296,17 +278,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
 
     private void EndSelectedRoomDrag()
     {
-        if (undoRedoManager != null &&
-            selectedRoom != null &&
-            selectedRoom.ManualBoundaryVertices != null &&
-            selectedRoom.ManualBoundaryVertices.Count >= 3)
-        {
-            undoRedoManager.RecordRoomPolygonChanged(
-                selectedRoom,
-                cachedDraggedRoomVertices,
-                selectedRoom.ManualBoundaryVertices);
-        }
-
         isDraggingSelectedRoom = false;
         cachedDraggedRoomVertices.Clear();
         roomHandleManager?.MarkDirty();
@@ -565,7 +536,6 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
         LayerUtility.ResolveObject(ref roomHandleManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref viewModeManager);
-        LayerUtility.ResolveObject(ref undoRedoManager);
     }
 
     private void BindModeEvents()

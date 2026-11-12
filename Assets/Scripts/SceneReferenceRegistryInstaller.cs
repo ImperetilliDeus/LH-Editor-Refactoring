@@ -20,7 +20,6 @@ public static class SceneReferenceRegistryInstaller
         SetIfNull(registry, "wallSelectionManager", Object.FindFirstObjectByType<WallSelectionManager>());
         SetIfNull(registry, "wallOpeningPlacementManager", Object.FindFirstObjectByType<WallOpeningPlacementManager>());
         SetIfNull(registry, "wallLengthDisplay", Object.FindFirstObjectByType<WallLengthDisplay>());
-        SetIfNull(registry, "undoRedoManager", Object.FindFirstObjectByType<UndoRedoManager>());
         SetIfNull(registry, "topViewRenderManager", Object.FindFirstObjectByType<TopViewRenderManager>());
         SetIfNull(registry, "roomAuthoringPanelManager", Object.FindFirstObjectByType<RoomAuthoringPanelManager>());
         SetIfNull(registry, "roomWallAuthoringPanelController", Object.FindFirstObjectByType<RoomWallAuthoringPanelController>());

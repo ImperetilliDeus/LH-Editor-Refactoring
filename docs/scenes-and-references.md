@@ -12,7 +12,7 @@
 - `RoomHandleManager`
 - `RoomAuthoringPanelManager`
 - `TopViewRenderManager`
-- `UndoRedoManager`
+- `UndoRedoManager` (빈 컴포넌트, 씬 정리 대상)
 
 ## wall 편집과 직접 관련된 참조
 

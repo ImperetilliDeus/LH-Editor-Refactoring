@@ -86,19 +86,6 @@ public interface IEditorInputCommand
 }
 ```
 
-### `IEditorCommand`
-
-Undo/Redo 가능한 편집 명령 계약입니다.
-
-```csharp
-public interface IEditorCommand
-{
-    void Execute(UndoRedoManager context);
-    void Undo(UndoRedoManager context);
-    void Redo(UndoRedoManager context);
-}
-```
-
 ### Wall Tool 내부 계약
 
 `IWallTool`과 `IWallToolContext`는 벽 작성/편집 tool state를 분리합니다. 현재 `internal` 계약이므로 외부 확장 API가 아니라 `Draw/Wall/Core` 내부 구조로 취급합니다.

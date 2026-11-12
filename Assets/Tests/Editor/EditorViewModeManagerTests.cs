@@ -736,7 +736,6 @@ public class EditorViewModeManagerTests
                     null,
                     null,
                     null,
-                    null,
                     true,
                     22f,
                     1.5f,
@@ -1104,6 +1103,9 @@ public class EditorViewModeManagerTests
                 new[] { visibleRoot },
                 new Selectable[] { disabledButton });
             controllerObject.SetActive(true);
+            // OnEnable does not run in EditMode, so bind the view-mode event manually.
+            InvokePrivateWithResult(controller, "BindEvents");
+            InvokePublicWithResult(controller, "Refresh");
 
             InvokePublic(viewModeManager, "SetPerspectiveView");
 
@@ -1444,9 +1446,49 @@ public class EditorViewModeManagerTests
 
     private static object InvokePublicWithResult(Component target, string methodName, params object[] arguments)
     {
-        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
-        Assert.That(method, Is.Not.Null);
+        MethodInfo method = FindPublicMethod(target.GetType(), methodName, arguments);
+        Assert.That(method, Is.Not.Null, $"Expected public method {methodName} on {target.GetType().Name}.");
         return method.Invoke(target, arguments);
+    }
+
+    private static MethodInfo FindPublicMethod(Type type, string methodName, object[] arguments)
+    {
+        MethodInfo single = null;
+        int candidates = 0;
+        MethodInfo[] methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+        for (int i = 0; i < methods.Length; i++)
+        {
+            if (methods[i].Name != methodName)
+            {
+                continue;
+            }
+
+            candidates++;
+            single = methods[i];
+            ParameterInfo[] parameters = methods[i].GetParameters();
+            if (parameters.Length != arguments.Length)
+            {
+                continue;
+            }
+
+            bool matches = true;
+            for (int p = 0; p < parameters.Length; p++)
+            {
+                if (arguments[p] != null && !parameters[p].ParameterType.IsInstanceOfType(arguments[p]))
+                {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches)
+            {
+                return methods[i];
+            }
+        }
+
+        // A single same-named method keeps the previous lookup behavior for existing callers.
+        return candidates == 1 ? single : null;
     }
 
     private static object InvokePrivateWithResult(Component target, string methodName, params object[] arguments)

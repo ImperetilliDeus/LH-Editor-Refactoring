@@ -124,23 +124,20 @@ public partial class HandleManager
         pendingGroup = null;
         dragAnchorPoint = draggingGroup.worldPoint;
 
-        dragStartStates.Clear();
         dragStartOpeningLayoutSnapshots.Clear();
         CollectAffectedWallsForGroup(draggingGroup, affectedWallObjects, affectedWallComponents);
         for (int i = 0; i < affectedWallComponents.Count; i++)
         {
             Wall wall = affectedWallComponents[i];
-            if (wall == null || dragStartStates.ContainsKey(wall.gameObject))
+            if (wall == null)
             {
                 continue;
             }
 
-            dragStartStates[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
-
             WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
             if (container != null && wallOpeningPlacementManager != null && !dragStartOpeningLayoutSnapshots.ContainsKey(container))
             {
-                UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
+                OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
                 if (snapshot.hasContainer)
                 {
                     dragStartOpeningLayoutSnapshots[container] = snapshot;
@@ -171,14 +168,6 @@ public partial class HandleManager
             draggingGroup = rebuiltGroup;
         }
 
-        BuildVertexDragStateChangeRecords();
-        if (undoRedoManager != null && dragStateChangeRecords.Count > 0)
-        {
-            undoRedoManager.ExecuteCommand(
-                new VertexGroupMoveCommand(dragStateChangeRecords),
-                alreadyExecuted: true);
-        }
-
         if (draggingGroup != null)
         {
             SetGroupColor(draggingGroup, GetBaseColor(draggingGroup));
@@ -186,7 +175,6 @@ public partial class HandleManager
 
         draggingGroup = null;
         pendingGroup = null;
-        dragStartStates.Clear();
         dragStartOpeningLayoutSnapshots.Clear();
 
         RefreshAllGroupWorldPoints();
@@ -262,7 +250,7 @@ public partial class HandleManager
         if (group == null ||
             container == null ||
             wallOpeningPlacementManager == null ||
-            !dragStartOpeningLayoutSnapshots.TryGetValue(container, out UndoRedoManager.OpeningLayoutSnapshot containerStartSnapshot))
+            !dragStartOpeningLayoutSnapshots.TryGetValue(container, out OpeningLayoutSnapshot containerStartSnapshot))
         {
             return false;
         }
@@ -280,7 +268,7 @@ public partial class HandleManager
             return false;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot adjacentSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(adjacentWall);
+        OpeningLayoutSnapshot adjacentSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(adjacentWall);
         if (adjacentSnapshot.hasContainer)
         {
             return false;
@@ -317,34 +305,6 @@ public partial class HandleManager
         }
 
         return null;
-    }
-
-    private void BuildVertexDragStateChangeRecords()
-    {
-        dragStateChangeRecords.Clear();
-
-        foreach (KeyValuePair<GameObject, UndoRedoManager.WallStateSnapshot> pair in dragStartStates)
-        {
-            GameObject wallObject = pair.Key;
-            if (wallObject == null)
-            {
-                continue;
-            }
-
-            UndoRedoManager.WallStateSnapshot before = pair.Value;
-            UndoRedoManager.WallStateSnapshot after = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-
-            if (!UndoRedoManager.WallStateSnapshot.HasMeaningfulDelta(before, after))
-            {
-                continue;
-            }
-
-            dragStateChangeRecords.Add(new UndoRedoManager.WallStateChangeRecord
-            {
-                before = before,
-                after = after,
-            });
-        }
     }
 
     private void ApplyVertexDrag(VertexGroup group, Vector3 newPoint)
@@ -1510,9 +1470,9 @@ public partial class HandleManager
                 return false;
             }
 
-            UndoRedoManager.OpeningLayoutSnapshot snapshot = dragStartOpeningLayoutSnapshots.TryGetValue(
+            OpeningLayoutSnapshot snapshot = dragStartOpeningLayoutSnapshots.TryGetValue(
                 element.container,
-                out UndoRedoManager.OpeningLayoutSnapshot dragStartSnapshot)
+                out OpeningLayoutSnapshot dragStartSnapshot)
                 ? dragStartSnapshot
                 : wallOpeningPlacementManager.CaptureLayoutSnapshot(element.container);
             if (!snapshot.hasContainer)

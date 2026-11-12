@@ -16,8 +16,6 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(selectedWall);
-
         Transform containerTransform = GetOrCreateOpeningContainer(selectedWall);
         WallOpeningContainer container = containerTransform != null ? containerTransform.GetComponent<WallOpeningContainer>() : null;
         if (container == null)
@@ -50,22 +48,16 @@ public partial class WallOpeningPlacementManager
             openingDepth,
             openingBottomY);
 
-        FinalizeCreatedOpening(container, opening, beforeSnapshot);
+        FinalizeCreatedOpening(container, opening);
     }
 
     private void FinalizeCreatedOpening(
         WallOpeningContainer container,
-        WallOpening opening,
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot)
+        WallOpening opening)
     {
         SelectOpening(opening);
         RebuildContainer(container, false);
         RefreshSelectedWallForContainer(container, opening.CenterDistance);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, CaptureLayoutSnapshot(container));
-        }
 
         StartCoroutine(RefreshWallRegistryAfterSplit(false));
     }
@@ -196,7 +188,7 @@ public partial class WallOpeningPlacementManager
             out resolvedWidth);
     }
 
-    public UndoRedoManager.OpeningLayoutSnapshot CaptureLayoutSnapshot(Wall wall)
+    public OpeningLayoutSnapshot CaptureLayoutSnapshot(Wall wall)
     {
         if (wall == null)
         {
@@ -212,7 +204,7 @@ public partial class WallOpeningPlacementManager
         return CreateLayoutSnapshotFromWall(wall);
     }
 
-    public UndoRedoManager.OpeningLayoutSnapshot CaptureLayoutSnapshot(WallOpeningContainer container)
+    public OpeningLayoutSnapshot CaptureLayoutSnapshot(WallOpeningContainer container)
     {
         if (container == null)
         {
@@ -221,26 +213,26 @@ public partial class WallOpeningPlacementManager
 
         CollectOpenings(container, cachedOpenings);
         cachedOpenings.Sort((a, b) => a.CenterDistance.CompareTo(b.CenterDistance));
-        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = CaptureOpeningSnapshots(cachedOpenings);
+        OpeningStateSnapshot[] openingSnapshots = CaptureOpeningSnapshots(cachedOpenings);
 
         return CreateLayoutSnapshotFromContainer(container, openingSnapshots);
     }
 
-    private static UndoRedoManager.OpeningLayoutSnapshot CreateLayoutSnapshotFromWall(Wall wall)
+    private static OpeningLayoutSnapshot CreateLayoutSnapshotFromWall(Wall wall)
     {
-        return new UndoRedoManager.OpeningLayoutSnapshot
+        return new OpeningLayoutSnapshot
         {
             hasContainer = false,
             layoutName = wall.name,
-            wallSnapshot = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
+            wallSnapshot = WallStateSnapshot.Capture(wall.gameObject),
         };
     }
 
-    private static UndoRedoManager.OpeningLayoutSnapshot CreateLayoutSnapshotFromContainer(
+    private static OpeningLayoutSnapshot CreateLayoutSnapshotFromContainer(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots)
+        OpeningStateSnapshot[] openingSnapshots)
     {
-        return new UndoRedoManager.OpeningLayoutSnapshot
+        return new OpeningLayoutSnapshot
         {
             hasContainer = true,
             layoutName = container.name,
@@ -260,13 +252,13 @@ public partial class WallOpeningPlacementManager
         };
     }
 
-    private static UndoRedoManager.OpeningStateSnapshot[] CaptureOpeningSnapshots(List<WallOpening> openings)
+    private static OpeningStateSnapshot[] CaptureOpeningSnapshots(List<WallOpening> openings)
     {
-        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots = new UndoRedoManager.OpeningStateSnapshot[openings.Count];
+        OpeningStateSnapshot[] openingSnapshots = new OpeningStateSnapshot[openings.Count];
         for (int i = 0; i < openings.Count; i++)
         {
             WallOpening opening = openings[i];
-            openingSnapshots[i] = new UndoRedoManager.OpeningStateSnapshot
+            openingSnapshots[i] = new OpeningStateSnapshot
             {
                 type = opening.Type,
                 doorTypeKey = opening.DoorTypeKey,
@@ -284,7 +276,7 @@ public partial class WallOpeningPlacementManager
         return openingSnapshots;
     }
 
-    public void ApplyLayoutSnapshot(UndoRedoManager.OpeningLayoutSnapshot target, UndoRedoManager.OpeningLayoutSnapshot current)
+    public void ApplyLayoutSnapshot(OpeningLayoutSnapshot target, OpeningLayoutSnapshot current)
     {
         RemoveLayout(current);
         RemoveLayout(target);
@@ -312,13 +304,13 @@ public partial class WallOpeningPlacementManager
         RestoreContainerLayoutFromSnapshot(target, openingCount);
     }
 
-    private GameObject RestoreWallFromEmptyContainerSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
+    private GameObject RestoreWallFromEmptyContainerSnapshot(OpeningLayoutSnapshot layoutSnapshot)
     {
         return RestoreWallFromSnapshot(OpeningContainerSnapshotBuilder.BuildWallSnapshot(layoutSnapshot));
     }
 
     private void RestoreContainerLayoutFromSnapshot(
-        UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot,
+        OpeningLayoutSnapshot layoutSnapshot,
         int openingCount)
     {
         WallOpeningContainer container = CreateContainerFromSnapshot(layoutSnapshot);
@@ -327,12 +319,12 @@ public partial class WallOpeningPlacementManager
         RebuildContainer(container, false);
     }
 
-    private static bool CanRestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)
+    private static bool CanRestoreWallFromSnapshot(WallStateSnapshot wallSnapshot)
     {
         return wallSnapshot.wallObject != null || !string.IsNullOrEmpty(wallSnapshot.name);
     }
 
-    private GameObject RestoreWallFromSnapshot(UndoRedoManager.WallStateSnapshot wallSnapshot)
+    private GameObject RestoreWallFromSnapshot(WallStateSnapshot wallSnapshot)
     {
         GameObject restoredWall = CreateRestoredWall(wallSnapshot);
         if (restoredWall != null && handleManager != null)
@@ -343,14 +335,14 @@ public partial class WallOpeningPlacementManager
         return restoredWall;
     }
 
-    private WallOpeningContainer CreateContainerFromSnapshot(UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot)
+    private WallOpeningContainer CreateContainerFromSnapshot(OpeningLayoutSnapshot layoutSnapshot)
     {
         return OpeningContainerFactory.Create(layoutSnapshot, wallRoot, false);
     }
 
     private void RestoreOpeningsFromSnapshot(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningStateSnapshot[] openingSnapshots,
+        OpeningStateSnapshot[] openingSnapshots,
         int openingCount)
     {
         for (int i = 0; i < openingCount; i++)
@@ -361,7 +353,7 @@ public partial class WallOpeningPlacementManager
 
     private WallOpening CreateOpeningFromSnapshot(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningStateSnapshot openingSnapshot)
+        OpeningStateSnapshot openingSnapshot)
     {
         GameObject openingObject = CreateOpeningObjectFromSnapshot(container, openingSnapshot);
         WallOpening opening = openingObject.AddComponent<WallOpening>();
@@ -383,7 +375,7 @@ public partial class WallOpeningPlacementManager
 
     private static GameObject CreateOpeningObjectFromSnapshot(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningStateSnapshot openingSnapshot)
+        OpeningStateSnapshot openingSnapshot)
     {
         GameObject openingObject = new GameObject(openingSnapshot.type == OpeningPlacementType.Door ? "Door" : "Window");
         openingObject.transform.SetParent(container.transform, false);

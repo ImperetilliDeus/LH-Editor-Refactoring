@@ -14,7 +14,6 @@ internal sealed class WallToolRuntime : IWallToolContext
     private readonly WallLengthDisplay wallLengthDisplay;
     private readonly HandleManager handleManager;
     private readonly WallSelectionManager wallSelectionManager;
-    private readonly UndoRedoManager undoRedoManager;
     private readonly IEditorInputProvider inputProvider;
     private readonly bool enablePreviewWall;
     private readonly float wallHeight;
@@ -49,7 +48,6 @@ internal sealed class WallToolRuntime : IWallToolContext
         WallLengthDisplay wallLengthDisplay,
         HandleManager handleManager,
         WallSelectionManager wallSelectionManager,
-        UndoRedoManager undoRedoManager,
         IEditorInputProvider inputProvider,
         bool enablePreviewWall,
         float wallHeight,
@@ -68,7 +66,6 @@ internal sealed class WallToolRuntime : IWallToolContext
         this.wallLengthDisplay = wallLengthDisplay;
         this.handleManager = handleManager;
         this.wallSelectionManager = wallSelectionManager;
-        this.undoRedoManager = undoRedoManager;
         this.inputProvider = inputProvider;
         this.enablePreviewWall = enablePreviewWall;
         this.wallHeight = wallHeight;
@@ -369,7 +366,6 @@ internal sealed class WallToolRuntime : IWallToolContext
 
         wallSegment.name = $"Wall_{wallSequence++:000}";
         handleManager?.RegisterWall(wallSegment);
-        undoRedoManager?.RecordWallCreated(wallSegment);
 
         currentSegmentStart = endPoint;
         UpdatePreviewWall();

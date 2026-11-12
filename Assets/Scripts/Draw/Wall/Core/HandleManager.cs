@@ -18,7 +18,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private Canvas targetCanvas;
     [SerializeField] private SnapManager snapManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
-    [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
@@ -88,7 +87,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private VertexGroup previewSnappedGroup;
     private Vector2 pendingStartMousePosition;
     private Vector3 dragAnchorPoint;
-    private readonly Dictionary<GameObject, UndoRedoManager.WallStateSnapshot> dragStartStates = new Dictionary<GameObject, UndoRedoManager.WallStateSnapshot>();
     private readonly List<Vector3> dragSnapCandidates = new List<Vector3>();
     private readonly List<SnapManager.WallSnapSegment> dragWallSegmentSnapCandidates = new List<SnapManager.WallSnapSegment>();
     private readonly List<Transform> containerChildren = new List<Transform>();
@@ -102,8 +100,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private readonly List<LinearChainElement> splitChainElements = new List<LinearChainElement>();
     private readonly List<LinearChainElement> connectedChainElements = new List<LinearChainElement>();
     private readonly List<int> removedWallEntryKeys = new List<int>();
-    private readonly List<UndoRedoManager.WallStateChangeRecord> dragStateChangeRecords = new List<UndoRedoManager.WallStateChangeRecord>();
-    private readonly Dictionary<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot> dragStartOpeningLayoutSnapshots = new Dictionary<WallOpeningContainer, UndoRedoManager.OpeningLayoutSnapshot>();
+    private readonly Dictionary<WallOpeningContainer, OpeningLayoutSnapshot> dragStartOpeningLayoutSnapshots = new Dictionary<WallOpeningContainer, OpeningLayoutSnapshot>();
 
     private IEditorInputProvider inputProvider;
     private int nextVertexId = 1;
@@ -262,7 +259,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             GroupContainsWall(draggingGroup, wallObject))
         {
             draggingGroup = null;
-            dragStartStates.Clear();
         }
 
         if (pendingGroup != null && GroupContainsWall(pendingGroup, wallObject))
@@ -548,7 +544,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         pendingGroup = null;
         draggingGroup = null;
         previewSnappedGroup = null;
-        dragStartStates.Clear();
     }
 
     private void RefreshDragPlane()
@@ -741,7 +736,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     {
         LayerUtility.ResolveObject(ref snapManager);
         LayerUtility.ResolveObject(ref wallLengthDisplay);
-        LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallOpeningPlacementManager);

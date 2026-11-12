@@ -140,7 +140,7 @@ public partial class WallOpeningPlacementManager
         float depth = ResolveSelectedOpeningDepthFromInputMillimeters(SelectedOpening, millimeters);
 
         SelectedOpening.SetDepth(depth);
-        RebuildSelectedOpeningWithUndo();
+        RebuildSelectedOpening();
     }
 
     private float ResolveSelectedOpeningDepthFromInputMillimeters(WallOpening opening, float millimeters)
@@ -206,7 +206,7 @@ public partial class WallOpeningPlacementManager
         string nextTypeKey = resolveTypeKey(optionIndex);
         applyTypeKey(nextTypeKey);
         ApplySelectedOpeningTypeSizeConstraints();
-        RebuildSelectedOpeningWithUndo();
+        RebuildSelectedOpening();
     }
 
     private void ApplySelectedOpeningDimensionFromInput(
@@ -242,7 +242,7 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        RebuildSelectedOpeningWithUndo();
+        RebuildSelectedOpening();
     }
 
     private bool CanApplySelectedOpeningDimension(OpeningPlacementType? requiredType)
@@ -340,7 +340,7 @@ public partial class WallOpeningPlacementManager
         }
 
         ApplySelectedOpeningBottomOffset(container, millimeters);
-        RebuildSelectedOpeningWithUndo();
+        RebuildSelectedOpening();
     }
 
     private void ApplySelectedOpeningBottomOffset(WallOpeningContainer container, float millimeters)
@@ -364,7 +364,7 @@ public partial class WallOpeningPlacementManager
         defaultWindowBottomOffsetMillimeters = millimeters;
     }
 
-    private void RebuildSelectedOpeningWithUndo()
+    private void RebuildSelectedOpening()
     {
         if (SelectedOpening == null || SelectedOpening.Container == null)
         {
@@ -372,13 +372,8 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(SelectedOpening.Container);
         RebuildContainer(SelectedOpening.Container, false);
         RefreshSelectedWallForContainer(SelectedOpening.Container, SelectedOpening.CenterDistance);
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, CaptureLayoutSnapshot(SelectedOpening.Container));
-        }
 
         RefreshOpeningDetailInputs(true);
     }

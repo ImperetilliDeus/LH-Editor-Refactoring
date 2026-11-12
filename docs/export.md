@@ -21,7 +21,6 @@ LH scene 데이터를 JSON으로 내보내는 경로와 사전 점검 포인트�
 
 - `RoomManager`가 최신 room polygon을 반영했는지 확인
 - top view 표시와 실제 room polygon이 일치하는지 확인
-- Undo/Redo 직후의 wall / room / opening 상태를 한 번 더 확인
 - DetailEdit에서 방금 바꾼 벽 길이/높이/두께가 즉시 적용되었는지 확인
 - floor 시각 위치 정책과 export 데이터의 좌표 체계가 충돌하지 않는지 확인
 

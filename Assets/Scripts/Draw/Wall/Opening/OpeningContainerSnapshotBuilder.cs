@@ -2,14 +2,14 @@ using UnityEngine;
 
 internal static class OpeningContainerSnapshotBuilder
 {
-    public static UndoRedoManager.WallStateSnapshot BuildWallSnapshot(WallOpeningContainer container)
+    public static WallStateSnapshot BuildWallSnapshot(WallOpeningContainer container)
     {
         return BuildWallSnapshot(BuildLayoutSnapshot(container));
     }
 
-    public static UndoRedoManager.WallStateSnapshot BuildWallSnapshot(UndoRedoManager.OpeningLayoutSnapshot snapshot)
+    public static WallStateSnapshot BuildWallSnapshot(OpeningLayoutSnapshot snapshot)
     {
-        return new UndoRedoManager.WallStateSnapshot
+        return new WallStateSnapshot
         {
             name = snapshot.layoutName,
             visualState = snapshot.visualState,
@@ -23,9 +23,9 @@ internal static class OpeningContainerSnapshotBuilder
         };
     }
 
-    private static UndoRedoManager.OpeningLayoutSnapshot BuildLayoutSnapshot(WallOpeningContainer container)
+    private static OpeningLayoutSnapshot BuildLayoutSnapshot(WallOpeningContainer container)
     {
-        return new UndoRedoManager.OpeningLayoutSnapshot
+        return new OpeningLayoutSnapshot
         {
             layoutName = container != null ? container.name : "Wall",
             wallStart = container != null ? container.WallStart : Vector3.zero,
@@ -43,7 +43,7 @@ internal static class OpeningContainerSnapshotBuilder
         };
     }
 
-    private static WallData BuildWallData(UndoRedoManager.OpeningLayoutSnapshot snapshot)
+    private static WallData BuildWallData(OpeningLayoutSnapshot snapshot)
     {
         return new WallData(snapshot.wallStart, snapshot.wallEnd, snapshot.wallThickness, snapshot.wallHeight, snapshot.centerY);
     }

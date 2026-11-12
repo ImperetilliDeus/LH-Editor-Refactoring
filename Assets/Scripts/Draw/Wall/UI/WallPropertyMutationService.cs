@@ -4,20 +4,13 @@ using UnityEngine;
 
 internal sealed class WallPropertyMutationService
 {
-    public void RecordAndRefresh(
-        List<UndoRedoManager.WallStateChangeRecord> records,
+    public void RefreshAfterEdit(
         GameObject selectedWall,
-        UndoRedoManager undoRedoManager,
         HandleManager handleManager,
         WallSelectionManager wallSelectionManager,
         Action markTopViewDirty,
         Action<bool> updateInputFieldValues)
     {
-        if (records != null && records.Count > 0 && undoRedoManager != null)
-        {
-            undoRedoManager.RecordMoveConnectedWalls(records);
-        }
-
         handleManager?.RefreshRegisteredWalls();
         RoomTopologyEvents.RequestRefreshAll();
         markTopViewDirty?.Invoke();
@@ -33,7 +26,6 @@ internal sealed class WallPropertyMutationService
         WallOpeningContainer container,
         float targetHeightUnits,
         WallOpeningPlacementManager wallOpeningPlacementManager,
-        UndoRedoManager undoRedoManager,
         HandleManager handleManager,
         Action markTopViewDirty,
         Action<bool> updateInputFieldValues,
@@ -44,15 +36,9 @@ internal sealed class WallPropertyMutationService
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
         container.SetWallHeightKeepingBottom(targetHeightUnits);
         wallOpeningPlacementManager.RebuildOpeningContainer(container);
         wallOpeningPlacementManager.SelectPreferredWallForContainer(container, container.WallLength * 0.5f);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
-        }
 
         handleManager?.RefreshRegisteredWalls();
         RoomTopologyEvents.RequestRefreshAll();
@@ -67,7 +53,6 @@ internal sealed class WallPropertyMutationService
         Wall selectedWallComponent,
         float targetHeightUnits,
         WallOpeningPlacementManager wallOpeningPlacementManager,
-        UndoRedoManager undoRedoManager,
         HandleManager handleManager,
         Action markTopViewDirty,
         Action<bool> updateInputFieldValues)
@@ -87,7 +72,6 @@ internal sealed class WallPropertyMutationService
             container,
             targetHeightUnits,
             wallOpeningPlacementManager,
-            undoRedoManager,
             handleManager,
             markTopViewDirty,
             updateInputFieldValues,
@@ -99,7 +83,6 @@ internal sealed class WallPropertyMutationService
         WallOpeningContainer container,
         float targetThicknessUnits,
         WallOpeningPlacementManager wallOpeningPlacementManager,
-        UndoRedoManager undoRedoManager,
         HandleManager handleManager,
         Action markTopViewDirty,
         Action<bool> updateInputFieldValues,
@@ -110,15 +93,9 @@ internal sealed class WallPropertyMutationService
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
         container.SetWallThickness(targetThicknessUnits);
         wallOpeningPlacementManager.RebuildOpeningContainer(container);
         wallOpeningPlacementManager.SelectPreferredWallForContainer(container, container.WallLength * 0.5f);
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, wallOpeningPlacementManager.CaptureLayoutSnapshot(container));
-        }
 
         handleManager?.RefreshRegisteredWalls();
         RoomTopologyEvents.RequestRefreshAll();
@@ -133,7 +110,6 @@ internal sealed class WallPropertyMutationService
         Wall selectedWallComponent,
         float targetThicknessUnits,
         WallOpeningPlacementManager wallOpeningPlacementManager,
-        UndoRedoManager undoRedoManager,
         HandleManager handleManager,
         Action markTopViewDirty,
         Action<bool> updateInputFieldValues)
@@ -153,7 +129,6 @@ internal sealed class WallPropertyMutationService
             container,
             targetThicknessUnits,
             wallOpeningPlacementManager,
-            undoRedoManager,
             handleManager,
             markTopViewDirty,
             updateInputFieldValues,
@@ -166,14 +141,13 @@ internal sealed class WallPropertyMutationService
         Wall selectedWallComponent,
         float targetHeightUnits,
         WallLengthDisplay wallLengthDisplay,
-        Action<List<UndoRedoManager.WallStateChangeRecord>> recordAndRefresh)
+        Action refreshAfterEdit)
     {
         if (selectedWall == null || selectedWallComponent == null)
         {
             return;
         }
 
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
         Transform wallTransform = selectedWall.transform;
         Vector3 scale = wallTransform.localScale;
         float bottomY = wallTransform.position.y - scale.y * 0.5f;
@@ -188,14 +162,7 @@ internal sealed class WallPropertyMutationService
         selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.Data.startPoint.y);
         selectedWallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
 
-        recordAndRefresh?.Invoke(new List<UndoRedoManager.WallStateChangeRecord>
-        {
-            new UndoRedoManager.WallStateChangeRecord
-            {
-                before = before,
-                after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall),
-            }
-        });
+        refreshAfterEdit?.Invoke();
     }
 
     public void ApplyWallThickness(
@@ -203,14 +170,13 @@ internal sealed class WallPropertyMutationService
         Wall selectedWallComponent,
         float targetThicknessUnits,
         WallLengthDisplay wallLengthDisplay,
-        Action<List<UndoRedoManager.WallStateChangeRecord>> recordAndRefresh)
+        Action refreshAfterEdit)
     {
         if (selectedWall == null || selectedWallComponent == null)
         {
             return;
         }
 
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(selectedWall);
         Vector3 scale = selectedWall.transform.localScale;
         scale.x = targetThicknessUnits;
         selectedWall.transform.localScale = scale;
@@ -218,14 +184,7 @@ internal sealed class WallPropertyMutationService
         selectedWallComponent.SyncEndpointsFromTransform(selectedWallComponent.Data.startPoint.y);
         selectedWallComponent.RefreshLengthDisplay(wallLengthDisplay, false);
 
-        recordAndRefresh?.Invoke(new List<UndoRedoManager.WallStateChangeRecord>
-        {
-            new UndoRedoManager.WallStateChangeRecord
-            {
-                before = before,
-                after = UndoRedoManager.WallStateSnapshot.Capture(selectedWall),
-            }
-        });
+        refreshAfterEdit?.Invoke();
     }
 
     public void ApplyWallLength(
@@ -236,43 +195,17 @@ internal sealed class WallPropertyMutationService
         WallLengthDisplay wallLengthDisplay,
         List<Wall> resizeAffectedWalls,
         Action<int, List<Wall>> collectWallsSharingVertex,
-        Action<List<UndoRedoManager.WallStateChangeRecord>> recordAndRefresh)
+        Action refreshAfterEdit)
     {
-        recordAndRefresh?.Invoke(
-            BuildWallLengthChangeRecords(
-                selectedWallComponent,
-                targetLengthUnits,
-                keepsStartFixed,
-                minimumWallLength,
-                wallLengthDisplay,
-                resizeAffectedWalls,
-                collectWallsSharingVertex));
-    }
-
-    public void AppendWallLengthChangeRecords(
-        List<UndoRedoManager.WallStateChangeRecord> records,
-        Wall selectedWallComponent,
-        float targetLengthUnits,
-        bool keepsStartFixed,
-        float minimumWallLength,
-        WallLengthDisplay wallLengthDisplay,
-        List<Wall> resizeAffectedWalls,
-        Action<int, List<Wall>> collectWallsSharingVertex)
-    {
-        if (records == null)
-        {
-            return;
-        }
-
-        records.AddRange(
-            BuildWallLengthChangeRecords(
-                selectedWallComponent,
-                targetLengthUnits,
-                keepsStartFixed,
-                minimumWallLength,
-                wallLengthDisplay,
-                resizeAffectedWalls,
-                collectWallsSharingVertex));
+        ApplyWallLengthWithoutRefresh(
+            selectedWallComponent,
+            targetLengthUnits,
+            keepsStartFixed,
+            minimumWallLength,
+            wallLengthDisplay,
+            resizeAffectedWalls,
+            collectWallsSharingVertex);
+        refreshAfterEdit?.Invoke();
     }
 
     public bool TryApplyContainerLengthFromSelectedWall(
@@ -282,12 +215,10 @@ internal sealed class WallPropertyMutationService
         float minimumWallLength,
         WallLengthDisplay wallLengthDisplay,
         WallOpeningPlacementManager wallOpeningPlacementManager,
-        UndoRedoManager undoRedoManager,
         HandleManager handleManager,
         Action markTopViewDirty,
         Action<bool> updateInputFieldValues,
         List<Wall> resizeAffectedWalls,
-        List<UndoRedoManager.WallStateChangeRecord> resizeStateRecords,
         Action<int, List<Wall>> collectWallsSharingVertex)
     {
         if (selectedWallComponent == null || wallOpeningPlacementManager == null)
@@ -338,9 +269,6 @@ internal sealed class WallPropertyMutationService
             }
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-        resizeStateRecords?.Clear();
-
         int movedVertexId = keepsStartFixed ? container.OuterEndVertexId : container.OuterStartVertexId;
         Vector3 movedPoint = keepsStartFixed ? newEnd : newStart;
         collectWallsSharingVertex?.Invoke(movedVertexId, resizeAffectedWalls);
@@ -358,11 +286,6 @@ internal sealed class WallPropertyMutationService
                 resizeAffectedWalls.RemoveAt(i);
                 continue;
             }
-
-            resizeStateRecords?.Add(new UndoRedoManager.WallStateChangeRecord
-            {
-                before = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
-            });
         }
 
         container.SetWallSpan(newStart, newEnd);
@@ -391,29 +314,6 @@ internal sealed class WallPropertyMutationService
                 wallLengthDisplay);
         }
 
-        if (undoRedoManager != null)
-        {
-            UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(container);
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, afterSnapshot);
-
-            if (resizeStateRecords != null)
-            {
-                for (int i = 0; i < resizeStateRecords.Count; i++)
-                {
-                    UndoRedoManager.WallStateChangeRecord record = resizeStateRecords[i];
-                    if (record.before.wallObject == null)
-                    {
-                        continue;
-                    }
-
-                    record.after = UndoRedoManager.WallStateSnapshot.Capture(record.before.wallObject);
-                    resizeStateRecords[i] = record;
-                }
-
-                undoRedoManager.RecordMoveConnectedWalls(resizeStateRecords);
-            }
-        }
-
         handleManager?.RefreshRegisteredWalls();
         RoomTopologyEvents.RequestRefreshAll();
         markTopViewDirty?.Invoke();
@@ -422,7 +322,7 @@ internal sealed class WallPropertyMutationService
         return true;
     }
 
-    public List<UndoRedoManager.WallStateChangeRecord> BuildWallLengthChangeRecords(
+    public void ApplyWallLengthWithoutRefresh(
         Wall selectedWallComponent,
         float targetLengthUnits,
         bool keepsStartFixed,
@@ -431,10 +331,9 @@ internal sealed class WallPropertyMutationService
         List<Wall> resizeAffectedWalls,
         Action<int, List<Wall>> collectWallsSharingVertex)
     {
-        List<UndoRedoManager.WallStateChangeRecord> records = new List<UndoRedoManager.WallStateChangeRecord>();
         if (selectedWallComponent == null)
         {
-            return records;
+            return;
         }
 
         Vector3 startPoint = selectedWallComponent.Data.startPoint;
@@ -443,7 +342,7 @@ internal sealed class WallPropertyMutationService
         direction.y = 0f;
         if (direction.sqrMagnitude <= 0.000001f)
         {
-            return records;
+            return;
         }
 
         direction.Normalize();
@@ -452,27 +351,12 @@ internal sealed class WallPropertyMutationService
         targetStartPoint.y = startPoint.y;
         targetEndPoint.y = startPoint.y;
 
-        GameObject wallObject = selectedWallComponent.gameObject;
         int movedVertexId = keepsStartFixed ? selectedWallComponent.EndVertexId : selectedWallComponent.StartVertexId;
         Vector3 movedPoint = keepsStartFixed ? targetEndPoint : targetStartPoint;
 
         if (movedVertexId > 0)
         {
             collectWallsSharingVertex?.Invoke(movedVertexId, resizeAffectedWalls);
-            for (int i = 0; i < resizeAffectedWalls.Count; i++)
-            {
-                Wall wall = resizeAffectedWalls[i];
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                records.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject),
-                });
-            }
-
             WallGeometryService.ApplyVertexMove(
                 resizeAffectedWalls,
                 movedVertexId,
@@ -480,40 +364,14 @@ internal sealed class WallPropertyMutationService
                 startPoint.y,
                 minimumWallLength,
                 wallLengthDisplay);
-
-            for (int i = records.Count - 1; i >= 0; i--)
-            {
-                UndoRedoManager.WallStateChangeRecord record = records[i];
-                if (record.before.wallObject == null)
-                {
-                    records.RemoveAt(i);
-                    continue;
-                }
-
-                record.after = UndoRedoManager.WallStateSnapshot.Capture(record.before.wallObject);
-                records[i] = record;
-            }
-
-            return records;
+            return;
         }
 
-        UndoRedoManager.WallStateSnapshot before = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
-        bool applied = selectedWallComponent.TryApplyCurrentProfileAndRefresh(
+        selectedWallComponent.TryApplyCurrentProfileAndRefresh(
             targetStartPoint,
             targetEndPoint,
             minimumWallLength,
             wallLengthDisplay,
             false);
-        if (!applied)
-        {
-            return records;
-        }
-
-        records.Add(new UndoRedoManager.WallStateChangeRecord
-        {
-            before = before,
-            after = UndoRedoManager.WallStateSnapshot.Capture(wallObject),
-        });
-        return records;
     }
 }

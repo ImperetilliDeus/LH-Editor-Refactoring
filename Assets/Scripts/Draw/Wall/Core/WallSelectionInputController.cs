@@ -18,11 +18,9 @@ internal sealed class WallSelectionInputController
         Func<Vector2, (bool success, Vector3 point)> tryGetMouseWorldPoint,
         Func<Vector3, Vector3> snapDraggedWallPosition,
         Func<Vector3, Vector3> clampDraggedWallPosition,
-        Action finalizeMoveIfNeeded,
         Action clearSingleSelection,
         Action resetDragState,
         Action<bool> setSelectUIVisible,
-        Action captureMoveStartState,
         Action prepareConnectedWallDrag,
         Action<Vector3, Vector3> applyConnectedWallDrag,
         Action beginDraggingWall)
@@ -34,7 +32,6 @@ internal sealed class WallSelectionInputController
 
         if (selectedWall != null && pointerFrame.RightPressedThisFrame && !isWallCreationMode)
         {
-            finalizeMoveIfNeeded?.Invoke();
             clearSingleSelection?.Invoke();
             resetDragState?.Invoke();
             return;
@@ -51,14 +48,12 @@ internal sealed class WallSelectionInputController
 
         if (pendingWallDrag && !pointerFrame.LeftPressed)
         {
-            finalizeMoveIfNeeded?.Invoke();
             resetDragState?.Invoke();
             return;
         }
 
         if (isWallCreationMode || isHandleDragging)
         {
-            finalizeMoveIfNeeded?.Invoke();
             resetDragState?.Invoke();
             return;
         }
@@ -70,7 +65,6 @@ internal sealed class WallSelectionInputController
             float thresholdSqr = dragStartThresholdPixels * dragStartThresholdPixels;
             if (movedSqr >= thresholdSqr)
             {
-                captureMoveStartState?.Invoke();
                 prepareConnectedWallDrag?.Invoke();
                 beginDraggingWall?.Invoke();
                 isDraggingWall = true;
@@ -169,7 +163,6 @@ internal sealed class WallSelectionInputController
         EditorPointerFrame pointerFrame,
         WallSelectionInputState inputState,
         float multiSelectDragThresholdPixels,
-        Action finalizeMoveIfNeeded,
         Action resetDragState,
         Action refreshWallSelectionUIPositions,
         Action clearAllSelectionState,
@@ -177,7 +170,6 @@ internal sealed class WallSelectionInputController
         Action<EditorPointerFrame> updateMultiSelectDrag,
         Action finishMultiSelectDrag)
     {
-        finalizeMoveIfNeeded?.Invoke();
         resetDragState?.Invoke();
         refreshWallSelectionUIPositions?.Invoke();
 

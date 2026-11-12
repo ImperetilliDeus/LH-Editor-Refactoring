@@ -47,7 +47,7 @@ public partial class HandleManager
             return false;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot containerSnapshot =
+        OpeningLayoutSnapshot containerSnapshot =
             wallOpeningPlacementManager != null
                 ? wallOpeningPlacementManager.CaptureLayoutSnapshot(container)
                 : default;
@@ -163,7 +163,7 @@ public partial class HandleManager
                 continue;
             }
 
-            UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(affectedContainer);
+            OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(affectedContainer);
             if (!snapshot.hasContainer)
             {
                 continue;

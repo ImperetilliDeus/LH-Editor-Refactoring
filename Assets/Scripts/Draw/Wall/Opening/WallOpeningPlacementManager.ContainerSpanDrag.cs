@@ -7,7 +7,7 @@ public partial class WallOpeningPlacementManager
         WallOpeningContainer container,
         Vector3 newStart,
         Vector3 newEnd,
-        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot,
+        OpeningLayoutSnapshot baselineSnapshot,
         bool rebuildDuringDrag = true)
     {
         if (container == null || !baselineSnapshot.hasContainer)
@@ -260,7 +260,7 @@ public partial class WallOpeningPlacementManager
 
     private void RepositionOpeningsAfterContainerSpanChange(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot,
+        OpeningLayoutSnapshot baselineSnapshot,
         float oldLength,
         float newLength,
         bool movedStart,
@@ -276,7 +276,7 @@ public partial class WallOpeningPlacementManager
         for (int i = 0; i < openingCount; i++)
         {
             WallOpening opening = cachedOpenings[i];
-            UndoRedoManager.OpeningStateSnapshot openingSnapshot = baselineSnapshot.openings[i];
+            OpeningStateSnapshot openingSnapshot = baselineSnapshot.openings[i];
             float nextCenterDistance = ResolveOpeningCenterDistanceAfterSpanChange(
                 openingSnapshot,
                 oldLength,
@@ -291,14 +291,14 @@ public partial class WallOpeningPlacementManager
 
     private static void RestoreContainerSpanDragSnapshotSettings(
         WallOpeningContainer container,
-        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot)
+        OpeningLayoutSnapshot baselineSnapshot)
     {
         container.SetOuterSplitPointFlags(baselineSnapshot.outerStartSplitPoint, baselineSnapshot.outerEndSplitPoint);
         container.SetHandleSuppression(baselineSnapshot.suppressOuterStartHandle, baselineSnapshot.suppressOuterEndHandle);
     }
 
     private static float ResolveOpeningCenterDistanceAfterSpanChange(
-        UndoRedoManager.OpeningStateSnapshot openingSnapshot,
+        OpeningStateSnapshot openingSnapshot,
         float oldLength,
         float newLength,
         bool movedStart,
@@ -356,7 +356,7 @@ public partial class WallOpeningPlacementManager
         WallOpeningContainer container,
         Vector3 newStart,
         float newLength,
-        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot)
+        OpeningLayoutSnapshot baselineSnapshot)
     {
         if (wallSelectionManager == null || wallSelectionManager.SelectedWall != null)
         {
@@ -372,7 +372,7 @@ public partial class WallOpeningPlacementManager
     private static bool IsContainerSpanTranslated(
         Vector3 newStart,
         Vector3 newEnd,
-        UndoRedoManager.OpeningLayoutSnapshot baselineSnapshot,
+        OpeningLayoutSnapshot baselineSnapshot,
         bool movedStart,
         bool movedEnd)
     {

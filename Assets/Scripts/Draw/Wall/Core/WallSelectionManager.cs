@@ -26,7 +26,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     [SerializeField] private HandleManager handleManager;
     [SerializeField] private SnapManager snapManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
-    [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private EditorViewModeManager viewModeManager;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
@@ -74,9 +73,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private Vector2 pendingStartMousePosition;
     private Vector3 dragStartPoint;
     private Vector3 selectedWallStartPosition;
-    private Vector3 moveStartWallPosition;
-    private Quaternion moveStartWallRotation;
-    private Vector3 moveStartWallScale;
     private readonly List<Vector3> moveSnapCandidates = new List<Vector3>();
     private readonly List<Wall> cachedWalls = new List<Wall>();
     private readonly List<Wall> rootWallsCache = new List<Wall>();
@@ -278,7 +274,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         lastInputFrame = inputFrame;
         if (IsPerspectiveViewActive())
         {
-            FinalizeMoveIfNeeded();
             ResetDragState();
             return;
         }
@@ -304,7 +299,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
         if (currentMode != EditorMode.Default)
         {
-            FinalizeMoveIfNeeded();
             ClearAllSelectionState();
             ResetDragState();
             return;
@@ -356,16 +350,9 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
                     ? ClampWallCenterPositionInsideBounds(selectionState.SelectedWall.transform, targetPosition)
                     : targetPosition;
             },
-            FinalizeMoveIfNeeded,
             ClearSingleSelection,
             ResetDragState,
             SetSelectUIVisible,
-            () =>
-            {
-                moveStartWallPosition = selectionState.SelectedWall.transform.position;
-                moveStartWallRotation = selectionState.SelectedWall.transform.rotation;
-                moveStartWallScale = selectionState.SelectedWall.transform.localScale;
-            },
             PrepareConnectedWallDrag,
             ApplyConnectedWallDrag,
             () => isDraggingWall = true);
@@ -418,7 +405,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             pointerFrame,
             inputState,
             multiSelectDragThresholdPixels,
-            FinalizeMoveIfNeeded,
             ResetDragState,
             RefreshWallSelectionUIPositions,
             ClearAllSelectionState,
@@ -711,7 +697,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         LayerUtility.ResolveObject(ref handleManager);
         LayerUtility.ResolveObject(ref snapManager);
         LayerUtility.ResolveObject(ref wallLengthDisplay);
-        LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref viewModeManager);
         LayerUtility.ResolveObject(ref wallOpeningPlacementManager);
@@ -939,33 +924,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         targetCenterPosition += bestOffset;
     }
 
-    private void FinalizeMoveIfNeeded()
-    {
-        if (!isDraggingWall || undoRedoManager == null)
-        {
-            return;
-        }
-
-        List<UndoRedoManager.OpeningLayoutChangeRecord> openingChanges =
-            WallSelectionMoveChangeBuilder.BuildOpeningChangeRecords(dragState, wallOpeningPlacementManager);
-        List<UndoRedoManager.WallStateChangeRecord> wallChanges =
-            WallSelectionMoveChangeBuilder.BuildWallStateChangeRecords(
-                dragState,
-                selectionState.SelectedWall,
-                moveStartWallPosition,
-                moveStartWallRotation,
-                moveStartWallScale);
-
-        if (wallChanges.Count == 0 && openingChanges.Count == 0)
-        {
-            return;
-        }
-
-        undoRedoManager.ExecuteCommand(
-            new WallSelectionMoveCommand(wallChanges, openingChanges),
-            alreadyExecuted: true);
-    }
-
     private void OnDestroy()
     {
         isShuttingDown = true;
@@ -1091,7 +1049,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
             return false;
         }
 
-        List<UndoRedoManager.OpeningLayoutSnapshot> deletedLayouts = new List<UndoRedoManager.OpeningLayoutSnapshot>();
+        List<OpeningLayoutSnapshot> deletedLayouts = new List<OpeningLayoutSnapshot>();
         HashSet<string> processedLayoutKeys = new HashSet<string>();
         HashSet<Wall> affectedWalls = new HashSet<Wall>();
 
@@ -1103,7 +1061,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
                 continue;
             }
 
-            UndoRedoManager.OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(wall);
+            OpeningLayoutSnapshot snapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(wall);
             string key = snapshot.hasContainer
                 ? $"container:{snapshot.layoutName}"
                 : $"wall:{wallObject.GetInstanceID()}";
@@ -1117,7 +1075,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         List<Room> affectedRooms = CollectAffectedRoomsForDeletion(affectedWalls);
-        undoRedoManager?.RecordDeletedLayouts(deletedLayouts, affectedRooms);
 
         for (int i = 0; i < affectedRooms.Count; i++)
         {
@@ -1137,7 +1094,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
     private static void CollectAffectedWallsForDeletion(
         Wall wall,
-        UndoRedoManager.OpeningLayoutSnapshot snapshot,
+        OpeningLayoutSnapshot snapshot,
         HashSet<Wall> affectedWalls)
     {
         if (wall == null)

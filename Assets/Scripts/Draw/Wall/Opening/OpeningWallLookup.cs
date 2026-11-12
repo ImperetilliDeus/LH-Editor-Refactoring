@@ -6,7 +6,7 @@ internal static class OpeningWallLookup
     public static Wall FindMatchingStandaloneWall(
         Transform wallRoot,
         List<Wall> cachedWalls,
-        UndoRedoManager.WallStateSnapshot snapshot)
+        WallStateSnapshot snapshot)
     {
         if (wallRoot == null)
         {
@@ -72,7 +72,7 @@ internal static class OpeningWallLookup
         return bestWall;
     }
 
-    private static bool IsMatchingStandaloneWall(Wall wall, UndoRedoManager.WallStateSnapshot snapshot)
+    private static bool IsMatchingStandaloneWall(Wall wall, WallStateSnapshot snapshot)
     {
         return wall.name == snapshot.name &&
             snapshot.wallData != null &&

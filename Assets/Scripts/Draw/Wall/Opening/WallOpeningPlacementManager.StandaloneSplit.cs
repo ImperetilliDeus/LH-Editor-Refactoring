@@ -131,7 +131,7 @@ public partial class WallOpeningPlacementManager
 
         List<Wall> createdWalls = CollectCreatedStandaloneSplitWalls(firstWall, secondWall);
 
-        RecordStandaloneSplitReplacement(selectedWallComponent, firstWall, secondWall);
+        UnregisterStandaloneSplitSourceWall(selectedWallComponent);
 
         Wall removedWall = selectedWallComponent;
         RemoveStandaloneSplitSourceWall(selectedWallComponent);
@@ -251,16 +251,11 @@ public partial class WallOpeningPlacementManager
         Destroy(selectedWallComponent.gameObject);
     }
 
-    private void RecordStandaloneSplitReplacement(Wall selectedWallComponent, GameObject firstWall, GameObject secondWall)
+    private void UnregisterStandaloneSplitSourceWall(Wall selectedWallComponent)
     {
         if (handleManager != null)
         {
             handleManager.UnregisterWall(selectedWallComponent.gameObject);
-        }
-
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordWallSplit(selectedWallComponent.gameObject, firstWall, secondWall);
         }
     }
 

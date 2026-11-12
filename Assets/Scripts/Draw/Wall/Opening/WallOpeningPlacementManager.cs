@@ -44,7 +44,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     [SerializeField] private Transform wallRoot;
     [SerializeField] private HandleManager handleManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
-    [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private RoomManager roomManager;
@@ -274,7 +273,6 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         LayerUtility.ResolveObject(ref handleManager);
         LayerUtility.ResolveObject(ref wallLengthDisplay);
-        LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref wallSelectionManager);
         LayerUtility.ResolveObject(ref roomManager);

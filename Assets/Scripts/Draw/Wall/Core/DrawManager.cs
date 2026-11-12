@@ -16,7 +16,6 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private WallLengthDisplay _wallLengthDisplay;
     [SerializeField] private HandleManager _handleManager;
     [SerializeField] private WallSelectionManager _wallSelectionManager;
-    [SerializeField] private UndoRedoManager _undoRedoManager;
     [SerializeField] private ModeManager _modeManager;
 
     [Header("Input")]
@@ -187,11 +186,6 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
             LayerUtility.ResolveObject(ref _wallSelectionManager);
         }
 
-        if (_undoRedoManager == null)
-        {
-            LayerUtility.ResolveObject(ref _undoRedoManager);
-        }
-
         if (_modeManager == null)
         {
             LayerUtility.ResolveObject(ref _modeManager);
@@ -215,7 +209,6 @@ public class DrawManager : MonoBehaviour, IEditorModeInputHandler
             _wallLengthDisplay,
             _handleManager,
             _wallSelectionManager,
-            _undoRedoManager,
             _inputProvider,
             _enablePreviewWall,
             _wallHeight,

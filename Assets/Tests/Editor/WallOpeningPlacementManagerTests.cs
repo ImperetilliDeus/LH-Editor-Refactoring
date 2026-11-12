@@ -419,7 +419,7 @@ public class WallOpeningPlacementManagerTests
                     containerType,
                     typeof(Vector3),
                     typeof(Vector3),
-                    GetAssemblyType("UndoRedoManager+OpeningLayoutSnapshot"),
+                    GetAssemblyType("OpeningLayoutSnapshot"),
                     typeof(bool),
                 })
             ?.Invoke(
@@ -867,7 +867,11 @@ public class WallOpeningPlacementManagerTests
         verticalBar.localPosition = new Vector3(0.45f, -0.72f, -0.78f);
         verticalBar.localScale = Vector3.one;
 
-        parametricType.GetMethod("ApplyOpeningSize")?.Invoke(
+        System.Reflection.MethodInfo applyOpeningSize = parametricType.GetMethod(
+            "ApplyOpeningSize",
+            new[] { typeof(Vector3), typeof(Vector3) });
+        Assert.That(applyOpeningSize, Is.Not.Null);
+        applyOpeningSize.Invoke(
             parametric,
             new object[]
             {
@@ -945,7 +949,7 @@ public class WallOpeningPlacementManagerTests
         Type managerType = GetAssemblyType("WallOpeningPlacementManager");
         Type wallType = GetAssemblyType("Wall");
         Type wallDataType = GetAssemblyType("WallData");
-        Type snapshotType = GetAssemblyType("UndoRedoManager+OpeningLayoutSnapshot");
+        Type snapshotType = GetAssemblyType("OpeningLayoutSnapshot");
         Type sceneHierarchyModelType = GetAssemblyType("SceneHierarchyTreeModel");
 
         Component manager = CreateComponent("OpeningManager", managerType);
@@ -966,6 +970,7 @@ public class WallOpeningPlacementManagerTests
             ?.Invoke(manager, new object[] { wall });
         object emptyTargetSnapshot = Activator.CreateInstance(snapshotType);
 
+        LogAssert.Expect(LogType.Error, "Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently.");
         managerType.GetMethod("ApplyLayoutSnapshot")?.Invoke(manager, new[] { emptyTargetSnapshot, currentSnapshot });
 
         Assert.That(wall.gameObject.activeInHierarchy, Is.False);

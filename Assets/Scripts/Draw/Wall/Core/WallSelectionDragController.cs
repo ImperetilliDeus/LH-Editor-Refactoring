@@ -51,8 +51,7 @@ internal sealed class WallSelectionDragController
                 connectedEndpointThreshold,
                 wallRoot,
                 rootWalls,
-                cachedWalls,
-                wallOpeningPlacementManager);
+                cachedWalls);
             return;
         }
 
@@ -92,7 +91,6 @@ internal sealed class WallSelectionDragController
             }
 
             dragState.DragAffectedWalls.Add(wall);
-            dragState.MoveStartSnapshots[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
             dragState.MoveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
             {
                 start = wall.Data.startPoint,
@@ -165,7 +163,7 @@ internal sealed class WallSelectionDragController
             {
                 WallOpeningContainer container = dragState.DragAffectedOpeningContainers[i];
                 if (container == null ||
-                    !dragState.MoveStartConnectedOpeningSnapshots.TryGetValue(container, out UndoRedoManager.OpeningLayoutSnapshot snapshot))
+                    !dragState.MoveStartConnectedOpeningSnapshots.TryGetValue(container, out OpeningLayoutSnapshot snapshot))
                 {
                     continue;
                 }
@@ -190,8 +188,7 @@ internal sealed class WallSelectionDragController
         float connectedEndpointThreshold,
         Transform wallRoot,
         List<Wall> rootWalls,
-        List<Wall> cachedWalls,
-        WallOpeningPlacementManager wallOpeningPlacementManager)
+        List<Wall> cachedWalls)
     {
         dragState.SelectedOpeningContainer = openingContainer;
         dragState.MoveStartContainerPosition = openingContainer.transform.position;
@@ -203,12 +200,6 @@ internal sealed class WallSelectionDragController
         dragState.DragSelectedEndPoint.y = dragPlaneHeight;
         dragState.DragSelectedStartVertexId = openingContainer.OuterStartVertexId;
         dragState.DragSelectedEndVertexId = openingContainer.OuterEndVertexId;
-
-        if (wallOpeningPlacementManager != null)
-        {
-            dragState.MoveStartOpeningLayoutSnapshot = wallOpeningPlacementManager.CaptureLayoutSnapshot(openingContainer);
-            dragState.HasMoveStartOpeningLayoutSnapshot = true;
-        }
 
         if (wallRoot != null && rootWalls != null)
         {
@@ -226,7 +217,6 @@ internal sealed class WallSelectionDragController
                 }
 
                 dragState.DragAffectedWalls.Add(wall);
-                dragState.MoveStartSnapshots[wall.gameObject] = UndoRedoManager.WallStateSnapshot.Capture(wall.gameObject);
                 dragState.MoveStartEndpointSnapshots[wall.gameObject] = new WallGeometryService.WallEndpointState
                 {
                     start = wall.Data.startPoint,

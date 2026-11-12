@@ -29,4 +29,3 @@
 
 - room polygon
 - wall / opening 데이터
-- Undo/Redo 후 export 결과

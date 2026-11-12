@@ -25,7 +25,6 @@
 - `SnapManager` 기반 grid, axis, handle, wall segment snap
 - `WallSelectionManager` 기반 선택, 다중 선택, 이동
 - `WallPropertyInputManager` 기반 길이/높이/두께/centerY 편집
-- `UndoRedoManager` 기반 명령 이력
 
 ### 리스크
 

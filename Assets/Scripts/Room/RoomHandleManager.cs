@@ -16,7 +16,6 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
     [SerializeField] private HandleManager wallHandleManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private ModeManager modeManager;
-    [SerializeField] private UndoRedoManager undoRedoManager;
 
     [Header("Handle UI")]
     [SerializeField] private Vector2 handleSize = new Vector2(16f, 16f);
@@ -375,7 +374,6 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
 
     private void EndDrag()
     {
-        Room draggedRoom = draggingGroup != null ? draggingGroup.room : null;
         if (draggingGroup == null)
         {
             return;
@@ -392,12 +390,6 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
             if (!RoomPolygonValidationUtility.IsValidPolygon(finalVertices, minimumRoomEdgeLength, PolygonAreaEpsilon))
             {
                 roomManager?.UpdateRoomPolygon(draggingGroup.room, dragOriginalVertices);
-                finalVertices = Room.CreateSanitizedPolygonCopy(dragOriginalVertices);
-            }
-
-            if (undoRedoManager != null && draggedRoom != null)
-            {
-                undoRedoManager.RecordRoomPolygonChanged(draggedRoom, dragOriginalVertices, finalVertices);
             }
         }
 
@@ -680,11 +672,6 @@ public sealed class RoomHandleManager : MonoBehaviour, IEditorModeInputHandler
         if (modeManager == null)
         {
             LayerUtility.ResolveObject(ref modeManager);
-        }
-
-        if (undoRedoManager == null)
-        {
-            LayerUtility.ResolveObject(ref undoRedoManager);
         }
     }
 

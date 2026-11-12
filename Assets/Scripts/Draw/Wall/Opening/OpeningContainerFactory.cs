@@ -48,7 +48,7 @@ internal static class OpeningContainerFactory
     }
 
     public static WallOpeningContainer Create(
-        UndoRedoManager.OpeningLayoutSnapshot layoutSnapshot,
+        OpeningLayoutSnapshot layoutSnapshot,
         Transform parent,
         bool applyWallLayer)
     {

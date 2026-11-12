@@ -58,13 +58,11 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot = CaptureLayoutSnapshot(container);
         bool hasRemainingOpenings = HasOtherOpenings(container, openingToDelete);
         ClearOpeningSelection();
         DetachAndDestroyOpening(openingToDelete);
         GameObject restoredWall = hasRemainingOpenings ? null : RestoreContainerIfEmpty(container);
-        UndoRedoManager.OpeningLayoutSnapshot afterSnapshot = CompletePostDeleteLayout(container, restoredWall);
-        RecordOpeningDeleteUndo(beforeSnapshot, afterSnapshot);
+        CompletePostDeleteLayout(container, restoredWall);
     }
 
     private void DeleteOpeningWithoutContainer(WallOpening opening)
@@ -76,7 +74,7 @@ public partial class WallOpeningPlacementManager
         }
     }
 
-    private UndoRedoManager.OpeningLayoutSnapshot CompletePostDeleteLayout(
+    private void CompletePostDeleteLayout(
         WallOpeningContainer container,
         GameObject restoredWall)
     {
@@ -88,8 +86,6 @@ public partial class WallOpeningPlacementManager
         {
             RebuildContainerAfterOpeningDelete(container);
         }
-
-        return CapturePostDeleteLayoutSnapshot(container, restoredWall);
     }
 
     public void RegisterMarkerUI(WallOpeningMarkerUI markerUI)
@@ -114,8 +110,7 @@ public partial class WallOpeningPlacementManager
             opening,
             markerDragState,
             SetOpeningDetailMenuVisible,
-            RefreshOpeningDetailInputs,
-            CaptureLayoutSnapshot);
+            RefreshOpeningDetailInputs);
     }
 
     public void DragMarker(WallOpening opening, Vector2 screenPosition)
@@ -138,10 +133,8 @@ public partial class WallOpeningPlacementManager
         markerDragController.EndDrag(
             opening,
             markerDragState,
-            undoRedoManager,
             RebuildContainer,
-            RefreshSelectedWallForContainer,
-            CaptureLayoutSnapshot);
+            RefreshSelectedWallForContainer);
     }
 
     private void RefreshOpeningSelectionPresentation(bool showDetailMenu)
@@ -161,28 +154,6 @@ public partial class WallOpeningPlacementManager
         opening.transform.SetParent(null, false);
         opening.gameObject.SetActive(false);
         Destroy(opening.gameObject);
-    }
-
-    private UndoRedoManager.OpeningLayoutSnapshot CapturePostDeleteLayoutSnapshot(
-        WallOpeningContainer container,
-        GameObject restoredWall)
-    {
-        if (restoredWall != null)
-        {
-            return CaptureLayoutSnapshot(restoredWall.GetComponent<Wall>());
-        }
-
-        return CaptureLayoutSnapshot(container);
-    }
-
-    private void RecordOpeningDeleteUndo(
-        UndoRedoManager.OpeningLayoutSnapshot beforeSnapshot,
-        UndoRedoManager.OpeningLayoutSnapshot afterSnapshot)
-    {
-        if (undoRedoManager != null)
-        {
-            undoRedoManager.RecordOpeningLayoutChange(beforeSnapshot, afterSnapshot);
-        }
     }
 
     private void SetMarkerUIRegistered(WallOpeningMarkerUI markerUI, bool registered)

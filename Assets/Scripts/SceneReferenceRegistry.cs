@@ -16,7 +16,6 @@ public sealed class SceneReferenceRegistry : MonoBehaviour
     [SerializeField] private WallSelectionManager wallSelectionManager;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
-    [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private TopViewRenderManager topViewRenderManager;
     [SerializeField] private RoomAuthoringPanelManager roomAuthoringPanelManager;
     [SerializeField] private RoomWallAuthoringPanelController roomWallAuthoringPanelController;
@@ -193,11 +192,6 @@ public sealed class SceneReferenceRegistry : MonoBehaviour
         if (typeof(T) == typeof(WallLengthDisplay))
         {
             return wallLengthDisplay as T;
-        }
-
-        if (typeof(T) == typeof(UndoRedoManager))
-        {
-            return undoRedoManager as T;
         }
 
         if (typeof(T) == typeof(TopViewRenderManager))

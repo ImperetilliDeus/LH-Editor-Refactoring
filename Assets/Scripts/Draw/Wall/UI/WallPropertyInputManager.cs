@@ -26,7 +26,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
     [SerializeField] private Transform wallRoot;
     [SerializeField] private HandleManager handleManager;
     [SerializeField] private WallLengthDisplay wallLengthDisplay;
-    [SerializeField] private UndoRedoManager undoRedoManager;
     [SerializeField] private ModeManager modeManager;
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private WallOpeningPlacementManager wallOpeningPlacementManager;
@@ -46,7 +45,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
     [SerializeField] private LengthAnchorMode lengthAnchorMode = LengthAnchorMode.LeftFixed;
 
     private readonly List<Wall> resizeAffectedWalls = new List<Wall>();
-    private readonly List<UndoRedoManager.WallStateChangeRecord> resizeStateRecords = new List<UndoRedoManager.WallStateChangeRecord>();
     private readonly List<Wall> selectedWallComponents = new List<Wall>();
     private readonly HashSet<WallOpeningContainer> selectedOpeningContainers = new HashSet<WallOpeningContainer>();
     private readonly WallPropertyPresentationController presentationController = new WallPropertyPresentationController();
@@ -111,13 +109,12 @@ public partial class WallPropertyInputManager : MonoBehaviour
         if (IsMultiSelectionActive())
         {
             GetSelectedWallComponents(selectedWallComponents);
-            List<UndoRedoManager.WallStateChangeRecord> multiRecords = new List<UndoRedoManager.WallStateChangeRecord>();
             for (int i = 0; i < selectedWallComponents.Count; i++)
             {
-                ApplyWallLengthToWall(selectedWallComponents[i], targetLengthUnits, multiRecords);
+                ApplyWallLengthToWall(selectedWallComponents[i], targetLengthUnits);
             }
 
-            RecordAndRefresh(multiRecords);
+            RefreshAfterEdit();
             return;
         }
 
@@ -141,7 +138,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             wallLengthDisplay,
             resizeAffectedWalls,
             CollectWallsSharingVertex,
-            RecordAndRefresh);
+            RefreshAfterEdit);
     }
 
     public void ApplySelectedWallLengthFromCurrentInput()
@@ -202,7 +199,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         if (IsMultiSelectionActive())
         {
             GetSelectedWallComponents(selectedWallComponents);
-            List<UndoRedoManager.WallStateChangeRecord> multiRecords = new List<UndoRedoManager.WallStateChangeRecord>();
             selectedOpeningContainers.Clear();
             for (int i = 0; i < selectedWallComponents.Count; i++)
             {
@@ -225,7 +221,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
                 }
 
                 GameObject wallObject = wall.gameObject;
-                UndoRedoManager.WallStateSnapshot multiBefore = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
                 Transform multiWallTransform = wallObject.transform;
                 Vector3 multiScale = multiWallTransform.localScale;
                 float multiBottomY = multiWallTransform.position.y - multiScale.y * 0.5f;
@@ -238,14 +233,9 @@ public partial class WallPropertyInputManager : MonoBehaviour
 
                 wall.SyncEndpointsFromTransform(wall.Data.startPoint.y);
                 wall.RefreshLengthDisplay(wallLengthDisplay, false);
-                multiRecords.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = multiBefore,
-                    after = UndoRedoManager.WallStateSnapshot.Capture(wallObject),
-                });
             }
 
-            RecordAndRefresh(multiRecords);
+            RefreshAfterEdit();
             return;
         }
 
@@ -266,7 +256,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             selectedWallComponent,
             targetHeightUnits,
             wallLengthDisplay,
-            RecordAndRefresh);
+            RefreshAfterEdit);
     }
 
     public void ApplySelectedWallHeightFromCurrentInput()
@@ -315,7 +305,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         if (IsMultiSelectionActive())
         {
             GetSelectedWallComponents(selectedWallComponents);
-            List<UndoRedoManager.WallStateChangeRecord> multiRecords = new List<UndoRedoManager.WallStateChangeRecord>();
             selectedOpeningContainers.Clear();
             for (int i = 0; i < selectedWallComponents.Count; i++)
             {
@@ -338,21 +327,15 @@ public partial class WallPropertyInputManager : MonoBehaviour
                 }
 
                 GameObject wallObject = wall.gameObject;
-                UndoRedoManager.WallStateSnapshot multiBefore = UndoRedoManager.WallStateSnapshot.Capture(wallObject);
                 Vector3 multiScale = wallObject.transform.localScale;
                 multiScale.x = targetThicknessUnits;
                 wallObject.transform.localScale = multiScale;
 
                 wall.SyncEndpointsFromTransform(wall.Data.startPoint.y);
                 wall.RefreshLengthDisplay(wallLengthDisplay, false);
-                multiRecords.Add(new UndoRedoManager.WallStateChangeRecord
-                {
-                    before = multiBefore,
-                    after = UndoRedoManager.WallStateSnapshot.Capture(wallObject),
-                });
             }
 
-            RecordAndRefresh(multiRecords);
+            RefreshAfterEdit();
             return;
         }
 
@@ -373,7 +356,7 @@ public partial class WallPropertyInputManager : MonoBehaviour
             selectedWallComponent,
             targetThicknessUnits,
             wallLengthDisplay,
-            RecordAndRefresh);
+            RefreshAfterEdit);
     }
 
     public void ApplySelectedWallThicknessFromCurrentInput()
@@ -386,12 +369,10 @@ public partial class WallPropertyInputManager : MonoBehaviour
         ApplySelectedWallThicknessFromInput(wallThicknessInputField.text);
     }
 
-    private void RecordAndRefresh(List<UndoRedoManager.WallStateChangeRecord> records)
+    private void RefreshAfterEdit()
     {
-        mutationService.RecordAndRefresh(
-            records,
+        mutationService.RefreshAfterEdit(
             GetSelectedWall(),
-            undoRedoManager,
             handleManager,
             wallSelectionManager,
             MarkTopViewDirty,
@@ -503,19 +484,16 @@ public partial class WallPropertyInputManager : MonoBehaviour
             MinimumWallLength,
             wallLengthDisplay,
             wallOpeningPlacementManager,
-            undoRedoManager,
             handleManager,
             MarkTopViewDirty,
             UpdateInputFieldValues,
             resizeAffectedWalls,
-            resizeStateRecords,
             CollectWallsSharingVertex);
     }
 
-    private void ApplyWallLengthToWall(Wall selectedWallComponent, float targetLengthUnits, List<UndoRedoManager.WallStateChangeRecord> records)
+    private void ApplyWallLengthToWall(Wall selectedWallComponent, float targetLengthUnits)
     {
-        mutationService.AppendWallLengthChangeRecords(
-            records,
+        mutationService.ApplyWallLengthWithoutRefresh(
             selectedWallComponent,
             targetLengthUnits,
             lengthAnchorMode == LengthAnchorMode.LeftFixed,
@@ -531,7 +509,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             selectedWallComponent,
             targetHeightUnits,
             wallOpeningPlacementManager,
-            undoRedoManager,
             handleManager,
             MarkTopViewDirty,
             UpdateInputFieldValues);
@@ -543,7 +520,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             container,
             targetHeightUnits,
             wallOpeningPlacementManager,
-            undoRedoManager,
             null,
             MarkTopViewDirty,
             UpdateInputFieldValues,
@@ -556,7 +532,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             selectedWallComponent,
             targetThicknessUnits,
             wallOpeningPlacementManager,
-            undoRedoManager,
             handleManager,
             MarkTopViewDirty,
             UpdateInputFieldValues);
@@ -568,7 +543,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             container,
             targetThicknessUnits,
             wallOpeningPlacementManager,
-            undoRedoManager,
             null,
             MarkTopViewDirty,
             UpdateInputFieldValues,
@@ -585,7 +559,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         LayerUtility.ResolveObject(ref wallSelectionManager);
         LayerUtility.ResolveObject(ref handleManager);
         LayerUtility.ResolveObject(ref wallLengthDisplay);
-        LayerUtility.ResolveObject(ref undoRedoManager);
         LayerUtility.ResolveObject(ref modeManager);
         LayerUtility.ResolveObject(ref roomManager);
         LayerUtility.ResolveObject(ref wallOpeningPlacementManager);

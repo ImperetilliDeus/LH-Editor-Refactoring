@@ -18,7 +18,7 @@
 - `RoomManager`
 - `OpeningManager`
 - `TopViewRenderManager`
-- `UndoRedoManager`
+- `UndoRedoManager` (빈 컴포넌트. Undo/Redo 버튼 연결만 남아 있으며 씬 정리 대상)
 - `DisplayManager`
 
 ## room 관련 구성

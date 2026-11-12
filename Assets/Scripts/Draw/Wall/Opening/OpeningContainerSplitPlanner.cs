@@ -71,8 +71,8 @@ internal static class OpeningContainerSplitPlanner
     public static void PartitionOpeningsForSplit(
         IReadOnlyList<WallOpening> openings,
         float splitDistance,
-        List<UndoRedoManager.OpeningStateSnapshot> leftOpenings,
-        List<UndoRedoManager.OpeningStateSnapshot> rightOpenings)
+        List<OpeningStateSnapshot> leftOpenings,
+        List<OpeningStateSnapshot> rightOpenings)
     {
         for (int i = 0; i < openings.Count; i++)
         {
@@ -82,7 +82,7 @@ internal static class OpeningContainerSplitPlanner
                 continue;
             }
 
-            UndoRedoManager.OpeningStateSnapshot snapshot = new UndoRedoManager.OpeningStateSnapshot
+            OpeningStateSnapshot snapshot = new OpeningStateSnapshot
             {
                 type = opening.Type,
                 doorTypeKey = opening.DoorTypeKey,
