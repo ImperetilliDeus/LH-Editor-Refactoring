@@ -646,8 +646,15 @@ public static class LhWorkStateLoader
                 instance.SetExportDefects(ToFurnitureDefects(furnitureDto.defects));
             }
             instance.SetPlaced(furnitureDto.isPlaced);
-            Room resolvedRoom = ResolveFurnitureRoom(instance, roomManager);
-            if (resolvedRoom == null && TryResolveRoom(roomsByName, furnitureDto.roomName, out Room namedRoom))
+            // The saved room acts as the current room, so the shared rule keeps it while the furniture is still inside.
+            bool hasNamedRoom = TryResolveRoom(roomsByName, furnitureDto.roomName, out Room namedRoom);
+            if (hasNamedRoom)
+            {
+                instance.SetCurrentRoom(namedRoom);
+            }
+
+            Room resolvedRoom = roomManager != null ? FurnitureRoomResolver.Resolve(instance, roomManager.GetAllRooms()) : null;
+            if (resolvedRoom == null && hasNamedRoom)
             {
                 resolvedRoom = namedRoom;
             }
@@ -660,36 +667,6 @@ public static class LhWorkStateLoader
 
             instance.ApplyLayerRecursively();
         }
-    }
-
-    private static Room ResolveFurnitureRoom(FurnitureInstance instance, RoomManager roomManager)
-    {
-        if (instance == null || roomManager == null)
-        {
-            return null;
-        }
-
-        List<Room> rooms = roomManager.GetAllRooms();
-        Vector3 position = instance.transform.position;
-        Room bestRoom = null;
-        float bestArea = float.PositiveInfinity;
-        for (int i = 0; i < rooms.Count; i++)
-        {
-            Room room = rooms[i];
-            if (room == null || !PolygonXZ.ContainsPoint(position, room.BoundaryVertices))
-            {
-                continue;
-            }
-
-            float area = Mathf.Abs(PolygonXZ.SignedArea(room.BoundaryVertices));
-            if (area < bestArea)
-            {
-                bestArea = area;
-                bestRoom = room;
-            }
-        }
-
-        return bestRoom;
     }
 
     private static void ApplyRoomCodeToDefects(FurnitureInstance instance, Room room)

@@ -9,6 +9,10 @@
 - Rooms, room metadata, room surfaces, and wall references
 - Placed furniture resolved by `FurnitureCatalog` item code, export code, or native code
 
+## Furniture Room Assignment
+
+Save, load and mobile export use one rule (`FurnitureRoomResolver`): the furniture keeps its current room while its footprint or position is still inside that room's polygon; otherwise it takes the first room in the room list that contains it. On load, the saved `roomName` is treated as the current room. The saved-data normalization (`LhWorkStateRoomUtility`) applies the same priority using the saved position only, because saved furniture has no bounds.
+
 ## Scene Wiring
 
 Add `LhWorkStatePersistenceController` to a scene object and assign:

@@ -227,7 +227,7 @@ public static class LhWorkStateBuilder
                 continue;
             }
 
-            Room currentRoom = ResolveFurnitureRoom(instance, roomManager) ?? instance.CurrentRoom;
+            Room currentRoom = FurnitureRoomResolver.Resolve(instance, CollectRoomCandidates(roomManager)) ?? instance.CurrentRoom;
             if (currentRoom != null && currentRoom != instance.CurrentRoom)
             {
                 instance.SetCurrentRoom(currentRoom);
@@ -282,41 +282,6 @@ public static class LhWorkStateBuilder
         return results;
     }
 
-    private static Room ResolveFurnitureRoom(FurnitureInstance instance, RoomManager roomManager)
-    {
-        if (instance == null)
-        {
-            return null;
-        }
-
-        List<Room> rooms = CollectRoomCandidates(roomManager);
-        if (rooms.Count == 0)
-        {
-            return null;
-        }
-
-        Bounds bounds = instance.CalculateWorldBounds();
-        Room bestRoom = null;
-        float bestArea = float.PositiveInfinity;
-        for (int i = 0; i < rooms.Count; i++)
-        {
-            Room room = rooms[i];
-            if (room == null || !IsFurnitureInsideRoom(instance, room, bounds))
-            {
-                continue;
-            }
-
-            float area = Mathf.Abs(PolygonXZ.SignedArea(room.BoundaryVertices));
-            if (area < bestArea)
-            {
-                bestArea = area;
-                bestRoom = room;
-            }
-        }
-
-        return bestRoom;
-    }
-
     private static List<Room> CollectRoomCandidates(RoomManager roomManager)
     {
         List<Room> results = new List<Room>();
@@ -349,23 +314,6 @@ public static class LhWorkStateBuilder
         }
 
         rooms.Add(room);
-    }
-
-    private static bool IsFurnitureInsideRoom(FurnitureInstance instance, Room room, Bounds bounds)
-    {
-        if (instance == null || room == null)
-        {
-            return false;
-        }
-
-        List<Vector3> vertices = new List<Vector3>();
-        if (!room.TryGetOrderedVertices(vertices))
-        {
-            return false;
-        }
-
-        return PolygonXZ.ContainsBoundsFootprint(bounds, vertices) ||
-            PolygonXZ.ContainsPoint(instance.transform.position, vertices);
     }
 
     private static List<LhWorkVector3Dto> ToVectorDtos(IReadOnlyList<Vector3> values)

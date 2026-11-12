@@ -225,6 +225,46 @@ public class LhWorkStateBuilderTests
         Assert.That(GetProperty<object>(furniture, "CurrentRoom"), Is.Not.EqualTo(staleRoom));
     }
 
+    [Test]
+    public void Build_KeepsCurrentRoom_WhenFurnitureIsStillInsideIt()
+    {
+        Component livingRoom = CreateRoom(
+            "Living",
+            "Living Room",
+            "910",
+            new[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(10f, 0f, 0f),
+                new Vector3(10f, 0f, 10f),
+                new Vector3(0f, 0f, 10f),
+            });
+        CreateRoom(
+            "Closet",
+            "Closet 1",
+            "911",
+            new[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(2f, 0f, 0f),
+                new Vector3(2f, 0f, 2f),
+                new Vector3(0f, 0f, 2f),
+            });
+        Component furniture = CreateFurniture(
+            "BT001",
+            new Vector3(1f, 0f, 1f),
+            livingRoom,
+            CreateFurnitureDefect("910", "2", "001"));
+
+        object state = BuildState(null);
+
+        object furnitureDto = GetFieldValue<IList>(state, "furniture")[0];
+        Assert.That(GetFieldValue<string>(furnitureDto, "roomName"), Is.EqualTo("Living Room"));
+        IList defects = GetFieldValue<IList>(furnitureDto, "defects");
+        Assert.That(GetFieldValue<string>(defects[0], "mntnCd"), Is.EqualTo("910"));
+        Assert.That(GetProperty<object>(furniture, "CurrentRoom"), Is.EqualTo(livingRoom));
+    }
+
     private object BuildState(object roomManager)
     {
         Type builderType = GetAssemblyType("LhWorkStateBuilder");

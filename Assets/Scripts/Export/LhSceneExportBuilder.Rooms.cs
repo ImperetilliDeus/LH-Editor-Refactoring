@@ -190,7 +190,7 @@ namespace LH.Export
                     continue;
                 }
 
-                Room resolvedRoom = ResolveFurnitureRoom(instance, rooms);
+                Room resolvedRoom = FurnitureRoomResolver.Resolve(instance, rooms);
                 if (resolvedRoom == null)
                 {
                     continue;
@@ -204,48 +204,6 @@ namespace LH.Export
 
                 bucket.Add(instance);
             }
-        }
-
-        private static Room ResolveFurnitureRoom(FurnitureInstance instance, IReadOnlyList<Room> rooms)
-        {
-            if (instance == null || rooms == null || rooms.Count == 0)
-            {
-                return null;
-            }
-
-            Bounds bounds = instance.CalculateWorldBounds();
-            Room currentRoom = instance.CurrentRoom;
-            if (IsFurnitureInsideRoom(currentRoom, bounds, instance.transform.position))
-            {
-                return currentRoom;
-            }
-
-            for (int i = 0; i < rooms.Count; i++)
-            {
-                Room room = rooms[i];
-                if (IsFurnitureInsideRoom(room, bounds, instance.transform.position))
-                {
-                    return room;
-                }
-            }
-
-            return null;
-        }
-
-        private static bool IsFurnitureInsideRoom(Room room, Bounds bounds, Vector3 worldPosition)
-        {
-            if (room == null)
-            {
-                return false;
-            }
-
-            List<Vector3> vertices = new List<Vector3>();
-            if (!room.TryGetOrderedVertices(vertices))
-            {
-                return false;
-            }
-
-            return PolygonXZ.ContainsBoundsFootprint(bounds, vertices) || PolygonXZ.ContainsPoint(worldPosition, vertices);
         }
 
         private static List<int> BuildRoomWallReferences(Room room, RoomData roomData, IEnumerable<Wall> walls, BuildContext context)

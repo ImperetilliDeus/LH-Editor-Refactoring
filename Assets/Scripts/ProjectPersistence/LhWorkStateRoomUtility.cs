@@ -22,7 +22,7 @@ internal static class LhWorkStateRoomUtility
                 continue;
             }
 
-            LhWorkRoomDto room = ResolveFurnitureRoomDto(furniture.position.ToVector3(), state.rooms);
+            LhWorkRoomDto room = ResolveFurnitureRoomDto(furniture.position.ToVector3(), furniture.roomName, state.rooms);
             if (room == null)
             {
                 unresolvedFurniture++;
@@ -62,28 +62,34 @@ internal static class LhWorkStateRoomUtility
             $"defectCodeFixes={defectCodeFixes}, unresolvedFurniture={unresolvedFurniture}");
     }
 
-    public static LhWorkRoomDto ResolveFurnitureRoomDto(Vector3 position, IReadOnlyList<LhWorkRoomDto> rooms)
+    // Same rule as FurnitureRoomResolver, applied to saved data: the saved room wins while it still contains
+    // the furniture, otherwise the first containing room. Saved furniture has no bounds, so only the position is tested.
+    public static LhWorkRoomDto ResolveFurnitureRoomDto(Vector3 position, string currentRoomName, IReadOnlyList<LhWorkRoomDto> rooms)
     {
-        LhWorkRoomDto bestRoom = null;
-        float bestArea = float.PositiveInfinity;
-        for (int i = 0; i < rooms.Count; i++)
+        if (!string.IsNullOrEmpty(currentRoomName))
         {
-            LhWorkRoomDto room = rooms[i];
-            if (room == null || room.boundaryVertices == null || room.boundaryVertices.Count < 3 ||
-                !IsPointInsidePolygonXZ(position, room.boundaryVertices))
+            for (int i = 0; i < rooms.Count; i++)
             {
-                continue;
-            }
-
-            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.boundaryVertices));
-            if (area < bestArea)
-            {
-                bestArea = area;
-                bestRoom = room;
+                LhWorkRoomDto room = rooms[i];
+                if (room != null &&
+                    string.Equals(room.name ?? string.Empty, currentRoomName, System.StringComparison.Ordinal) &&
+                    IsPointInsidePolygonXZ(position, room.boundaryVertices))
+                {
+                    return room;
+                }
             }
         }
 
-        return bestRoom;
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            LhWorkRoomDto room = rooms[i];
+            if (room != null && IsPointInsidePolygonXZ(position, room.boundaryVertices))
+            {
+                return room;
+            }
+        }
+
+        return null;
     }
 
     public static string ResolveRoomCode(LhWorkRoomDto room)
@@ -116,23 +122,5 @@ internal static class LhWorkStateRoomUtility
         }
 
         return inside;
-    }
-
-    private static float CalculatePolygonAreaXZ(IReadOnlyList<LhWorkVector3Dto> vertices)
-    {
-        if (vertices == null || vertices.Count < 3)
-        {
-            return 0f;
-        }
-
-        float area = 0f;
-        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
-        {
-            Vector3 current = vertices[i].ToVector3();
-            Vector3 previous = vertices[j].ToVector3();
-            area += previous.x * current.z - current.x * previous.z;
-        }
-
-        return area * 0.5f;
     }
 }
