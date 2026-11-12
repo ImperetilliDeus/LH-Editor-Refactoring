@@ -83,6 +83,11 @@ namespace LH.Export
             {
                 LhLegacySceneDto legacyScene = LhSceneExportBuilder.BuildLegacy(startPoint, cachedWalls, rooms);
                 LhSceneExportValidationResult validation = LhSceneExportValidator.ValidateLegacy(legacyScene);
+                for (int i = 0; i < validation.Warnings.Count; i++)
+                {
+                    Debug.LogWarning($"LH legacy export validation warning: {validation.Warnings[i]}", this);
+                }
+
                 if (!validation.IsValid)
                 {
                     for (int i = 0; i < validation.Errors.Count; i++)
@@ -107,7 +112,7 @@ namespace LH.Export
             }
 
             string json = JsonUtility.ToJson(sceneDto, prettyPrint);
-            File.WriteAllText(path, json);
+            File.WriteAllText(path, json, Encoding.UTF8);
             Debug.Log($"LH scene exported: {path}");
         }
 

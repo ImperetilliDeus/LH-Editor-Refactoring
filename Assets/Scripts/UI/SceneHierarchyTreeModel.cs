@@ -32,6 +32,10 @@ public sealed class SceneHierarchyTreeRow
 
 public static class SceneHierarchyTreeModel
 {
+    private const float BoundaryDistanceTolerance = 0.05f;
+    private const float BoundaryProjectionTolerance = 0.05f;
+    private const float BoundaryDirectionDotTolerance = 0.999f;
+
     public static List<SceneHierarchyTreeRow> BuildRows(Transform wallRoot, IEnumerable<Room> rooms)
     {
         List<LogicalWall> logicalWalls = CollectLogicalWalls(wallRoot);
@@ -55,17 +59,7 @@ public static class SceneHierarchyTreeModel
                     room));
 
                 HashSet<string> roomWallIds = CreateWallIdSet(room.EffectiveWallIds);
-                for (int i = 0; i < logicalWalls.Count; i++)
-                {
-                    LogicalWall logicalWall = logicalWalls[i];
-                    if (!logicalWall.HasAnyId(roomWallIds))
-                    {
-                        continue;
-                    }
-
-                    rows.Add(CreateWallRow(logicalWall, 1));
-                    assignedLogicalWalls.Add(logicalWall);
-                }
+                AddRoomWallRows(rows, room, logicalWalls, roomWallIds, assignedLogicalWalls);
             }
         }
 
@@ -81,6 +75,79 @@ public static class SceneHierarchyTreeModel
         }
 
         return rows;
+    }
+
+    private static void AddRoomWallRows(
+        List<SceneHierarchyTreeRow> rows,
+        Room room,
+        List<LogicalWall> logicalWalls,
+        HashSet<string> roomWallIds,
+        HashSet<LogicalWall> assignedLogicalWalls)
+    {
+        List<LogicalWall> roomLogicalWalls = new List<LogicalWall>();
+        for (int i = 0; i < logicalWalls.Count; i++)
+        {
+            LogicalWall logicalWall = logicalWalls[i];
+            if (logicalWall.HasAnyId(roomWallIds))
+            {
+                roomLogicalWalls.Add(logicalWall);
+            }
+        }
+
+        if (roomLogicalWalls.Count == 0)
+        {
+            return;
+        }
+
+        HashSet<LogicalWall> groupedLogicalWalls = new HashSet<LogicalWall>();
+        List<Vector3> vertices = new List<Vector3>();
+        if (room != null && room.TryGetOrderedVertices(vertices) && vertices.Count >= 3)
+        {
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                Vector3 edgeStart = vertices[i];
+                Vector3 edgeEnd = vertices[(i + 1) % vertices.Count];
+                List<LogicalWall> edgeWalls = new List<LogicalWall>();
+
+                for (int wallIndex = 0; wallIndex < roomLogicalWalls.Count; wallIndex++)
+                {
+                    LogicalWall logicalWall = roomLogicalWalls[wallIndex];
+                    if (groupedLogicalWalls.Contains(logicalWall) ||
+                        !logicalWall.LiesOnBoundaryEdge(edgeStart, edgeEnd))
+                    {
+                        continue;
+                    }
+
+                    edgeWalls.Add(logicalWall);
+                }
+
+                if (edgeWalls.Count == 0)
+                {
+                    continue;
+                }
+
+                edgeWalls.Sort((left, right) => CompareAlongEdge(left, right, edgeStart, edgeEnd));
+                rows.Add(CreateGroupedWallRow(edgeWalls, 1));
+                for (int wallIndex = 0; wallIndex < edgeWalls.Count; wallIndex++)
+                {
+                    LogicalWall logicalWall = edgeWalls[wallIndex];
+                    groupedLogicalWalls.Add(logicalWall);
+                    assignedLogicalWalls.Add(logicalWall);
+                }
+            }
+        }
+
+        for (int i = 0; i < roomLogicalWalls.Count; i++)
+        {
+            LogicalWall logicalWall = roomLogicalWalls[i];
+            if (groupedLogicalWalls.Contains(logicalWall))
+            {
+                continue;
+            }
+
+            rows.Add(CreateWallRow(logicalWall, 1));
+            assignedLogicalWalls.Add(logicalWall);
+        }
     }
 
     private static List<LogicalWall> CollectLogicalWalls(Transform wallRoot)
@@ -134,6 +201,38 @@ public static class SceneHierarchyTreeModel
             depth,
             logicalWall.DisplayName,
             logicalWall.RepresentativeWall);
+    }
+
+    private static SceneHierarchyTreeRow CreateGroupedWallRow(List<LogicalWall> logicalWalls, int depth)
+    {
+        if (logicalWalls == null || logicalWalls.Count == 0)
+        {
+            return null;
+        }
+
+        if (logicalWalls.Count == 1)
+        {
+            return CreateWallRow(logicalWalls[0], depth);
+        }
+
+        List<string> names = new List<string>(logicalWalls.Count);
+        for (int i = 0; i < logicalWalls.Count; i++)
+        {
+            names.Add(logicalWalls[i].DisplayName);
+        }
+
+        return new SceneHierarchyTreeRow(
+            SceneHierarchyTreeRowKind.Wall,
+            depth,
+            string.Join(" + ", names),
+            logicalWalls[0].RepresentativeWall);
+    }
+
+    private static int CompareAlongEdge(LogicalWall left, LogicalWall right, Vector3 edgeStart, Vector3 edgeEnd)
+    {
+        float leftDistance = left.GetMidpointDistanceAlongEdge(edgeStart, edgeEnd);
+        float rightDistance = right.GetMidpointDistanceAlongEdge(edgeStart, edgeEnd);
+        return leftDistance.CompareTo(rightDistance);
     }
 
     private static string GetRoomDisplayName(Room room)
@@ -210,6 +309,100 @@ public static class SceneHierarchyTreeModel
             }
 
             return false;
+        }
+
+        public bool LiesOnBoundaryEdge(Vector3 edgeStart, Vector3 edgeEnd)
+        {
+            for (int i = 0; i < walls.Count; i++)
+            {
+                if (WallLiesOnBoundaryEdge(walls[i], edgeStart, edgeEnd))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public float GetMidpointDistanceAlongEdge(Vector3 edgeStart, Vector3 edgeEnd)
+        {
+            Wall wall = RepresentativeWall;
+            if (wall == null || wall.Data == null)
+            {
+                return 0f;
+            }
+
+            Vector3 edgeDirection = edgeEnd - edgeStart;
+            edgeDirection.y = 0f;
+            float edgeLength = edgeDirection.magnitude;
+            if (edgeLength <= 0.0001f)
+            {
+                return 0f;
+            }
+
+            edgeDirection /= edgeLength;
+            Vector3 midpoint = (wall.Data.startPoint + wall.Data.endPoint) * 0.5f;
+            Vector3 offset = midpoint - edgeStart;
+            offset.y = 0f;
+            return Vector3.Dot(offset, edgeDirection);
+        }
+
+        private static bool WallLiesOnBoundaryEdge(Wall wall, Vector3 edgeStart, Vector3 edgeEnd)
+        {
+            if (wall == null || wall.Data == null)
+            {
+                return false;
+            }
+
+            Vector3 edgeDirection = edgeEnd - edgeStart;
+            edgeDirection.y = 0f;
+            float edgeLength = edgeDirection.magnitude;
+            if (edgeLength <= 0.0001f)
+            {
+                return false;
+            }
+
+            edgeDirection /= edgeLength;
+            Vector3 wallStart = wall.Data.startPoint;
+            Vector3 wallEnd = wall.Data.endPoint;
+            Vector3 wallDirection = wallEnd - wallStart;
+            wallDirection.y = 0f;
+            float wallLength = wallDirection.magnitude;
+            if (wallLength <= 0.0001f)
+            {
+                return false;
+            }
+
+            wallDirection /= wallLength;
+            if (Mathf.Abs(Vector3.Dot(edgeDirection, wallDirection)) < BoundaryDirectionDotTolerance)
+            {
+                return false;
+            }
+
+            if (DistanceToLineXZ(wallStart, edgeStart, edgeDirection) > BoundaryDistanceTolerance ||
+                DistanceToLineXZ(wallEnd, edgeStart, edgeDirection) > BoundaryDistanceTolerance)
+            {
+                return false;
+            }
+
+            Vector3 startOffset = wallStart - edgeStart;
+            startOffset.y = 0f;
+            Vector3 endOffset = wallEnd - edgeStart;
+            endOffset.y = 0f;
+            float startDistance = Vector3.Dot(startOffset, edgeDirection);
+            float endDistance = Vector3.Dot(endOffset, edgeDirection);
+            float minDistance = Mathf.Min(startDistance, endDistance);
+            float maxDistance = Mathf.Max(startDistance, endDistance);
+            return maxDistance >= -BoundaryProjectionTolerance &&
+                minDistance <= edgeLength + BoundaryProjectionTolerance;
+        }
+
+        private static float DistanceToLineXZ(Vector3 point, Vector3 lineStart, Vector3 lineDirection)
+        {
+            Vector3 offset = point - lineStart;
+            offset.y = 0f;
+            Vector3 projected = lineDirection * Vector3.Dot(offset, lineDirection);
+            return (offset - projected).magnitude;
         }
     }
 }

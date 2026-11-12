@@ -15,6 +15,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
     [SerializeField] private DrawingOverlayRuntime activeRuntime;
     [SerializeField] private OverlayCalibrationPanelController calibrationPanel;
     [SerializeField] private OverlayCalibrationPanelController calibrationPanelPrefab;
+    [SerializeField] private DrawingOverlayToolbarController toolbarPrefab;
 
     [Header("UI Fonts")]
     [SerializeField] private TMP_FontAsset tmpFontAsset;
@@ -40,6 +41,7 @@ public sealed class DrawingOverlayManager : MonoBehaviour
     public TMP_FontAsset UiTmpFont => tmpFontAsset;
     public Font UiLegacyFont => legacyFont;
     public OverlayCalibrationPanelController CalibrationPanelPrefab => calibrationPanelPrefab;
+    public DrawingOverlayToolbarController ToolbarPrefab => toolbarPrefab;
     public Canvas ParentCanvas => parentCanvas;
     public bool IsCalibrating => modeManager != null && modeManager.CurrentMode == EditorMode.DrawingOverlayCalibrate;
     public bool HasAppliedOverlay =>

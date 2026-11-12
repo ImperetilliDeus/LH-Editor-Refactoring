@@ -6,13 +6,15 @@ namespace LH.Export
 {
     public sealed class LhSceneExportValidationResult
     {
-        public LhSceneExportValidationResult(List<string> errors)
+        public LhSceneExportValidationResult(List<string> errors, List<string> warnings = null)
         {
             Errors = errors ?? new List<string>();
+            Warnings = warnings ?? new List<string>();
         }
 
         public bool IsValid => Errors.Count == 0;
         public List<string> Errors { get; }
+        public List<string> Warnings { get; }
     }
 
     public static class LhSceneExportValidator
@@ -20,11 +22,14 @@ namespace LH.Export
         public static LhSceneExportValidationResult ValidateLegacy(LhLegacySceneDto scene)
         {
             List<string> errors = new List<string>();
+            List<string> warnings = new List<string>();
 
             ValidateLegacyWalls(scene.wallData, errors);
-            ValidateLegacyRooms(scene.roomData, CollectWallIds(scene.wallData), errors);
+            HashSet<int> wallIds = CollectWallIds(scene.wallData);
+            HashSet<int> referencedWallIds = ValidateLegacyRooms(scene.roomData, wallIds, errors);
+            ValidateReferencedLegacyWalls(scene.wallData, referencedWallIds, warnings);
 
-            return new LhSceneExportValidationResult(errors);
+            return new LhSceneExportValidationResult(errors, warnings);
         }
 
         private static HashSet<int> CollectWallIds(List<LhLegacyWallDto> walls)
@@ -118,14 +123,15 @@ namespace LH.Export
             ValidateNonZeroVector(opening.scale, $"{path}.scale", errors);
         }
 
-        private static void ValidateLegacyRooms(List<LhLegacyRoomDto> rooms, HashSet<int> wallIds, List<string> errors)
+        private static HashSet<int> ValidateLegacyRooms(List<LhLegacyRoomDto> rooms, HashSet<int> wallIds, List<string> errors)
         {
             if (rooms == null || rooms.Count == 0)
             {
                 errors.Add("roomData is empty.");
-                return;
+                return new HashSet<int>();
             }
 
+            HashSet<int> referencedWallIds = new HashSet<int>();
             for (int i = 0; i < rooms.Count; i++)
             {
                 LhLegacyRoomDto room = rooms[i];
@@ -146,6 +152,7 @@ namespace LH.Export
                     for (int wallIndex = 0; wallIndex < room.walls.Count; wallIndex++)
                     {
                         int wallId = room.walls[wallIndex];
+                        referencedWallIds.Add(wallId);
                         if (wallIds == null || !wallIds.Contains(wallId))
                         {
                             errors.Add($"{path}.walls[{wallIndex}] references missing wall id {wallId}.");
@@ -157,8 +164,32 @@ namespace LH.Export
                 ValidateSurface(room.ceil, $"{path}.ceil", errors);
                 ValidateLegacyFurniture(room.furnish, path, errors);
             }
+
+            return referencedWallIds;
         }
 
+        private static void ValidateReferencedLegacyWalls(List<LhLegacyWallDto> walls, HashSet<int> referencedWallIds, List<string> warnings)
+        {
+            if (walls == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < walls.Count; i++)
+            {
+                LhLegacyWallDto wall = walls[i];
+                if (wall.id <= 0)
+                {
+                    continue;
+                }
+
+                if (referencedWallIds == null || !referencedWallIds.Contains(wall.id))
+                {
+                    string wallLabel = string.IsNullOrWhiteSpace(wall.name) ? wall.id.ToString() : wall.name;
+                    warnings.Add($"wallData[{i}] '{wallLabel}' is not referenced by any roomData walls entry.");
+                }
+            }
+        }
         private static void ValidateSurface(LhSurfaceDto surface, string path, List<string> errors)
         {
             ValidateNonZeroVector(surface.scale, $"{path}.scale", errors);

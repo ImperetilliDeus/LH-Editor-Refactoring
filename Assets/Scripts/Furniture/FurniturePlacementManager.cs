@@ -52,6 +52,8 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     private PlacementState state;
     private FurnitureCatalogItem activeItem;
     private FurnitureInstance activeInstance;
+    private readonly List<FurnitureDefectCatalogEntry> activePlacementDefects = new List<FurnitureDefectCatalogEntry>();
+    private string activePlacementLocationCode = string.Empty;
     private float currentYaw;
     private bool lastPlacementValidity;
     private string lastValidationDebugMessage = string.Empty;
@@ -62,6 +64,9 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
     private bool isFurniturePlaceModeActive;
     private IEditorInputProvider inputProvider;
     private EditorInputFrame lastInputFrame;
+
+    public FurnitureInstance SelectedFurniture => state == PlacementState.PlacedSelected ? activeInstance : null;
+    public event Action<FurnitureInstance> SelectedFurnitureChanged;
 
     private void Awake()
     {
@@ -110,6 +115,16 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     public void BeginPlacement(FurnitureCatalogItem item)
     {
+        BeginPlacement(item, null);
+    }
+
+    public void BeginPlacement(FurnitureCatalogItem item, IEnumerable<FurnitureDefectCatalogEntry> defects)
+    {
+        BeginPlacement(item, ResolveLocationCode(defects), defects);
+    }
+
+    public void BeginPlacement(FurnitureCatalogItem item, string locationCode, IEnumerable<FurnitureDefectCatalogEntry> defects)
+    {
         if (item == null || item.prefab == null)
         {
             return;
@@ -132,8 +147,10 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         activeItem = item;
+        activePlacementLocationCode = locationCode ?? string.Empty;
+        CopyDefects(defects, activePlacementDefects);
         DestroyActivePreviewIfNeeded();
-        activeInstance = CreateFurnitureInstance(item);
+        activeInstance = CreateFurnitureInstance(item, activePlacementLocationCode, defects != null ? activePlacementDefects : null);
         if (activeInstance == null)
         {
             return;
@@ -143,6 +160,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
         currentYaw = item.defaultEulerAngles.y;
         state = PlacementState.PreviewFollowing;
+        NotifySelectedFurnitureChanged();
 
         if (TryGetPlacementPoint(out Vector3 placementPoint, out _))
         {
@@ -250,14 +268,17 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         activeInstance.SetPlaced(true);
-        activeInstance.SetCurrentRoom(ResolveRoomAtPosition(activeInstance.transform.position));
+        Room placementRoom = ResolveRoomAtPosition(activeInstance.transform.position);
+        activeInstance.SetCurrentRoom(placementRoom);
+        ApplyRoomCodeToDefects(activeInstance, placementRoom);
         ClearPreviewTint();
         state = PlacementState.PlacedSelected;
+        NotifySelectedFurnitureChanged();
 
         if (keepPlacingSameItem && activeItem != null)
         {
             FurnitureCatalogItem nextItem = activeItem;
-            BeginPlacement(nextItem);
+            BeginPlacement(nextItem, activePlacementLocationCode, activePlacementDefects);
         }
     }
 
@@ -283,11 +304,14 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         ClearPreviewTint();
         activeItem = null;
         activeInstance = null;
+        activePlacementDefects.Clear();
+        activePlacementLocationCode = string.Empty;
         state = PlacementState.Idle;
         currentYaw = 0f;
         lastPlacementValidity = false;
         nextQRotationTime = 0f;
         nextERotationTime = 0f;
+        NotifySelectedFurnitureChanged();
     }
 
     private void DestroyActivePreviewIfNeeded()
@@ -306,10 +330,11 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         previewRenderers.Clear();
     }
 
-    private FurnitureInstance CreateFurnitureInstance(FurnitureCatalogItem item)
+    private FurnitureInstance CreateFurnitureInstance(FurnitureCatalogItem item, string locationCode, IEnumerable<FurnitureDefectCatalogEntry> defects)
     {
         GameObject instanceObject = Instantiate(item.prefab, furnitureRoot);
         instanceObject.name = item.prefab.name;
+        ApplyCatalogScale(instanceObject.transform, item);
         LayerUtility.ApplyLayer(instanceObject, LayerUtility.FurnishLayerName, true);
 
         FurnitureInstance instance = instanceObject.GetComponent<FurnitureInstance>();
@@ -319,11 +344,129 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         }
 
         instance.Initialize(item);
+        if (!string.IsNullOrWhiteSpace(locationCode))
+        {
+            instance.SetFurnishLocationCode(locationCode);
+        }
+
+        if (defects != null)
+        {
+            instance.SetExportDefects(defects);
+        }
+
         instance.SetPlaced(false);
         instance.SetCurrentRoom(null);
         instance.ApplyLayerRecursively();
         CachePreviewRenderers(instanceObject);
         return instance;
+    }
+
+    private static void ApplyCatalogScale(Transform instanceTransform, FurnitureCatalogItem item)
+    {
+        if (instanceTransform == null || item == null)
+        {
+            return;
+        }
+
+        float scaleMultiplier = item.ResolvedScaleMultiplier;
+        if (Mathf.Approximately(scaleMultiplier, 1f))
+        {
+            return;
+        }
+
+        instanceTransform.localScale *= scaleMultiplier;
+    }
+
+    private static void ApplyRoomCodeToDefects(FurnitureInstance instance, Room room)
+    {
+        if (instance == null || room == null || instance.ExportDefects == null)
+        {
+            return;
+        }
+
+        string roomCode = ResolveRoomCode(room);
+        if (string.IsNullOrWhiteSpace(roomCode))
+        {
+            return;
+        }
+
+        List<FurnitureDefectCatalogEntry> updatedDefects = new List<FurnitureDefectCatalogEntry>();
+        for (int i = 0; i < instance.ExportDefects.Count; i++)
+        {
+            FurnitureDefectCatalogEntry defect = instance.ExportDefects[i];
+            if (defect == null)
+            {
+                continue;
+            }
+
+            updatedDefects.Add(new FurnitureDefectCatalogEntry
+            {
+                mntnCd = roomCode,
+                locCd = defect.locCd ?? string.Empty,
+                mtrlCd = defect.mtrlCd ?? string.Empty,
+            });
+        }
+
+        instance.SetExportDefects(updatedDefects);
+    }
+
+    private static string ResolveRoomCode(Room room)
+    {
+        if (room == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(room.RoomCode))
+        {
+            return room.RoomCode;
+        }
+
+        return RoomTypeCatalog.TryGetCode(room.RoomTypeKey, out int resolvedCode)
+            ? resolvedCode.ToString()
+            : string.Empty;
+    }
+
+    private static string ResolveLocationCode(IEnumerable<FurnitureDefectCatalogEntry> defects)
+    {
+        if (defects == null)
+        {
+            return string.Empty;
+        }
+
+        foreach (FurnitureDefectCatalogEntry defect in defects)
+        {
+            if (defect != null && !string.IsNullOrWhiteSpace(defect.locCd))
+            {
+                return defect.locCd;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static void CopyDefects(IEnumerable<FurnitureDefectCatalogEntry> source, List<FurnitureDefectCatalogEntry> target)
+    {
+        target.Clear();
+        if (source == null)
+        {
+            return;
+        }
+
+        foreach (FurnitureDefectCatalogEntry defect in source)
+        {
+            if (defect == null)
+            {
+                continue;
+            }
+
+            target.Add(new FurnitureDefectCatalogEntry
+            {
+                mntnCd = defect.mntnCd ?? string.Empty,
+                locCd = defect.locCd ?? string.Empty,
+                mtrlCd = defect.mtrlCd ?? string.Empty,
+            });
+        }
     }
 
     private void ApplyPreviewTransform(Vector3 worldPosition, bool preservePosition)
@@ -476,6 +619,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         state = PlacementState.PlacedSelected;
         CachePreviewRenderers(activeInstance.gameObject);
         ApplyPreviewTint(validTint);
+        NotifySelectedFurnitureChanged();
     }
 
     private void BeginRepositionPlacedInstance(FurnitureInstance instance, Vector3 placementPoint)
@@ -496,7 +640,13 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         CachePreviewRenderers(activeInstance.gameObject);
         activeInstance.SetPlaced(false);
         state = PlacementState.PreviewFollowing;
+        NotifySelectedFurnitureChanged();
         ApplyPreviewTransform(placementPoint, false);
+    }
+
+    private void NotifySelectedFurnitureChanged()
+    {
+        SelectedFurnitureChanged?.Invoke(SelectedFurniture);
     }
 
     public void RefreshRestoredFurniture()
@@ -724,8 +874,10 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             Vector3 pi = polygon[i];
             Vector3 pj = polygon[j];
 
-            bool intersects = ((pi.z > z) != (pj.z > z)) &&
-                              (x < (pj.x - pi.x) * (z - pi.z) / Mathf.Max(0.000001f, pj.z - pi.z) + pi.x);
+            float deltaZ = pj.z - pi.z;
+            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
+                              ((pi.z > z) != (pj.z > z)) &&
+                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
             if (intersects)
             {
                 inside = !inside;

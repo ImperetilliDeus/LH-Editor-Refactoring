@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,14 +8,15 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
     [SerializeField] private GameObject collapsedRoot;
     [SerializeField] private GameObject expandedRoot;
     [SerializeField] private Slider opacitySlider;
-    [SerializeField] private TMP_Text collapsedOpacityText;
-    [SerializeField] private TMP_Text expandedOpacityText;
+    [SerializeField] private Text collapsedOpacityText;
+    [SerializeField] private Text expandedOpacityText;
     [SerializeField] private Button expandButton;
     [SerializeField] private Button collapseButton;
     [SerializeField] private Button visibilityButton;
     [SerializeField] private Button lockButton;
 
     private bool collapsed = true;
+    private bool bound;
     private bool suppressSliderCallback;
 
     public void Initialize(
@@ -24,8 +24,8 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
         GameObject resolvedCollapsedRoot,
         GameObject resolvedExpandedRoot,
         Slider resolvedOpacitySlider,
-        TMP_Text resolvedCollapsedOpacityText,
-        TMP_Text resolvedExpandedOpacityText,
+        Text resolvedCollapsedOpacityText,
+        Text resolvedExpandedOpacityText,
         Button resolvedExpandButton,
         Button resolvedCollapseButton,
         Button resolvedVisibilityButton,
@@ -68,6 +68,9 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
     {
         if (manager == resolvedManager)
         {
+            Bind();
+            ConfigureSlider();
+            SetCollapsed(collapsed);
             SyncFromManager();
             return;
         }
@@ -75,6 +78,8 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
         Unbind();
         manager = resolvedManager;
         Bind();
+        ConfigureSlider();
+        SetCollapsed(collapsed);
         SyncFromManager();
     }
 
@@ -90,6 +95,11 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
 
     private void Bind()
     {
+        if (bound)
+        {
+            return;
+        }
+
         if (expandButton != null)
         {
             expandButton.onClick.AddListener(Expand);
@@ -119,10 +129,17 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
         {
             manager.ActiveOverlayChanged += HandleActiveOverlayChanged;
         }
+
+        bound = true;
     }
 
     private void Unbind()
     {
+        if (!bound)
+        {
+            return;
+        }
+
         if (expandButton != null)
         {
             expandButton.onClick.RemoveListener(Expand);
@@ -152,6 +169,8 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
         {
             manager.ActiveOverlayChanged -= HandleActiveOverlayChanged;
         }
+
+        bound = false;
     }
 
     private void ConfigureSlider()
@@ -260,7 +279,7 @@ public sealed class DrawingOverlayToolbarController : MonoBehaviour
             return;
         }
 
-        TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+        Text label = button.GetComponentInChildren<Text>(true);
         if (label != null)
         {
             label.text = text;

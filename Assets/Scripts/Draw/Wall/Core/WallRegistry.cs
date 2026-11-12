@@ -4,6 +4,9 @@ using UnityEngine;
 public static class WallRegistry
 {
     private static readonly HashSet<Wall> activeWalls = new HashSet<Wall>();
+    private static int changeEventSuppressionDepth;
+    private static bool registryChangedWhileSuppressed;
+
     public static event System.Action RegistryChanged;
 
     public static void Register(Wall wall)
@@ -14,7 +17,7 @@ public static class WallRegistry
         }
 
         activeWalls.Add(wall);
-        RegistryChanged?.Invoke();
+        NotifyRegistryChanged();
     }
 
     public static void Unregister(Wall wall)
@@ -25,7 +28,7 @@ public static class WallRegistry
         }
 
         activeWalls.Remove(wall);
-        RegistryChanged?.Invoke();
+        NotifyRegistryChanged();
     }
 
     public static void NotifyWallChanged(Wall wall)
@@ -38,6 +41,37 @@ public static class WallRegistry
         if (WallHierarchyUtility.IsPreviewWall(wall))
         {
             activeWalls.Remove(wall);
+            return;
+        }
+
+        NotifyRegistryChanged();
+    }
+
+    public static void BeginChangeEventBatch()
+    {
+        changeEventSuppressionDepth++;
+    }
+
+    public static void EndChangeEventBatch()
+    {
+        if (changeEventSuppressionDepth <= 0)
+        {
+            return;
+        }
+
+        changeEventSuppressionDepth--;
+        if (changeEventSuppressionDepth == 0 && registryChangedWhileSuppressed)
+        {
+            registryChangedWhileSuppressed = false;
+            RegistryChanged?.Invoke();
+        }
+    }
+
+    private static void NotifyRegistryChanged()
+    {
+        if (changeEventSuppressionDepth > 0)
+        {
+            registryChangedWhileSuppressed = true;
             return;
         }
 

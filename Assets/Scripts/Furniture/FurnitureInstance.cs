@@ -7,24 +7,28 @@ public class FurnitureInstance : MonoBehaviour
     [SerializeField] private string catalogCode = string.Empty;
     [SerializeField] private string exportCode = string.Empty;
     [SerializeField] private string nativeCode = string.Empty;
+    [SerializeField] private string furnishLocationCode = string.Empty;
     [SerializeField] private List<FurnitureDefectCatalogEntry> exportDefects = new List<FurnitureDefectCatalogEntry>();
     [SerializeField] private bool isPlaced;
     [SerializeField] private Room currentRoom;
     [SerializeField] private Vector3 boundsSize = Vector3.one;
     [SerializeField] private Vector3 placementOffset = Vector3.zero;
     [SerializeField] private Vector3 defaultEulerAngles = Vector3.zero;
+    [SerializeField] private float catalogScaleMultiplier = FurnitureCatalogItem.DefaultScaleMultiplier;
 
     private readonly List<Renderer> cachedRenderers = new List<Renderer>();
 
     public string CatalogCode => catalogCode;
     public string ExportCode => string.IsNullOrWhiteSpace(exportCode) ? catalogCode : exportCode;
     public string NativeCode => nativeCode;
+    public string FurnishLocationCode => furnishLocationCode;
     public IReadOnlyList<FurnitureDefectCatalogEntry> ExportDefects => exportDefects;
     public bool IsPlaced => isPlaced;
     public Room CurrentRoom => currentRoom;
     public Vector3 BoundsSize => boundsSize;
     public Vector3 PlacementOffset => placementOffset;
     public Vector3 DefaultEulerAngles => defaultEulerAngles;
+    public float CatalogScaleMultiplier => catalogScaleMultiplier;
 
     public void Initialize(FurnitureCatalogItem item)
     {
@@ -36,9 +40,11 @@ public class FurnitureInstance : MonoBehaviour
         catalogCode = item.code ?? string.Empty;
         exportCode = string.IsNullOrWhiteSpace(item.exportCode) ? catalogCode : item.exportCode;
         nativeCode = item.nativeCode ?? string.Empty;
+        furnishLocationCode = string.Empty;
         boundsSize = item.boundsSize;
         placementOffset = item.placementOffset;
         defaultEulerAngles = item.defaultEulerAngles;
+        catalogScaleMultiplier = item.ResolvedScaleMultiplier;
         exportDefects.Clear();
         if (item.defects != null)
         {
@@ -56,6 +62,11 @@ public class FurnitureInstance : MonoBehaviour
                     locCd = entry.locCd ?? string.Empty,
                     mtrlCd = entry.mtrlCd ?? string.Empty,
                 });
+
+                if (string.IsNullOrWhiteSpace(furnishLocationCode) && !string.IsNullOrWhiteSpace(entry.locCd))
+                {
+                    furnishLocationCode = entry.locCd;
+                }
             }
         }
     }
@@ -68,6 +79,35 @@ public class FurnitureInstance : MonoBehaviour
     public void SetCurrentRoom(Room room)
     {
         currentRoom = room;
+    }
+
+    public void SetFurnishLocationCode(string locationCode)
+    {
+        furnishLocationCode = locationCode ?? string.Empty;
+    }
+
+    public void SetExportDefects(IEnumerable<FurnitureDefectCatalogEntry> defects)
+    {
+        exportDefects.Clear();
+        if (defects == null)
+        {
+            return;
+        }
+
+        foreach (FurnitureDefectCatalogEntry defect in defects)
+        {
+            if (defect == null)
+            {
+                continue;
+            }
+
+            exportDefects.Add(new FurnitureDefectCatalogEntry
+            {
+                mntnCd = defect.mntnCd ?? string.Empty,
+                locCd = defect.locCd ?? string.Empty,
+                mtrlCd = defect.mtrlCd ?? string.Empty,
+            });
+        }
     }
 
     public Bounds CalculateWorldBounds()

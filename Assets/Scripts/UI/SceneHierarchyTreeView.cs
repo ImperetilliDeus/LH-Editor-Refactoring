@@ -44,6 +44,7 @@ public class SceneHierarchyTreeView : MonoBehaviour
     private readonly List<Room> cachedRooms = new List<Room>();
     private readonly List<GameObject> spawnedRows = new List<GameObject>();
     private IEnumerable<Room> testRooms;
+    private bool rebuildQueued;
     private float resizeStartPointerX;
     private float resizeStartWidth;
 
@@ -64,6 +65,7 @@ public class SceneHierarchyTreeView : MonoBehaviour
 
     private void OnDisable()
     {
+        rebuildQueued = false;
         UnbindEvents();
     }
 
@@ -74,6 +76,7 @@ public class SceneHierarchyTreeView : MonoBehaviour
 
     public void RebuildNow()
     {
+        rebuildQueued = false;
         ResolveReferences();
         ClearRows();
         if (contentRoot == null)
@@ -180,7 +183,25 @@ public class SceneHierarchyTreeView : MonoBehaviour
 
     private void HandleHierarchyChanged()
     {
-        RebuildNow();
+        QueueRebuild();
+    }
+
+    private void QueueRebuild()
+    {
+        if (!isActiveAndEnabled)
+        {
+            return;
+        }
+
+        rebuildQueued = true;
+    }
+
+    private void LateUpdate()
+    {
+        if (rebuildQueued)
+        {
+            RebuildNow();
+        }
     }
 
     private void CreateRow(SceneHierarchyTreeRow row)

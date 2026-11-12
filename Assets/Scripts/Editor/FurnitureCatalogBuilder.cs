@@ -323,6 +323,7 @@ public class FurnitureCatalogBuilder : EditorWindow
             placementOffset = Vector3.zero,
             defaultEulerAngles = Vector3.zero,
             boundsSize = EstimateBounds(currentPreviewPrefab),
+            scaleMultiplier = FurnitureCatalogItem.DefaultScaleMultiplier,
             defects = new List<FurnitureDefectCatalogEntry>(),
         });
 
@@ -336,6 +337,7 @@ public class FurnitureCatalogBuilder : EditorWindow
     private void FinalizeCatalogBuild()
     {
         Dictionary<string, List<FurnitureDefectCatalogEntry>> existingDefectsByCode = CaptureExistingDefects(outputCatalog);
+        Dictionary<string, float> existingScaleByCode = CaptureExistingScaleMultipliers(outputCatalog);
         SerializedObject serializedCatalog = new SerializedObject(outputCatalog);
         SerializedProperty itemsProperty = serializedCatalog.FindProperty("items");
         itemsProperty.arraySize = pendingItems.Count;
@@ -352,6 +354,8 @@ public class FurnitureCatalogBuilder : EditorWindow
             itemProperty.FindPropertyRelative("placementOffset").vector3Value = pendingItems[i].placementOffset;
             itemProperty.FindPropertyRelative("defaultEulerAngles").vector3Value = pendingItems[i].defaultEulerAngles;
             itemProperty.FindPropertyRelative("boundsSize").vector3Value = pendingItems[i].boundsSize;
+            itemProperty.FindPropertyRelative("scaleMultiplier").floatValue =
+                ResolveExistingScaleMultiplier(existingScaleByCode, pendingItems[i]);
             ApplyDefects(
                 itemProperty.FindPropertyRelative("defects"),
                 ResolveExistingDefects(existingDefectsByCode, pendingItems[i]));
@@ -371,6 +375,32 @@ public class FurnitureCatalogBuilder : EditorWindow
             "Furniture Catalog Rebuilt",
             lastBuildSummary,
             "OK");
+    }
+
+    private static Dictionary<string, float> CaptureExistingScaleMultipliers(FurnitureCatalog catalog)
+    {
+        Dictionary<string, float> results = new Dictionary<string, float>();
+        if (catalog == null || catalog.Items == null)
+        {
+            return results;
+        }
+
+        IReadOnlyList<FurnitureCatalogItem> items = catalog.Items;
+        for (int i = 0; i < items.Count; i++)
+        {
+            FurnitureCatalogItem item = items[i];
+            if (item == null)
+            {
+                continue;
+            }
+
+            float scaleMultiplier = item.ResolvedScaleMultiplier;
+            AddScaleByCode(results, item.code, scaleMultiplier);
+            AddScaleByCode(results, item.exportCode, scaleMultiplier);
+            AddScaleByCode(results, item.nativeCode, scaleMultiplier);
+        }
+
+        return results;
     }
 
     private static Dictionary<string, List<FurnitureDefectCatalogEntry>> CaptureExistingDefects(FurnitureCatalog catalog)
@@ -418,6 +448,25 @@ public class FurnitureCatalogBuilder : EditorWindow
         return new List<FurnitureDefectCatalogEntry>();
     }
 
+    private static float ResolveExistingScaleMultiplier(
+        Dictionary<string, float> scaleByCode,
+        FurnitureCatalogItem item)
+    {
+        if (scaleByCode == null || item == null)
+        {
+            return FurnitureCatalogItem.DefaultScaleMultiplier;
+        }
+
+        if (TryGetScaleByCode(scaleByCode, item.code, out float scaleMultiplier) ||
+            TryGetScaleByCode(scaleByCode, item.exportCode, out scaleMultiplier) ||
+            TryGetScaleByCode(scaleByCode, item.nativeCode, out scaleMultiplier))
+        {
+            return scaleMultiplier > 0f ? scaleMultiplier : FurnitureCatalogItem.DefaultScaleMultiplier;
+        }
+
+        return FurnitureCatalogItem.DefaultScaleMultiplier;
+    }
+
     private static void ApplyDefects(SerializedProperty defectsProperty, IReadOnlyList<FurnitureDefectCatalogEntry> defects)
     {
         if (defectsProperty == null)
@@ -446,6 +495,15 @@ public class FurnitureCatalogBuilder : EditorWindow
         return !string.IsNullOrWhiteSpace(code) && defectsByCode.TryGetValue(code, out defects);
     }
 
+    private static bool TryGetScaleByCode(
+        Dictionary<string, float> scaleByCode,
+        string code,
+        out float scaleMultiplier)
+    {
+        scaleMultiplier = FurnitureCatalogItem.DefaultScaleMultiplier;
+        return !string.IsNullOrWhiteSpace(code) && scaleByCode.TryGetValue(code, out scaleMultiplier);
+    }
+
     private static void AddDefectsByCode(
         Dictionary<string, List<FurnitureDefectCatalogEntry>> defectsByCode,
         string code,
@@ -457,6 +515,19 @@ public class FurnitureCatalogBuilder : EditorWindow
         }
 
         defectsByCode[code] = CopyDefects(defects);
+    }
+
+    private static void AddScaleByCode(
+        Dictionary<string, float> scaleByCode,
+        string code,
+        float scaleMultiplier)
+    {
+        if (scaleByCode == null || string.IsNullOrWhiteSpace(code))
+        {
+            return;
+        }
+
+        scaleByCode[code] = scaleMultiplier > 0f ? scaleMultiplier : FurnitureCatalogItem.DefaultScaleMultiplier;
     }
 
     private static List<FurnitureDefectCatalogEntry> CopyDefects(IReadOnlyList<FurnitureDefectCatalogEntry> source)

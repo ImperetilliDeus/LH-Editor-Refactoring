@@ -133,9 +133,41 @@ public partial class WallOpeningPlacementManager
         float bottomOffset = MillimetersToUnits(defaultBottomOffsetMillimeters);
         openingBottomY = container.WallBottomY + bottomOffset;
 
+        string typeKey = type == OpeningPlacementType.Door ? GetCurrentDoorTypeKey() : GetCurrentWindowTypeKey();
+        if (TryGetOpeningTypeDefinition(type, typeKey, out OpeningTypeCatalogItem definition))
+        {
+            if (ShouldUseReferenceSizeForNewOpening(definition))
+            {
+                openingWidth = definition.ReferenceSize.x;
+                openingHeight = definition.ReferenceSize.y;
+                openingDepth = Mathf.Min(definition.ReferenceSize.z, container.WallThickness);
+            }
+
+            openingWidth = definition.ClampWidth(openingWidth);
+            openingHeight = definition.ClampHeight(openingHeight);
+            openingDepth = Mathf.Min(definition.ClampDepth(openingDepth), container.WallThickness);
+        }
+
         float maxAllowedHeight = container.WallTopY - openingBottomY;
         openingHeight = Mathf.Min(openingHeight, maxAllowedHeight);
         return openingHeight > 0.01f;
+    }
+
+    private static bool ShouldUseReferenceSizeForNewOpening(OpeningTypeCatalogItem definition)
+    {
+        return definition != null &&
+               definition.UseParametricModel &&
+               (string.Equals(
+                    definition.ParametricProfileKey,
+                    ParametricOpeningModel.ApartmentVentWindowProfile,
+                    System.StringComparison.Ordinal) ||
+                string.Equals(
+                    definition.ParametricProfileKey,
+                    ParametricOpeningModel.ApartmentVentWindowType2Profile,
+                    System.StringComparison.Ordinal)) &&
+               definition.ReferenceSize.x > MinimumWallSegmentLength &&
+               definition.ReferenceSize.y > MinimumWallSegmentLength &&
+               definition.ReferenceSize.z > MinimumWallSegmentLength;
     }
 
     private bool TryResolveNewOpeningSpan(

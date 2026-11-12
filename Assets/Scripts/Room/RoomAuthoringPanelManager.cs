@@ -61,6 +61,11 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         ValidateConfiguration();
     }
 
+    private void Start()
+    {
+        BindDefectCodeService();
+    }
+
     private void OnDestroy()
     {
         SetSelectedRoomInternal(null);
@@ -136,6 +141,8 @@ public class RoomAuthoringPanelManager : MonoBehaviour
             roomManager.RoomsChanged -= HandleRoomsChanged;
             roomManager.RoomsChanged += HandleRoomsChanged;
         }
+
+        BindDefectCodeService();
     }
 
     private void UnbindEvents()
@@ -184,6 +191,28 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         {
             roomManager.RoomsChanged -= HandleRoomsChanged;
         }
+
+        if (LhDefectCodeService.Instance != null && LhDefectCodeService.Instance.DefectCodesLoaded != null)
+        {
+            LhDefectCodeService.Instance.DefectCodesLoaded.RemoveListener(HandleDefectCodesLoaded);
+        }
+    }
+
+    private void BindDefectCodeService()
+    {
+        if (LhDefectCodeService.Instance == null || LhDefectCodeService.Instance.DefectCodesLoaded == null)
+        {
+            return;
+        }
+
+        LhDefectCodeService.Instance.DefectCodesLoaded.RemoveListener(HandleDefectCodesLoaded);
+        LhDefectCodeService.Instance.DefectCodesLoaded.AddListener(HandleDefectCodesLoaded);
+
+        LhDefectMaterialCodeList loadedCodes = LhDefectCodeService.Instance.LoadedCodes;
+        if (loadedCodes != null && loadedCodes.mtrlList != null && loadedCodes.mtrlList.Count > 0)
+        {
+            HandleDefectCodesLoaded(loadedCodes);
+        }
     }
 
     private void HandleModeChanged(EditorMode mode)
@@ -230,6 +259,13 @@ public class RoomAuthoringPanelManager : MonoBehaviour
         RefreshAreaField();
         labelsDirty = true;
         UpdateRoomEditMenuState();
+    }
+
+    private void HandleDefectCodesLoaded(LhDefectMaterialCodeList codes)
+    {
+        PopulateRoomTypeDropdown();
+        RefreshDropdownState();
+        labelsDirty = true;
     }
 
     private bool IsRoomAuthoringMode()

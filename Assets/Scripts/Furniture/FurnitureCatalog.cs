@@ -13,6 +13,8 @@ public class FurnitureCatalog : ScriptableObject
 [Serializable]
 public class FurnitureCatalogItem
 {
+    public const float DefaultScaleMultiplier = 0.1f;
+
     public string code;
     public string exportCode;
     public string nativeCode;
@@ -22,7 +24,10 @@ public class FurnitureCatalogItem
     public Vector3 placementOffset;
     public Vector3 defaultEulerAngles;
     public Vector3 boundsSize = Vector3.one;
+    public float scaleMultiplier = DefaultScaleMultiplier;
     public List<FurnitureDefectCatalogEntry> defects = new List<FurnitureDefectCatalogEntry>();
+
+    public float ResolvedScaleMultiplier => scaleMultiplier > 0f ? scaleMultiplier : DefaultScaleMultiplier;
 }
 
 [Serializable]

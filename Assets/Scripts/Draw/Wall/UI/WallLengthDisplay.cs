@@ -45,6 +45,7 @@ public class WallLengthDisplay : MonoBehaviour
     private float lastCameraOrthoSize;
     private Vector4 lastViewportSignature;
     private ModeManager subscribedModeManager;
+    private Transform selectedWallTransform;
 
     private void OnValidate()
     {
@@ -105,6 +106,17 @@ public class WallLengthDisplay : MonoBehaviour
         ApplyLabelInteractionState(entry);
 
         labelPositionsDirty = true;
+    }
+
+    public void SetSelectedWall(Transform wallTransform)
+    {
+        if (selectedWallTransform == wallTransform)
+        {
+            return;
+        }
+
+        selectedWallTransform = wallTransform;
+        RefreshLengthLabelVisibilityStates();
     }
 
     public void RemoveWallLabel(Transform wallTransform)
@@ -276,7 +288,7 @@ public class WallLengthDisplay : MonoBehaviour
             lengthText.font = labelFont;
         }
 
-        lengthText.raycastTarget = true;
+        lengthText.raycastTarget = false;
         lengthText.horizontalOverflow = HorizontalWrapMode.Overflow;
         lengthText.verticalOverflow = VerticalWrapMode.Overflow;
         lengthText.alignment = TextAnchor.MiddleCenter;
@@ -601,19 +613,24 @@ public class WallLengthDisplay : MonoBehaviour
         ApplyLabelVisibilityState(entry, ShouldShowLengthLabels());
     }
 
-    private static void ApplyLabelVisibilityState(LabelEntry entry, bool showLengthLabels)
+    private void ApplyLabelVisibilityState(LabelEntry entry, bool showLengthLabels)
     {
         if (entry == null || entry.labelRect == null)
         {
             return;
         }
 
-        entry.labelRect.gameObject.SetActive(showLengthLabels);
+        entry.labelRect.gameObject.SetActive(showLengthLabels && ShouldShowEntryLabel(entry));
     }
 
     private bool ShouldShowLengthLabels()
     {
         return modeManager == null || modeManager.CurrentMode == EditorMode.Default;
+    }
+
+    private bool ShouldShowEntryLabel(LabelEntry entry)
+    {
+        return entry != null && (entry.isPreview || entry.wallTransform == selectedWallTransform);
     }
 
     private void RefreshLabelInteractionStates()
@@ -631,24 +648,15 @@ public class WallLengthDisplay : MonoBehaviour
             return;
         }
 
-        bool interactable = !entry.isPreview && IsLengthLabelInteractionEnabled();
         if (entry.labelText != null)
         {
-            entry.labelText.raycastTarget = interactable;
+            entry.labelText.raycastTarget = false;
         }
 
         if (entry.clickHandler != null)
         {
-            entry.clickHandler.SetInteractable(interactable);
+            entry.clickHandler.SetInteractable(false);
         }
-    }
-
-    private bool IsLengthLabelInteractionEnabled()
-    {
-        ResolveReferences();
-        return modeManager == null ||
-               (modeManager.CurrentMode != EditorMode.RoomCreate &&
-                modeManager.CurrentMode != EditorMode.FurniturePlace);
     }
 
     private static void DestroyLabelObject(GameObject labelObject)

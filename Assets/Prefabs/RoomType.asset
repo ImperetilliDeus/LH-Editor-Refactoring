@@ -13,15 +13,17 @@ MonoBehaviour:
   m_Name: RoomType
   m_EditorClassIdentifier: 
   presets:
+  - name: "\uACF5\uC6A9\uD604\uAD00"
+    code: 49
   - name: "\uAC70\uC2E4"
     code: 900
-  - name: "\uC695\uC2E4"
+  - name: "\uC695\uC2E41"
     code: 901
   - name: "\uC8FC\uBC29"
     code: 902
-  - name: "\uCE68\uC2E4"
+  - name: "\uCE68\uC2E41"
     code: 903
-  - name: "\uBC1C\uCF54\uB2C8"
+  - name: "\uBC1C\uCF54\uB2C81"
     code: 904
   - name: "\uC138\uD0C1\uC2E4"
     code: 905
@@ -33,5 +35,29 @@ MonoBehaviour:
     code: 908
   - name: "\uD604\uAD00"
     code: 909
-  - name: "\uAE30\uD0C0"
-    code: -1
+  - name: "\uCE68\uC2E42"
+    code: 910
+  - name: "\uCE68\uC2E43"
+    code: 911
+  - name: "\uCE68\uC2E44"
+    code: 912
+  - name: "\uBD80\uBD80\uC695\uC2E4"
+    code: 913
+  - name: "\uD32C\uD2B8\uB9AC"
+    code: 914
+  - name: "\uC54C\uD30C\uB8F8"
+    code: 915
+  - name: "\uB300\uD53C\uC18C"
+    code: 916
+  - name: "\uC2E4\uC678\uAE30\uC2E4"
+    code: 917
+  - name: "\uD604\uAD00\uCC3D\uACE0"
+    code: 918
+  - name: "\uC695\uC2E4(UBR)"
+    code: 919
+  - name: "\uC695\uC2E42"
+    code: 920
+  - name: "\uBC1C\uCF54\uB2C82"
+    code: 921
+  - name: "\uCE68\uC2E42+\uC54C\uD30C\uB8F8\uD1B5\uD569"
+    code: 922

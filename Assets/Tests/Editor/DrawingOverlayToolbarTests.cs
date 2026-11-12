@@ -160,21 +160,19 @@ public class DrawingOverlayToolbarTests
         opacitySlider.minValue = 0f;
         opacitySlider.maxValue = 1f;
 
-        collapsedText = CreateTmpText("CollapsedText", collapsedRoot.transform);
-        expandedText = CreateTmpText("ExpandedText", expandedRoot.transform);
+        collapsedText = CreateText("CollapsedText", collapsedRoot.transform);
+        expandedText = CreateText("ExpandedText", expandedRoot.transform);
 
         object toolbar = toolbarObject.AddComponent(GetAssemblyType("DrawingOverlayToolbarController"));
         InvokeInitialize(toolbar, null, collapsedRoot, expandedRoot, opacitySlider, collapsedText, expandedText, expandButton, collapseButton, null, null);
         return toolbar;
     }
 
-    private static Component CreateTmpText(string name, Transform parent)
+    private static Component CreateText(string name, Transform parent)
     {
-        Type tmpType = Type.GetType("TMPro.TextMeshProUGUI, Unity.TextMeshPro");
-        Assert.That(tmpType, Is.Not.Null);
         GameObject textObject = new GameObject(name, typeof(RectTransform));
         textObject.transform.SetParent(parent, false);
-        return textObject.AddComponent(tmpType);
+        return textObject.AddComponent<Text>();
     }
 
     private static void InvokeInitialize(

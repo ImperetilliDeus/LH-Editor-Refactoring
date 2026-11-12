@@ -112,7 +112,38 @@ public class UIDragManager : MonoBehaviour
             forwarder = dragButton.gameObject.AddComponent<UIDragButtonForwarder>();
         }
 
-        forwarder.Initialize(this);
+        forwarder.Initialize(this, true);
+        EnsureDirectDragSurfaceForwarders();
+    }
+
+    private void EnsureDirectDragSurfaceForwarders()
+    {
+        if (draggableTarget == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < draggableTarget.childCount; i++)
+        {
+            Transform child = draggableTarget.GetChild(i);
+            if (dragButton != null && child == dragButton.transform)
+            {
+                continue;
+            }
+
+            if (!child.TryGetComponent(out Graphic graphic) || !graphic.raycastTarget)
+            {
+                continue;
+            }
+
+            UIDragButtonForwarder forwarder = child.GetComponent<UIDragButtonForwarder>();
+            if (forwarder == null)
+            {
+                forwarder = child.gameObject.AddComponent<UIDragButtonForwarder>();
+            }
+
+            forwarder.Initialize(this);
+        }
     }
 
     private void ResolveDragButton()
@@ -252,15 +283,47 @@ public class UIDragManager : MonoBehaviour
             draggableTarget.rect.width * scaleX,
             draggableTarget.rect.height * scaleY);
     }
+
+    public bool IsPointerOverInteractiveChild(Vector2 screenPoint, Camera eventCamera, GameObject eventReceiver)
+    {
+        if (draggableTarget == null)
+        {
+            return false;
+        }
+
+        Selectable[] selectables = draggableTarget.GetComponentsInChildren<Selectable>(false);
+        for (int i = 0; i < selectables.Length; i++)
+        {
+            Selectable selectable = selectables[i];
+            if (selectable == null ||
+                selectable.gameObject == eventReceiver ||
+                selectable == dragButton ||
+                !selectable.IsActive() ||
+                !selectable.interactable)
+            {
+                continue;
+            }
+
+            if (selectable.transform is RectTransform selectableRect &&
+                RectTransformUtility.RectangleContainsScreenPoint(selectableRect, screenPoint, eventCamera))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
-public class UIDragButtonForwarder : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class UIDragButtonForwarder : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, ICanvasRaycastFilter
 {
     private UIDragManager manager;
+    private bool passThroughInteractiveChildren;
 
-    public void Initialize(UIDragManager dragManager)
+    public void Initialize(UIDragManager dragManager, bool allowInteractivePassThrough = false)
     {
         manager = dragManager;
+        passThroughInteractiveChildren = allowInteractivePassThrough;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -276,5 +339,12 @@ public class UIDragButtonForwarder : MonoBehaviour, IBeginDragHandler, IDragHand
     public void OnEndDrag(PointerEventData eventData)
     {
         manager?.HandleEndDrag(eventData);
+    }
+
+    public bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)
+    {
+        return !passThroughInteractiveChildren ||
+            manager == null ||
+            !manager.IsPointerOverInteractiveChild(sp, eventCamera, gameObject);
     }
 }

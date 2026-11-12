@@ -1,0 +1,457 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &300000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300001}
+  - component: {fileID: 300002}
+  m_Layer: 0
+  m_Name: A003
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &300001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 300000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 300011}
+  - {fileID: 300021}
+  - {fileID: 300031}
+  - {fileID: 300041}
+  - {fileID: 300051}
+  - {fileID: 300061}
+  - {fileID: 300071}
+  - {fileID: 300081}
+  - {fileID: 300091}
+  - {fileID: 300101}
+  - {fileID: 300111}
+  - {fileID: 300121}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &300002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 300000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91004903b3cdea44c8ac403bf2e7b5f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  authoredSize: {x: 8, y: 8, z: 0.6}
+  preferAuthoredSizeWhenCatalogReferenceIsDefault: 1
+  profileKey: APARTMENT_VENT_WINDOW_TYPE2_V1
+--- !u!1 &300010
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300011}
+  - component: {fileID: 300012}
+  - component: {fileID: 300013}
+  m_Layer: 0
+  m_Name: Fixed_Type2OuterFrame_Left
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300011
+Transform:
+  m_GameObject: {fileID: 300010}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.86, y: 0, z: 0}
+  m_LocalScale: {x: 0.28, y: 8, z: 0.36}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300012
+MeshFilter:
+  m_GameObject: {fileID: 300010}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300013
+MeshRenderer:
+  m_GameObject: {fileID: 300010}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300020
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300021}
+  - component: {fileID: 300022}
+  - component: {fileID: 300023}
+  m_Layer: 0
+  m_Name: Fixed_Type2OuterFrame_Right
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300021
+Transform:
+  m_GameObject: {fileID: 300020}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.86, y: 0, z: 0}
+  m_LocalScale: {x: 0.28, y: 8, z: 0.36}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300022
+MeshFilter:
+  m_GameObject: {fileID: 300020}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300023
+MeshRenderer:
+  m_GameObject: {fileID: 300020}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300030
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300031}
+  - component: {fileID: 300032}
+  - component: {fileID: 300033}
+  m_Layer: 0
+  m_Name: Stretch_Type2OuterFrame_Top
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300031
+Transform:
+  m_GameObject: {fileID: 300030}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 3.86, z: 0}
+  m_LocalScale: {x: 8, y: 0.28, z: 0.36}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300032
+MeshFilter:
+  m_GameObject: {fileID: 300030}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300033
+MeshRenderer:
+  m_GameObject: {fileID: 300030}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300040
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300041}
+  - component: {fileID: 300042}
+  - component: {fileID: 300043}
+  m_Layer: 0
+  m_Name: Stretch_Type2OuterFrame_Bottom
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300041
+Transform:
+  m_GameObject: {fileID: 300040}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.86, z: 0}
+  m_LocalScale: {x: 8, y: 0.28, z: 0.36}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300042
+MeshFilter:
+  m_GameObject: {fileID: 300040}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300043
+MeshRenderer:
+  m_GameObject: {fileID: 300040}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300050
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300051}
+  - component: {fileID: 300052}
+  - component: {fileID: 300053}
+  m_Layer: 0
+  m_Name: Fixed_Type2Sash_Left
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300051
+Transform:
+  m_GameObject: {fileID: 300050}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.61, y: 0, z: -0.38}
+  m_LocalScale: {x: 0.22, y: 7.44, z: 0.18}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300052
+MeshFilter:
+  m_GameObject: {fileID: 300050}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300053
+MeshRenderer:
+  m_GameObject: {fileID: 300050}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300060
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300061}
+  - component: {fileID: 300062}
+  - component: {fileID: 300063}
+  m_Layer: 0
+  m_Name: Fixed_Type2Sash_Right
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300061
+Transform:
+  m_GameObject: {fileID: 300060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.61, y: 0, z: -0.38}
+  m_LocalScale: {x: 0.22, y: 7.44, z: 0.18}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300062
+MeshFilter:
+  m_GameObject: {fileID: 300060}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300063
+MeshRenderer:
+  m_GameObject: {fileID: 300060}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300070
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300071}
+  - component: {fileID: 300072}
+  - component: {fileID: 300073}
+  m_Layer: 0
+  m_Name: Stretch_Type2Sash_Top
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300071
+Transform:
+  m_GameObject: {fileID: 300070}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 3.61, z: -0.38}
+  m_LocalScale: {x: 7.44, y: 0.22, z: 0.18}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300072
+MeshFilter:
+  m_GameObject: {fileID: 300070}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300073
+MeshRenderer:
+  m_GameObject: {fileID: 300070}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300080
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300081}
+  - component: {fileID: 300082}
+  - component: {fileID: 300083}
+  m_Layer: 0
+  m_Name: Stretch_Type2Sash_Bottom
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300081
+Transform:
+  m_GameObject: {fileID: 300080}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.61, z: -0.38}
+  m_LocalScale: {x: 7.44, y: 0.22, z: 0.18}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300082
+MeshFilter:
+  m_GameObject: {fileID: 300080}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300083
+MeshRenderer:
+  m_GameObject: {fileID: 300080}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300090
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300091}
+  - component: {fileID: 300092}
+  - component: {fileID: 300093}
+  m_Layer: 0
+  m_Name: Stretch_Type2_ClearGlass
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300091
+Transform:
+  m_GameObject: {fileID: 300090}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0.34}
+  m_LocalScale: {x: 7, y: 7, z: 0.035}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300092
+MeshFilter:
+  m_GameObject: {fileID: 300090}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300093
+MeshRenderer:
+  m_GameObject: {fileID: 300090}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 16ba0aef7136b56469fd323354725b28, type: 2}
+--- !u!1 &300100
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300101}
+  - component: {fileID: 300102}
+  - component: {fileID: 300103}
+  m_Layer: 0
+  m_Name: Stretch_Type2_BottomSeal
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300101
+Transform:
+  m_GameObject: {fileID: 300100}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.5, z: -0.46}
+  m_LocalScale: {x: 7, y: 0.05, z: 0.08}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300102
+MeshFilter:
+  m_GameObject: {fileID: 300100}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300103
+MeshRenderer:
+  m_GameObject: {fileID: 300100}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300110
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300111}
+  - component: {fileID: 300112}
+  - component: {fileID: 300113}
+  m_Layer: 0
+  m_Name: Fixed_Type2_Handle_Base
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300111
+Transform:
+  m_GameObject: {fileID: 300110}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.621, z: -0.48}
+  m_LocalScale: {x: 0.42, y: 0.08, z: 0.12}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300112
+MeshFilter:
+  m_GameObject: {fileID: 300110}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300113
+MeshRenderer:
+  m_GameObject: {fileID: 300110}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}
+--- !u!1 &300120
+GameObject:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300121}
+  - component: {fileID: 300122}
+  - component: {fileID: 300123}
+  m_Layer: 0
+  m_Name: Fixed_Type2_Handle_Lever
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &300121
+Transform:
+  m_GameObject: {fileID: 300120}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.801, z: -0.5}
+  m_LocalScale: {x: 0.12, y: 0.36, z: 0.1}
+  m_Children: []
+  m_Father: {fileID: 300001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &300122
+MeshFilter:
+  m_GameObject: {fileID: 300120}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &300123
+MeshRenderer:
+  m_GameObject: {fileID: 300120}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_Materials:
+  - {fileID: 2100000, guid: 03adc4642263510408df1aa62596516f, type: 2}

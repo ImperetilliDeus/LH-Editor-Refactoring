@@ -91,6 +91,7 @@ public static class FurniturePatchBatchBuilder
             itemProperty.FindPropertyRelative("placementOffset").vector3Value = ToVector3(sourceItem.placementOffset);
             itemProperty.FindPropertyRelative("defaultEulerAngles").vector3Value = ToVector3(sourceItem.defaultEulerAngles);
             itemProperty.FindPropertyRelative("boundsSize").vector3Value = ToVector3(sourceItem.boundsSize, Vector3.one);
+            itemProperty.FindPropertyRelative("scaleMultiplier").floatValue = ResolveScaleMultiplier(sourceItem.scaleMultiplier);
 
             SerializedProperty defectsProperty = itemProperty.FindPropertyRelative("defects");
             FurniturePatchDefectFile[] defects = sourceItem.defects ?? Array.Empty<FurniturePatchDefectFile>();
@@ -196,6 +197,11 @@ public static class FurniturePatchBatchBuilder
         return new Vector3(value.x, value.y, value.z);
     }
 
+    private static float ResolveScaleMultiplier(float value)
+    {
+        return value > 0f ? value : FurnitureCatalogItem.DefaultScaleMultiplier;
+    }
+
     private static BatchBuildOptions ParseCommandLineArguments(IReadOnlyList<string> args)
     {
         return new BatchBuildOptions
@@ -243,6 +249,7 @@ public static class FurniturePatchBatchBuilder
         public FurniturePatchVector3File placementOffset;
         public FurniturePatchVector3File defaultEulerAngles;
         public FurniturePatchVector3File boundsSize;
+        public float scaleMultiplier;
         public FurniturePatchDefectFile[] defects;
     }
 

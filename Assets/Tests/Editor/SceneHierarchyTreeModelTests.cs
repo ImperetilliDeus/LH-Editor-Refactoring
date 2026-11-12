@@ -106,6 +106,27 @@ public class SceneHierarchyTreeModelTests
     }
 
     [Test]
+    public void BuildRows_GroupsSplitRoomBoundarySegments()
+    {
+        Transform wallRoot = CreateObject("Walls").transform;
+        Component bottom = CreateWall("wall06", "wall-06", wallRoot, new Vector3(0f, 0f, 0f), new Vector3(2f, 0f, 0f));
+        Component right = CreateWall("wall21", "wall-21", wallRoot, new Vector3(2f, 0f, 0f), new Vector3(2f, 0f, 2f));
+        Component topRight = CreateWall("wall19", "wall-19", wallRoot, new Vector3(2f, 0f, 2f), new Vector3(1f, 0f, 2f));
+        Component topLeft = CreateWall("wall43", "wall-43", wallRoot, new Vector3(1f, 0f, 2f), new Vector3(0f, 0f, 2f));
+        Component left = CreateWall("wall20", "wall-20", wallRoot, new Vector3(0f, 0f, 2f), new Vector3(0f, 0f, 0f));
+        Component room = CreateRoom("RoomObject", "Alpha Room", bottom, right, topRight, topLeft, left);
+
+        IList rows = BuildRows(wallRoot, CreateRoomList(room));
+
+        Assert.That(rows, Has.Count.EqualTo(5));
+        AssertRow(rows[0], "Room", 0, "Room (Alpha Room)", null);
+        AssertRow(rows[1], "Wall", 1, "wall06", bottom);
+        AssertRow(rows[2], "Wall", 1, "wall21", right);
+        AssertRow(rows[3], "Wall", 1, "wall19 + wall43", topRight);
+        AssertRow(rows[4], "Wall", 1, "wall20", left);
+    }
+
+    [Test]
     public void BuildRows_SkipsWallPreview()
     {
         Transform wallRoot = CreateObject("Walls").transform;
@@ -127,6 +148,11 @@ public class SceneHierarchyTreeModelTests
 
     private Component CreateWall(string name, string id, Transform parent)
     {
+        return CreateWall(name, id, parent, Vector3.zero, Vector3.forward);
+    }
+
+    private Component CreateWall(string name, string id, Transform parent, Vector3 startPoint, Vector3 endPoint)
+    {
         Type wallType = GetAssemblyType("Wall");
         Type wallDataType = GetAssemblyType("WallData");
         GameObject wallObject = CreateObject(name);
@@ -134,8 +160,8 @@ public class SceneHierarchyTreeModelTests
         Component wall = wallObject.AddComponent(wallType);
         object wallData = Activator.CreateInstance(
             wallDataType,
-            Vector3.zero,
-            Vector3.forward,
+            startPoint,
+            endPoint,
             0.2f,
             3f,
             1.5f);

@@ -144,22 +144,37 @@ public class Room : MonoBehaviour
             return false;
         }
 
+        RoomData roomData = EnsureData();
+        List<Wall> removedRoomWalls = new List<Wall>();
         List<string> removedWallIds = new List<string>();
+        bool updateWallSet = false;
         bool changed = false;
         if (removedWalls != null)
         {
             foreach (Wall wall in removedWalls)
             {
-                if (wall != null && WallSet.Remove(wall))
+                if (wall == null)
                 {
-                    if (wall.Data != null && !string.IsNullOrWhiteSpace(wall.Data.id))
-                    {
-                        removedWallIds.Add(wall.Data.id);
-                    }
-
-                    changed = true;
+                    continue;
                 }
+
+                bool removedFromWallSet = WallSet.Remove(wall);
+                bool trackedByManualSelection = ContainsAnyWallId(roomData.EffectiveWallIds, wall);
+                if (!removedFromWallSet && !trackedByManualSelection)
+                {
+                    continue;
+                }
+
+                removedRoomWalls.Add(wall);
+                AddWallId(wall, removedWallIds);
+                updateWallSet |= removedFromWallSet;
+                changed = true;
             }
+        }
+
+        if (removedRoomWalls.Count == 0)
+        {
+            return changed;
         }
 
         List<string> addedWallIds = new List<string>();
@@ -167,13 +182,14 @@ public class Room : MonoBehaviour
         {
             foreach (Wall wall in addedWalls)
             {
-                if (wall != null && WallSet.Add(wall))
+                if (wall == null || !MatchesAnyReplacedWall(wall, removedRoomWalls))
                 {
-                    if (wall.Data != null && !string.IsNullOrWhiteSpace(wall.Data.id))
-                    {
-                        addedWallIds.Add(wall.Data.id);
-                    }
+                    continue;
+                }
 
+                AddWallId(wall, addedWallIds);
+                if (updateWallSet && WallSet.Add(wall))
+                {
                     changed = true;
                 }
             }
@@ -181,13 +197,16 @@ public class Room : MonoBehaviour
 
         if (changed)
         {
-            EnsureData().SetWallIds(EnumerateWallIds(WallSet));
-            EnsureData().ReplaceManualWallIds(removedWallIds, addedWallIds);
+            if (updateWallSet)
+            {
+                roomData.SetWallIds(EnumerateWallIds(WallSet));
+            }
+
+            roomData.ReplaceManualWallIds(removedWallIds, addedWallIds);
         }
 
         return changed;
     }
-
     public void RefreshVisual()
     {
         GetVisualizer(true).RefreshVisual();
@@ -259,6 +278,108 @@ public class Room : MonoBehaviour
         }
 
         return visualizer;
+    }
+
+    private static void AddWallId(Wall wall, List<string> results)
+    {
+        if (wall == null || wall.Data == null || string.IsNullOrWhiteSpace(wall.Data.id) || results == null)
+        {
+            return;
+        }
+
+        if (!results.Contains(wall.Data.id))
+        {
+            results.Add(wall.Data.id);
+        }
+    }
+
+    private static bool ContainsAnyWallId(IReadOnlyList<string> ids, Wall wall)
+    {
+        if (ids == null || wall == null || ids.Count == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < ids.Count; i++)
+        {
+            string id = ids[i];
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                continue;
+            }
+
+            if (wall.Data != null && string.Equals(id, wall.Data.id, System.StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
+            if (container != null && string.Equals(id, container.PersistentWallId, System.StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool MatchesAnyReplacedWall(Wall candidate, List<Wall> removedWalls)
+    {
+        if (candidate == null || removedWalls == null || removedWalls.Count == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < removedWalls.Count; i++)
+        {
+            if (SegmentsOverlapXZ(candidate, removedWalls[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool SegmentsOverlapXZ(Wall candidate, Wall removed)
+    {
+        if (candidate == null || removed == null || candidate.Data == null || removed.Data == null)
+        {
+            return false;
+        }
+
+        Vector3 removedStart = removed.Data.startPoint;
+        Vector3 removedEnd = removed.Data.endPoint;
+        Vector3 candidateStart = candidate.Data.startPoint;
+        Vector3 candidateEnd = candidate.Data.endPoint;
+        Vector3 removedDirection = removedEnd - removedStart;
+        removedDirection.y = 0f;
+        float removedLength = removedDirection.magnitude;
+        if (removedLength <= 0.0001f)
+        {
+            return false;
+        }
+
+        removedDirection /= removedLength;
+        if (DistanceToSegmentLineXZ(candidateStart, removedStart, removedDirection) > 0.05f ||
+            DistanceToSegmentLineXZ(candidateEnd, removedStart, removedDirection) > 0.05f)
+        {
+            return false;
+        }
+
+        float candidateStartDistance = Vector3.Dot(candidateStart - removedStart, removedDirection);
+        float candidateEndDistance = Vector3.Dot(candidateEnd - removedStart, removedDirection);
+        float min = Mathf.Min(candidateStartDistance, candidateEndDistance);
+        float max = Mathf.Max(candidateStartDistance, candidateEndDistance);
+        return max > -0.01f && min < removedLength + 0.01f;
+    }
+
+    private static float DistanceToSegmentLineXZ(Vector3 point, Vector3 lineStart, Vector3 lineDirection)
+    {
+        Vector3 offset = point - lineStart;
+        offset.y = 0f;
+        Vector3 projected = lineDirection * Vector3.Dot(offset, lineDirection);
+        return (offset - projected).magnitude;
     }
 
     private static IEnumerable<string> EnumerateWallIds(IEnumerable<Wall> walls)

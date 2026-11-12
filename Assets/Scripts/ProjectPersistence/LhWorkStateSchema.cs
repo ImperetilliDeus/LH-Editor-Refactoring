@@ -89,11 +89,21 @@ public class LhWorkFurnitureDto
     public string exportCode = string.Empty;
     public string nativeCode = string.Empty;
     public string name = string.Empty;
+    public string furnishLocationCode = string.Empty;
     public LhWorkVector3Dto position;
     public LhWorkVector3Dto eulerAngles;
     public LhWorkVector3Dto localScale;
     public bool isPlaced;
     public string roomName = string.Empty;
+    public List<LhWorkFurnitureDefectDto> defects = new List<LhWorkFurnitureDefectDto>();
+}
+
+[Serializable]
+public class LhWorkFurnitureDefectDto
+{
+    public string mntnCd = string.Empty;
+    public string locCd = string.Empty;
+    public string mtrlCd = string.Empty;
 }
 
 [Serializable]

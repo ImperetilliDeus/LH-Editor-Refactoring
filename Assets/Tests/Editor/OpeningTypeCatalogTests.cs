@@ -88,6 +88,28 @@ public class OpeningTypeCatalogTests
         Assert.That(GetProperty<string>(s003, "ParametricProfileKey"), Is.EqualTo(GetProfileKey("WhiteTwoPanelWindow")));
     }
 
+    [Test]
+    public void Catalog_A002_IsApartmentVentWindowThatBlocksCharacter()
+    {
+        object a002 = FindItem("A002");
+
+        Assert.That(GetProperty<object>(a002, "OpeningType").ToString(), Is.EqualTo("Window"));
+        Assert.That(GetProperty<object>(a002, "ModelLayoutKind").ToString(), Is.EqualTo("WindowLike"));
+        Assert.That(GetProperty<object>(a002, "CollisionPolicy").ToString(), Is.EqualTo("BlockCharacter"));
+        Assert.That(GetProperty<string>(a002, "ParametricProfileKey"), Is.EqualTo(GetProfileKey("ApartmentVentWindow")));
+    }
+
+    [Test]
+    public void Catalog_A003_IsClosedApartmentVentWindowType2ThatBlocksCharacter()
+    {
+        object a003 = FindItem("A003");
+
+        Assert.That(GetProperty<object>(a003, "OpeningType").ToString(), Is.EqualTo("Window"));
+        Assert.That(GetProperty<object>(a003, "ModelLayoutKind").ToString(), Is.EqualTo("WindowLike"));
+        Assert.That(GetProperty<object>(a003, "CollisionPolicy").ToString(), Is.EqualTo("BlockCharacter"));
+        Assert.That(GetProperty<string>(a003, "ParametricProfileKey"), Is.EqualTo(GetProfileKey("ApartmentVentWindowType2")));
+    }
+
     private static object LoadCatalog()
     {
         Type catalogType = GetAssemblyType("OpeningTypeCatalog");

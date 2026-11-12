@@ -97,41 +97,205 @@ public static class LhWorkStateLoader
             return validationResult;
         }
 
-        services?.DrawingOverlayManager?.ClearOverlay();
-        services?.WallSelectionManager?.ClearSelectionForSceneReset();
-        services?.WallLengthDisplay?.ClearAllLabels();
-        ClearChildren(wallRoot);
-        if (roomManager != null)
+        WallRegistry.BeginChangeEventBatch();
+        roomManager?.BeginRoomsChangedBatch();
+        LhWorkStateLoadResult loadResult = LhWorkStateLoadResult.Fail("Work-state load did not complete.");
+        bool refreshSceneHierarchy = false;
+        try
         {
-            roomManager.ClearAllRoomsForWorkStateLoad();
+            services?.DrawingOverlayManager?.ClearOverlay();
+            services?.WallSelectionManager?.ClearSelectionForSceneReset();
+            services?.WallLengthDisplay?.ClearAllLabels();
+            ClearChildren(wallRoot);
+            if (roomManager != null)
+            {
+                roomManager.ClearAllRoomsForWorkStateLoad();
+            }
+
+            if (furnitureRoot != null)
+            {
+                ClearChildren(furnitureRoot);
+            }
+
+            Dictionary<string, string> mergedWallIds = NormalizeOverlappingOpeningWalls(state.walls);
+            NormalizeRoomWallIds(state.rooms, mergedWallIds);
+            NormalizeWallVertexIds(state.walls);
+            NormalizeFurnitureRoomsBySavedPolygons(state);
+            if (!RestoreWalls(state.walls, wallRoot, services, out Dictionary<string, Wall> wallsById))
+            {
+                loadResult = LhWorkStateLoadResult.Fail("Failed to restore walls.");
+            }
+            else
+            {
+                WallNamingUtility.NormalizeWallNames(wallRoot);
+                Dictionary<string, Room> roomsByName = RestoreRooms(state.rooms, roomManager, wallsById);
+                RestoreFurniture(state.furniture, furnitureRoot, furnitureCatalog, roomsByName, roomManager);
+                if (roomManager != null)
+                {
+                    roomManager.RebuildRoomLookupForWorkStateLoad();
+                }
+
+                RefreshRestoredEditorState(wallRoot, services);
+                services?.DrawManager?.SyncWallSequenceForWorkStateLoad();
+                RoomTopologyEvents.RequestRefreshAll();
+                refreshSceneHierarchy = true;
+                loadResult = LhWorkStateLoadResult.Ok();
+            }
+        }
+        finally
+        {
+            roomManager?.EndRoomsChangedBatch();
+            WallRegistry.EndChangeEventBatch();
         }
 
-        if (furnitureRoot != null)
+        if (refreshSceneHierarchy)
         {
-            ClearChildren(furnitureRoot);
+            SceneHierarchyTreeView.RefreshAllInstances();
         }
 
-        Dictionary<string, string> mergedWallIds = NormalizeOverlappingOpeningWalls(state.walls);
-        NormalizeRoomWallIds(state.rooms, mergedWallIds);
-        NormalizeWallVertexIds(state.walls);
-        if (!RestoreWalls(state.walls, wallRoot, services, out Dictionary<string, Wall> wallsById))
+        return loadResult;
+    }
+
+    private static void NormalizeFurnitureRoomsBySavedPolygons(LhWorkStateDto state)
+    {
+        if (state == null || state.rooms == null || state.furniture == null)
         {
-            return LhWorkStateLoadResult.Fail("Failed to restore walls.");
+            return;
         }
 
-        WallNamingUtility.NormalizeWallNames(wallRoot);
-        Dictionary<string, Room> roomsByName = RestoreRooms(state.rooms, roomManager, wallsById);
-        RestoreFurniture(state.furniture, furnitureRoot, furnitureCatalog, roomsByName);
-        if (roomManager != null)
+        int roomNameFixes = 0;
+        int defectCodeFixes = 0;
+        int unresolvedFurniture = 0;
+        for (int i = 0; i < state.furniture.Count; i++)
         {
-            roomManager.RebuildRoomLookupForWorkStateLoad();
+            LhWorkFurnitureDto furniture = state.furniture[i];
+            if (furniture == null || !furniture.isPlaced)
+            {
+                continue;
+            }
+
+            LhWorkRoomDto room = ResolveFurnitureRoomDto(furniture.position.ToVector3(), state.rooms);
+            if (room == null)
+            {
+                unresolvedFurniture++;
+                continue;
+            }
+
+            string roomName = room.name ?? string.Empty;
+            if (!string.Equals(furniture.roomName ?? string.Empty, roomName, System.StringComparison.Ordinal))
+            {
+                roomNameFixes++;
+                furniture.roomName = roomName;
+            }
+
+            string roomCode = ResolveRoomCode(room);
+            if (string.IsNullOrWhiteSpace(roomCode) || furniture.defects == null)
+            {
+                continue;
+            }
+
+            for (int defectIndex = 0; defectIndex < furniture.defects.Count; defectIndex++)
+            {
+                LhWorkFurnitureDefectDto defect = furniture.defects[defectIndex];
+                if (defect != null)
+                {
+                    if (!string.Equals(defect.mntnCd ?? string.Empty, roomCode, System.StringComparison.Ordinal))
+                    {
+                        defectCodeFixes++;
+                        defect.mntnCd = roomCode;
+                    }
+                }
+            }
         }
 
-        RefreshRestoredEditorState(wallRoot, services);
-        services?.DrawManager?.SyncWallSequenceForWorkStateLoad();
-        RoomTopologyEvents.RequestRefreshAll();
-        SceneHierarchyTreeView.RefreshAllInstances();
-        return LhWorkStateLoadResult.Ok();
+        Debug.Log(
+            $"[LhWorkStateLoader] furniture room normalization complete: " +
+            $"furniture={state.furniture.Count}, roomNameFixes={roomNameFixes}, " +
+            $"defectCodeFixes={defectCodeFixes}, unresolvedFurniture={unresolvedFurniture}");
+    }
+
+    private static LhWorkRoomDto ResolveFurnitureRoomDto(Vector3 position, IReadOnlyList<LhWorkRoomDto> rooms)
+    {
+        LhWorkRoomDto bestRoom = null;
+        float bestArea = float.PositiveInfinity;
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            LhWorkRoomDto room = rooms[i];
+            if (room == null || room.boundaryVertices == null || room.boundaryVertices.Count < 3 ||
+                !IsPointInsidePolygonXZ(position, room.boundaryVertices))
+            {
+                continue;
+            }
+
+            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.boundaryVertices));
+            if (area < bestArea)
+            {
+                bestArea = area;
+                bestRoom = room;
+            }
+        }
+
+        return bestRoom;
+    }
+
+    private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<LhWorkVector3Dto> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return false;
+        }
+
+        bool inside = false;
+        float x = point.x;
+        float z = point.z;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            Vector3 pi = vertices[i].ToVector3();
+            Vector3 pj = vertices[j].ToVector3();
+            float deltaZ = pj.z - pi.z;
+            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
+                              ((pi.z > z) != (pj.z > z)) &&
+                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
+            if (intersects)
+            {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
+
+    private static float CalculatePolygonAreaXZ(IReadOnlyList<LhWorkVector3Dto> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return 0f;
+        }
+
+        float area = 0f;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            Vector3 current = vertices[i].ToVector3();
+            Vector3 previous = vertices[j].ToVector3();
+            area += previous.x * current.z - current.x * previous.z;
+        }
+
+        return area * 0.5f;
+    }
+
+    private static string ResolveRoomCode(LhWorkRoomDto room)
+    {
+        if (room == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(room.roomCode))
+        {
+            return room.roomCode;
+        }
+
+        return RoomTypeCatalog.TryGetCode(room.roomTypeKey, out int code) ? code.ToString() : string.Empty;
     }
 
     private static LhWorkStateLoadResult Validate(
@@ -583,7 +747,8 @@ public static class LhWorkStateLoader
         IReadOnlyList<LhWorkFurnitureDto> furniture,
         Transform furnitureRoot,
         FurnitureCatalog furnitureCatalog,
-        Dictionary<string, Room> roomsByName)
+        Dictionary<string, Room> roomsByName,
+        RoomManager roomManager)
     {
         if (furniture == null || furnitureRoot == null || furnitureCatalog == null)
         {
@@ -617,14 +782,180 @@ public static class LhWorkStateLoader
             }
 
             instance.Initialize(item);
-            instance.SetPlaced(furnitureDto.isPlaced);
-            if (TryResolveRoom(roomsByName, furnitureDto.roomName, out Room room))
+            instance.SetFurnishLocationCode(furnitureDto.furnishLocationCode);
+            if (furnitureDto.defects != null)
             {
-                instance.SetCurrentRoom(room);
+                instance.SetExportDefects(ToFurnitureDefects(furnitureDto.defects));
+            }
+            instance.SetPlaced(furnitureDto.isPlaced);
+            Room resolvedRoom = ResolveFurnitureRoom(instance, roomManager);
+            if (resolvedRoom == null && TryResolveRoom(roomsByName, furnitureDto.roomName, out Room namedRoom))
+            {
+                resolvedRoom = namedRoom;
+            }
+
+            if (resolvedRoom != null)
+            {
+                instance.SetCurrentRoom(resolvedRoom);
+                ApplyRoomCodeToDefects(instance, resolvedRoom);
             }
 
             instance.ApplyLayerRecursively();
         }
+    }
+
+    private static Room ResolveFurnitureRoom(FurnitureInstance instance, RoomManager roomManager)
+    {
+        if (instance == null || roomManager == null)
+        {
+            return null;
+        }
+
+        List<Room> rooms = roomManager.GetAllRooms();
+        Vector3 position = instance.transform.position;
+        Room bestRoom = null;
+        float bestArea = float.PositiveInfinity;
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            Room room = rooms[i];
+            if (room == null || !IsPointInsideRoom(position, room))
+            {
+                continue;
+            }
+
+            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.BoundaryVertices));
+            if (area < bestArea)
+            {
+                bestArea = area;
+                bestRoom = room;
+            }
+        }
+
+        return bestRoom;
+    }
+
+    private static bool IsPointInsideRoom(Vector3 point, Room room)
+    {
+        if (room == null)
+        {
+            return false;
+        }
+
+        IReadOnlyList<Vector3> vertices = room.BoundaryVertices;
+        if (vertices == null || vertices.Count < 3)
+        {
+            return false;
+        }
+
+        bool inside = false;
+        float x = point.x;
+        float z = point.z;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            Vector3 pi = vertices[i];
+            Vector3 pj = vertices[j];
+            float deltaZ = pj.z - pi.z;
+            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
+                              ((pi.z > z) != (pj.z > z)) &&
+                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
+            if (intersects)
+            {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
+
+    private static float CalculatePolygonAreaXZ(IReadOnlyList<Vector3> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return 0f;
+        }
+
+        float area = 0f;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            area += vertices[j].x * vertices[i].z - vertices[i].x * vertices[j].z;
+        }
+
+        return area * 0.5f;
+    }
+
+    private static void ApplyRoomCodeToDefects(FurnitureInstance instance, Room room)
+    {
+        if (instance == null || room == null || instance.ExportDefects == null)
+        {
+            return;
+        }
+
+        string roomCode = ResolveRoomCode(room);
+        if (string.IsNullOrWhiteSpace(roomCode))
+        {
+            return;
+        }
+
+        List<FurnitureDefectCatalogEntry> defects = new List<FurnitureDefectCatalogEntry>();
+        for (int i = 0; i < instance.ExportDefects.Count; i++)
+        {
+            FurnitureDefectCatalogEntry defect = instance.ExportDefects[i];
+            if (defect == null)
+            {
+                continue;
+            }
+
+            defects.Add(new FurnitureDefectCatalogEntry
+            {
+                mntnCd = roomCode,
+                locCd = defect.locCd ?? string.Empty,
+                mtrlCd = defect.mtrlCd ?? string.Empty,
+            });
+        }
+
+        instance.SetExportDefects(defects);
+    }
+
+    private static string ResolveRoomCode(Room room)
+    {
+        if (room == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(room.RoomCode))
+        {
+            return room.RoomCode;
+        }
+
+        return RoomTypeCatalog.TryGetCode(room.RoomTypeKey, out int code) ? code.ToString() : string.Empty;
+    }
+
+    private static List<FurnitureDefectCatalogEntry> ToFurnitureDefects(IReadOnlyList<LhWorkFurnitureDefectDto> defects)
+    {
+        List<FurnitureDefectCatalogEntry> results = new List<FurnitureDefectCatalogEntry>();
+        if (defects == null)
+        {
+            return results;
+        }
+
+        for (int i = 0; i < defects.Count; i++)
+        {
+            LhWorkFurnitureDefectDto defect = defects[i];
+            if (defect == null)
+            {
+                continue;
+            }
+
+            results.Add(new FurnitureDefectCatalogEntry
+            {
+                mntnCd = defect.mntnCd ?? string.Empty,
+                locCd = defect.locCd ?? string.Empty,
+                mtrlCd = defect.mtrlCd ?? string.Empty,
+            });
+        }
+
+        return results;
     }
 
     private static FurnitureCatalogItem ResolveFurnitureItem(FurnitureCatalog catalog, LhWorkFurnitureDto furnitureDto)

@@ -13,48 +13,19 @@ MonoBehaviour:
   m_Name: FurnitureCatalog
   m_EditorClassIdentifier: 
   items:
-  - code: E001
-    exportCode: 
+  - code: BO001
+    exportCode: BO001
     nativeCode: 
-    displayName: E001
-    prefab: {fileID: 569507486651759752, guid: acca1e657e3c79a4aa2de6a289f5713a, type: 3}
-    thumbnail: {fileID: 2800000, guid: f5a4c3568e1b02b468111699a1d3c7ab, type: 3}
+    displayName: BO001
+    prefab: {fileID: 8561886744687124492, guid: 29ca8346eb4a1f14dbf32c8e21e219d6, type: 3}
+    thumbnail: {fileID: 2800000, guid: fd36313015f115b48a261c9cf4fa0497, type: 3}
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 0.52734995, y: 1, z: 1}
-    defects: []
-  - code: F001
-    exportCode: 
-    nativeCode: 
-    displayName: F001
-    prefab: {fileID: 8098451665189820380, guid: 3b8b4c52a73d33d4d80b00de508e3992, type: 3}
-    thumbnail: {fileID: 2800000, guid: 69022158980b59245a1ca89460299dc9, type: 3}
-    placementOffset: {x: 0, y: 0, z: 0}
-    defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 9, y: 22, z: 0.21125029}
-    defects: []
-  - code: PassThrough
-    exportCode: 
-    nativeCode: 
-    displayName: PassThrough
-    prefab: {fileID: 1999070072311887432, guid: c013cfe5ffdc352469061cb631ff5f79, type: 3}
-    thumbnail: {fileID: 2800000, guid: 80257eda4c8a8ce4c8300fd7c646e695, type: 3}
-    placementOffset: {x: 0, y: 0, z: 0}
-    defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 1, y: 1, z: 1}
-    defects: []
-  - code: S001
-    exportCode: 
-    nativeCode: 
-    displayName: S001
-    prefab: {fileID: 8283230652478690410, guid: 183af97433bed3f43b81315811ab62db, type: 3}
-    thumbnail: {fileID: 2800000, guid: 6aa85fe23a962be4fa604954b77680c6, type: 3}
-    placementOffset: {x: 0, y: 0, z: 0}
-    defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 1.002, y: 1.0009999, z: 1}
+    boundsSize: {x: 7.6499996, y: 13.55, z: 2.324}
+    scaleMultiplier: 0.9
     defects: []
   - code: BT001
-    exportCode: 
+    exportCode: BT001
     nativeCode: 
     displayName: BT001
     prefab: {fileID: 7839336646225356268, guid: 037db5b46b40cef43af5e053afa7f401, type: 3}
@@ -62,45 +33,10 @@ MonoBehaviour:
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
     boundsSize: {x: 12.091058, y: 6.5568876, z: 23.576994}
+    scaleMultiplier: 0.6
     defects: []
-  - code: S001
-    exportCode: 
-    nativeCode: 
-    displayName: S001
-    prefab: {fileID: 5944794387999990638, guid: 9f14e34061c09d343906b01edbef1277, type: 3}
-    thumbnail: {fileID: 2800000, guid: 6aa85fe23a962be4fa604954b77680c6, type: 3}
-    placementOffset: {x: 0, y: 0, z: 0}
-    defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 8.540098, y: 9.305132, z: 9.896665}
-    defects: []
-  - code: SB001
-    exportCode: 
-    nativeCode: 
-    displayName: SB001
-    prefab: {fileID: 8842340224103360588, guid: c2753959d9c3a684e88b09cdaf5fcb20, type: 3}
-    thumbnail: {fileID: 2800000, guid: 9c7e193015414954399aa938955335d3, type: 3}
-    placementOffset: {x: 0, y: 0, z: 0}
-    defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 10.017376, y: 22, z: 10}
-    defects: []
-  - code: T001
-    exportCode: 
-    nativeCode: 
-    displayName: T001
-    prefab: {fileID: 5766226947990164030, guid: b5503b4f82fc18b46ad8c935542741a8, type: 3}
-    thumbnail: {fileID: 2800000, guid: 537c8795ee07a8b4aa427013e14c5b5c, type: 3}
-    placementOffset: {x: 0, y: 0, z: 0}
-    defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 11.887857, y: 11.042879, z: 6.891798}
-    defects:
-    - mntnCd: 901
-      locCd: 2
-      mtrlCd: 105
-    - mntnCd: 901
-      locCd: 2
-      mtrlCd: 418
   - code: CT001
-    exportCode: 
+    exportCode: CT001
     nativeCode: 
     displayName: CT001
     prefab: {fileID: 4534668954108190729, guid: 6b1a6970003a48d4d96080a47b1bf618, type: 3}
@@ -108,9 +44,10 @@ MonoBehaviour:
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
     boundsSize: {x: 10, y: 21.945, z: 22}
+    scaleMultiplier: 1
     defects: []
   - code: CT002
-    exportCode: 
+    exportCode: CT002
     nativeCode: 
     displayName: CT002
     prefab: {fileID: 5830008870542596919, guid: 6ab041cc81b49a54e9f4c008b53a2e0e, type: 3}
@@ -118,24 +55,77 @@ MonoBehaviour:
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
     boundsSize: {x: 10.01, y: 21.945, z: 35.15313}
+    scaleMultiplier: 0.9
     defects: []
-  - code: A001
-    exportCode: 
+  - code: P001
+    exportCode: P001
     nativeCode: 
-    displayName: A001
-    prefab: {fileID: 8283230652478690410, guid: 2081003168260e44fb6dcfd772dfe07e, type: 3}
-    thumbnail: {fileID: 2800000, guid: 90c48c19f310ca4489ca39c0a8b89c93, type: 3}
+    displayName: P001
+    prefab: {fileID: 85073646495339534, guid: a11b626a3cc29914980da75ea6c6fe68, type: 3}
+    thumbnail: {fileID: 2800000, guid: 894c3497db1a3174fa2a877b8c004725, type: 3}
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 1.0000001, y: 1, z: 1}
+    boundsSize: {x: 16.2, y: 14.4, z: 3.5000017}
+    scaleMultiplier: 1
     defects: []
-  - code: W001
-    exportCode: 
+  - code: P002
+    exportCode: P002
     nativeCode: 
-    displayName: W001
-    prefab: {fileID: 8283230652478690410, guid: a4bc47720fa69ad4d82a7de56bd6160b, type: 3}
-    thumbnail: {fileID: 2800000, guid: 45414970bd583e945be21fb85194d8e3, type: 3}
+    displayName: P002
+    prefab: {fileID: 85073646495339534, guid: f260899ff16c2fd40ba0f4b6dbd2c72f, type: 3}
+    thumbnail: {fileID: 2800000, guid: e67d90f73c215eb4b9f2704de5d1684e, type: 3}
     placementOffset: {x: 0, y: 0, z: 0}
     defaultEulerAngles: {x: 0, y: 0, z: 0}
-    boundsSize: {x: 1.002, y: 0.99045, z: 1}
+    boundsSize: {x: 8, y: 14.4, z: 3.5000014}
+    scaleMultiplier: 1
     defects: []
+  - code: S001
+    exportCode: S001
+    nativeCode: 
+    displayName: S001
+    prefab: {fileID: 5944794387999990638, guid: 9f14e34061c09d343906b01edbef1277, type: 3}
+    thumbnail: {fileID: 2800000, guid: 6aa85fe23a962be4fa604954b77680c6, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 8.540098, y: 9.305132, z: 9.896665}
+    scaleMultiplier: 0.7
+    defects: []
+  - code: SB001
+    exportCode: SB001
+    nativeCode: 
+    displayName: SB001
+    prefab: {fileID: 8842340224103360588, guid: c2753959d9c3a684e88b09cdaf5fcb20, type: 3}
+    thumbnail: {fileID: 2800000, guid: 9c7e193015414954399aa938955335d3, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 10.017376, y: 22, z: 10}
+    scaleMultiplier: 0.8
+    defects: []
+  - code: SC001
+    exportCode: SC001
+    nativeCode: 
+    displayName: SC001
+    prefab: {fileID: 100000, guid: 91d5b35e2aeef4d43a43da85a7d51d9b, type: 3}
+    thumbnail: {fileID: 2800000, guid: 92ae7d7af531da1488083af9c373ee8c, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 10, y: 21.5, z: 5.17}
+    scaleMultiplier: 1
+    defects: []
+  - code: T001
+    exportCode: T001
+    nativeCode: 
+    displayName: T001
+    prefab: {fileID: 5766226947990164030, guid: b5503b4f82fc18b46ad8c935542741a8, type: 3}
+    thumbnail: {fileID: 2800000, guid: 537c8795ee07a8b4aa427013e14c5b5c, type: 3}
+    placementOffset: {x: 0, y: 0, z: 0}
+    defaultEulerAngles: {x: 0, y: 0, z: 0}
+    boundsSize: {x: 11.887857, y: 11.042879, z: 6.891798}
+    scaleMultiplier: 0.7
+    defects:
+    - mntnCd: 901
+      locCd: 2
+      mtrlCd: 105
+    - mntnCd: 901
+      locCd: 2
+      mtrlCd: 418

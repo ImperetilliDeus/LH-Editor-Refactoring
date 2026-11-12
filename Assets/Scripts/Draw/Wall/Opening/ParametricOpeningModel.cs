@@ -12,6 +12,8 @@ public sealed partial class ParametricOpeningModel : MonoBehaviour
     public const string WhiteSwingDoorProfile = ParametricOpeningProfileKeys.WhiteSwingDoor;
     public const string WhiteGlassFrameDoorProfile = ParametricOpeningProfileKeys.WhiteGlassFrameDoor;
     public const string WhiteTwoPanelWindowProfile = ParametricOpeningProfileKeys.WhiteTwoPanelWindow;
+    public const string ApartmentVentWindowProfile = ParametricOpeningProfileKeys.ApartmentVentWindow;
+    public const string ApartmentVentWindowType2Profile = ParametricOpeningProfileKeys.ApartmentVentWindowType2;
 
     private const float MinimumSize = 0.0001f;
     [SerializeField] private Vector3 authoredSize = new Vector3(1.8f, 2.1f, 0.14f);
@@ -110,6 +112,18 @@ public sealed partial class ParametricOpeningModel : MonoBehaviour
         if (string.Equals(profileKey, WhiteTwoPanelWindowProfile, StringComparison.Ordinal))
         {
             ApplyWhiteTwoPanelWindowLayout(safeTarget);
+            return;
+        }
+
+        if (string.Equals(profileKey, ApartmentVentWindowProfile, StringComparison.Ordinal))
+        {
+            ApplyApartmentVentWindowLayout(safeTarget);
+            return;
+        }
+
+        if (string.Equals(profileKey, ApartmentVentWindowType2Profile, StringComparison.Ordinal))
+        {
+            ApplyApartmentVentWindowType2Layout(safeTarget);
             return;
         }
 

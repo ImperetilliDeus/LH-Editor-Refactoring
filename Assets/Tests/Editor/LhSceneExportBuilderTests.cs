@@ -117,6 +117,155 @@ public class LhSceneExportBuilderTests
     }
 
     [Test]
+    public void BuildLegacy_RewritesFurnitureDefectRoomCodeToContainingRoom()
+    {
+        var createdObjects = new List<GameObject>();
+        try
+        {
+            Type roomType = GetAssemblyType("Room");
+            Component staleRoom = CreateRoomFromPolygon(
+                createdObjects,
+                roomType,
+                "Bathroom",
+                "901",
+                new List<Vector3>
+                {
+                    new Vector3(-4f, 0f, -1f),
+                    new Vector3(-2f, 0f, -1f),
+                    new Vector3(-2f, 0f, 1f),
+                    new Vector3(-4f, 0f, 1f),
+                });
+            Component containingRoom = CreateRoomFromPolygon(
+                createdObjects,
+                roomType,
+                "Kitchen",
+                "902",
+                new List<Vector3>
+                {
+                    new Vector3(-1f, 0f, -1f),
+                    new Vector3(1f, 0f, -1f),
+                    new Vector3(1f, 0f, 1f),
+                    new Vector3(-1f, 0f, 1f),
+                });
+            CreateFurnitureWithDefect(createdObjects, "Sink", Vector3.zero, staleRoom, "901");
+
+            Array rooms = Array.CreateInstance(roomType, 2);
+            rooms.SetValue(staleRoom, 0);
+            rooms.SetValue(containingRoom, 1);
+            object scene = InvokeBuildLegacy(Vector3.zero, Array.CreateInstance(GetAssemblyType("Wall"), 0), rooms);
+
+            object exportedKitchen = GetFieldValue<IList>(scene, "roomData")[1];
+            object furniture = GetFieldValue<IList>(exportedKitchen, "furnish")[0];
+            object defect = GetFieldValue<IList>(furniture, "defects")[0];
+
+            Assert.That(GetFieldValue<string>(defect, "mntnCd"), Is.EqualTo("902"));
+        }
+        finally
+        {
+            DestroyObjects(createdObjects);
+        }
+    }
+
+    [Test]
+    public void BuildLegacy_FiltersNearZeroLengthWallsFromRoomReferences()
+    {
+        var createdObjects = new List<GameObject>();
+        try
+        {
+            Type wallType = GetAssemblyType("Wall");
+            Array walls = Array.CreateInstance(wallType, 2);
+            walls.SetValue(CreateWall(createdObjects, "wall01", "wall-a", new Vector3(-1f, 0f, -1f), new Vector3(1f, 0f, -1f)), 0);
+            walls.SetValue(CreateWall(createdObjects, "wall44", "wall-tiny", new Vector3(0f, 0f, 0f), new Vector3(0.01f, 0f, 0f)), 1);
+
+            Component room = CreateRoomFromPolygon(
+                createdObjects,
+                GetAssemblyType("Room"),
+                "Kitchen",
+                "902",
+                new List<Vector3>
+                {
+                    new Vector3(-1f, 0f, -1f),
+                    new Vector3(1f, 0f, -1f),
+                    new Vector3(1f, 0f, 1f),
+                    new Vector3(-1f, 0f, 1f),
+                });
+            room.GetType().GetMethod("SetManualWallIds", BindingFlags.Public | BindingFlags.Instance)
+                ?.Invoke(room, new object[] { new[] { "wall-a", "wall-tiny" } });
+
+            Array rooms = Array.CreateInstance(GetAssemblyType("Room"), 1);
+            rooms.SetValue(room, 0);
+            object scene = InvokeBuildLegacy(Vector3.zero, walls, rooms);
+
+            object exportedRoom = GetFieldValue<IList>(scene, "roomData")[0];
+            IList roomWalls = GetFieldValue<IList>(exportedRoom, "walls");
+
+            Assert.That(roomWalls, Has.Count.EqualTo(1));
+        }
+        finally
+        {
+            DestroyObjects(createdObjects);
+        }
+    }
+
+    [Test]
+    public void BuildLegacy_RemovesSmallerAxisAlignedRoomOverlapFromLargerRoomSurface()
+    {
+        var createdObjects = new List<GameObject>();
+        try
+        {
+            Type roomType = GetAssemblyType("Room");
+            Component largeRoom = CreateRoomFromPolygon(
+                createdObjects,
+                roomType,
+                "LargeRoom",
+                new List<Vector3>
+                {
+                    new Vector3(-2f, 0f, -2f),
+                    new Vector3(2f, 0f, -2f),
+                    new Vector3(2f, 0f, 2f),
+                    new Vector3(-2f, 0f, 2f),
+                });
+            Component smallRoom = CreateRoomFromPolygon(
+                createdObjects,
+                roomType,
+                "SmallRoom",
+                new List<Vector3>
+                {
+                    new Vector3(-1f, 0f, -1f),
+                    new Vector3(1f, 0f, -1f),
+                    new Vector3(1f, 0f, 1f),
+                    new Vector3(-1f, 0f, 1f),
+                });
+
+            Array rooms = Array.CreateInstance(roomType, 2);
+            rooms.SetValue(largeRoom, 0);
+            rooms.SetValue(smallRoom, 1);
+            object scene = InvokeBuildLegacy(Vector3.zero, Array.CreateInstance(GetAssemblyType("Wall"), 0), rooms);
+
+            object exportedLargeRoom = GetFieldValue<IList>(scene, "roomData")[0];
+            object floor = GetFieldValue<object>(exportedLargeRoom, "floor");
+            object mesh = GetFieldValue<object>(floor, "mesh");
+            IList vertices = GetFieldValue<IList>(mesh, "vertices");
+            IList triangles = GetFieldValue<IList>(mesh, "triangles");
+
+            Assert.That(vertices.Count, Is.EqualTo(16));
+            Assert.That(triangles.Count, Is.EqualTo(24));
+            AssertMeshHasNoTriangleCentroidInsideBounds(
+                vertices,
+                triangles,
+                GetVector3Dto(GetFieldValue<object>(exportedLargeRoom, "position")),
+                -1f,
+                1f,
+                -1f,
+                1f);
+        }
+        finally
+        {
+            DestroyObjects(createdObjects);
+        }
+    }
+
+    [Test]
     public void ValidateLegacy_ReportsMissingRoomCode()
     {
         object scene = CreateLegacySceneDto();
@@ -313,6 +462,63 @@ public class LhSceneExportBuilderTests
         return room;
     }
 
+    private static Component CreateRoomFromPolygon(List<GameObject> createdObjects, Type roomType, string name, List<Vector3> vertices)
+    {
+        return CreateRoomFromPolygon(createdObjects, roomType, name, "900", vertices);
+    }
+
+    private static Component CreateRoomFromPolygon(List<GameObject> createdObjects, Type roomType, string name, string roomCode, List<Vector3> vertices)
+    {
+        GameObject roomObject = new GameObject(name);
+        createdObjects.Add(roomObject);
+        Component room = roomObject.AddComponent(roomType);
+        object wallSet = Activator.CreateInstance(typeof(HashSet<>).MakeGenericType(GetAssemblyType("Wall")));
+        object geometry = GetAssemblyType("PolygonUtility")
+            .GetMethod("CalculateGeometry", BindingFlags.Public | BindingFlags.Static)
+            ?.Invoke(null, new object[] { vertices });
+        roomType.GetMethod(
+                "Initialize",
+                BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { wallSet.GetType(), geometry.GetType(), typeof(IReadOnlyList<Vector3>), typeof(bool) },
+                null)
+            ?.Invoke(room, new[] { wallSet, geometry, vertices, true });
+        roomType.GetMethod("SetRoomName", BindingFlags.Public | BindingFlags.Instance)?.Invoke(room, new object[] { name });
+        roomType.GetMethod("SetRoomCode", BindingFlags.Public | BindingFlags.Instance)?.Invoke(room, new object[] { roomCode });
+        return room;
+    }
+
+    private static Component CreateFurnitureWithDefect(
+        List<GameObject> createdObjects,
+        string name,
+        Vector3 position,
+        Component currentRoom,
+        string mntnCd)
+    {
+        GameObject furnitureObject = new GameObject(name);
+        createdObjects.Add(furnitureObject);
+        furnitureObject.transform.position = position;
+        Type instanceType = GetAssemblyType("FurnitureInstance");
+        Type itemType = GetAssemblyType("FurnitureCatalogItem");
+        Type defectType = GetAssemblyType("FurnitureDefectCatalogEntry");
+        Component instance = furnitureObject.AddComponent(instanceType);
+        object item = Activator.CreateInstance(itemType);
+        SetFieldValue(item, "code", "S001_INTERNAL");
+        SetFieldValue(item, "exportCode", "S001");
+        SetFieldValue(item, "nativeCode", "S001_NATIVE");
+        SetFieldValue(item, "boundsSize", Vector3.one * 0.25f);
+        IList defects = GetFieldValue<IList>(item, "defects");
+        object defect = Activator.CreateInstance(defectType);
+        SetFieldValue(defect, "mntnCd", mntnCd);
+        SetFieldValue(defect, "locCd", "2");
+        SetFieldValue(defect, "mtrlCd", "080");
+        AddToList(defects, defect);
+        instanceType.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Instance)?.Invoke(instance, new[] { item });
+        instanceType.GetMethod("SetCurrentRoom", BindingFlags.Public | BindingFlags.Instance)?.Invoke(instance, new object[] { currentRoom });
+        instanceType.GetMethod("SetPlaced", BindingFlags.Public | BindingFlags.Instance)?.Invoke(instance, new object[] { true });
+        return instance;
+    }
+
     private static Component CreateContractFurniture(List<GameObject> createdObjects, Component room)
     {
         GameObject furnitureObject = new GameObject("Sofa");
@@ -465,6 +671,37 @@ public class LhSceneExportBuilderTests
         SetFieldValue(vector, "y", value.y);
         SetFieldValue(vector, "z", value.z);
         return vector;
+    }
+
+    private static Vector3 GetVector3Dto(object value)
+    {
+        return new Vector3(
+            Convert.ToSingle(GetFieldValue<object>(value, "x")),
+            Convert.ToSingle(GetFieldValue<object>(value, "y")),
+            Convert.ToSingle(GetFieldValue<object>(value, "z")));
+    }
+
+    private static void AssertMeshHasNoTriangleCentroidInsideBounds(
+        IList vertices,
+        IList triangles,
+        Vector3 roomPosition,
+        float minX,
+        float maxX,
+        float minZ,
+        float maxZ)
+    {
+        for (int i = 0; i + 2 < triangles.Count; i += 3)
+        {
+            Vector3 a = roomPosition + GetVector3Dto(vertices[Convert.ToInt32(triangles[i])]);
+            Vector3 b = roomPosition + GetVector3Dto(vertices[Convert.ToInt32(triangles[i + 1])]);
+            Vector3 c = roomPosition + GetVector3Dto(vertices[Convert.ToInt32(triangles[i + 2])]);
+            Vector3 centroid = (a + b + c) / 3f;
+            bool inside = centroid.x > minX &&
+                          centroid.x < maxX &&
+                          centroid.z > minZ &&
+                          centroid.z < maxZ;
+            Assert.That(inside, Is.False, $"Triangle centroid remained in the overlapped room surface at {centroid}.");
+        }
     }
 
     private static IList CreateList(Type itemType)

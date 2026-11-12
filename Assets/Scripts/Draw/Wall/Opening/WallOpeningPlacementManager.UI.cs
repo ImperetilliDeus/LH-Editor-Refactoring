@@ -258,11 +258,32 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
+        if (TryApplySelectedOpeningReferenceSizeForCurrentType())
+        {
+            return;
+        }
+
         ApplySelectedOpeningWidthConstraint();
 
         ApplySelectedOpeningHeightConstraint();
 
         ApplySelectedOpeningDepthConstraint();
+    }
+
+    private bool TryApplySelectedOpeningReferenceSizeForCurrentType()
+    {
+        if (SelectedOpening == null ||
+            SelectedOpening.Container == null ||
+            !TryGetOpeningTypeDefinition(SelectedOpening, out OpeningTypeCatalogItem definition) ||
+            !ShouldUseReferenceSizeForNewOpening(definition))
+        {
+            return false;
+        }
+
+        SelectedOpening.SetWidth(definition.ReferenceSize.x);
+        SelectedOpening.SetHeight(definition.ReferenceSize.y);
+        SelectedOpening.SetDepth(Mathf.Min(definition.ReferenceSize.z, SelectedOpening.Container.WallThickness));
+        return true;
     }
 
     private void ApplySelectedOpeningWidthConstraint()

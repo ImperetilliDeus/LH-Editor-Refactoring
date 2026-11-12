@@ -81,6 +81,8 @@ public class RoomManager : MonoBehaviour
     private Material fallbackRoomMaterial;
     private RoomPlanarGraph cachedGraph;
     private bool isGraphDirty = true;
+    private int roomsChangedSuppressionDepth;
+    private bool roomsChangedWhileSuppressed;
 
     public string FloorMaterialFolderPath => floorMaterialFolderPath;
     public string WallMaterialFolderPath => wallMaterialFolderPath;
@@ -90,6 +92,37 @@ public class RoomManager : MonoBehaviour
     public string DefaultCeilingTextureCode => defaultCeilingTextureCode ?? string.Empty;
 
     public event System.Action RoomsChanged;
+
+    public void BeginRoomsChangedBatch()
+    {
+        roomsChangedSuppressionDepth++;
+    }
+
+    public void EndRoomsChangedBatch()
+    {
+        if (roomsChangedSuppressionDepth <= 0)
+        {
+            return;
+        }
+
+        roomsChangedSuppressionDepth--;
+        if (roomsChangedSuppressionDepth == 0 && roomsChangedWhileSuppressed)
+        {
+            roomsChangedWhileSuppressed = false;
+            NotifyRoomsChanged();
+        }
+    }
+
+    private void NotifyRoomsChanged()
+    {
+        if (roomsChangedSuppressionDepth > 0)
+        {
+            roomsChangedWhileSuppressed = true;
+            return;
+        }
+
+        RoomsChanged?.Invoke();
+    }
 
     public IReadOnlyList<Material> GetFloorMaterials()
     {
@@ -290,7 +323,7 @@ public class RoomManager : MonoBehaviour
 
         allRooms.Add(room);
         roomsByWalls[wallSet] = room;
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
         return room;
     }
 
@@ -328,7 +361,7 @@ public class RoomManager : MonoBehaviour
         Room room = CreateRoomObject(wallSet ?? new HashSet<Wall>(), sanitizedPolygonVertices, true);
 
         allRooms.Add(room);
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
         return room;
     }
 
@@ -343,7 +376,7 @@ public class RoomManager : MonoBehaviour
 
         Room room = CreateRoomObject(wallSet ?? new HashSet<Wall>(), sanitizedPolygonVertices, isManualRoom);
         allRooms.Add(room);
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
         return room;
     }
 
@@ -364,7 +397,7 @@ public class RoomManager : MonoBehaviour
             return false;
         }
 
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
         return true;
     }
 
@@ -428,7 +461,7 @@ public class RoomManager : MonoBehaviour
 
         if (changed)
         {
-            RoomsChanged?.Invoke();
+            NotifyRoomsChanged();
         }
 
         return changed;
@@ -450,7 +483,7 @@ public class RoomManager : MonoBehaviour
             room.ClearManualWallSelection();
         }
 
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
         return true;
     }
 
@@ -469,7 +502,7 @@ public class RoomManager : MonoBehaviour
         }
 
         Destroy(room.gameObject);
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
     }
 
     public void ClearAllRoomsForWorkStateLoad()
@@ -488,7 +521,7 @@ public class RoomManager : MonoBehaviour
         roomsByWalls.Clear();
         ClearRoomRootChildren();
         MarkGraphDirty();
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
     }
 
     public void RebuildRoomLookupForWorkStateLoad()
@@ -583,7 +616,7 @@ public class RoomManager : MonoBehaviour
         allRooms.Clear();
         allRooms.AddRange(nextRooms);
         RebuildRoomLookup();
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
     }
 
     public void RefreshRoomsForWallReplacement(ICollection<Wall> removedWalls, IEnumerable<Wall> addedWalls)
@@ -614,7 +647,7 @@ public class RoomManager : MonoBehaviour
         }
 
         RebuildRoomLookup();
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
     }
 
     public Room FindRoomByWallSet(HashSet<Wall> wallSet)
@@ -800,7 +833,7 @@ public class RoomManager : MonoBehaviour
         }
 
         RebuildRoomLookup();
-        RoomsChanged?.Invoke();
+        NotifyRoomsChanged();
     }
 
     private void ClearRoomRootChildren()

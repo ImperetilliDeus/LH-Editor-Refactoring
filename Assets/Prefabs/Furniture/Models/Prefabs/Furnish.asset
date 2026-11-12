@@ -25,3 +25,7 @@ MonoBehaviour:
     prefab: {fileID: 7839336646225356268, guid: 037db5b46b40cef43af5e053afa7f401, type: 3}
   - prefabName: SB001
     prefab: {fileID: 8842340224103360588, guid: c2753959d9c3a684e88b09cdaf5fcb20, type: 3}
+  - prefabName: SC001
+    prefab: {fileID: 100000, guid: 91d5b35e2aeef4d43a43da85a7d51d9b, type: 3}
+  - prefabName: BO001
+    prefab: {fileID: 8561886744687124492, guid: 29ca8346eb4a1f14dbf32c8e21e219d6, type: 3}

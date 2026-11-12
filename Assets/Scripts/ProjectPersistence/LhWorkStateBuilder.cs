@@ -3,6 +3,8 @@ using UnityEngine;
 
 public static class LhWorkStateBuilder
 {
+    private const float MinimumExportedRoomWallReferenceLength = 0.05f;
+
     private static readonly List<Wall> CachedWalls = new List<Wall>();
 
     public static LhWorkStateDto Build(Transform wallRoot, RoomManager roomManager, Transform furnitureRoot)
@@ -11,7 +13,8 @@ public static class LhWorkStateBuilder
         LhWorkStateDto state = LhWorkStateDto.CreateEmpty();
         state.walls = BuildWalls(wallRoot, normalizedWallIdsBySourceId);
         state.rooms = BuildRooms(roomManager, normalizedWallIdsBySourceId);
-        state.furniture = BuildFurniture(furnitureRoot);
+        state.furniture = BuildFurniture(furnitureRoot, roomManager);
+        NormalizeFurnitureRoomsBySavedPolygons(state);
         return state;
     }
 
@@ -207,7 +210,7 @@ public static class LhWorkStateBuilder
         return results;
     }
 
-    private static List<LhWorkFurnitureDto> BuildFurniture(Transform furnitureRoot)
+    private static List<LhWorkFurnitureDto> BuildFurniture(Transform furnitureRoot, RoomManager roomManager)
     {
         List<LhWorkFurnitureDto> results = new List<LhWorkFurnitureDto>();
         if (furnitureRoot == null)
@@ -224,13 +227,19 @@ public static class LhWorkStateBuilder
                 continue;
             }
 
-            Room currentRoom = instance.CurrentRoom;
+            Room currentRoom = ResolveFurnitureRoom(instance, roomManager) ?? instance.CurrentRoom;
+            if (currentRoom != null && currentRoom != instance.CurrentRoom)
+            {
+                instance.SetCurrentRoom(currentRoom);
+            }
+
             results.Add(new LhWorkFurnitureDto
             {
                 catalogCode = instance.CatalogCode ?? string.Empty,
                 exportCode = instance.ExportCode ?? string.Empty,
                 nativeCode = instance.NativeCode ?? string.Empty,
                 name = instance.name ?? string.Empty,
+                furnishLocationCode = instance.FurnishLocationCode ?? string.Empty,
                 position = LhWorkVector3Dto.FromVector3(instance.transform.position),
                 eulerAngles = LhWorkVector3Dto.FromVector3(instance.transform.eulerAngles),
                 localScale = LhWorkVector3Dto.FromVector3(instance.transform.localScale),
@@ -238,10 +247,353 @@ public static class LhWorkStateBuilder
                 roomName = currentRoom != null
                     ? (!string.IsNullOrEmpty(currentRoom.RoomName) ? currentRoom.RoomName : currentRoom.name ?? string.Empty)
                     : string.Empty,
+                defects = BuildFurnitureDefects(instance, currentRoom),
             });
         }
 
         return results;
+    }
+
+    private static List<LhWorkFurnitureDefectDto> BuildFurnitureDefects(FurnitureInstance instance, Room room)
+    {
+        List<LhWorkFurnitureDefectDto> results = new List<LhWorkFurnitureDefectDto>();
+        IReadOnlyList<FurnitureDefectCatalogEntry> defects = instance != null ? instance.ExportDefects : null;
+        if (defects == null)
+        {
+            return results;
+        }
+
+        for (int i = 0; i < defects.Count; i++)
+        {
+            FurnitureDefectCatalogEntry defect = defects[i];
+            if (defect == null)
+            {
+                continue;
+            }
+
+            results.Add(new LhWorkFurnitureDefectDto
+            {
+                mntnCd = !string.IsNullOrWhiteSpace(ResolveRoomCode(room)) ? ResolveRoomCode(room) : defect.mntnCd ?? string.Empty,
+                locCd = defect.locCd ?? string.Empty,
+                mtrlCd = defect.mtrlCd ?? string.Empty,
+            });
+        }
+
+        return results;
+    }
+
+    private static Room ResolveFurnitureRoom(FurnitureInstance instance, RoomManager roomManager)
+    {
+        if (instance == null)
+        {
+            return null;
+        }
+
+        List<Room> rooms = CollectRoomCandidates(roomManager);
+        if (rooms.Count == 0)
+        {
+            return null;
+        }
+
+        Bounds bounds = instance.CalculateWorldBounds();
+        Room bestRoom = null;
+        float bestArea = float.PositiveInfinity;
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            Room room = rooms[i];
+            if (room == null || !IsFurnitureInsideRoom(instance, room, bounds))
+            {
+                continue;
+            }
+
+            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.BoundaryVertices));
+            if (area < bestArea)
+            {
+                bestArea = area;
+                bestRoom = room;
+            }
+        }
+
+        return bestRoom;
+    }
+
+    private static List<Room> CollectRoomCandidates(RoomManager roomManager)
+    {
+        List<Room> results = new List<Room>();
+        if (roomManager != null)
+        {
+            List<Room> managerRooms = roomManager.GetAllRooms();
+            if (managerRooms != null)
+            {
+                for (int i = 0; i < managerRooms.Count; i++)
+                {
+                    AddUniqueRoom(results, managerRooms[i]);
+                }
+            }
+        }
+
+        Room[] sceneRooms = Object.FindObjectsByType<Room>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < sceneRooms.Length; i++)
+        {
+            AddUniqueRoom(results, sceneRooms[i]);
+        }
+
+        return results;
+    }
+
+    private static void AddUniqueRoom(List<Room> rooms, Room room)
+    {
+        if (rooms == null || room == null || rooms.Contains(room))
+        {
+            return;
+        }
+
+        rooms.Add(room);
+    }
+
+    private static bool IsFurnitureInsideRoom(FurnitureInstance instance, Room room, Bounds bounds)
+    {
+        if (instance == null || room == null)
+        {
+            return false;
+        }
+
+        List<Vector3> vertices = new List<Vector3>();
+        if (!room.TryGetOrderedVertices(vertices))
+        {
+            return false;
+        }
+
+        return IsBoundsFootprintInsidePolygonXZ(bounds, vertices) ||
+            IsPointInsidePolygonXZ(instance.transform.position, vertices);
+    }
+
+    private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return false;
+        }
+
+        bool inside = false;
+        float x = point.x;
+        float z = point.z;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            Vector3 pi = vertices[i];
+            Vector3 pj = vertices[j];
+            float deltaZ = pj.z - pi.z;
+            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
+                              ((pi.z > z) != (pj.z > z)) &&
+                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
+            if (intersects)
+            {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
+
+    private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, List<Vector3> polygon)
+    {
+        if (polygon == null || polygon.Count < 3)
+        {
+            return false;
+        }
+
+        float y = bounds.center.y;
+        Vector3[] testPoints =
+        {
+            new Vector3(bounds.center.x, y, bounds.center.z),
+            new Vector3(bounds.min.x, y, bounds.min.z),
+            new Vector3(bounds.min.x, y, bounds.max.z),
+            new Vector3(bounds.max.x, y, bounds.min.z),
+            new Vector3(bounds.max.x, y, bounds.max.z),
+        };
+
+        for (int i = 0; i < testPoints.Length; i++)
+        {
+            if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static float CalculatePolygonAreaXZ(IReadOnlyList<Vector3> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return 0f;
+        }
+
+        float area = 0f;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            area += vertices[j].x * vertices[i].z - vertices[i].x * vertices[j].z;
+        }
+
+        return area * 0.5f;
+    }
+
+    private static string ResolveRoomCode(Room room)
+    {
+        if (room == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(room.RoomCode))
+        {
+            return room.RoomCode;
+        }
+
+        return RoomTypeCatalog.TryGetCode(room.RoomTypeKey, out int code) ? code.ToString() : string.Empty;
+    }
+
+    private static void NormalizeFurnitureRoomsBySavedPolygons(LhWorkStateDto state)
+    {
+        if (state == null || state.rooms == null || state.furniture == null)
+        {
+            return;
+        }
+
+        int roomNameFixes = 0;
+        int defectCodeFixes = 0;
+        int unresolvedFurniture = 0;
+        for (int i = 0; i < state.furniture.Count; i++)
+        {
+            LhWorkFurnitureDto furniture = state.furniture[i];
+            if (furniture == null || !furniture.isPlaced)
+            {
+                continue;
+            }
+
+            LhWorkRoomDto room = ResolveFurnitureRoomDto(furniture.position.ToVector3(), state.rooms);
+            if (room == null)
+            {
+                unresolvedFurniture++;
+                continue;
+            }
+
+            string roomName = room.name ?? string.Empty;
+            if (!string.Equals(furniture.roomName ?? string.Empty, roomName, System.StringComparison.Ordinal))
+            {
+                roomNameFixes++;
+                furniture.roomName = roomName;
+            }
+
+            string roomCode = ResolveRoomCode(room);
+            if (string.IsNullOrWhiteSpace(roomCode) || furniture.defects == null)
+            {
+                continue;
+            }
+
+            for (int defectIndex = 0; defectIndex < furniture.defects.Count; defectIndex++)
+            {
+                LhWorkFurnitureDefectDto defect = furniture.defects[defectIndex];
+                if (defect != null)
+                {
+                    if (!string.Equals(defect.mntnCd ?? string.Empty, roomCode, System.StringComparison.Ordinal))
+                    {
+                        defectCodeFixes++;
+                        defect.mntnCd = roomCode;
+                    }
+                }
+            }
+        }
+
+        Debug.Log(
+            $"[LhWorkStateBuilder] furniture room normalization complete: " +
+            $"furniture={state.furniture.Count}, roomNameFixes={roomNameFixes}, " +
+            $"defectCodeFixes={defectCodeFixes}, unresolvedFurniture={unresolvedFurniture}");
+    }
+
+    private static LhWorkRoomDto ResolveFurnitureRoomDto(Vector3 position, IReadOnlyList<LhWorkRoomDto> rooms)
+    {
+        LhWorkRoomDto bestRoom = null;
+        float bestArea = float.PositiveInfinity;
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            LhWorkRoomDto room = rooms[i];
+            if (room == null || room.boundaryVertices == null || room.boundaryVertices.Count < 3 ||
+                !IsPointInsidePolygonXZ(position, room.boundaryVertices))
+            {
+                continue;
+            }
+
+            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.boundaryVertices));
+            if (area < bestArea)
+            {
+                bestArea = area;
+                bestRoom = room;
+            }
+        }
+
+        return bestRoom;
+    }
+
+    private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<LhWorkVector3Dto> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return false;
+        }
+
+        bool inside = false;
+        float x = point.x;
+        float z = point.z;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            Vector3 pi = vertices[i].ToVector3();
+            Vector3 pj = vertices[j].ToVector3();
+            float deltaZ = pj.z - pi.z;
+            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
+                              ((pi.z > z) != (pj.z > z)) &&
+                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
+            if (intersects)
+            {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
+
+    private static float CalculatePolygonAreaXZ(IReadOnlyList<LhWorkVector3Dto> vertices)
+    {
+        if (vertices == null || vertices.Count < 3)
+        {
+            return 0f;
+        }
+
+        float area = 0f;
+        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
+        {
+            Vector3 current = vertices[i].ToVector3();
+            Vector3 previous = vertices[j].ToVector3();
+            area += previous.x * current.z - current.x * previous.z;
+        }
+
+        return area * 0.5f;
+    }
+
+    private static string ResolveRoomCode(LhWorkRoomDto room)
+    {
+        if (room == null)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(room.roomCode))
+        {
+            return room.roomCode;
+        }
+
+        return RoomTypeCatalog.TryGetCode(room.roomTypeKey, out int code) ? code.ToString() : string.Empty;
     }
 
     private static List<LhWorkVector3Dto> ToVectorDtos(IReadOnlyList<Vector3> values)
@@ -322,7 +674,7 @@ public static class LhWorkStateBuilder
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(container.PersistentWallId))
+        if (!string.IsNullOrWhiteSpace(container.PersistentWallId) && HasExportableRoomWallReferenceLength(container))
         {
             normalizedWallIdsBySourceId[container.PersistentWallId] = collapsedId ?? string.Empty;
         }
@@ -339,7 +691,7 @@ public static class LhWorkStateBuilder
         string normalizedId,
         Dictionary<string, string> normalizedWallIdsBySourceId)
     {
-        if (wall == null || normalizedWallIdsBySourceId == null)
+        if (wall == null || normalizedWallIdsBySourceId == null || !HasExportableRoomWallReferenceLength(wall))
         {
             return;
         }
@@ -356,6 +708,30 @@ public static class LhWorkStateBuilder
     private static string GetWallId(Wall wall)
     {
         return wall != null && wall.Data != null ? wall.Data.id ?? string.Empty : string.Empty;
+    }
+
+    private static bool HasExportableRoomWallReferenceLength(Wall wall)
+    {
+        if (wall == null || wall.Data == null)
+        {
+            return false;
+        }
+
+        Vector3 delta = wall.Data.endPoint - wall.Data.startPoint;
+        delta.y = 0f;
+        return delta.magnitude >= MinimumExportedRoomWallReferenceLength;
+    }
+
+    private static bool HasExportableRoomWallReferenceLength(WallOpeningContainer container)
+    {
+        if (container == null)
+        {
+            return false;
+        }
+
+        Vector3 delta = container.WallEnd - container.WallStart;
+        delta.y = 0f;
+        return delta.magnitude >= MinimumExportedRoomWallReferenceLength;
     }
 
     private static bool IsPreviewWall(Transform root)

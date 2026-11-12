@@ -173,3 +173,43 @@ MonoBehaviour:
     modelLayoutKind: 2
     collisionPolicy: 1
     selectable: 1
+  - openingType: 1
+    typeKey: A002
+    displayName: "\uC544\uD30C\uD2B8 \uD658\uAE30\uCC3D"
+    modelPrefab: {fileID: 100000, guid: d62a8d6e0df34a14cbb1d7f3f0a2b456, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 3, y: 3, z: 0.35}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: APARTMENT_VENT_WINDOW_V1
+    authoredSize: {x: 3, y: 3, z: 0.35}
+    usesBlenderLocalAxes: 0
+    minSize: {x: 2.5, y: 2.5, z: 0.25}
+    maxSize: {x: 12, y: 12, z: 0.6}
+    modelLayoutKind: 2
+    collisionPolicy: 2
+    selectable: 1
+  - openingType: 1
+    typeKey: A003
+    displayName: "\uC544\uD30C\uD2B8 \uD658\uAE30\uCC3D \uD0C0\uC7852"
+    modelPrefab: {fileID: 300000, guid: 9f4c2e8d67ab4ccf8d6ec62b019d3a41, type: 3}
+    modelLocalPosition: {x: 0, y: 0, z: 0}
+    modelLocalEulerAngles: {x: 0, y: 0, z: 0}
+    modelScaleMultiplier: {x: 1, y: 1, z: 1}
+    referenceSize: {x: 8, y: 8, z: 0.6}
+    fitDepth: 0
+    fitHeight: 0
+    fitWidth: 0
+    useParametricModel: 1
+    parametricProfileKey: APARTMENT_VENT_WINDOW_TYPE2_V1
+    authoredSize: {x: 8, y: 8, z: 0.6}
+    usesBlenderLocalAxes: 0
+    minSize: {x: 4, y: 4, z: 0.25}
+    maxSize: {x: 12, y: 12, z: 0.8}
+    modelLayoutKind: 2
+    collisionPolicy: 2
+    selectable: 1

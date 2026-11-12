@@ -15,6 +15,7 @@ namespace LH.Export
         private const int CurrentSchemaVersion = 1;
         private const float DefaultFloorWorldY = 0.1f;
         private const float LegacyFloorWorldY = 0.01f;
+        private const float MinimumExportedRoomWallReferenceLength = 0.05f;
 
         private sealed class BuildContext
         {
@@ -22,6 +23,7 @@ namespace LH.Export
             public readonly Dictionary<string, int> wallIdsByDataId = new Dictionary<string, int>();
             public readonly Dictionary<string, WallData> wallDataById = new Dictionary<string, WallData>();
             public readonly Dictionary<Room, List<FurnitureInstance>> furnitureByRoom = new Dictionary<Room, List<FurnitureInstance>>();
+            public readonly Dictionary<Room, List<List<Vector3>>> roomSurfaceRegionsByRoom = new Dictionary<Room, List<List<Vector3>>>();
             public ExportMode exportMode = ExportMode.Extended;
             public int nextWallId = 1;
         }
@@ -35,6 +37,7 @@ namespace LH.Export
             };
 
             PrimeFurnitureLookup(roomList, context);
+            PrimeRoomSurfaceRegions(roomList, context);
             return new LhSceneDto
             {
                 version = CurrentSchemaVersion,
@@ -53,6 +56,7 @@ namespace LH.Export
             };
 
             PrimeFurnitureLookup(roomList, context);
+            PrimeRoomSurfaceRegions(roomList, context);
             return new LhLegacySceneDto
             {
                 startPoint = LhVector3Dto.FromVector3(startPoint),
@@ -332,6 +336,21 @@ namespace LH.Export
             return Mathf.Abs(denominator) > 0.000001f ? numerator / denominator : 0f;
         }
 
+        private static void PrimeRoomSurfaceRegions(IReadOnlyList<Room> rooms, BuildContext context)
+        {
+            if (context == null)
+            {
+                return;
+            }
+
+            context.roomSurfaceRegionsByRoom.Clear();
+            Dictionary<Room, List<List<Vector3>>> regionsByRoom = RoomSurfaceOverlapUtility.BuildNonOverlappingAxisAlignedRegions(rooms);
+            foreach (KeyValuePair<Room, List<List<Vector3>>> pair in regionsByRoom)
+            {
+                context.roomSurfaceRegionsByRoom[pair.Key] = pair.Value;
+            }
+        }
+
         private static string SanitizeIdToken(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -416,6 +435,12 @@ namespace LH.Export
                 return;
             }
 
+            WallOpeningContainer container = root.GetComponent<WallOpeningContainer>();
+            if (container != null && !string.IsNullOrWhiteSpace(container.PersistentWallId))
+            {
+                RegisterWallDataId(container.PersistentWallId, GetFirstExportableChildWallData(root), wallId, context);
+            }
+
             Wall rootWall = root.GetComponent<Wall>();
             if (rootWall != null)
             {
@@ -436,15 +461,48 @@ namespace LH.Export
             }
         }
 
+        private static WallData GetFirstExportableChildWallData(Transform root)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            Wall[] childWalls = root.GetComponentsInChildren<Wall>(true);
+            for (int i = 0; i < childWalls.Length; i++)
+            {
+                Wall childWall = childWalls[i];
+                if (childWall != null && HasExportableRoomWallReferenceLength(childWall.Data))
+                {
+                    return childWall.Data;
+                }
+            }
+
+            return null;
+        }
+
         private static void RegisterWallDataId(WallData wallData, int wallId, BuildContext context)
         {
-            if (wallData == null || string.IsNullOrWhiteSpace(wallData.id))
+            if (wallData == null)
             {
                 return;
             }
 
-            context.wallIdsByDataId[wallData.id] = wallId;
-            context.wallDataById[wallData.id] = wallData;
+            RegisterWallDataId(wallData.id, wallData, wallId, context);
+        }
+
+        private static void RegisterWallDataId(string wallDataId, WallData wallData, int wallId, BuildContext context)
+        {
+            if (string.IsNullOrWhiteSpace(wallDataId))
+            {
+                return;
+            }
+
+            context.wallIdsByDataId[wallDataId] = wallId;
+            if (wallData != null)
+            {
+                context.wallDataById[wallDataId] = wallData;
+            }
         }
 
         private static float GetCeilingWorldY(Room room, RoomData roomData, BuildContext context)

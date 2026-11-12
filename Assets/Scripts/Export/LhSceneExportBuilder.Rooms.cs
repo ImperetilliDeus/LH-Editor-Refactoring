@@ -55,8 +55,8 @@ namespace LH.Export
                     angle = angle,
                     scale = scale,
                     walls = BuildRoomWallReferences(room, roomData, room.WallSet, context),
-                    floor = BuildSurface(room, roomData, roomPosition, LegacyFloorWorldY, ResolveFloorTextureCode(room, roomData), true, false),
-                    ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(room, roomData, context), ResolveCeilingTextureCode(room, roomData), true, true),
+                    floor = BuildSurface(room, roomData, roomPosition, LegacyFloorWorldY, ResolveFloorTextureCode(room, roomData), true, false, context),
+                    ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(room, roomData, context), ResolveCeilingTextureCode(room, roomData), true, true, context),
                     furnish = BuildLegacyFurniture(room, context),
                 });
             }
@@ -82,8 +82,8 @@ namespace LH.Export
                 angle = angle,
                 scale = scale,
                 walls = BuildRoomWallReferences(room, roomData, room.WallSet, context),
-                floor = BuildSurface(room, roomData, roomPosition, DefaultFloorWorldY, ResolveFloorTextureCode(room, roomData), false, false),
-                ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(room, roomData, context), ResolveCeilingTextureCode(room, roomData), false, false),
+                floor = BuildSurface(room, roomData, roomPosition, DefaultFloorWorldY, ResolveFloorTextureCode(room, roomData), false, false, context),
+                ceil = BuildSurface(room, roomData, roomPosition, GetCeilingWorldY(room, roomData, context), ResolveCeilingTextureCode(room, roomData), false, false, context),
                 furnish = BuildFurniture(room, context),
             };
         }
@@ -91,7 +91,7 @@ namespace LH.Export
         private static List<T> BuildFurnitureList<T>(
             Room room,
             BuildContext context,
-            System.Func<FurnitureInstance, LhVector3Dto, LhVector3Dto, LhVector3Dto, T> factory)
+            System.Func<FurnitureInstance, Room, LhVector3Dto, LhVector3Dto, LhVector3Dto, T> factory)
         {
             var results = new List<T>();
             if (room == null ||
@@ -110,7 +110,7 @@ namespace LH.Export
                 }
 
                 FillRelativeTransform(room.transform, instance.transform, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
-                results.Add(factory(instance, position, angle, scale));
+                results.Add(factory(instance, room, position, angle, scale));
             }
 
             return results;
@@ -118,7 +118,7 @@ namespace LH.Export
 
         private static List<LhFurnitureDto> BuildFurniture(Room room, BuildContext context)
         {
-            return BuildFurnitureList(room, context, (instance, position, angle, scale) => new LhFurnitureDto
+            return BuildFurnitureList(room, context, (instance, resolvedRoom, position, angle, scale) => new LhFurnitureDto
             {
                 name = instance.gameObject.name,
                 code = instance.ExportCode ?? string.Empty,
@@ -126,19 +126,19 @@ namespace LH.Export
                 position = position,
                 angle = angle,
                 scale = scale,
-                defects = BuildFurnitureDefects(instance),
+                defects = BuildFurnitureDefects(instance, resolvedRoom),
             });
         }
 
         private static List<LhLegacyFurnitureDto> BuildLegacyFurniture(Room room, BuildContext context)
         {
-            return BuildFurnitureList(room, context, (instance, position, angle, scale) => new LhLegacyFurnitureDto
+            return BuildFurnitureList(room, context, (instance, resolvedRoom, position, angle, scale) => new LhLegacyFurnitureDto
             {
                 code = instance.ExportCode ?? string.Empty,
                 position = position,
                 angle = angle,
                 scale = scale,
-                defects = BuildFurnitureDefects(instance),
+                defects = BuildFurnitureDefects(instance, resolvedRoom),
             });
         }
 
@@ -264,8 +264,10 @@ namespace LH.Export
                 Vector3 pi = polygon[i];
                 Vector3 pj = polygon[j];
 
-                bool intersects = ((pi.z > z) != (pj.z > z)) &&
-                                  (x < (pj.x - pi.x) * (z - pi.z) / Mathf.Max(0.000001f, pj.z - pi.z) + pi.x);
+                float deltaZ = pj.z - pi.z;
+                bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
+                                  ((pi.z > z) != (pj.z > z)) &&
+                                  (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
                 if (intersects)
                 {
                     inside = !inside;
@@ -312,12 +314,13 @@ namespace LH.Export
             }
 
             HashSet<int> addedIds = new HashSet<int>();
-            IReadOnlyList<string> wallIds = room != null ? room.EffectiveWallIds : roomData.WallIds;
+            IReadOnlyList<string> wallIds = ResolveRoomWallReferenceIds(room, roomData);
             for (int i = 0; i < wallIds.Count; i++)
             {
                 string wallIdKey = wallIds[i];
                 if (string.IsNullOrWhiteSpace(wallIdKey) ||
                     !context.wallIdsByDataId.TryGetValue(wallIdKey, out int wallId) ||
+                    !HasExportableRoomWallReferenceLength(wallIdKey, context) ||
                     !addedIds.Add(wallId))
                 {
                     continue;
@@ -333,7 +336,7 @@ namespace LH.Export
 
             foreach (Wall wall in walls)
             {
-                if (wall == null)
+                if (wall == null || !HasExportableRoomWallReferenceLength(wall.Data))
                 {
                     continue;
                 }
@@ -350,7 +353,50 @@ namespace LH.Export
             return results;
         }
 
-        private static List<LhFurnitureDefectDto> BuildFurnitureDefects(FurnitureInstance instance)
+        private static IReadOnlyList<string> ResolveRoomWallReferenceIds(Room room, RoomData roomData)
+        {
+            IReadOnlyList<string> dataWallIds = roomData != null ? roomData.EffectiveWallIds : null;
+            if (dataWallIds != null && dataWallIds.Count > 0)
+            {
+                return dataWallIds;
+            }
+
+            IReadOnlyList<string> roomWallIds = room != null ? room.EffectiveWallIds : null;
+            if (roomWallIds != null && roomWallIds.Count > 0)
+            {
+                return roomWallIds;
+            }
+
+            IReadOnlyList<string> fallbackWallIds = roomData != null ? roomData.WallIds : null;
+            return fallbackWallIds ?? new List<string>();
+        }
+
+        private static bool HasExportableRoomWallReferenceLength(string wallIdKey, BuildContext context)
+        {
+            if (string.IsNullOrWhiteSpace(wallIdKey) ||
+                context == null ||
+                !context.wallDataById.TryGetValue(wallIdKey, out WallData wallData) ||
+                wallData == null)
+            {
+                return false;
+            }
+
+            return HasExportableRoomWallReferenceLength(wallData);
+        }
+
+        private static bool HasExportableRoomWallReferenceLength(WallData wallData)
+        {
+            if (wallData == null)
+            {
+                return false;
+            }
+
+            Vector3 delta = wallData.endPoint - wallData.startPoint;
+            delta.y = 0f;
+            return delta.magnitude >= MinimumExportedRoomWallReferenceLength;
+        }
+
+        private static List<LhFurnitureDefectDto> BuildFurnitureDefects(FurnitureInstance instance, Room room)
         {
             List<LhFurnitureDefectDto> results = new List<LhFurnitureDefectDto>();
             if (instance == null || instance.ExportDefects == null)
@@ -358,6 +404,7 @@ namespace LH.Export
                 return results;
             }
 
+            string roomCode = ResolveRoomCode(room != null ? room.Data : null);
             for (int i = 0; i < instance.ExportDefects.Count; i++)
             {
                 FurnitureDefectCatalogEntry entry = instance.ExportDefects[i];
@@ -368,7 +415,7 @@ namespace LH.Export
 
                 results.Add(new LhFurnitureDefectDto
                 {
-                    mntnCd = entry.mntnCd ?? string.Empty,
+                    mntnCd = !string.IsNullOrWhiteSpace(roomCode) ? roomCode : entry.mntnCd ?? string.Empty,
                     locCd = entry.locCd ?? string.Empty,
                     mtrlCd = entry.mtrlCd ?? string.Empty,
                 });
@@ -384,23 +431,21 @@ namespace LH.Export
             float worldY,
             string explicitTextureCode,
             bool legacyExact,
-            bool flipNormals)
+            bool flipNormals,
+            BuildContext context)
         {
             IReadOnlyList<Vector3> boundaryVertices = ResolveSurfaceBoundaryVertices(room, roomData);
             string textureCode = explicitTextureCode ?? string.Empty;
             Vector3 localPosition = new Vector3(0f, worldY - roomPosition.y, 0f);
-            bool useCustomMesh = boundaryVertices != null && boundaryVertices.Count >= 3;
+            List<List<Vector3>> surfaceRegions = ResolveSurfaceRegions(room, boundaryVertices, roomPosition, legacyExact, context);
+            bool useCustomMesh = surfaceRegions != null;
             Vector3 surfaceScale = useCustomMesh ? Vector3.one : CalculateSurfaceScale(boundaryVertices);
             LhDtoFactory.FillTransform(localPosition, Vector3.zero, surfaceScale, out LhVector3Dto position, out LhVector3Dto angle, out LhVector3Dto scale);
 
-            int meshType = boundaryVertices != null && boundaryVertices.Count >= 3 ? 1 : 0;
+            int meshType = useCustomMesh ? 1 : 0;
             LhMeshDto mesh = meshType == 0
                 ? CreateEmptyMeshDto()
-                : LhDtoFactory.CreateMeshFromPolygon(
-                    boundaryVertices,
-                    roomPosition,
-                    flipNormals ? Vector3.down : Vector3.up,
-                    legacyExact);
+                : CreateMeshFromSurfaceRegions(surfaceRegions, roomPosition, flipNormals ? Vector3.down : Vector3.up, legacyExact);
 
             return new LhSurfaceDto
             {
@@ -411,6 +456,154 @@ namespace LH.Export
                 mesh = mesh,
                 texture = textureCode,
             };
+        }
+
+        private static List<List<Vector3>> ResolveSurfaceRegions(
+            Room room,
+            IReadOnlyList<Vector3> boundaryVertices,
+            Vector3 roomPosition,
+            bool legacyExact,
+            BuildContext context)
+        {
+            if (room != null &&
+                context != null &&
+                context.roomSurfaceRegionsByRoom.TryGetValue(room, out List<List<Vector3>> resolvedRegions))
+            {
+                return resolvedRegions;
+            }
+
+            if (boundaryVertices == null || boundaryVertices.Count < 3)
+            {
+                return null;
+            }
+
+            return new List<List<Vector3>>
+            {
+                new List<Vector3>(boundaryVertices),
+            };
+        }
+
+        private static LhMeshDto CreateMeshFromSurfaceRegions(
+            IReadOnlyList<List<Vector3>> surfaceRegions,
+            Vector3 center,
+            Vector3 normal,
+            bool normalizeUvs)
+        {
+            LhMeshDto dto = CreateEmptyMeshDto();
+            if (surfaceRegions == null || surfaceRegions.Count == 0)
+            {
+                return dto;
+            }
+
+            Vector3 min = Vector3.zero;
+            Vector3 max = Vector3.zero;
+            bool hasBounds = false;
+            List<List<Vector3>> localRegions = new List<List<Vector3>>(surfaceRegions.Count);
+            for (int i = 0; i < surfaceRegions.Count; i++)
+            {
+                List<Vector3> region = surfaceRegions[i];
+                if (region == null || region.Count < 3)
+                {
+                    continue;
+                }
+
+                List<Vector3> localRegion = new List<Vector3>(region.Count);
+                for (int j = 0; j < region.Count; j++)
+                {
+                    Vector3 localVertex = region[j] - center;
+                    localRegion.Add(localVertex);
+                    if (!hasBounds)
+                    {
+                        min = localVertex;
+                        max = localVertex;
+                        hasBounds = true;
+                    }
+                    else
+                    {
+                        min = Vector3.Min(min, localVertex);
+                        max = Vector3.Max(max, localVertex);
+                    }
+                }
+
+                localRegions.Add(localRegion);
+            }
+
+            if (!hasBounds)
+            {
+                return dto;
+            }
+
+            float sizeX = Mathf.Max(max.x - min.x, 0.0001f);
+            float sizeZ = Mathf.Max(max.z - min.z, 0.0001f);
+            for (int i = 0; i < localRegions.Count; i++)
+            {
+                List<Vector3> localRegion = localRegions[i];
+                int vertexOffset = dto.vertices.Count;
+                for (int j = 0; j < localRegion.Count; j++)
+                {
+                    Vector3 localVertex = localRegion[j];
+                    dto.vertices.Add(LhVector3Dto.FromVector3(localVertex));
+                    dto.normals.Add(LhVector3Dto.FromVector3(normal));
+                    Vector2 uv = normalizeUvs
+                        ? new Vector2((localVertex.x - min.x) / sizeX, (localVertex.z - min.z) / sizeZ)
+                        : new Vector2(localVertex.x, localVertex.z);
+                    dto.uvs.Add(LhVector2Dto.FromVector2(uv));
+                }
+
+                List<int> triangles = new List<int>();
+                List<int> polygonIndices = new List<int>();
+                if (!PolygonUtility.TryTriangulatePolygon(localRegion, triangles, polygonIndices))
+                {
+                    for (int j = 1; j < localRegion.Count - 1; j++)
+                    {
+                        triangles.Add(0);
+                        triangles.Add(j);
+                        triangles.Add(j + 1);
+                    }
+                }
+
+                if (ShouldFlipTriangleWinding(localRegion, triangles, normal))
+                {
+                    for (int j = 0; j + 2 < triangles.Count; j += 3)
+                    {
+                        int temp = triangles[j + 1];
+                        triangles[j + 1] = triangles[j + 2];
+                        triangles[j + 2] = temp;
+                    }
+                }
+
+                for (int j = 0; j < triangles.Count; j++)
+                {
+                    dto.triangles.Add(vertexOffset + triangles[j]);
+                }
+            }
+
+            return dto;
+        }
+
+        private static bool ShouldFlipTriangleWinding(IReadOnlyList<Vector3> vertices, IReadOnlyList<int> triangles, Vector3 expectedNormal)
+        {
+            if (vertices == null || triangles == null || triangles.Count < 3)
+            {
+                return expectedNormal.y < 0f;
+            }
+
+            for (int i = 0; i + 2 < triangles.Count; i += 3)
+            {
+                int aIndex = triangles[i];
+                int bIndex = triangles[i + 1];
+                int cIndex = triangles[i + 2];
+                if (aIndex < 0 || bIndex < 0 || cIndex < 0 ||
+                    aIndex >= vertices.Count || bIndex >= vertices.Count || cIndex >= vertices.Count)
+                {
+                    continue;
+                }
+
+                Vector3 normal = Vector3.Cross(vertices[bIndex] - vertices[aIndex], vertices[cIndex] - vertices[aIndex]);
+                return Vector3.Dot(normal, expectedNormal) < 0f;
+            }
+
+            return expectedNormal.y < 0f;
         }
 
         private static IReadOnlyList<Vector3> ResolveSurfaceBoundaryVertices(Room room, RoomData roomData)

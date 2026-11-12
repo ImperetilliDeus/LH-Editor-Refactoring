@@ -8,4 +8,6 @@ public static class ParametricOpeningProfileKeys
     public const string WhiteSwingDoor = "WHITE_SWING_DOOR_V1";
     public const string WhiteGlassFrameDoor = "WHITE_GLASS_FRAME_DOOR_V1";
     public const string WhiteTwoPanelWindow = "WHITE_TWO_PANEL_WINDOW_V1";
+    public const string ApartmentVentWindow = "APARTMENT_VENT_WINDOW_V1";
+    public const string ApartmentVentWindowType2 = "APARTMENT_VENT_WINDOW_TYPE2_V1";
 }

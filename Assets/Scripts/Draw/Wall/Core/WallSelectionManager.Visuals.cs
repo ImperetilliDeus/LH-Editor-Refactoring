@@ -4,10 +4,24 @@ public partial class WallSelectionManager
 {
     private void RefreshSelectionVisuals()
     {
+        RefreshSelectedWallLengthLabel();
         RefreshWallSelectionUIStates();
         UpdateSelectUIVisibility();
         NotifySelectionChangedIfNeeded();
         SelectionSetChanged?.Invoke();
+    }
+
+    private void RefreshSelectedWallLengthLabel()
+    {
+        if (wallLengthDisplay == null)
+        {
+            return;
+        }
+
+        Transform selectedTransform = selectionState.SelectedWall != null
+            ? selectionState.SelectedWall.transform
+            : null;
+        wallLengthDisplay.SetSelectedWall(selectedTransform);
     }
 
     private void NotifySelectionChangedIfNeeded()

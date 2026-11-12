@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class WallLengthDisplayTests
 {
@@ -24,7 +25,7 @@ public class WallLengthDisplayTests
     }
 
     [Test]
-    public void SetWallLength_ShowsLabelsOnlyInWallCreationMode()
+    public void SetWallLength_ShowsOnlySelectedWallLabelInDefaultMode()
     {
         Type modeManagerType = GetAssemblyType("ModeManager");
         Type editorModeType = GetAssemblyType("EditorMode");
@@ -52,7 +53,16 @@ public class WallLengthDisplayTests
             createdObjects.Add(labelCanvas.gameObject);
         }
 
+        Assert.That(lengthLabel.activeSelf, Is.False);
+
+        wallLengthDisplayType.GetMethod("SetSelectedWall")?.Invoke(
+            display,
+            new object[] { wallObject.transform });
+
         Assert.That(lengthLabel.activeSelf, Is.True);
+        Text lengthText = lengthLabel.GetComponent<Text>();
+        Assert.That(lengthText, Is.Not.Null);
+        Assert.That(lengthText.raycastTarget, Is.False);
 
         modeManagerType.GetMethod("SetMode")?.Invoke(
             modeManager,
@@ -65,6 +75,12 @@ public class WallLengthDisplayTests
             new object[] { Enum.Parse(editorModeType, "Default") });
 
         Assert.That(lengthLabel.activeSelf, Is.True);
+
+        wallLengthDisplayType.GetMethod("SetSelectedWall")?.Invoke(
+            display,
+            new object[] { null });
+
+        Assert.That(lengthLabel.activeSelf, Is.False);
     }
 
     private Component AddComponent(GameObject gameObject, Type componentType)

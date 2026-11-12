@@ -180,6 +180,50 @@ public class LhWorkStateBuilderTests
         CollectionAssert.AreEqual(new[] { "segment-a" }, ToStringArray(GetFieldValue<IList>(room, "manualWallIds")));
     }
 
+    [Test]
+    public void Build_ResolvesFurnitureRoomByCoordinates_WhenCurrentRoomIsStale()
+    {
+        Component staleRoom = CreateRoom(
+            "Storage",
+            "Storage Room",
+            "918",
+            new[]
+            {
+                new Vector3(10f, 0f, 10f),
+                new Vector3(12f, 0f, 10f),
+                new Vector3(12f, 0f, 12f),
+                new Vector3(10f, 0f, 12f),
+            });
+        CreateRoom(
+            "Bathroom",
+            "Bathroom 1",
+            "901",
+            new[]
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(2f, 0f, 0f),
+                new Vector3(2f, 0f, 2f),
+                new Vector3(0f, 0f, 2f),
+            });
+        Component furniture = CreateFurniture(
+            "BT001",
+            new Vector3(1f, 0f, 1f),
+            staleRoom,
+            CreateFurnitureDefect("918", "2", "001"));
+
+        object state = BuildState(null);
+
+        IList furnitureItems = GetFieldValue<IList>(state, "furniture");
+        Assert.That(furnitureItems, Has.Count.EqualTo(1));
+        object furnitureDto = furnitureItems[0];
+        Assert.That(GetFieldValue<string>(furnitureDto, "name"), Is.EqualTo("BT001"));
+        Assert.That(GetFieldValue<string>(furnitureDto, "roomName"), Is.EqualTo("Bathroom 1"));
+        IList defects = GetFieldValue<IList>(furnitureDto, "defects");
+        Assert.That(defects, Has.Count.EqualTo(1));
+        Assert.That(GetFieldValue<string>(defects[0], "mntnCd"), Is.EqualTo("901"));
+        Assert.That(GetProperty<object>(furniture, "CurrentRoom"), Is.Not.EqualTo(staleRoom));
+    }
+
     private object BuildState(object roomManager)
     {
         Type builderType = GetAssemblyType("LhWorkStateBuilder");
@@ -347,6 +391,80 @@ public class LhWorkStateBuilderTests
         return roomManager;
     }
 
+    private Component CreateRoom(string objectName, string roomName, string roomCode, IReadOnlyList<Vector3> polygon)
+    {
+        Type roomType = GetAssemblyType("Room");
+        Type roomGeometryType = GetAssemblyType("RoomGeometry");
+        GameObject roomObject = new GameObject(objectName);
+        roomObject.transform.SetParent(furnitureRoot.transform, false);
+        Component room = roomObject.AddComponent(roomType);
+        object wallSet = CreateWallSet(GetAssemblyType("Wall"));
+        object geometry = Activator.CreateInstance(roomGeometryType);
+        roomGeometryType.GetField("Center")?.SetValue(geometry, Vector3.zero);
+        roomGeometryType.GetField("Area")?.SetValue(geometry, 4f);
+        roomGeometryType.GetField("WallCount")?.SetValue(geometry, 4);
+        roomType.GetMethod("Initialize", new[] { wallSet.GetType(), roomGeometryType, typeof(IReadOnlyList<Vector3>), typeof(bool) })
+            ?.Invoke(room, new[] { wallSet, geometry, polygon, true });
+        roomType.GetMethod("SetRoomName")?.Invoke(room, new object[] { roomName });
+        roomType.GetMethod("SetRoomCode")?.Invoke(room, new object[] { roomCode });
+        return room;
+    }
+
+    private Component CreateFurniture(
+        string objectName,
+        Vector3 position,
+        Component currentRoom,
+        params object[] defects)
+    {
+        Type furnitureType = GetAssemblyType("FurnitureInstance");
+        Type defectType = GetAssemblyType("FurnitureDefectCatalogEntry");
+        GameObject furnitureObject = new GameObject(objectName);
+        furnitureObject.transform.SetParent(furnitureRoot.transform, false);
+        furnitureObject.transform.position = position;
+        Component furniture = furnitureObject.AddComponent(furnitureType);
+        Array typedDefects = Array.CreateInstance(defectType, defects != null ? defects.Length : 0);
+        if (defects != null)
+        {
+            for (int i = 0; i < defects.Length; i++)
+            {
+                typedDefects.SetValue(defects[i], i);
+            }
+        }
+
+        furnitureType.GetMethod("SetPlaced", BindingFlags.Public | BindingFlags.Instance)
+            ?.Invoke(furniture, new object[] { true });
+        furnitureType.GetMethod("SetCurrentRoom", BindingFlags.Public | BindingFlags.Instance)
+            ?.Invoke(furniture, new object[] { currentRoom });
+        furnitureType.GetMethod("SetExportDefects", BindingFlags.Public | BindingFlags.Instance)
+            ?.Invoke(furniture, new object[] { typedDefects });
+        return furniture;
+    }
+
+    private static object CreateFurnitureDefect(string mntnCd, string locCd, string mtrlCd)
+    {
+        Type defectType = GetAssemblyType("FurnitureDefectCatalogEntry");
+        object defect = Activator.CreateInstance(defectType);
+        defectType.GetField("mntnCd", BindingFlags.Public | BindingFlags.Instance)?.SetValue(defect, mntnCd);
+        defectType.GetField("locCd", BindingFlags.Public | BindingFlags.Instance)?.SetValue(defect, locCd);
+        defectType.GetField("mtrlCd", BindingFlags.Public | BindingFlags.Instance)?.SetValue(defect, mtrlCd);
+        return defect;
+    }
+
+    private static object CreateWallSet(Type wallType, params Component[] walls)
+    {
+        Type wallSetType = typeof(HashSet<>).MakeGenericType(wallType);
+        object wallSet = Activator.CreateInstance(wallSetType);
+        MethodInfo addMethod = wallSetType.GetMethod("Add");
+        Assert.That(addMethod, Is.Not.Null);
+
+        for (int i = 0; i < walls.Length; i++)
+        {
+            addMethod.Invoke(wallSet, new object[] { walls[i] });
+        }
+
+        return wallSet;
+    }
+
     private static string[] ToStringArray(IList values)
     {
         List<string> results = new List<string>();
@@ -370,6 +488,13 @@ public class LhWorkStateBuilderTests
         Type type = Type.GetType($"{typeName}, Assembly-CSharp");
         Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
         return type;
+    }
+
+    private static T GetProperty<T>(object target, string propertyName)
+    {
+        PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        Assert.That(property, Is.Not.Null);
+        return (T)property.GetValue(target);
     }
 
     private static T GetFieldValue<T>(object target, string fieldName)

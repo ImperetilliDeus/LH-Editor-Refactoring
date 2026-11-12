@@ -1,5 +1,6 @@
-using TMPro;
 using System.Collections.Generic;
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,11 +23,20 @@ public class FurnitureMenuController : MonoBehaviour
 
     [Header("Build")]
     [SerializeField] private bool rebuildOnStart = true;
+    [SerializeField] private bool deferPlacementUntilConfirmed = true;
     [SerializeField] private Vector2 buttonSize = new Vector2(120f, 120f);
+    [SerializeField] private Color selectedOutlineColor = new Color(0.35f, 0.58f, 1f, 1f);
+    [SerializeField] private Vector2 selectedOutlineDistance = new Vector2(4f, -4f);
 
+    private readonly Dictionary<FurnitureCatalogItem, Button> buttonsByItem = new Dictionary<FurnitureCatalogItem, Button>();
     private bool built;
     private bool eventsBound;
+    private FurnitureCatalogItem selectedItem;
+    private Button selectedButton;
     private static readonly Dictionary<Texture2D, Sprite> ThumbnailSpriteCache = new Dictionary<Texture2D, Sprite>();
+
+    public FurnitureCatalogItem SelectedItem => selectedItem;
+    public event Action<FurnitureCatalogItem> SelectedItemChanged;
 
     private void Awake()
     {
@@ -84,6 +94,9 @@ public class FurnitureMenuController : MonoBehaviour
         }
 
         ClearExistingButtons();
+        buttonsByItem.Clear();
+        selectedItem = null;
+        selectedButton = null;
         for (int i = 0; i < catalog.Items.Count; i++)
         {
             FurnitureCatalogItem item = catalog.Items[i];
@@ -204,7 +217,8 @@ public class FurnitureMenuController : MonoBehaviour
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() =>
         {
-            if (placementManager != null)
+            SelectItem(item);
+            if (!deferPlacementUntilConfirmed && placementManager != null)
             {
                 placementManager.BeginPlacement(item);
             }
@@ -217,6 +231,7 @@ public class FurnitureMenuController : MonoBehaviour
         }
 
         ApplyButtonVisuals(button, item);
+        buttonsByItem[item] = button;
     }
 
     private Button InstantiateButton()
@@ -339,6 +354,64 @@ public class FurnitureMenuController : MonoBehaviour
         sprite.name = $"{texture.name}_FurnitureThumb";
         ThumbnailSpriteCache[texture] = sprite;
         return sprite;
+    }
+
+    public void ClearSelection()
+    {
+        SetButtonSelected(selectedButton, false);
+        selectedItem = null;
+        selectedButton = null;
+        SelectedItemChanged?.Invoke(null);
+    }
+
+    private void SelectItem(FurnitureCatalogItem item)
+    {
+        if (item == null)
+        {
+            ClearSelection();
+            return;
+        }
+
+        Button nextButton = buttonsByItem.TryGetValue(item, out Button button) ? button : null;
+        if (selectedItem == item)
+        {
+            SetButtonSelected(nextButton, true);
+            SelectedItemChanged?.Invoke(selectedItem);
+            return;
+        }
+
+        SetButtonSelected(selectedButton, false);
+        selectedItem = item;
+        selectedButton = nextButton;
+        SetButtonSelected(selectedButton, true);
+        SelectedItemChanged?.Invoke(selectedItem);
+    }
+
+    private void SetButtonSelected(Button button, bool selected)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        Outline outline = button.GetComponent<Outline>();
+        if (selected)
+        {
+            if (outline == null)
+            {
+                outline = button.gameObject.AddComponent<Outline>();
+            }
+
+            outline.effectColor = selectedOutlineColor;
+            outline.effectDistance = selectedOutlineDistance;
+            outline.enabled = true;
+            return;
+        }
+
+        if (outline != null)
+        {
+            outline.enabled = false;
+        }
     }
 
     private void ClearExistingButtons()
