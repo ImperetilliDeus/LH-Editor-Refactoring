@@ -37,8 +37,8 @@ public class EditorScreenCoordinateUtilityTests
         Vector2 cameraPoint = InvokeVector2(
             "ToCameraScreenPoint",
             new Vector2(1920f, 1080f),
-            new Vector2(2560f, 1440f),
             new Vector2(1920f, 1080f),
+            new Vector2(2560f, 1440f),
             true);
 
         Assert.That(cameraPoint.x, Is.EqualTo(1440f).Within(0.001f));
@@ -51,8 +51,8 @@ public class EditorScreenCoordinateUtilityTests
         Vector2 screenPoint = InvokeVector2(
             "ToUnityScreenPoint",
             new Vector2(1440f, 810f),
-            new Vector2(2560f, 1440f),
             new Vector2(1920f, 1080f),
+            new Vector2(2560f, 1440f),
             true);
 
         Assert.That(screenPoint.x, Is.EqualTo(1920f).Within(0.001f));

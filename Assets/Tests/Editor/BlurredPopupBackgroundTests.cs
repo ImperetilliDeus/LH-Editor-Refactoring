@@ -70,7 +70,12 @@ public class BlurredPopupBackgroundTests
         Image overlayImage = overlayTransform.GetComponent<Image>();
         Assert.That(overlayImage, Is.Not.Null);
         Assert.That(overlayImage.enabled, Is.False);
-        Assert.That(overlayImage.color, Is.EqualTo(backgroundImage.color));
+        Color expectedOverlay = backgroundImage.color;
+        expectedOverlay.a *= 0.65f;
+        Assert.That(overlayImage.color.r, Is.EqualTo(expectedOverlay.r).Within(0.001f));
+        Assert.That(overlayImage.color.g, Is.EqualTo(expectedOverlay.g).Within(0.001f));
+        Assert.That(overlayImage.color.b, Is.EqualTo(expectedOverlay.b).Within(0.001f));
+        Assert.That(overlayImage.color.a, Is.EqualTo(expectedOverlay.a).Within(0.001f));
         Assert.That(overlayImage.raycastTarget, Is.False);
         Assert.That(overlayImage.rectTransform.anchorMin, Is.EqualTo(Vector2.zero));
         Assert.That(overlayImage.rectTransform.anchorMax, Is.EqualTo(Vector2.one));

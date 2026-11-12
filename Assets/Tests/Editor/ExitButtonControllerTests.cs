@@ -31,6 +31,9 @@ public sealed class ExitButtonControllerTests
         quitApplicationField.SetValue(null, (Action)(() => quitRequestCount++));
 
         buttonObject.AddComponent(controllerType);
+        MethodInfo awake = controllerType.GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(awake, Is.Not.Null);
+        awake.Invoke(buttonObject.GetComponent(controllerType), null);
         button.onClick.Invoke();
 
         Assert.That(quitRequestCount, Is.EqualTo(1));

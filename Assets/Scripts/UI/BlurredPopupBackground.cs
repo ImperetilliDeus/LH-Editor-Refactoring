@@ -96,6 +96,7 @@ public class BlurredPopupBackground : MonoBehaviour
         textureHeight = height;
         matchScreenAspect = false;
 
+        ResolveReferences();
         Configure();
     }
 

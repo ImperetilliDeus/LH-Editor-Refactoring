@@ -35,6 +35,16 @@ public class WallLengthDisplayTests
         Component display = AddComponent(CreateGameObject("WallLengthDisplay"), wallLengthDisplayType);
         GameObject wallObject = CreateGameObject("Wall");
 
+        // Awake/OnEnable do not run in EditMode tests, so bind the references explicitly.
+        GameObject canvasObject = CreateGameObject("TestWallLengthCanvas");
+        Canvas testCanvas = canvasObject.AddComponent<Canvas>();
+        testCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        SetPrivateField(wallLengthDisplayType, display, "targetCanvas", testCanvas);
+        SetPrivateField(wallLengthDisplayType, display, "modeManager", modeManager);
+        MethodInfo subscribe = wallLengthDisplayType.GetMethod("SubscribeModeManager", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(subscribe, Is.Not.Null);
+        subscribe.Invoke(display, null);
+
         wallLengthDisplayType.GetMethod("SetWallLength")?.Invoke(
             display,
             new object[]
@@ -45,13 +55,9 @@ public class WallLengthDisplayTests
                 false,
             });
 
-        GameObject lengthLabel = GameObject.Find($"LengthLabel_{wallObject.transform.GetInstanceID()}");
+        GameObject lengthLabel = FindIncludingInactive($"LengthLabel_{wallObject.transform.GetInstanceID()}");
         Assert.That(lengthLabel, Is.Not.Null);
-        Canvas labelCanvas = lengthLabel.GetComponentInParent<Canvas>();
-        if (labelCanvas != null)
-        {
-            createdObjects.Add(labelCanvas.gameObject);
-        }
+        Assert.That(lengthLabel.transform.parent, Is.EqualTo(testCanvas.transform));
 
         Assert.That(lengthLabel.activeSelf, Is.False);
 
@@ -88,6 +94,27 @@ public class WallLengthDisplayTests
         Component component = gameObject.AddComponent(componentType);
         createdObjects.Add(component);
         return component;
+    }
+
+    private static GameObject FindIncludingInactive(string name)
+    {
+        Transform[] transforms = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            if (transforms[i].name == name)
+            {
+                return transforms[i].gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private static void SetPrivateField(Type type, object target, string fieldName, object value)
+    {
+        FieldInfo field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(field, Is.Not.Null, $"Missing field '{fieldName}'.");
+        field.SetValue(target, value);
     }
 
     private GameObject CreateGameObject(string name)

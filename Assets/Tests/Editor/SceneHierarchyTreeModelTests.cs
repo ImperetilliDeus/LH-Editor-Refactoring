@@ -115,7 +115,14 @@ public class SceneHierarchyTreeModelTests
         Component topRight = CreateWall("wall19", "wall-19", wallRoot, new Vector3(2f, 0f, 2f), new Vector3(1f, 0f, 2f));
         Component topLeft = CreateWall("wall43", "wall-43", wallRoot, new Vector3(1f, 0f, 2f), new Vector3(0f, 0f, 2f));
         Component left = CreateWall("wall20", "wall-20", wallRoot, new Vector3(0f, 0f, 2f), new Vector3(0f, 0f, 0f));
-        Component room = CreateRoom("RoomObject", "Alpha Room", bottom, right, topRight, topLeft, left);
+        List<Vector3> polygon = new List<Vector3>
+        {
+            new Vector3(0f, 0f, 0f),
+            new Vector3(2f, 0f, 0f),
+            new Vector3(2f, 0f, 2f),
+            new Vector3(0f, 0f, 2f),
+        };
+        Component room = CreateRoom("RoomObject", "Alpha Room", polygon, bottom, right, topRight, topLeft, left);
 
         IList rows = BuildRows(wallRoot, CreateRoomList(room));
 
@@ -176,6 +183,18 @@ public class SceneHierarchyTreeModelTests
 
     private Component CreateRoom(string objectName, string roomName, params Component[] walls)
     {
+        List<Vector3> polygon = new List<Vector3>
+        {
+            Vector3.zero,
+            Vector3.forward,
+            Vector3.right + Vector3.forward,
+            Vector3.right,
+        };
+        return CreateRoom(objectName, roomName, polygon, walls);
+    }
+
+    private Component CreateRoom(string objectName, string roomName, IReadOnlyList<Vector3> polygon, params Component[] walls)
+    {
         Type roomType = GetAssemblyType("Room");
         Type wallType = GetAssemblyType("Wall");
         Type roomGeometryType = GetAssemblyType("RoomGeometry");
@@ -187,13 +206,6 @@ public class SceneHierarchyTreeModelTests
         roomGeometryType.GetField("Area")?.SetValue(geometry, 1f);
         roomGeometryType.GetField("WallCount")?.SetValue(geometry, 4);
 
-        List<Vector3> polygon = new List<Vector3>
-        {
-            Vector3.zero,
-            Vector3.forward,
-            Vector3.right + Vector3.forward,
-            Vector3.right,
-        };
         roomType.GetMethod("Initialize", new[] { wallSet.GetType(), roomGeometryType, typeof(IReadOnlyList<Vector3>), typeof(bool) })
             ?.Invoke(room, new[] { wallSet, geometry, polygon, true });
         roomType.GetMethod("SetRoomName")?.Invoke(room, new object[] { roomName });

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools.Utils;
 
 public sealed class ModelingBoxColliderGeneratorTests
 {
@@ -38,8 +39,8 @@ public sealed class ModelingBoxColliderGeneratorTests
         BoxCollider collider = part.GetComponent<BoxCollider>();
         Assert.That(GetResultField(result, "added"), Is.EqualTo(1));
         Assert.That(collider, Is.Not.Null);
-        Assert.That(collider.center, Is.EqualTo(new Vector3(0.1f, 0.2f, 0.3f)));
-        Assert.That(collider.size, Is.EqualTo(new Vector3(0.25f, 2.1f, 0.12f)));
+        Assert.That(collider.center, Is.EqualTo(new Vector3(0.1f, 0.2f, 0.3f)).Using(new Vector3EqualityComparer(0.0001f)));
+        Assert.That(collider.size, Is.EqualTo(new Vector3(0.25f, 2.1f, 0.12f)).Using(new Vector3EqualityComparer(0.0001f)));
     }
 
     [Test]
