@@ -50,7 +50,7 @@ namespace LH.Export
                 results.Add(new LhLegacyRoomDto
                 {
                     name = string.IsNullOrWhiteSpace(roomData.RoomName) ? room.name : roomData.RoomName,
-                    code = ResolveRoomCode(roomData),
+                    code = RoomCodeResolver.Resolve(roomData),
                     position = position,
                     angle = angle,
                     scale = scale,
@@ -75,7 +75,7 @@ namespace LH.Export
             {
                 id = BuildRoomId(room, roomData),
                 name = string.IsNullOrWhiteSpace(roomData.RoomName) ? room.name : roomData.RoomName,
-                code = ResolveRoomCode(roomData),
+                code = RoomCodeResolver.Resolve(roomData),
                 roomTypeKey = roomData.RoomTypeKey ?? string.Empty,
                 nativeCode = roomData.RoomNativeCode ?? string.Empty,
                 position = position,
@@ -245,64 +245,7 @@ namespace LH.Export
                 return false;
             }
 
-            return IsBoundsFootprintInsidePolygonXZ(bounds, vertices) || IsPointInsidePolygonXZ(worldPosition, vertices);
-        }
-
-        private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> polygon)
-        {
-            if (polygon == null || polygon.Count < 3)
-            {
-                return false;
-            }
-
-            bool inside = false;
-            float x = point.x;
-            float z = point.z;
-
-            for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
-            {
-                Vector3 pi = polygon[i];
-                Vector3 pj = polygon[j];
-
-                float deltaZ = pj.z - pi.z;
-                bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
-                                  ((pi.z > z) != (pj.z > z)) &&
-                                  (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
-                if (intersects)
-                {
-                    inside = !inside;
-                }
-            }
-
-            return inside;
-        }
-
-        private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, List<Vector3> polygon)
-        {
-            if (polygon == null || polygon.Count < 3)
-            {
-                return false;
-            }
-
-            float y = bounds.center.y;
-            Vector3[] testPoints =
-            {
-                new Vector3(bounds.center.x, y, bounds.center.z),
-                new Vector3(bounds.min.x, y, bounds.min.z),
-                new Vector3(bounds.min.x, y, bounds.max.z),
-                new Vector3(bounds.max.x, y, bounds.min.z),
-                new Vector3(bounds.max.x, y, bounds.max.z),
-            };
-
-            for (int i = 0; i < testPoints.Length; i++)
-            {
-                if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return PolygonXZ.ContainsBoundsFootprint(bounds, vertices) || PolygonXZ.ContainsPoint(worldPosition, vertices);
         }
 
         private static List<int> BuildRoomWallReferences(Room room, RoomData roomData, IEnumerable<Wall> walls, BuildContext context)
@@ -404,7 +347,7 @@ namespace LH.Export
                 return results;
             }
 
-            string roomCode = ResolveRoomCode(room != null ? room.Data : null);
+            string roomCode = RoomCodeResolver.Resolve(room != null ? room.Data : null);
             for (int i = 0; i < instance.ExportDefects.Count; i++)
             {
                 FurnitureDefectCatalogEntry entry = instance.ExportDefects[i];
@@ -771,23 +714,6 @@ namespace LH.Export
             return roomData != null ? roomData.CeilingTextureCode ?? string.Empty : string.Empty;
         }
 
-        private static string ResolveRoomCode(RoomData roomData)
-        {
-            if (roomData == null)
-            {
-                return string.Empty;
-            }
-
-            if (!string.IsNullOrWhiteSpace(roomData.RoomCode))
-            {
-                return roomData.RoomCode;
-            }
-
-            return RoomTypeCatalog.TryGetCode(roomData.RoomTypeKey, out int resolvedCode)
-                ? resolvedCode.ToString()
-                : string.Empty;
-        }
-
         private static LhMeshDto CreateEmptyMeshDto()
         {
             return new LhMeshDto
@@ -801,7 +727,7 @@ namespace LH.Export
 
         private static string BuildRoomId(Room room, RoomData roomData)
         {
-            string resolvedRoomCode = ResolveRoomCode(roomData);
+            string resolvedRoomCode = RoomCodeResolver.Resolve(roomData);
             if (!string.IsNullOrWhiteSpace(resolvedRoomCode))
             {
                 return $"room_{resolvedRoomCode}";

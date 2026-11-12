@@ -118,17 +118,9 @@ public static class RoomCreateGeometryService
         };
     }
 
-    public static bool ContainsPointXZ(Bounds bounds, Vector3 point)
-    {
-        return point.x >= bounds.min.x &&
-               point.x <= bounds.max.x &&
-               point.z >= bounds.min.z &&
-               point.z <= bounds.max.z;
-    }
-
     public static bool SegmentIntersectsBoundsXZ(Bounds bounds, Vector3 start, Vector3 end)
     {
-        if (ContainsPointXZ(bounds, start) || ContainsPointXZ(bounds, end))
+        if (BoundsXZ.ContainsPoint(bounds, start) || BoundsXZ.ContainsPoint(bounds, end))
         {
             return true;
         }
@@ -171,19 +163,6 @@ public static class RoomCreateGeometryService
         }
 
         return inside;
-    }
-
-    public static float CalculateSignedAreaXZ(IReadOnlyList<Vector3> polygon)
-    {
-        float area = 0f;
-        for (int i = 0; i < polygon.Count; i++)
-        {
-            Vector3 a = polygon[i];
-            Vector3 b = polygon[(i + 1) % polygon.Count];
-            area += (a.x * b.z) - (b.x * a.z);
-        }
-
-        return area * 0.5f;
     }
 
     private static void TryAddSplitBounds(

@@ -1,6 +1,8 @@
 {
     "name": "LH.Editor.Tests",
-    "references": [],
+    "references": [
+        "LH.Common"
+    ],
     "includePlatforms": [
         "Editor"
     ],

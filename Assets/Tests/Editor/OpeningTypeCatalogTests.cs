@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
+using static TestReflection;
 
 public class OpeningTypeCatalogTests
 {
@@ -160,13 +161,6 @@ public class OpeningTypeCatalogTests
         Assert.That(field, Is.Not.Null, $"Missing profile key field: {fieldName}");
         Assert.That(field.FieldType, Is.EqualTo(typeof(string)), $"Profile key field {fieldName} must be a string.");
         return (string)field.GetValue(null);
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static IList GetItems(object catalog)

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class LhWorkStateSchemaTests
 {
@@ -45,13 +46,6 @@ public class LhWorkStateSchemaTests
             ?.Invoke(dto, null);
 
         Assert.That(roundTripped, Is.EqualTo(value));
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static int GetCurrentVersion(Type stateType)

@@ -4,6 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
+using static TestReflection;
 
 public class DwgWallImportSceneApplierTests
 {
@@ -123,13 +124,6 @@ public class DwgWallImportSceneApplierTests
         GameObject gameObject = new GameObject(name);
         createdObjects.Add(gameObject);
         return gameObject;
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static T GetPropertyValue<T>(object target, string propertyName)

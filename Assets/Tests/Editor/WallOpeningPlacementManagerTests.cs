@@ -4,6 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using static TestReflection;
 
 public class WallOpeningPlacementManagerTests
 {
@@ -1060,13 +1061,6 @@ public class WallOpeningPlacementManagerTests
         PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
         Assert.That(property, Is.Not.Null);
         return (T)property.GetValue(target);
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static float NormalizeAngle(float value)

@@ -15,6 +15,7 @@
 |---|---|
 | `Assets/Scenes/SampleScene.unity` | 주 편집 씬 |
 | `Assets/Scripts/ModeManager.cs` | 편집 모드 상태(`EditorMode`)만 관리 |
+| `Assets/Scripts/Common` | 기능 공용 geometry 유틸 (asmdef `LH.Common`, 테스트가 직접 참조). 다각형·Bounds XZ 판정, 허용 오차 상수 |
 | `Assets/Scripts/Input` | Unity Input System 입력을 편집 입력 프레임으로 변환 |
 | `Assets/Scripts/Draw/Wall` | 벽 작성·편집, 핸들, 스냅, opening(문·창), Undo/Redo |
 | `Assets/Scripts/Room` | 방 생성, 방 그래프, 폴리곤 검증, 메타데이터 |

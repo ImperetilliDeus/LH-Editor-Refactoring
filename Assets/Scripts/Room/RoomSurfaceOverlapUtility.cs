@@ -90,7 +90,7 @@ public static class RoomSurfaceOverlapUtility
             MinZ = bounds.min.z,
             MaxZ = bounds.max.z,
             Y = vertices[0].y,
-            Area = Mathf.Abs(RoomCreateGeometryService.CalculateSignedAreaXZ(vertices)),
+            Area = Mathf.Abs(PolygonXZ.SignedArea(vertices)),
         };
         return rect.Width > Epsilon && rect.Height > Epsilon;
     }

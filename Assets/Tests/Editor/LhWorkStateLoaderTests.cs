@@ -5,6 +5,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using static TestReflection;
 
 public class LhWorkStateLoaderTests
 {
@@ -1076,13 +1077,6 @@ public class LhWorkStateLoaderTests
                 null,
                 false,
             });
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static object GetEnumValue(string typeName, string valueName)

@@ -3,6 +3,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
+using static TestReflection;
 
 public class DrawingOverlayToolbarTests
 {
@@ -201,13 +202,6 @@ public class DrawingOverlayToolbarTests
             collapseButton,
             visibilityButton,
             lockButton);
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static object GetEnumValue(string typeName, string valueName)

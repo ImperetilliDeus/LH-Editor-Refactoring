@@ -14,7 +14,7 @@ public static class LhWorkStateBuilder
         state.walls = BuildWalls(wallRoot, normalizedWallIdsBySourceId);
         state.rooms = BuildRooms(roomManager, normalizedWallIdsBySourceId);
         state.furniture = BuildFurniture(furnitureRoot, roomManager);
-        NormalizeFurnitureRoomsBySavedPolygons(state);
+        LhWorkStateRoomUtility.NormalizeFurnitureRoomsBySavedPolygons(state, "LhWorkStateBuilder");
         return state;
     }
 
@@ -273,7 +273,7 @@ public static class LhWorkStateBuilder
 
             results.Add(new LhWorkFurnitureDefectDto
             {
-                mntnCd = !string.IsNullOrWhiteSpace(ResolveRoomCode(room)) ? ResolveRoomCode(room) : defect.mntnCd ?? string.Empty,
+                mntnCd = !string.IsNullOrWhiteSpace(RoomCodeResolver.Resolve(room)) ? RoomCodeResolver.Resolve(room) : defect.mntnCd ?? string.Empty,
                 locCd = defect.locCd ?? string.Empty,
                 mtrlCd = defect.mtrlCd ?? string.Empty,
             });
@@ -306,7 +306,7 @@ public static class LhWorkStateBuilder
                 continue;
             }
 
-            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.BoundaryVertices));
+            float area = Mathf.Abs(PolygonXZ.SignedArea(room.BoundaryVertices));
             if (area < bestArea)
             {
                 bestArea = area;
@@ -364,236 +364,8 @@ public static class LhWorkStateBuilder
             return false;
         }
 
-        return IsBoundsFootprintInsidePolygonXZ(bounds, vertices) ||
-            IsPointInsidePolygonXZ(instance.transform.position, vertices);
-    }
-
-    private static bool IsPointInsidePolygonXZ(Vector3 point, List<Vector3> vertices)
-    {
-        if (vertices == null || vertices.Count < 3)
-        {
-            return false;
-        }
-
-        bool inside = false;
-        float x = point.x;
-        float z = point.z;
-        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
-        {
-            Vector3 pi = vertices[i];
-            Vector3 pj = vertices[j];
-            float deltaZ = pj.z - pi.z;
-            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
-                              ((pi.z > z) != (pj.z > z)) &&
-                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
-            if (intersects)
-            {
-                inside = !inside;
-            }
-        }
-
-        return inside;
-    }
-
-    private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, List<Vector3> polygon)
-    {
-        if (polygon == null || polygon.Count < 3)
-        {
-            return false;
-        }
-
-        float y = bounds.center.y;
-        Vector3[] testPoints =
-        {
-            new Vector3(bounds.center.x, y, bounds.center.z),
-            new Vector3(bounds.min.x, y, bounds.min.z),
-            new Vector3(bounds.min.x, y, bounds.max.z),
-            new Vector3(bounds.max.x, y, bounds.min.z),
-            new Vector3(bounds.max.x, y, bounds.max.z),
-        };
-
-        for (int i = 0; i < testPoints.Length; i++)
-        {
-            if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static float CalculatePolygonAreaXZ(IReadOnlyList<Vector3> vertices)
-    {
-        if (vertices == null || vertices.Count < 3)
-        {
-            return 0f;
-        }
-
-        float area = 0f;
-        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
-        {
-            area += vertices[j].x * vertices[i].z - vertices[i].x * vertices[j].z;
-        }
-
-        return area * 0.5f;
-    }
-
-    private static string ResolveRoomCode(Room room)
-    {
-        if (room == null)
-        {
-            return string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(room.RoomCode))
-        {
-            return room.RoomCode;
-        }
-
-        return RoomTypeCatalog.TryGetCode(room.RoomTypeKey, out int code) ? code.ToString() : string.Empty;
-    }
-
-    private static void NormalizeFurnitureRoomsBySavedPolygons(LhWorkStateDto state)
-    {
-        if (state == null || state.rooms == null || state.furniture == null)
-        {
-            return;
-        }
-
-        int roomNameFixes = 0;
-        int defectCodeFixes = 0;
-        int unresolvedFurniture = 0;
-        for (int i = 0; i < state.furniture.Count; i++)
-        {
-            LhWorkFurnitureDto furniture = state.furniture[i];
-            if (furniture == null || !furniture.isPlaced)
-            {
-                continue;
-            }
-
-            LhWorkRoomDto room = ResolveFurnitureRoomDto(furniture.position.ToVector3(), state.rooms);
-            if (room == null)
-            {
-                unresolvedFurniture++;
-                continue;
-            }
-
-            string roomName = room.name ?? string.Empty;
-            if (!string.Equals(furniture.roomName ?? string.Empty, roomName, System.StringComparison.Ordinal))
-            {
-                roomNameFixes++;
-                furniture.roomName = roomName;
-            }
-
-            string roomCode = ResolveRoomCode(room);
-            if (string.IsNullOrWhiteSpace(roomCode) || furniture.defects == null)
-            {
-                continue;
-            }
-
-            for (int defectIndex = 0; defectIndex < furniture.defects.Count; defectIndex++)
-            {
-                LhWorkFurnitureDefectDto defect = furniture.defects[defectIndex];
-                if (defect != null)
-                {
-                    if (!string.Equals(defect.mntnCd ?? string.Empty, roomCode, System.StringComparison.Ordinal))
-                    {
-                        defectCodeFixes++;
-                        defect.mntnCd = roomCode;
-                    }
-                }
-            }
-        }
-
-        Debug.Log(
-            $"[LhWorkStateBuilder] furniture room normalization complete: " +
-            $"furniture={state.furniture.Count}, roomNameFixes={roomNameFixes}, " +
-            $"defectCodeFixes={defectCodeFixes}, unresolvedFurniture={unresolvedFurniture}");
-    }
-
-    private static LhWorkRoomDto ResolveFurnitureRoomDto(Vector3 position, IReadOnlyList<LhWorkRoomDto> rooms)
-    {
-        LhWorkRoomDto bestRoom = null;
-        float bestArea = float.PositiveInfinity;
-        for (int i = 0; i < rooms.Count; i++)
-        {
-            LhWorkRoomDto room = rooms[i];
-            if (room == null || room.boundaryVertices == null || room.boundaryVertices.Count < 3 ||
-                !IsPointInsidePolygonXZ(position, room.boundaryVertices))
-            {
-                continue;
-            }
-
-            float area = Mathf.Abs(CalculatePolygonAreaXZ(room.boundaryVertices));
-            if (area < bestArea)
-            {
-                bestArea = area;
-                bestRoom = room;
-            }
-        }
-
-        return bestRoom;
-    }
-
-    private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<LhWorkVector3Dto> vertices)
-    {
-        if (vertices == null || vertices.Count < 3)
-        {
-            return false;
-        }
-
-        bool inside = false;
-        float x = point.x;
-        float z = point.z;
-        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
-        {
-            Vector3 pi = vertices[i].ToVector3();
-            Vector3 pj = vertices[j].ToVector3();
-            float deltaZ = pj.z - pi.z;
-            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
-                              ((pi.z > z) != (pj.z > z)) &&
-                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
-            if (intersects)
-            {
-                inside = !inside;
-            }
-        }
-
-        return inside;
-    }
-
-    private static float CalculatePolygonAreaXZ(IReadOnlyList<LhWorkVector3Dto> vertices)
-    {
-        if (vertices == null || vertices.Count < 3)
-        {
-            return 0f;
-        }
-
-        float area = 0f;
-        for (int i = 0, j = vertices.Count - 1; i < vertices.Count; j = i++)
-        {
-            Vector3 current = vertices[i].ToVector3();
-            Vector3 previous = vertices[j].ToVector3();
-            area += previous.x * current.z - current.x * previous.z;
-        }
-
-        return area * 0.5f;
-    }
-
-    private static string ResolveRoomCode(LhWorkRoomDto room)
-    {
-        if (room == null)
-        {
-            return string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(room.roomCode))
-        {
-            return room.roomCode;
-        }
-
-        return RoomTypeCatalog.TryGetCode(room.roomTypeKey, out int code) ? code.ToString() : string.Empty;
+        return PolygonXZ.ContainsBoundsFootprint(bounds, vertices) ||
+            PolygonXZ.ContainsPoint(instance.transform.position, vertices);
     }
 
     private static List<LhWorkVector3Dto> ToVectorDtos(IReadOnlyList<Vector3> values)

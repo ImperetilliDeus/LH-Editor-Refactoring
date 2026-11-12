@@ -3,6 +3,7 @@ using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class LhWorkStateOpeningRestoreTests
 {
@@ -181,13 +182,6 @@ public class LhWorkStateOpeningRestoreTests
         return GetAssemblyType("LhWorkVector3Dto")
             .GetMethod("FromVector3", BindingFlags.Public | BindingFlags.Static)
             ?.Invoke(null, new object[] { value });
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static T GetFieldValue<T>(object target, string fieldName)

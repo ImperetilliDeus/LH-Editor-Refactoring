@@ -1,6 +1,7 @@
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class HandleManagerModeTests
 {
@@ -297,12 +298,5 @@ public class HandleManagerModeTests
     {
         Assert.That(actual.x, Is.EqualTo(expected.x).Within(0.01f));
         Assert.That(actual.y, Is.EqualTo(expected.y).Within(0.01f));
-    }
-
-    private static System.Type GetAssemblyType(string typeName)
-    {
-        System.Type type = System.Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Expected Assembly-CSharp type {typeName}.");
-        return type;
     }
 }

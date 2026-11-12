@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 internal sealed class WallToolRuntime : IWallToolContext
 {
-    private const float MinimumWallLength = 0.01f;
+    private const float MinimumWallLength = GeometryTolerance.MinimumWallLength;
 
     private readonly Camera mainCamera;
     private readonly GameObject grid;

@@ -196,7 +196,7 @@ public static partial class RoomGraphUtility
             return false;
         }
 
-        float area = CalculateSignedAreaXZ(vertices);
+        float area = PolygonXZ.SignedArea(vertices);
         if (Mathf.Abs(area) <= MinFaceAreaEpsilon)
         {
             return false;
@@ -341,19 +341,6 @@ public static partial class RoomGraphUtility
                 removedAny = true;
             }
         }
-    }
-
-    private static float CalculateSignedAreaXZ(List<Vector3> vertices)
-    {
-        float area = 0f;
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            Vector3 current = vertices[i];
-            Vector3 next = vertices[(i + 1) % vertices.Count];
-            area += current.x * next.z - next.x * current.z;
-        }
-
-        return area * 0.5f;
     }
 
     private static Vector3 CalculatePolygonCentroidXZ(List<Vector3> vertices)

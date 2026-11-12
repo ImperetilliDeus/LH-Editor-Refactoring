@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public partial class WallPropertyInputManager : MonoBehaviour
 {
-    private const float MinimumWallLength = 0.01f;
+    private const float MinimumWallLength = GeometryTolerance.MinimumWallLength;
 
     private enum MultiSelectionField
     {

@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class LhSceneExportBuilderTests
 {
@@ -758,13 +759,6 @@ public class LhSceneExportBuilderTests
         object ceil = GetFieldValue<object>(room, "ceil");
         object position = GetFieldValue<object>(ceil, "position");
         return Convert.ToSingle(GetFieldValue<object>(position, "y"));
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static T GetFieldValue<T>(object target, string fieldName)

@@ -479,7 +479,7 @@ public class FurnitureDefectPanelController : MonoBehaviour
 
         if (selectedFurniture != null)
         {
-            string roomCode = ResolveRoomCode(selectedFurniture.CurrentRoom);
+            string roomCode = RoomCodeResolver.Resolve(selectedFurniture.CurrentRoom);
             if (!string.IsNullOrWhiteSpace(roomCode))
             {
                 entry.mntnCd = roomCode;
@@ -658,22 +658,6 @@ public class FurnitureDefectPanelController : MonoBehaviour
         return string.Empty;
     }
 
-    private static string ResolveRoomCode(Room room)
-    {
-        if (room == null)
-        {
-            return string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(room.RoomCode))
-        {
-            return room.RoomCode;
-        }
-
-        return RoomTypeCatalog.TryGetCode(room.RoomTypeKey, out int resolvedCode)
-            ? resolvedCode.ToString()
-            : string.Empty;
-    }
 
     private static string GetItemKey(FurnitureCatalogItem item)
     {

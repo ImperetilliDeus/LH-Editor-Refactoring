@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class SceneHierarchyTreeModelTests
 {
@@ -254,12 +255,5 @@ public class SceneHierarchyTreeModelTests
         PropertyInfo property = target.GetType().GetProperty(propertyName);
         Assert.That(property, Is.Not.Null);
         return (T)property.GetValue(target);
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 }

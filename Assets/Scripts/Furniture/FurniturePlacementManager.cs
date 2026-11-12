@@ -384,7 +384,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        string roomCode = ResolveRoomCode(room);
+        string roomCode = RoomCodeResolver.Resolve(room);
         if (string.IsNullOrWhiteSpace(roomCode))
         {
             return;
@@ -410,22 +410,6 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         instance.SetExportDefects(updatedDefects);
     }
 
-    private static string ResolveRoomCode(Room room)
-    {
-        if (room == null)
-        {
-            return string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(room.RoomCode))
-        {
-            return room.RoomCode;
-        }
-
-        return RoomTypeCatalog.TryGetCode(room.RoomTypeKey, out int resolvedCode)
-            ? resolvedCode.ToString()
-            : string.Empty;
-    }
 
     private static string ResolveLocationCode(IEnumerable<FurnitureDefectCatalogEntry> defects)
     {
@@ -772,7 +756,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
                 continue;
             }
 
-            if (IsPointInsidePolygonXZ(worldPosition, cachedRoomFootprint))
+            if (PolygonXZ.ContainsPoint(worldPosition, cachedRoomFootprint))
             {
                 return room;
             }
@@ -802,7 +786,7 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
                 continue;
             }
 
-            if (IsBoundsFootprintInsidePolygonXZ(bounds, cachedRoomFootprint))
+            if (PolygonXZ.ContainsBoundsFootprint(bounds, cachedRoomFootprint))
             {
                 return room;
             }
@@ -856,54 +840,6 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
         {
             room?.RefreshVisual();
         }
-    }
-
-    private static bool IsPointInsidePolygonXZ(Vector3 point, IReadOnlyList<Vector3> polygon)
-    {
-        if (polygon == null || polygon.Count < 3)
-        {
-            return false;
-        }
-
-        bool inside = false;
-        float x = point.x;
-        float z = point.z;
-
-        for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
-        {
-            Vector3 pi = polygon[i];
-            Vector3 pj = polygon[j];
-
-            float deltaZ = pj.z - pi.z;
-            bool intersects = Mathf.Abs(deltaZ) > 0.000001f &&
-                              ((pi.z > z) != (pj.z > z)) &&
-                              (x < (pj.x - pi.x) * (z - pi.z) / deltaZ + pi.x);
-            if (intersects)
-            {
-                inside = !inside;
-            }
-        }
-
-        return inside;
-    }
-
-    private static bool IsBoundsFootprintInsidePolygonXZ(Bounds bounds, IReadOnlyList<Vector3> polygon)
-    {
-        if (polygon == null || polygon.Count < 3)
-        {
-            return false;
-        }
-
-        Vector3[] testPoints = GetBoundsFootprintPoints(bounds);
-        for (int i = 0; i < testPoints.Length; i++)
-        {
-            if (!IsPointInsidePolygonXZ(testPoints[i], polygon))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void CachePreviewRenderers(GameObject root)
@@ -1092,8 +1028,8 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
                 continue;
             }
 
-            bool pointInside = IsPointInsidePolygonXZ(placementPoint, cachedRoomFootprint);
-            bool boundsInside = IsBoundsFootprintInsidePolygonXZ(bounds, cachedRoomFootprint);
+            bool pointInside = PolygonXZ.ContainsPoint(placementPoint, cachedRoomFootprint);
+            bool boundsInside = PolygonXZ.ContainsBoundsFootprint(bounds, cachedRoomFootprint);
             builder.Append(room.name)
                 .Append("(point=").Append(pointInside)
                 .Append(",bounds=").Append(boundsInside)
@@ -1108,11 +1044,11 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     private static string BuildBoundsCornerMask(Bounds bounds, IReadOnlyList<Vector3> polygon)
     {
-        Vector3[] corners = GetBoundsFootprintPoints(bounds);
+        Vector3[] corners = BoundsXZ.GetFootprintPoints(bounds);
         char[] mask = new char[corners.Length];
         for (int i = 0; i < corners.Length; i++)
         {
-            mask[i] = IsPointInsidePolygonXZ(corners[i], polygon) ? '1' : '0';
+            mask[i] = PolygonXZ.ContainsPoint(corners[i], polygon) ? '1' : '0';
         }
 
         return new string(mask);
@@ -1120,21 +1056,8 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     private static string FormatBoundsCorners(Bounds bounds)
     {
-        Vector3[] corners = GetBoundsFootprintPoints(bounds);
+        Vector3[] corners = BoundsXZ.GetFootprintPoints(bounds);
         return $"{FormatVector(corners[0])}|{FormatVector(corners[1])}|{FormatVector(corners[2])}|{FormatVector(corners[3])}|{FormatVector(corners[4])}";
-    }
-
-    private static Vector3[] GetBoundsFootprintPoints(Bounds bounds)
-    {
-        float y = bounds.center.y;
-        return new[]
-        {
-            new Vector3(bounds.center.x, y, bounds.center.z),
-            new Vector3(bounds.min.x, y, bounds.min.z),
-            new Vector3(bounds.min.x, y, bounds.max.z),
-            new Vector3(bounds.max.x, y, bounds.min.z),
-            new Vector3(bounds.max.x, y, bounds.max.z),
-        };
     }
 
     private static string FormatVector(Vector3 value)

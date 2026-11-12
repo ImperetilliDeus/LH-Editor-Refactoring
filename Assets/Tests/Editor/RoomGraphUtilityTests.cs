@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class RoomGraphUtilityTests
 {
@@ -80,12 +81,5 @@ public class RoomGraphUtilityTests
         object list = target.GetType().GetProperty(propertyName)?.GetValue(target);
         Assert.That(list, Is.Not.Null);
         return ((ICollection)list).Count;
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 }

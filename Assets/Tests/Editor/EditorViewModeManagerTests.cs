@@ -4,6 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
+using static TestReflection;
 
 public class EditorViewModeManagerTests
 {
@@ -1559,13 +1560,6 @@ public class EditorViewModeManagerTests
         {
             UnityEngine.Object.DestroyImmediate(target);
         }
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Expected Assembly-CSharp type {typeName}.");
-        return type;
     }
 
     private sealed class TestViewInputComponent : MonoBehaviour

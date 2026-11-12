@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class WallHierarchyUtilityTests
 {
@@ -98,12 +99,5 @@ public class WallHierarchyUtilityTests
         }
 
         return false;
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Expected Assembly-CSharp type {typeName}.");
-        return type;
     }
 }

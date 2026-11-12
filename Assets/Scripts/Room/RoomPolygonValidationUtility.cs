@@ -35,7 +35,7 @@ public static class RoomPolygonValidationUtility
 
     public static bool HasValidArea(IReadOnlyList<Vector3> vertices, float minimumArea)
     {
-        return Mathf.Abs(CalculateSignedArea(vertices)) > minimumArea;
+        return Mathf.Abs(PolygonXZ.SignedArea(vertices)) > minimumArea;
     }
 
     public static bool IsSimplePolygon(IReadOnlyList<Vector3> vertices)
@@ -76,19 +76,6 @@ public static class RoomPolygonValidationUtility
         }
 
         return true;
-    }
-
-    public static float CalculateSignedArea(IReadOnlyList<Vector3> vertices)
-    {
-        float area = 0f;
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            Vector3 current = vertices[i];
-            Vector3 next = vertices[(i + 1) % vertices.Count];
-            area += current.x * next.z - next.x * current.z;
-        }
-
-        return area * 0.5f;
     }
 
     private static bool SegmentsIntersectXZ(Vector3 firstStart, Vector3 firstEnd, Vector3 secondStart, Vector3 secondEnd)

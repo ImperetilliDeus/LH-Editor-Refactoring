@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using static TestReflection;
 
 public class LhWorkStateBuilderTests
 {
@@ -481,13 +482,6 @@ public class LhWorkStateBuilderTests
         return (Vector3)target.GetType()
             .GetMethod("ToVector3", BindingFlags.Public | BindingFlags.Instance)
             ?.Invoke(target, null);
-    }
-
-    private static Type GetAssemblyType(string typeName)
-    {
-        Type type = Type.GetType($"{typeName}, Assembly-CSharp");
-        Assert.That(type, Is.Not.Null, $"Failed to resolve type '{typeName}' from Assembly-CSharp.");
-        return type;
     }
 
     private static T GetProperty<T>(object target, string propertyName)

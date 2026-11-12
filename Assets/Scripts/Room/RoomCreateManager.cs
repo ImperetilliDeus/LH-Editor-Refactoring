@@ -890,7 +890,7 @@ public sealed partial class RoomCreateManager : MonoBehaviour, IEditorModeInputH
                 continue;
             }
 
-            float area = Mathf.Abs(RoomCreateGeometryService.CalculateSignedAreaXZ(cachedRoomVertices));
+            float area = Mathf.Abs(PolygonXZ.SignedArea(cachedRoomVertices));
             if (area >= bestArea)
             {
                 continue;

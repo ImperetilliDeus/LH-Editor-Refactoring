@@ -16,7 +16,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         Alt,
     }
 
-    private const float MinimumWallLength = 0.01f;
+    private const float MinimumWallLength = GeometryTolerance.MinimumWallLength;
 
     [Header("References")]
     [SerializeField] private Camera mainCamera;
@@ -1270,7 +1270,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
                 continue;
             }
 
-            if (ContainsPointXZ(bounds, wall.Data.startPoint) && ContainsPointXZ(bounds, wall.Data.endPoint))
+            if (BoundsXZ.ContainsPoint(bounds, wall.Data.startPoint) && BoundsXZ.ContainsPoint(bounds, wall.Data.endPoint))
             {
                 wallsInSelectionBounds.Add(wall.gameObject);
             }
@@ -1376,7 +1376,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
                 continue;
             }
 
-            if (!ContainsPointXZ(bounds, wall.Data.startPoint) || !ContainsPointXZ(bounds, wall.Data.endPoint))
+            if (!BoundsXZ.ContainsPoint(bounds, wall.Data.startPoint) || !BoundsXZ.ContainsPoint(bounds, wall.Data.endPoint))
             {
                 return false;
             }
@@ -1435,13 +1435,5 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         return IsWallObject(candidate, currentWallRoot) ? candidate : null;
-    }
-
-    private static bool ContainsPointXZ(Bounds bounds, Vector3 point)
-    {
-        return point.x >= bounds.min.x &&
-               point.x <= bounds.max.x &&
-               point.z >= bounds.min.z &&
-               point.z <= bounds.max.z;
     }
 }
