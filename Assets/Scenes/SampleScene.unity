@@ -783,8 +783,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 385752761}
-  - {fileID: 2014583630}
   - {fileID: 1919069572}
   - {fileID: 1336729294}
   - {fileID: 1693002989}
@@ -3654,138 +3652,6 @@ MonoBehaviour:
   modeManager: {fileID: 1793356131}
   targetMode: 1
   targetButton: {fileID: 374521896}
---- !u!1 &385752760
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 385752761}
-  - component: {fileID: 385752764}
-  - component: {fileID: 385752763}
-  - component: {fileID: 385752762}
-  m_Layer: 5
-  m_Name: _Button_Undo
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &385752761
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 385752760}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 65338985}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -120, y: 50}
-  m_SizeDelta: {x: 86.4, y: 86.4}
-  m_Pivot: {x: 0.5, y: 0}
---- !u!114 &385752762
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 385752760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 1814319207, guid: 3e9b5d2184c17c541b715ff72b1f56c5, type: 3}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &385752763
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 385752760}
-  m_CullTransparentMesh: 1
---- !u!114 &385752764
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 385752760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 21300000, guid: 7559bb4c7fd566a4db15127af07b9649, type: 3}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 1
-  m_TargetGraphic: {fileID: 385752762}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1556874436}
-        m_TargetAssemblyTypeName: UndoRedoManager, Assembly-CSharp
-        m_MethodName: UndoFromUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
 --- !u!1 &394041556
 GameObject:
   m_ObjectHideFlags: 0
@@ -5103,7 +4969,6 @@ MonoBehaviour:
   wallHandleManager: {fileID: 525080097}
   roomManager: {fileID: 480306209}
   modeManager: {fileID: 1793356131}
-  undoRedoManager: {fileID: 0}
   handleSize: {x: 16, y: 16}
   handleColor: {r: 0.2, g: 1, b: 0.55, a: 1}
   activeHandleColor: {r: 1, g: 0.82, b: 0.2, a: 1}
@@ -5131,7 +4996,6 @@ MonoBehaviour:
   roomHandleManager: {fileID: 480306211}
   modeManager: {fileID: 1793356131}
   viewModeManager: {fileID: 1299695794}
-  undoRedoManager: {fileID: 1556874436}
   creationShapeMode: 1
   minimumRoomWidth: 0.1
   minimumRoomHeight: 0.1
@@ -6240,7 +6104,6 @@ MonoBehaviour:
   _wallLengthDisplay: {fileID: 0}
   _handleManager: {fileID: 0}
   _wallSelectionManager: {fileID: 0}
-  _undoRedoManager: {fileID: 0}
   _modeManager: {fileID: 0}
   doubleClickThreshold: 0.25
   _wallHeight: 22
@@ -6299,7 +6162,6 @@ MonoBehaviour:
   targetCanvas: {fileID: 339099078}
   snapManager: {fileID: 525080096}
   wallLengthDisplay: {fileID: 514454709}
-  undoRedoManager: {fileID: 1556874436}
   modeManager: {fileID: 0}
   roomManager: {fileID: 0}
   wallOpeningPlacementManager: {fileID: 0}
@@ -6331,7 +6193,6 @@ MonoBehaviour:
   handleManager: {fileID: 525080097}
   snapManager: {fileID: 525080096}
   wallLengthDisplay: {fileID: 0}
-  undoRedoManager: {fileID: 1556874436}
   modeManager: {fileID: 0}
   viewModeManager: {fileID: 1299695794}
   wallOpeningPlacementManager: {fileID: 0}
@@ -6368,7 +6229,6 @@ MonoBehaviour:
   wallRoot: {fileID: 1525552874}
   handleManager: {fileID: 525080097}
   wallLengthDisplay: {fileID: 514454709}
-  undoRedoManager: {fileID: 1556874436}
   modeManager: {fileID: 1793356131}
   roomManager: {fileID: 0}
   wallOpeningPlacementManager: {fileID: 0}
@@ -7686,7 +7546,6 @@ MonoBehaviour:
   wallRoot: {fileID: 1525552874}
   handleManager: {fileID: 525080097}
   wallLengthDisplay: {fileID: 514454709}
-  undoRedoManager: {fileID: 1556874436}
   modeManager: {fileID: 1793356131}
   wallSelectionManager: {fileID: 525080098}
   roomManager: {fileID: 480306209}
@@ -13125,50 +12984,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8330046330331690147, guid: ad9c8b16b2c75734391600805837e5db, type: 3}
   m_PrefabInstance: {fileID: 1534630663}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1556874434
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1556874435}
-  - component: {fileID: 1556874436}
-  m_Layer: 0
-  m_Name: UndoRedoManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1556874435
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556874434}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2044560965}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1556874436
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556874434}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25ee3d21dc6327d4bb2bee6a68116d0b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &1561621625
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14524,7 +14339,6 @@ MonoBehaviour:
   wallSelectionManager: {fileID: 525080098}
   wallOpeningPlacementManager: {fileID: 694528453}
   wallLengthDisplay: {fileID: 514454709}
-  undoRedoManager: {fileID: 1556874436}
   topViewRenderManager: {fileID: 2109814131}
   roomAuthoringPanelManager: {fileID: 480306210}
   roomWallAuthoringPanelController: {fileID: 480306213}
@@ -17497,138 +17311,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2014583629
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2014583630}
-  - component: {fileID: 2014583633}
-  - component: {fileID: 2014583632}
-  - component: {fileID: 2014583631}
-  m_Layer: 5
-  m_Name: _Button_Redo
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &2014583630
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2014583629}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 65338985}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 120, y: 50}
-  m_SizeDelta: {x: 86.4, y: 86.4}
-  m_Pivot: {x: 0.5, y: 0}
---- !u!114 &2014583631
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2014583629}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 1274966026, guid: ce9a3a4c9769dde49907dfa19a2db248, type: 3}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &2014583632
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2014583629}
-  m_CullTransparentMesh: 1
---- !u!114 &2014583633
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2014583629}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 21300000, guid: 7559bb4c7fd566a4db15127af07b9649, type: 3}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 1
-  m_TargetGraphic: {fileID: 2014583631}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1556874436}
-        m_TargetAssemblyTypeName: UndoRedoManager, Assembly-CSharp
-        m_MethodName: RedoFromUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
 --- !u!1 &2014809046
 GameObject:
   m_ObjectHideFlags: 0
@@ -17815,7 +17497,6 @@ Transform:
   - {fileID: 1243706536}
   - {fileID: 525080094}
   - {fileID: 514454708}
-  - {fileID: 1556874435}
   - {fileID: 480306208}
   - {fileID: 1793356130}
   - {fileID: 724549994}
@@ -18237,6 +17918,7 @@ MonoBehaviour:
   loadedCodes:
     mtrlList: []
   lastError: 
+  enableDebugLogs: 1
 --- !u!114 &980000000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18260,6 +17942,7 @@ MonoBehaviour:
   actionButtonsRoot: {fileID: 523436188}
   confirmButton: {fileID: 523436187}
   cancelButton: {fileID: 523436186}
+  enableDefectDebugLogs: 1
   furnitureMenuRootName: _FurnishMenu
   locationDropdownName: _EditFurnishLoc
   defectScrollViewName: _DefectScrollView
