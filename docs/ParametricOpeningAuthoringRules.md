@@ -340,7 +340,10 @@ B001 모델링 규칙:
 - 난간은 opening 하단 기준으로 anchor된다.
 - 난간 top/mid/bottom rail은 X 방향만 stretch한다.
 - 난간 vertical bar는 scale하지 않는다.
-- vertical bar는 authored spacing을 기준으로 개수 또는 간격을 재분배한다.
+- vertical bar 간격(pitch)은 난간 길이와 관계없이 항상 일정하다. pitch는 `ParametricOpeningModel.railingBarPitch`(모델 로컬 단위)로 지정하고, 0이면 authored bar 간격의 평균을 쓴다. B001_1은 1.2 단위(12cm)다.
+- 좌우 `Railing_Left_Post`/`Railing_Right_Post` 사이 길이를 S라 할 때 bar 개수는 `ceil(S / pitch) - 1`이고, 남는 길이는 양 끝에 반씩 나눈다. 따라서 기둥과 가장 가까운 bar 사이 간격은 항상 `pitch/2` 초과 `pitch` 이하다. post가 없으면 opening 폭 전체를 S로 쓴다.
+- 필요한 bar가 prefab에 authored된 개수(비활성 예비 bar 포함)보다 많으면 첫 bar를 복제해 `Generated_Railing_Vertical_Bar_NN`으로 만든다. 남는 bar는 비활성화한다.
+- 난간 살 안목 간격 기준(예: 10cm 이하)을 맞추려면 `pitch - bar 두께`가 기준 이하가 되도록 pitch를 정한다.
 - Viewer와 Editor에서 실내/실외 방향이 다르게 보이면 prefab 자체를 뒤집지 말고 placement/import 쪽 방향 기준을 먼저 점검한다.
 
 권장 이름:

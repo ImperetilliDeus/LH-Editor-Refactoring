@@ -854,38 +854,121 @@ public class WallOpeningPlacementManagerTests
     }
 
     [Test]
-    public void ParametricOpeningModel_ResizesStretchParts_WithoutScalingFixedRailingBars()
+    public void ParametricOpeningModel_StretchesRailingRailsWithoutScalingVerticalBars()
     {
-        Type parametricType = GetAssemblyType("ParametricOpeningModel");
-        GameObject root = CreateGameObject("BalconyPrefab");
-        Component parametric = root.AddComponent(parametricType);
+        GameObject root = CreateRailingFixture(out Component parametric, out Transform topRail);
 
-        Transform topRail = CreateChildGameObject(root.transform, "Stretch_Railing_Top_Rail").transform;
-        topRail.localPosition = new Vector3(0f, -0.48f, 0.72f);
-        topRail.localScale = Vector3.one;
-        Transform verticalBar = CreateChildGameObject(root.transform, "Fixed_Railing_Vertical_Bar_01").transform;
-        verticalBar.localPosition = new Vector3(0.45f, -0.72f, -0.78f);
-        verticalBar.localScale = Vector3.one;
-
-        System.Reflection.MethodInfo applyOpeningSize = parametricType.GetMethod(
-            "ApplyOpeningSize",
-            new[] { typeof(Vector3), typeof(Vector3) });
-        Assert.That(applyOpeningSize, Is.Not.Null);
-        applyOpeningSize.Invoke(
-            parametric,
-            new object[]
-            {
-                new Vector3(24f, 24f, 0.5f),
-                new Vector3(18f, 21f, 1.4f),
-            });
+        ApplyParametricOpeningSize(parametric, new Vector3(24f, 24f, 0.5f), new Vector3(18f, 21f, 1.4f));
 
         Assert.That(topRail.localScale.x, Is.EqualTo(24f / 18f).Within(0.0001f));
         Assert.That(topRail.localScale.y, Is.EqualTo(1f).Within(0.0001f));
         Assert.That(topRail.localScale.z, Is.EqualTo(1f).Within(0.0001f));
-        Assert.That(verticalBar.localScale, Is.EqualTo(Vector3.one));
-        Assert.That(verticalBar.localPosition.x, Is.EqualTo(0.45f * (24f / 18f)).Within(0.0001f));
-        Assert.That(verticalBar.localPosition.y, Is.EqualTo(-0.72f).Within(0.0001f));
-        Assert.That(verticalBar.localPosition.z, Is.EqualTo(-12f + (-0.78f + 10.5f)).Within(0.0001f));
+        List<Transform> bars = CollectActiveRailingBars(root.transform);
+        Assert.That(bars, Is.Not.Empty);
+        for (int i = 0; i < bars.Count; i++)
+        {
+            Assert.That(bars[i].localScale, Is.EqualTo(Vector3.one), bars[i].name);
+        }
+    }
+
+    // Authored pitch is 1.2 and each post sits 0.14 inside the opening edge, so the span between posts is width - 0.28.
+    [TestCase(24f, 19, 1.06f)]
+    [TestCase(18f, 14, 1.06f)]
+    [TestCase(15f, 12, 0.76f)]
+    [TestCase(10f, 8, 0.66f)]
+    public void ParametricOpeningModel_KeepsRailingBarPitchConstantAcrossWidths(float width, int expectedBarCount, float expectedEndGap)
+    {
+        const float Pitch = 1.2f;
+        const float PostInset = 0.14f;
+        GameObject root = CreateRailingFixture(out Component parametric, out _);
+
+        ApplyParametricOpeningSize(parametric, new Vector3(width, 24f, 0.5f), new Vector3(18f, 21f, 1.4f));
+
+        List<Transform> bars = CollectActiveRailingBars(root.transform);
+        Assert.That(bars, Has.Count.EqualTo(expectedBarCount));
+        for (int i = 1; i < bars.Count; i++)
+        {
+            Assert.That(bars[i].localPosition.x - bars[i - 1].localPosition.x, Is.EqualTo(Pitch).Within(0.0001f));
+            Assert.That(bars[i].localPosition.y, Is.EqualTo(bars[0].localPosition.y).Within(0.0001f));
+            Assert.That(bars[i].localPosition.z, Is.EqualTo(bars[0].localPosition.z).Within(0.0001f));
+        }
+
+        Transform leftPost = root.transform.Find("Fixed_Railing_Left_Post");
+        Transform rightPost = root.transform.Find("Fixed_Railing_Right_Post");
+        Assert.That(leftPost.localPosition.x, Is.EqualTo(-width * 0.5f + PostInset).Within(0.0001f));
+        Assert.That(rightPost.localPosition.x, Is.EqualTo(width * 0.5f - PostInset).Within(0.0001f));
+        float leftGap = bars[0].localPosition.x - leftPost.localPosition.x;
+        float rightGap = rightPost.localPosition.x - bars[bars.Count - 1].localPosition.x;
+        Assert.That(leftGap, Is.EqualTo(expectedEndGap).Within(0.0001f));
+        Assert.That(rightGap, Is.EqualTo(expectedEndGap).Within(0.0001f));
+        Assert.That(leftGap, Is.GreaterThan(Pitch * 0.5f).And.LessThanOrEqualTo(Pitch + 0.0001f));
+    }
+
+    [Test]
+    public void ParametricOpeningModel_ReusesGeneratedRailingBarsWhenWidthShrinks()
+    {
+        GameObject root = CreateRailingFixture(out Component parametric, out _);
+
+        ApplyParametricOpeningSize(parametric, new Vector3(24f, 24f, 0.5f), new Vector3(18f, 21f, 1.4f));
+        ApplyParametricOpeningSize(parametric, new Vector3(15f, 24f, 0.5f), new Vector3(18f, 21f, 1.4f));
+        ApplyParametricOpeningSize(parametric, new Vector3(24f, 24f, 0.5f), new Vector3(18f, 21f, 1.4f));
+
+        int generatedCount = 0;
+        foreach (Transform child in root.transform)
+        {
+            if (child.name.StartsWith("Generated_Railing_Vertical_Bar_", StringComparison.Ordinal))
+            {
+                generatedCount++;
+            }
+        }
+
+        Assert.That(generatedCount, Is.EqualTo(1));
+        Assert.That(CollectActiveRailingBars(root.transform), Has.Count.EqualTo(19));
+    }
+
+    // Mirrors B001_1: posts at +-8.86 for an 18-unit reference width, 14 active bars and 4 spare inactive bars at a 1.2 pitch.
+    private GameObject CreateRailingFixture(out Component parametric, out Transform topRail)
+    {
+        Type parametricType = GetAssemblyType("ParametricOpeningModel");
+        GameObject root = CreateGameObject("BalconyPrefab");
+        parametric = root.AddComponent(parametricType);
+
+        topRail = CreateChildGameObject(root.transform, "Stretch_Railing_Top_Rail").transform;
+        topRail.localPosition = new Vector3(0f, -0.48f, 0.72f);
+        CreateChildGameObject(root.transform, "Fixed_Railing_Left_Post").transform.localPosition = new Vector3(-8.86f, -0.72f, -0.78f);
+        CreateChildGameObject(root.transform, "Fixed_Railing_Right_Post").transform.localPosition = new Vector3(8.86f, -0.72f, -0.78f);
+        for (int i = 0; i < 18; i++)
+        {
+            GameObject bar = CreateChildGameObject(root.transform, $"Fixed_Railing_Vertical_Bar_{i + 1:00}");
+            bar.transform.localPosition = new Vector3(-7.55f + 1.2f * i, -0.72f, -0.78f);
+            bar.SetActive(i < 14);
+        }
+
+        return root;
+    }
+
+    private static void ApplyParametricOpeningSize(Component parametric, Vector3 targetSize, Vector3 referenceSize)
+    {
+        MethodInfo applyOpeningSize = parametric.GetType().GetMethod(
+            "ApplyOpeningSize",
+            new[] { typeof(Vector3), typeof(Vector3) });
+        Assert.That(applyOpeningSize, Is.Not.Null);
+        applyOpeningSize.Invoke(parametric, new object[] { targetSize, referenceSize });
+    }
+
+    private static List<Transform> CollectActiveRailingBars(Transform root)
+    {
+        List<Transform> bars = new List<Transform>();
+        foreach (Transform child in root)
+        {
+            if (child.gameObject.activeSelf && child.name.Contains("Railing_Vertical_Bar"))
+            {
+                bars.Add(child);
+            }
+        }
+
+        bars.Sort((left, right) => left.localPosition.x.CompareTo(right.localPosition.x));
+        return bars;
     }
 
     [Test]

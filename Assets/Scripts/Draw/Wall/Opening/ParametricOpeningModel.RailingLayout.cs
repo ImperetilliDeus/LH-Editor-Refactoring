@@ -3,6 +3,15 @@ using UnityEngine;
 
 public sealed partial class ParametricOpeningModel
 {
+    private const string GeneratedRailingBarPrefix = "Generated_Railing_Vertical_Bar_";
+
+    [Tooltip("Center-to-center spacing of railing vertical bars in model local units. 0 uses the authored bar spacing.")]
+    [SerializeField] private float railingBarPitch;
+
+    // Clones are named without the Fixed_/Stretch_ prefix so the part cache never treats them as authored parts.
+    private readonly List<Transform> generatedRailingBars = new List<Transform>();
+    private readonly List<Transform> railingBarSlots = new List<Transform>();
+
     private void ApplyRailingVerticalBars(Vector3 referenceSize, Vector3 targetSize)
     {
         if (railingVerticalBars.Count == 0)
@@ -10,60 +19,50 @@ public sealed partial class ParametricOpeningModel
             return;
         }
 
-        List<PartState> authoredBars = new List<PartState>();
-        for (int i = 0; i < railingVerticalBars.Count; i++)
+        float pitch = ResolveRailingBarPitch();
+        if (pitch <= MinimumSize)
         {
-            if (railingVerticalBars[i].OriginalActive)
-            {
-                authoredBars.Add(railingVerticalBars[i]);
-            }
+            return;
         }
 
-        if (authoredBars.Count == 0)
-        {
-            authoredBars.AddRange(railingVerticalBars);
-        }
+        ResolveRailingBounds(referenceSize.x * 0.5f, targetSize.x * 0.5f, out float left, out float right);
+        float span = right - left;
+        int barCount = RailingBarLayout.ResolveBarCount(span, pitch);
+        float endGap = RailingBarLayout.ResolveEndGap(span, pitch, barCount);
 
-        float referenceHalf = referenceSize.x * 0.5f;
-        float targetHalf = targetSize.x * 0.5f;
-        float leftInset = authoredBars[0].LocalPosition.x + referenceHalf;
-        float rightInset = referenceHalf - authoredBars[authoredBars.Count - 1].LocalPosition.x;
-        float span = Mathf.Max(MinimumSize, targetSize.x - leftInset - rightInset);
-        float authoredSpacing = ResolveAuthoredBarSpacing(authoredBars);
-        int desiredCount = Mathf.Clamp(Mathf.RoundToInt(span / authoredSpacing) + 1, 2, railingVerticalBars.Count);
-
-        float startX = -targetHalf + leftInset;
-        float spacing = desiredCount > 1 ? span / (desiredCount - 1) : 0f;
-        for (int i = 0; i < railingVerticalBars.Count; i++)
+        PartState template = railingVerticalBars[0];
+        CollectRailingBarSlots(template.Transform, barCount);
+        for (int i = 0; i < railingBarSlots.Count; i++)
         {
-            PartState bar = railingVerticalBars[i];
-            bool active = i < desiredCount;
-            bar.Transform.gameObject.SetActive(active);
+            Transform bar = railingBarSlots[i];
+            bool active = i < barCount;
+            bar.gameObject.SetActive(active);
             if (!active)
             {
                 continue;
             }
 
-            Vector3 position = bar.Transform.localPosition;
-            position.x = startX + spacing * i;
-            bar.Transform.localPosition = position;
-            bar.Transform.localScale = bar.LocalScale;
-            bar.Transform.localRotation = bar.LocalRotation;
+            // Bars are never scaled; y/z follow the template bar that ApplyPart already placed.
+            Vector3 position = template.Transform.localPosition;
+            position.x = left + endGap + pitch * i;
+            bar.localPosition = position;
+            bar.localRotation = template.LocalRotation;
+            bar.localScale = template.LocalScale;
         }
     }
 
-    private static float ResolveAuthoredBarSpacing(List<PartState> authoredBars)
+    private float ResolveRailingBarPitch()
     {
-        if (authoredBars.Count < 2)
+        if (railingBarPitch > MinimumSize)
         {
-            return 1f;
+            return railingBarPitch;
         }
 
         float total = 0f;
         int count = 0;
-        for (int i = 1; i < authoredBars.Count; i++)
+        for (int i = 1; i < railingVerticalBars.Count; i++)
         {
-            float spacing = Mathf.Abs(authoredBars[i].LocalPosition.x - authoredBars[i - 1].LocalPosition.x);
+            float spacing = Mathf.Abs(railingVerticalBars[i].LocalPosition.x - railingVerticalBars[i - 1].LocalPosition.x);
             if (spacing > MinimumSize)
             {
                 total += spacing;
@@ -71,6 +70,54 @@ public sealed partial class ParametricOpeningModel
             }
         }
 
-        return count > 0 ? total / count : 1f;
+        return count > 0 ? total / count : 0f;
+    }
+
+    // The railing spans between the left and right posts, which stay anchored to the opening edges.
+    // Without posts the railing spans the full opening width.
+    private void ResolveRailingBounds(float referenceHalf, float targetHalf, out float left, out float right)
+    {
+        left = -targetHalf;
+        right = targetHalf;
+        for (int i = 0; i < parts.Count; i++)
+        {
+            PartState part = parts[i];
+            if (part == null || part.Transform == null)
+            {
+                continue;
+            }
+
+            string partName = part.Transform.name;
+            if (partName.Contains("Railing_Left_Post"))
+            {
+                left = -targetHalf + (part.LocalPosition.x + referenceHalf);
+            }
+            else if (partName.Contains("Railing_Right_Post"))
+            {
+                right = targetHalf - (referenceHalf - part.LocalPosition.x);
+            }
+        }
+    }
+
+    private void CollectRailingBarSlots(Transform template, int requiredCount)
+    {
+        railingBarSlots.Clear();
+        for (int i = 0; i < railingVerticalBars.Count; i++)
+        {
+            if (railingVerticalBars[i].Transform != null)
+            {
+                railingBarSlots.Add(railingVerticalBars[i].Transform);
+            }
+        }
+
+        generatedRailingBars.RemoveAll(bar => bar == null);
+        while (railingBarSlots.Count + generatedRailingBars.Count < requiredCount)
+        {
+            GameObject clone = Instantiate(template.gameObject, template.parent);
+            clone.name = GeneratedRailingBarPrefix + (railingBarSlots.Count + generatedRailingBars.Count + 1).ToString("00");
+            generatedRailingBars.Add(clone.transform);
+        }
+
+        railingBarSlots.AddRange(generatedRailingBars);
     }
 }
