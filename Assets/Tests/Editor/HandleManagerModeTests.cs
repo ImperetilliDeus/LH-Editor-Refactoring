@@ -100,8 +100,8 @@ public class HandleManagerModeTests
 
         Assert.That(startHandle, Is.Not.Null);
         Assert.That(endHandle, Is.Not.Null);
-        AssertScreenPosition(startHandle.position, camera.WorldToScreenPoint(startPoint));
-        AssertScreenPosition(endHandle.position, camera.WorldToScreenPoint(endPoint));
+        AssertScreenPosition((Vector2)startHandle.position, ToUnityScreenPoint(camera, startPoint));
+        AssertScreenPosition((Vector2)endHandle.position, ToUnityScreenPoint(camera, endPoint));
     }
 
     [Test]
@@ -146,12 +146,12 @@ public class HandleManagerModeTests
         RectTransform canvasRect = canvas.transform as RectTransform;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             canvasRect,
-            camera.WorldToScreenPoint(startPoint),
+            ToUnityScreenPoint(camera, startPoint),
             null,
             out Vector2 expectedStart);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             canvasRect,
-            camera.WorldToScreenPoint(endPoint),
+            ToUnityScreenPoint(camera, endPoint),
             null,
             out Vector2 expectedEnd);
         AssertScreenPosition(startHandle.anchoredPosition, expectedStart);
@@ -198,8 +198,8 @@ public class HandleManagerModeTests
         RectTransform wallUi = canvas.transform.Find("WallPreview_ui") as RectTransform;
         Assert.That(wallUi, Is.Not.Null);
 
-        Vector3 startScreen = camera.WorldToScreenPoint(startPoint);
-        Vector3 endScreen = camera.WorldToScreenPoint(endPoint);
+        Vector2 startScreen = ToUnityScreenPoint(camera, startPoint);
+        Vector2 endScreen = ToUnityScreenPoint(camera, endPoint);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, startScreen, null, out Vector2 startLocal);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, endScreen, null, out Vector2 endLocal);
         float expectedWidth = Vector2.Distance(startLocal, endLocal);
@@ -286,6 +286,20 @@ public class HandleManagerModeTests
         {
             Object.DestroyImmediate(target);
         }
+    }
+
+    // Production code maps camera pixels to Unity screen pixels; in the GUI test runner Screen is the editor window,
+    // so expectations must go through the same conversion instead of raw WorldToScreenPoint.
+    private static Vector2 ToUnityScreenPoint(Camera camera, Vector3 worldPoint)
+    {
+        MethodInfo method = GetAssemblyType("EditorScreenCoordinateUtility").GetMethod(
+            "ToUnityScreenPoint",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[] { typeof(Camera), typeof(Vector2) },
+            null);
+        Assert.That(method, Is.Not.Null);
+        return (Vector2)method.Invoke(null, new object[] { camera, (Vector2)camera.WorldToScreenPoint(worldPoint) });
     }
 
     private static void AssertScreenPosition(Vector3 actual, Vector3 expected)
