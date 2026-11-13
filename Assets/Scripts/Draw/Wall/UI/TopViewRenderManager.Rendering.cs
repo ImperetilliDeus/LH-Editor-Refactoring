@@ -80,11 +80,11 @@ public partial class TopViewRenderManager
 
     private void RefreshVirtualBoundaryVisuals()
     {
-        VirtualBoundary[] boundaries = FindObjectsByType<VirtualBoundary>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        IReadOnlyList<VirtualBoundary> boundaries = VirtualBoundary.All;
         TopPlanSegmentBatchGraphic batchGraphic = GetOrCreateBatchGraphic(ref virtualBoundaryBatchGraphic, "TopPlanVirtualBoundariesBatch");
         cachedVirtualBoundarySegments.Clear();
 
-        for (int i = 0; i < boundaries.Length; i++)
+        for (int i = 0; i < boundaries.Count; i++)
         {
             VirtualBoundary boundary = boundaries[i];
             if (boundary == null || !boundary.isActiveAndEnabled || !boundary.VisibleInTopView)

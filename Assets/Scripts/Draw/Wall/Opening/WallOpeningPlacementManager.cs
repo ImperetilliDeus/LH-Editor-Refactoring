@@ -100,6 +100,7 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     private float lastCanvasScaleFactor;
     private Camera lastPreviewCanvasWorldCamera;
     private int lastMarkerGeometryHash;
+    private bool markerGeometryCheckPending = true;
 
     public float MinimumSideWallUnits => MillimetersToUnits(minimumSideWallMillimeters);
     public WallOpening SelectedOpening => selectionState.SelectedOpening;
@@ -196,9 +197,15 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
     {
         bool isDraggingMarker = markerDragState.IsDraggingMarker;
         bool shouldRefreshMarkerVisuals = markerVisualsDirty || HasCameraStateChanged();
-        if (!isDraggingMarker && HasMarkerGeometryChanged())
+        if (!isDraggingMarker && markerGeometryCheckPending)
         {
-            shouldRefreshMarkerVisuals = true;
+            // The hash scan walks every opening, so it only runs after a signal that geometry may have changed.
+            if (HasMarkerGeometryChanged())
+            {
+                shouldRefreshMarkerVisuals = true;
+            }
+
+            markerGeometryCheckPending = false;
         }
 
         if (shouldRefreshMarkerVisuals)

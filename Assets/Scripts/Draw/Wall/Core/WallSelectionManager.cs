@@ -242,6 +242,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         EnsureMultiSelectBoxVisual();
         EnsureSelectionCanvas();
         BindHandleEvents();
+        BindSelectionUiRefreshEvents();
         BindUIEvents();
         EditorInputManager.Instance.RegisterGlobalHandler(this);
     }
@@ -265,7 +266,10 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         EditorMode currentMode = modeManager != null ? modeManager.CurrentMode : EditorMode.Default;
         if (currentMode == EditorMode.Default || currentMode == EditorMode.DetailEdit)
         {
-            RefreshWallSelectionUIPositions();
+            if (ShouldRefreshSelectionUiPositions())
+            {
+                RefreshWallSelectionUIPositions();
+            }
         }
     }
 
@@ -934,6 +938,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         }
 
         UnbindHandleEvents();
+        UnbindSelectionUiRefreshEvents();
         UnbindUIEvents();
         ClearAllSelectionState();
 
@@ -973,6 +978,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
     private void HandleWallHierarchyChanged()
     {
         rootWallsCacheDirty = true;
+        selectionUiPositionsDirty = true;
         RefreshSelectionVisuals();
     }
 

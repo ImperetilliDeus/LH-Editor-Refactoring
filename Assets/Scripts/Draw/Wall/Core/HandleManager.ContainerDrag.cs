@@ -382,6 +382,8 @@ public partial class HandleManager
             opening.SetCenterDistance(Vector3.Dot(openingCenter - newStart, newDirection));
         }
 
+        EditorVisualEvents.RequestOpeningMarkerRefresh();
+
         MeshRenderer[] renderers = child.GetComponentsInChildren<MeshRenderer>(true);
         for (int i = 0; i < renderers.Length; i++)
         {

@@ -60,6 +60,8 @@ public class WallLengthDisplay : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        WallRegistry.RegistryChanged -= MarkLabelPositionsDirty;
+        WallRegistry.RegistryChanged += MarkLabelPositionsDirty;
     }
 
     private void OnEnable()
@@ -172,9 +174,6 @@ public class WallLengthDisplay : MonoBehaviour
             CacheCameraState();
             return;
         }
-
-        RefreshLabelInteractionStates();
-        RefreshLengthLabelVisibilityStates();
 
         bool cameraChanged = HasCameraStateChanged();
         bool viewportChanged = HasViewportChanged();
@@ -506,8 +505,15 @@ public class WallLengthDisplay : MonoBehaviour
         LengthLabelClicked?.Invoke(wallTransform);
     }
 
+    private void MarkLabelPositionsDirty()
+    {
+        // Also drives stale-entry cleanup, since destroyed walls unregister (raising this event) before they become null.
+        labelPositionsDirty = true;
+    }
+
     private void OnDestroy()
     {
+        WallRegistry.RegistryChanged -= MarkLabelPositionsDirty;
         UnsubscribeModeManager();
         ClearAllLabels();
     }
@@ -631,14 +637,6 @@ public class WallLengthDisplay : MonoBehaviour
     private bool ShouldShowEntryLabel(LabelEntry entry)
     {
         return entry != null && (entry.isPreview || entry.wallTransform == selectedWallTransform);
-    }
-
-    private void RefreshLabelInteractionStates()
-    {
-        foreach (KeyValuePair<int, LabelEntry> pair in labelEntries)
-        {
-            ApplyLabelInteractionState(pair.Value);
-        }
     }
 
     private void ApplyLabelInteractionState(LabelEntry entry)

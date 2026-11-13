@@ -109,6 +109,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private bool handleLayoutDirty = true;
     private bool handlePositionsDirty = true;
     private bool suppressWallRenaming;
+    private bool destroyedWallScanPending = true;
     private Vector3 lastCameraPosition;
     private Quaternion lastCameraRotation;
     private float lastCameraOrthoSize;
@@ -139,6 +140,8 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         RefreshAllGroupWorldPoints();
         CacheCameraState();
         BindModeEvents();
+        WallRegistry.RegistryChanged -= MarkDestroyedWallScanPending;
+        WallRegistry.RegistryChanged += MarkDestroyedWallScanPending;
         SyncModeState();
         EditorInputManager.Instance.RegisterGlobalHandler(this);
         ValidateConfiguration();
@@ -160,10 +163,14 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
             return;
         }
 
-        bool removedDestroyedWalls = CleanupDestroyedWalls();
-        if (removedDestroyedWalls)
+        // A wall unregisters in OnDisable while still non-null, so the event only flags a scan for this frame.
+        if (destroyedWallScanPending)
         {
-            handleLayoutDirty = true;
+            destroyedWallScanPending = false;
+            if (CleanupDestroyedWalls())
+            {
+                handleLayoutDirty = true;
+            }
         }
 
         bool cameraChanged = HasCameraStateChanged();
@@ -591,8 +598,15 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
         modeManager.ModeChanged += HandleModeChanged;
     }
 
+    private void MarkDestroyedWallScanPending()
+    {
+        destroyedWallScanPending = true;
+    }
+
     private void UnbindModeEvents()
     {
+        WallRegistry.RegistryChanged -= MarkDestroyedWallScanPending;
+
         if (modeManager == null)
         {
             return;

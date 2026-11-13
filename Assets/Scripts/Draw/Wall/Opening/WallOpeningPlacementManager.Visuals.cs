@@ -7,11 +7,14 @@ public partial class WallOpeningPlacementManager
     {
         EditorVisualEvents.OpeningMarkerRefreshRequested -= HandleOpeningMarkerRefreshRequested;
         EditorVisualEvents.OpeningMarkerRefreshRequested += HandleOpeningMarkerRefreshRequested;
+        WallRegistry.RegistryChanged -= MarkMarkerGeometryCheckPending;
+        WallRegistry.RegistryChanged += MarkMarkerGeometryCheckPending;
     }
 
     private void UnbindVisualEvents()
     {
         EditorVisualEvents.OpeningMarkerRefreshRequested -= HandleOpeningMarkerRefreshRequested;
+        WallRegistry.RegistryChanged -= MarkMarkerGeometryCheckPending;
     }
 
     private void HandleOpeningMarkerRefreshRequested()
@@ -19,9 +22,15 @@ public partial class WallOpeningPlacementManager
         MarkMarkerVisualsDirty();
     }
 
+    private void MarkMarkerGeometryCheckPending()
+    {
+        markerGeometryCheckPending = true;
+    }
+
     public void MarkMarkerVisualsDirty()
     {
         markerVisualsDirty = true;
+        markerGeometryCheckPending = true;
     }
 
     public void RefreshRestoredOpeningVisuals()
