@@ -7,14 +7,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
 {
     private const float MinimumWallLength = GeometryTolerance.MinimumWallLength;
 
-    private enum MultiSelectionField
-    {
-        Length,
-        Height,
-        Thickness,
-        AddOpenings,
-    }
-
     private enum LengthAnchorMode
     {
         LeftFixed,
@@ -36,17 +28,12 @@ public partial class WallPropertyInputManager : MonoBehaviour
     [SerializeField] private InputField wallThicknessInputField;
     [SerializeField] private GameObject addOpeningsTarget;
 
-    [Header("Multi Selection")]
-    [SerializeField] private List<MultiSelectionField> disabledFieldsForMultiSelection = new List<MultiSelectionField>();
-
     [Header("Length Anchor")]
     [SerializeField] private Button leftLengthAnchorButton;
     [SerializeField] private Button rightLengthAnchorButton;
     [SerializeField] private LengthAnchorMode lengthAnchorMode = LengthAnchorMode.LeftFixed;
 
     private readonly List<Wall> resizeAffectedWalls = new List<Wall>();
-    private readonly List<Wall> selectedWallComponents = new List<Wall>();
-    private readonly HashSet<WallOpeningContainer> selectedOpeningContainers = new HashSet<WallOpeningContainer>();
     private readonly WallPropertyPresentationController presentationController = new WallPropertyPresentationController();
     private readonly WallPropertySelectionService selectionService = new WallPropertySelectionService();
     private readonly WallPropertyMutationService mutationService = new WallPropertyMutationService();
@@ -80,12 +67,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             inputText = wallLengthInputField.text;
         }
 
-        if (!IsFieldEnabledForCurrentSelection(MultiSelectionField.Length))
-        {
-            UpdateInputFieldValues(true);
-            return;
-        }
-
         GameObject selectedWall = GetSelectedWall();
         if (selectedWall == null)
         {
@@ -103,18 +84,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         if (targetLengthUnits < MinimumWallLength)
         {
             UpdateInputFieldValues(true);
-            return;
-        }
-
-        if (IsMultiSelectionActive())
-        {
-            GetSelectedWallComponents(selectedWallComponents);
-            for (int i = 0; i < selectedWallComponents.Count; i++)
-            {
-                ApplyWallLengthToWall(selectedWallComponents[i], targetLengthUnits);
-            }
-
-            RefreshAfterEdit();
             return;
         }
 
@@ -170,12 +139,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             inputText = wallHeightInputField.text;
         }
 
-        if (!IsFieldEnabledForCurrentSelection(MultiSelectionField.Height))
-        {
-            UpdateInputFieldValues(true);
-            return;
-        }
-
         GameObject selectedWall = GetSelectedWall();
         if (selectedWall == null)
         {
@@ -193,49 +156,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         if (targetHeightUnits < MinimumWallLength)
         {
             UpdateInputFieldValues(true);
-            return;
-        }
-
-        if (IsMultiSelectionActive())
-        {
-            GetSelectedWallComponents(selectedWallComponents);
-            selectedOpeningContainers.Clear();
-            for (int i = 0; i < selectedWallComponents.Count; i++)
-            {
-                Wall wall = selectedWallComponents[i];
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-                if (container != null)
-                {
-                    if (!selectedOpeningContainers.Add(container))
-                    {
-                        continue;
-                    }
-
-                    ApplyContainerHeightForMultiSelection(container, targetHeightUnits);
-                    continue;
-                }
-
-                GameObject wallObject = wall.gameObject;
-                Transform multiWallTransform = wallObject.transform;
-                Vector3 multiScale = multiWallTransform.localScale;
-                float multiBottomY = multiWallTransform.position.y - multiScale.y * 0.5f;
-                multiScale.y = targetHeightUnits;
-                multiWallTransform.localScale = multiScale;
-
-                Vector3 multiPosition = multiWallTransform.position;
-                multiPosition.y = multiBottomY + targetHeightUnits * 0.5f;
-                multiWallTransform.position = multiPosition;
-
-                wall.SyncEndpointsFromTransform(wall.Data.startPoint.y);
-                wall.RefreshLengthDisplay(wallLengthDisplay, false);
-            }
-
-            RefreshAfterEdit();
             return;
         }
 
@@ -276,12 +196,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             inputText = wallThicknessInputField.text;
         }
 
-        if (!IsFieldEnabledForCurrentSelection(MultiSelectionField.Thickness))
-        {
-            UpdateInputFieldValues(true);
-            return;
-        }
-
         GameObject selectedWall = GetSelectedWall();
         if (selectedWall == null)
         {
@@ -299,43 +213,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         if (targetThicknessUnits < MinimumWallLength)
         {
             UpdateInputFieldValues(true);
-            return;
-        }
-
-        if (IsMultiSelectionActive())
-        {
-            GetSelectedWallComponents(selectedWallComponents);
-            selectedOpeningContainers.Clear();
-            for (int i = 0; i < selectedWallComponents.Count; i++)
-            {
-                Wall wall = selectedWallComponents[i];
-                if (wall == null)
-                {
-                    continue;
-                }
-
-                WallOpeningContainer container = wall.GetComponentInParent<WallOpeningContainer>();
-                if (container != null)
-                {
-                    if (!selectedOpeningContainers.Add(container))
-                    {
-                        continue;
-                    }
-
-                    ApplyContainerThicknessForMultiSelection(container, targetThicknessUnits);
-                    continue;
-                }
-
-                GameObject wallObject = wall.gameObject;
-                Vector3 multiScale = wallObject.transform.localScale;
-                multiScale.x = targetThicknessUnits;
-                wallObject.transform.localScale = multiScale;
-
-                wall.SyncEndpointsFromTransform(wall.Data.startPoint.y);
-                wall.RefreshLengthDisplay(wallLengthDisplay, false);
-            }
-
-            RefreshAfterEdit();
             return;
         }
 
@@ -425,23 +302,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
         return selectionService.GetSelectedWall(wallSelectionManager);
     }
 
-    private void GetSelectedWallComponents(List<Wall> result)
-    {
-        selectionService.GetSelectedWallComponents(wallSelectionManager, result);
-    }
-
-    private bool IsFieldEnabledForCurrentSelection(MultiSelectionField field)
-    {
-        return selectionService.IsFieldEnabledForCurrentSelection(
-            wallSelectionManager,
-            disabledFieldsForMultiSelection.Contains(field));
-    }
-
-    private bool IsMultiSelectionActive()
-    {
-        return selectionService.IsMultiSelectionActive(wallSelectionManager);
-    }
-
     private float GetDisplayedLengthUnits(Wall wall)
     {
         if (wall == null)
@@ -491,18 +351,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             CollectWallsSharingVertex);
     }
 
-    private void ApplyWallLengthToWall(Wall selectedWallComponent, float targetLengthUnits)
-    {
-        mutationService.ApplyWallLengthWithoutRefresh(
-            selectedWallComponent,
-            targetLengthUnits,
-            lengthAnchorMode == LengthAnchorMode.LeftFixed,
-            MinimumWallLength,
-            wallLengthDisplay,
-            resizeAffectedWalls,
-            CollectWallsSharingVertex);
-    }
-
     private bool TryApplyContainerHeightFromSelectedWall(Wall selectedWallComponent, float targetHeightUnits)
     {
         return mutationService.TryApplyContainerHeightFromSelectedWall(
@@ -514,18 +362,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             UpdateInputFieldValues);
     }
 
-    private void ApplyContainerHeightForMultiSelection(WallOpeningContainer container, float targetHeightUnits)
-    {
-        mutationService.ApplyContainerHeight(
-            container,
-            targetHeightUnits,
-            wallOpeningPlacementManager,
-            null,
-            MarkTopViewDirty,
-            UpdateInputFieldValues,
-            false);
-    }
-
     private bool TryApplyContainerThicknessFromSelectedWall(Wall selectedWallComponent, float targetThicknessUnits)
     {
         return mutationService.TryApplyContainerThicknessFromSelectedWall(
@@ -535,18 +371,6 @@ public partial class WallPropertyInputManager : MonoBehaviour
             handleManager,
             MarkTopViewDirty,
             UpdateInputFieldValues);
-    }
-
-    private void ApplyContainerThicknessForMultiSelection(WallOpeningContainer container, float targetThicknessUnits)
-    {
-        mutationService.ApplyContainerThickness(
-            container,
-            targetThicknessUnits,
-            wallOpeningPlacementManager,
-            null,
-            MarkTopViewDirty,
-            UpdateInputFieldValues,
-            false);
     }
 
     private void EnsureWallRoot()

@@ -28,47 +28,4 @@ internal sealed class WallPropertySelectionService
 
         return null;
     }
-
-    public void GetSelectedWallComponents(WallSelectionManager wallSelectionManager, List<Wall> result)
-    {
-        if (result == null)
-        {
-            return;
-        }
-
-        result.Clear();
-        if (wallSelectionManager == null)
-        {
-            return;
-        }
-
-        wallSelectionManager.GetSelectedWalls(selectedWallObjects);
-        for (int i = 0; i < selectedWallObjects.Count; i++)
-        {
-            GameObject wallObject = selectedWallObjects[i];
-            if (wallObject == null || !wallObject.TryGetComponent(out Wall wall))
-            {
-                continue;
-            }
-
-            result.Add(wall);
-        }
-    }
-
-    public bool IsFieldEnabledForCurrentSelection(
-        WallSelectionManager wallSelectionManager,
-        bool isDisabledForMultiSelection)
-    {
-        if (wallSelectionManager == null || !wallSelectionManager.HasMultiWallSelection)
-        {
-            return true;
-        }
-
-        return !isDisabledForMultiSelection;
-    }
-
-    public bool IsMultiSelectionActive(WallSelectionManager wallSelectionManager)
-    {
-        return wallSelectionManager != null && wallSelectionManager.HasMultiWallSelection;
-    }
 }

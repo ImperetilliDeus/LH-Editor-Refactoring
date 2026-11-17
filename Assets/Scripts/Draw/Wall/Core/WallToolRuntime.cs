@@ -163,7 +163,7 @@ internal sealed class WallToolRuntime : IWallToolContext
 
     public bool TryConsumeEditSelectionPress()
     {
-        return wallSelectionManager != null && wallSelectionManager.TryConsumeIdleLeftPress();
+        return wallSelectionManager != null && wallSelectionManager.IsIdleLeftPressOnWall();
     }
 
     public void DeleteCurrentSelection()

@@ -5,9 +5,9 @@
 ## 1. 벽 작성
 
 1. `Default` 모드 진입
-2. 벽을 그리거나 endpoint handle로 조정
-3. 필요하면 벽 자체를 선택해서 이동
-4. handle snap이 필요하면 `Ctrl`을 누른 상태에서 드래그
+2. 벽을 그리거나 endpoint handle로 조정. 벽 위치를 바꿀 때도 handle만 사용한다(벽 본체 드래그 이동 없음)
+3. handle snap이 필요하면 `Ctrl`을 누른 상태에서 드래그
+4. `Default`에서 벽을 클릭해도 선택되지 않는다
 
 ## 2. room 작성
 
@@ -21,7 +21,7 @@
 ## 3. DetailEdit 벽 편집
 
 1. `DetailEdit` 모드 진입
-2. 벽 선택 또는 다중 선택
+2. 벽 클릭으로 선택(한 번에 하나만, 다른 벽을 클릭하면 교체, 우클릭으로 해제)
 3. 길이/높이/두께 입력 적용
 4. 입력 직후 3D / top view / room 정보가 즉시 갱신
 5. 문/창 배치 또는 opening container 재구성

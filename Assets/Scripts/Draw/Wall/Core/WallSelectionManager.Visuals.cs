@@ -39,7 +39,7 @@ public partial class WallSelectionManager
         bool visible = modeManager != null &&
                        modeManager.IsMode(EditorMode.DetailEdit) &&
                        (wallOpeningPlacementManager == null || !wallOpeningPlacementManager.IsOpeningDetailMenuVisible) &&
-                       selectionState.SelectedWallCount > 0;
+                       selectionState.HasSelection;
         SetSelectUIVisible(visible);
     }
 

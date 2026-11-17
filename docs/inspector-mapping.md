@@ -65,19 +65,21 @@
 ## `WallSelectionManager`
 
 - `mainCamera`
-- `grid`
 - `wallRoot`
 - `drawManager`
 - `handleManager`
-- `snapManager`
 - `wallLengthDisplay`
-- `undoRedoManager`
 - `modeManager`
+- `viewModeManager`
 - `wallOpeningPlacementManager`
 - `roomManager`
+- `wallSelectionCanvas`, `wallUINormalColor`, `wallUISelectedColor`, `wallUIThicknessPixels`
+- `previewWallUIEndCapMinSize`, `previewWallUIEndCapPadding`, `previewWallUIEndCapSizeMultiplier`
+- `selectUIObject`, `deleteSelectionButton`
 
 참고:
 - 입력은 `IEditorInputProvider`로 통일되었습니다.
+- 벽 선택은 `DetailEdit` 단일 선택만 지원합니다. 다중 선택·박스 선택·벽 본체 드래그 관련 필드(`multiSelect*`, `dragStartThresholdPixels`, `snapDraggedWallToGrid`, `connectedEndpointThreshold`, `grid`, `snapManager`)는 제거되었습니다.
 
 ## `WallPropertyInputManager`
 

@@ -23,7 +23,7 @@ public partial class WallPropertyInputManager
         }
 
         GameObject selectedWall = GetSelectedWall();
-        bool interactable = selectedWall != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.Length);
+        bool interactable = selectedWall != null;
         presentationController.SetInputFieldInteractableSafely(wallLengthInputField, interactable);
 
         if (!force && wallLengthInputField.isFocused)
@@ -32,11 +32,7 @@ public partial class WallPropertyInputManager
         }
 
         string nextText = string.Empty;
-        if (IsMultiSelectionActive())
-        {
-            nextText = TryGetCommonMultiSelectionValueText(MultiSelectionField.Length);
-        }
-        else if (selectedWall != null && selectedWall.TryGetComponent(out Wall selectedWallComponent))
+        if (selectedWall != null && selectedWall.TryGetComponent(out Wall selectedWallComponent))
         {
             float lengthMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedLengthUnits(selectedWallComponent));
             nextText = UnitDisplayUtility.FormatMillimetersWithConversions(lengthMillimeters);
@@ -53,7 +49,7 @@ public partial class WallPropertyInputManager
         }
 
         GameObject selectedWall = GetSelectedWall();
-        bool interactable = selectedWall != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.Height);
+        bool interactable = selectedWall != null;
         presentationController.SetInputFieldInteractableSafely(wallHeightInputField, interactable);
 
         if (!force && wallHeightInputField.isFocused)
@@ -62,11 +58,7 @@ public partial class WallPropertyInputManager
         }
 
         string nextText = string.Empty;
-        if (IsMultiSelectionActive())
-        {
-            nextText = TryGetCommonMultiSelectionValueText(MultiSelectionField.Height);
-        }
-        else if (selectedWall != null)
+        if (selectedWall != null)
         {
             float heightMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedHeightUnits(selectedWall));
             nextText = UnitDisplayUtility.FormatMillimetersWithConversions(heightMillimeters);
@@ -83,7 +75,7 @@ public partial class WallPropertyInputManager
         }
 
         GameObject selectedWall = GetSelectedWall();
-        bool interactable = selectedWall != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.Thickness);
+        bool interactable = selectedWall != null;
         presentationController.SetInputFieldInteractableSafely(wallThicknessInputField, interactable);
 
         if (!force && wallThicknessInputField.isFocused)
@@ -92,11 +84,7 @@ public partial class WallPropertyInputManager
         }
 
         string nextText = string.Empty;
-        if (IsMultiSelectionActive())
-        {
-            nextText = TryGetCommonMultiSelectionValueText(MultiSelectionField.Thickness);
-        }
-        else if (selectedWall != null)
+        if (selectedWall != null)
         {
             float thicknessMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedThicknessUnits(selectedWall));
             nextText = UnitDisplayUtility.FormatMillimetersWithConversions(thicknessMillimeters);
@@ -232,7 +220,7 @@ public partial class WallPropertyInputManager
 
     private void UpdateAnchorButtonState()
     {
-        bool lengthFieldEnabled = IsFieldEnabledForCurrentSelection(MultiSelectionField.Length) && GetSelectedWall() != null;
+        bool lengthFieldEnabled = GetSelectedWall() != null;
         if (leftLengthAnchorButton != null)
         {
             leftLengthAnchorButton.interactable = lengthFieldEnabled && lengthAnchorMode != LengthAnchorMode.LeftFixed;
@@ -244,59 +232,9 @@ public partial class WallPropertyInputManager
         }
     }
 
-    private string TryGetCommonMultiSelectionValueText(MultiSelectionField field)
-    {
-        GetSelectedWallComponents(selectedWallComponents);
-        if (selectedWallComponents.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        float? commonValueMillimeters = null;
-        for (int i = 0; i < selectedWallComponents.Count; i++)
-        {
-            Wall wall = selectedWallComponents[i];
-            if (wall == null)
-            {
-                continue;
-            }
-
-            float nextValueMillimeters;
-            switch (field)
-            {
-                case MultiSelectionField.Length:
-                    nextValueMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedLengthUnits(wall));
-                    break;
-                case MultiSelectionField.Height:
-                    nextValueMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedHeightUnits(wall.gameObject));
-                    break;
-                case MultiSelectionField.Thickness:
-                    nextValueMillimeters = MeasurementUnits.UnitsToMillimeters(GetDisplayedThicknessUnits(wall.gameObject));
-                    break;
-                default:
-                    return string.Empty;
-            }
-
-            if (!commonValueMillimeters.HasValue)
-            {
-                commonValueMillimeters = nextValueMillimeters;
-                continue;
-            }
-
-            if (Mathf.Abs(commonValueMillimeters.Value - nextValueMillimeters) > 0.0001f)
-            {
-                return string.Empty;
-            }
-        }
-
-        return commonValueMillimeters.HasValue
-            ? UnitDisplayUtility.FormatMillimetersWithConversions(commonValueMillimeters.Value)
-            : string.Empty;
-    }
-
     private void UpdateAddOpeningsTarget()
     {
-        bool shouldBeActive = GetSelectedWall() != null && IsFieldEnabledForCurrentSelection(MultiSelectionField.AddOpenings);
+        bool shouldBeActive = GetSelectedWall() != null;
         presentationController.UpdateAddOpeningsTarget(addOpeningsTarget, shouldBeActive);
     }
 }

@@ -19,7 +19,7 @@ public partial class WallOpeningPlacementManager
             return wallSelectionManager.SelectedWall.GetComponent<Wall>();
         }
 
-        WallOpeningContainer selectedContainer = wallSelectionManager.GetSingleSelectedContainer();
+        WallOpeningContainer selectedContainer = wallSelectionManager.GetSelectedContainer();
         return selectedContainer != null ? ResolveDefaultSplitSegment(selectedContainer) : null;
     }
 

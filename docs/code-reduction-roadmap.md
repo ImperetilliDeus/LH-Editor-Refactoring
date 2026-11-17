@@ -136,9 +136,9 @@
 
 보류:
 
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionDragController.cs`
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionInputController.cs`
 - `Assets/Scripts/Draw/Wall/Core/WallSelectionMutationService.cs`
+
+`WallSelectionDragController`, `WallSelectionInputController`와 각 state 클래스는 2026-11 벽 선택 단순화(단일 선택, 본체 드래그·박스 선택 제거)로 삭제되었다.
 
 근거:
 

@@ -23,7 +23,7 @@
 - `Wall`, `WallData`, `WallObjectFactory` 기반 벽 오브젝트 생성
 - `HandleManager` 기반 endpoint/split point 편집
 - `SnapManager` 기반 grid, axis, handle, wall segment snap
-- `WallSelectionManager` 기반 선택, 다중 선택, 이동
+- `WallSelectionManager` 기반 `DetailEdit` 단일 선택·삭제 (벽 이동은 `HandleManager` handle로만)
 - `WallPropertyInputManager` 기반 길이/높이/두께/centerY 편집
 
 ### 리스크

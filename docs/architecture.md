@@ -31,7 +31,7 @@ flowchart LR
 |---|---|---|
 | 입력 | `Assets/Scripts/Input` | Unity Input System, 포인터/키보드 상태, UI hit 여부를 `EditorInputFrame`으로 변환합니다. |
 | 모드 | `ModeManager.cs` | `EditorMode` 전환, 모드 버튼 바인딩, legacy room mode 정규화를 담당합니다. |
-| 벽 편집 | `Assets/Scripts/Draw/Wall` | 벽 생성/선택/이동/삭제, 스냅, 핸들, opening, Top view 렌더링을 담당합니다. Undo/Redo는 제거되었습니다. |
+| 벽 편집 | `Assets/Scripts/Draw/Wall` | 벽 생성/선택/삭제, 스냅, 핸들(벽 이동의 유일한 경로), opening, Top view 렌더링을 담당합니다. 벽 선택은 `DetailEdit` 단일 선택입니다. Undo/Redo는 제거되었습니다. |
 | 방 편집 | `Assets/Scripts/Room` | 방 생성, 방 폴리곤 검증, 벽 연결, 가상 경계, 방 메타데이터를 담당합니다. |
 | 도면 오버레이 | `Assets/Scripts/Overlay` | 이미지/PDF import, 보정, 월드 좌표 변환, 오버레이 표시를 담당합니다. |
 | CAD import | `Assets/Scripts/Import` | ACadSharp 기반 DWG/DXF 파싱, 레이어 선택, 벽 오브젝트 생성을 담당합니다. |
