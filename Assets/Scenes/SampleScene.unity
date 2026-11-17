@@ -6187,11 +6187,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 330585545}
-  grid: {fileID: 481239205}
   wallRoot: {fileID: 1525552874}
   drawManager: {fileID: 525080095}
   handleManager: {fileID: 525080097}
-  snapManager: {fileID: 525080096}
   wallLengthDisplay: {fileID: 0}
   modeManager: {fileID: 0}
   viewModeManager: {fileID: 1299695794}
@@ -6204,13 +6202,6 @@ MonoBehaviour:
   previewWallUIEndCapMinSize: 3
   previewWallUIEndCapPadding: 1
   previewWallUIEndCapSizeMultiplier: 0.6
-  multiSelectDragThresholdPixels: 6
-  multiSelectBoxHeight: 1
-  multiSelectBoxColor: {r: 1, g: 0.62, b: 0.12, a: 0.14}
-  multiSelectModifierKey: 1
-  dragStartThresholdPixels: 6
-  snapDraggedWallToGrid: 1
-  connectedEndpointThreshold: 0.35
   selectUIObject: {fileID: 1796782196}
   deleteSelectionButton: {fileID: 434523814}
 --- !u!114 &525080099
@@ -6236,7 +6227,6 @@ MonoBehaviour:
   wallHeightInputField: {fileID: 333287565}
   wallThicknessInputField: {fileID: 1359178605}
   addOpeningsTarget: {fileID: 1833370931}
-  disabledFieldsForMultiSelection: 0000000003000000
   leftLengthAnchorButton: {fileID: 1280678133}
   rightLengthAnchorButton: {fileID: 1606751484}
   lengthAnchorMode: 0
