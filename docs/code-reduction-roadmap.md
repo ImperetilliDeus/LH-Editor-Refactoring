@@ -11,151 +11,36 @@
 
 ## 1. 즉시 삭제 후보
 
-### 1-1. 사용되지 않는 Room cycle 탐색 API
+### 1-1. 사용되지 않는 Room cycle 탐색 API (완료)
 
-파일:
+`BuildLargestCycleVerticesFromBoundaryGraph`, `TryFindContainingCycle`, `BuildBoundaryCycles`, `BuildBoundaryFaces`, `FindBoundaryCyclesDepthFirst`는 이미 삭제되었다.
 
-- `Assets/Scripts/Room/RoomGraphUtility.Cycle.cs`
+- `RoomGraphUtility.Cycle.cs`에 남은 메서드는 모두 `BuildPlanarGraph` 경로에서 쓰인다.
+- 이 파일에 따로 있던 정점 정리 함수는 2026-11 `PolygonXZ`로 통합되었다.
 
-우선 삭제 검토 대상 메서드:
+### 1-2. 저장소 내 미사용/외부 보관 코드 (완료)
 
-- `BuildLargestCycleVerticesFromBoundaryGraph`
-- `TryFindContainingCycle`
-- `BuildBoundaryCycles`
-- `BuildBoundaryFaces`
-- `FindBoundaryCyclesDepthFirst`
-
-근거:
-
-- 프로젝트 검색 기준으로 위 메서드군은 `RoomGraphUtility.Cycle.cs` 내부에서만 사용된다.
-- 실제 런타임에서 `RoomManager`는 `BuildPlanarGraph(...)`만 사용한다.
-- cycle DFS는 정확한 폐곡선 탐색기 성격이 강하고, 현재 제품 목표에 비해 비용이 크다.
-
-정리 방식:
-
-- 1차: public이지만 외부 사용처 없는 cycle/face API 제거.
-- 2차: `BuildPlanarGraphFromEdges`에 필요한 최소 보조 함수만 남기고 파일 축소.
-
-예상 효과:
-
-- 방 위상 유틸 복잡도 큰 폭 감소
-- 디버깅 범위 축소
-- 자동 방 생성 관련 오작동 원인 감소
-
-### 1-2. 저장소 내 미사용/외부 보관 코드
-
-정리 후보 경로:
-
-- `Unused/`
-- `tools/_external/`
-- `Assets/ThirdParty/Paroxe/PDFRenderer/Examples/`
-
-근거:
-
-- `Assets/Scripts`: 약 33k lines
-- `Unused`: 약 695 lines
-- `tools/_external`: 약 141k lines
-- `PDFRenderer/Examples`: 약 1k lines
-
-정리 방식:
-
-- 제품과 함께 빌드/탐색할 필요가 없다면 리포지토리 밖 아카이브로 이동
-- 최소한 솔루션 탐색 기준에서는 제외
-- `Unused`는 이름 그대로라면 실제 참조 확인 후 삭제
-
-예상 효과:
-
-- 코드 검색 잡음 대폭 감소
-- 신규 작업자가 제품 경로를 더 빨리 파악 가능
+- `Unused/`와 `tools/_external/`는 저장소에서 정리되었다.
+- `Assets/ThirdParty/Paroxe/PDFRenderer/Examples/`는 ThirdParty 수정 금지 규칙(CLAUDE.md)에 따라 남긴다. 정리가 필요하면 별도로 보고한다.
 
 ## 2. 가장 먼저 합칠 후보
 
-### 2-1. DWG import popup 분해 구조
+### 2-1. DWG import popup 분해 구조 (완료)
 
-현재 주 파일:
-
-- `Assets/Scripts/Import/DwgWallImporter.cs`
-
-현재 보조 파일:
-
-- `Assets/Scripts/Import/DwgWallImportPopupBinder.cs`
-- `Assets/Scripts/Import/DwgWallImportPopupPresenter.cs`
-- `Assets/Scripts/Import/DwgWallImportPopupValidationService.cs`
-- `Assets/Scripts/Import/DwgWallImportPopupCoordinator.cs`
-- `Assets/Scripts/Import/DwgWallImportPopupController.cs`
-- `Assets/Scripts/Import/DwgWallImportPopupState.cs`
-- `Assets/Scripts/Import/DwgWallImportFacade.cs`
-
-유지 검토 가능:
-
-- `Assets/Scripts/Import/DwgWallImportExecutionBuilder.cs`
-- `Assets/Scripts/Import/DwgWallImportProcessingService.cs`
-- `Assets/Scripts/Import/DwgWallImportApplyService.cs`
-
-근거:
-
-- `DwgWallImporter`가 popup 관련 객체를 직접 모두 소유한다.
-- Binder, Presenter, Validation, Coordinator는 대부분 단일 흐름을 포장하는 얇은 래퍼다.
-- import의 본질은 `파일 선택 -> 레이어 선택 -> 세그먼트 추출 -> 벽 생성`이며, 현재 구조는 그 목적에 비해 분해가 과하다.
-
-권장 구조:
+popup 보조 클래스(Binder, Presenter, Validation, Coordinator, Controller, State, Facade)는 병합되었다. 현재 구조는 다음과 같다.
 
 - `DwgWallImporter`
 - `DwgWallImportPopupView`
+- `DwgWallImportExecutionBuilder`
 - `DwgWallImportProcessingService`
 - `DwgWallImportApplyService`
+- `DwgWallImportSceneApplier`
 
-정리 방식:
+### 2-2. Wall selection 얇은 서비스 래퍼 (완료)
 
-- popup state/binder/presenter/validation/coordinator를 `DwgWallImporter` 내부 private 메서드로 회수
-- facade는 importer에 병합
-- execution builder는 남겨도 되지만, 길이가 짧으면 importer 또는 apply service로 병합
-
-예상 효과:
-
-- import 흐름 추적 쉬움
-- 파일 수 감소
-- popup 관련 버그 수정 동선 단축
-
-### 2-2. Wall selection 얇은 서비스 래퍼
-
-주 파일:
-
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionManager.cs`
-
-통합 우선 후보:
-
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionViewSyncService.cs`
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionPresentationController.cs`
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionEnvironmentService.cs`
-
-2차 통합 후보:
-
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionQueryService.cs`
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionUndoRecorder.cs`
-
-보류:
-
-- `Assets/Scripts/Draw/Wall/Core/WallSelectionMutationService.cs`
-
-`WallSelectionDragController`, `WallSelectionInputController`와 각 state 클래스는 2026-11 벽 선택 단순화(단일 선택, 본체 드래그·박스 선택 제거)로 삭제되었다.
-
-근거:
-
-- 일부 파일은 사실상 전달 전용이다.
-- `WallSelectionViewSyncService`는 presentation controller 호출을 감싸는 수준이다.
-- `WallSelectionEnvironmentService`는 reference resolve와 drag plane 계산 정도만 담당한다.
-
-정리 방식:
-
-- 전달 전용 wrapper부터 제거
-- `WallSelectionManager` 내부 private 메서드로 회수
-- query/undo는 길이와 응집도를 보고 남길지 결정
-
-예상 효과:
-
-- 선택 로직 추적 경로 단축
-- 불필요한 객체 수 감소
+- `WallSelectionViewSyncService`, `WallSelectionEnvironmentService`, `WallSelectionQueryService`, `WallSelectionUndoRecorder`, `WallSelectionMutationService`는 삭제되었다.
+- `WallSelectionDragController`, `WallSelectionInputController`와 각 state 클래스는 2026-11 벽 선택 단순화(단일 선택, 본체 드래그·박스 선택 제거)로 삭제되었다.
+- `WallSelectionPresentationController`는 선택 UI proxy의 생성·삭제·위치 갱신만 남겼다. 단순 전달 메서드는 `WallSelectionManager`로 회수했다.
 
 ## 3. 기능 단순화 우선 후보
 
@@ -259,8 +144,9 @@
 - `DrawingOverlaySceneBootstrap`
 - `DrawingOverlayImportController`
 - `OverlayCalibrationPanelFactory`
-- `OverlayFileDialog`
 - `PdfThumbnailLoader`
+
+파일 대화상자는 2026-11에 `Common/Platform/NativeFileDialog`로 공통화되었다. DWG import, 오버레이 import, 작업 상태 저장·불러오기, JSON export가 이것을 함께 쓴다.
 
 추가 단순화:
 
@@ -269,16 +155,15 @@
 
 ## 5. 실제 실행 순서
 
-### Phase 1
+### Phase 1 (완료)
 
-- `Unused/` 실제 참조 확인 후 제거
-- `tools/_external/`와 `PDFRenderer/Examples/`를 제품 경로에서 분리
+- `Unused/` 제거, `tools/_external/` 분리
 - `RoomGraphUtility.Cycle.cs` unused API 제거
 
-### Phase 2
+### Phase 2 (완료)
 
 - `DwgWallImporter` popup 보조 클래스 병합
-- `WallSelectionViewSyncService`, `WallSelectionPresentationController`, `WallSelectionEnvironmentService` 회수
+- Wall selection 서비스 래퍼 회수
 
 ### Phase 3
 
@@ -290,17 +175,11 @@
 
 - `DrawingOverlaySceneBootstrap.cs` 분해
 - PDF fallback 단일화
-- 런타임 파일 다이얼로그 공통화
+- 런타임 파일 다이얼로그 공통화 (완료, `NativeFileDialog`)
 
 ## 6. 바로 작업 시작하기 좋은 항목
 
-위험도가 낮고 효과가 큰 순서:
-
-1. `RoomGraphUtility.Cycle.cs`의 미사용 API 삭제
-2. `DwgWallImporter` popup helper 병합
-3. `WallSelectionViewSyncService` 제거
-4. `Unused/` 정리
-5. `tools/_external/` 분리
+1~2절의 즉시 삭제·병합 후보는 모두 처리되었다. 남은 후보는 3절(기능 단순화)과 4절(Overlay bootstrap 분해)이며, 둘 다 동작이 바뀌므로 범위를 먼저 정한 뒤 진행한다.
 
 ## 7. 보류하는 것이 나은 항목
 

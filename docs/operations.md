@@ -52,6 +52,11 @@ Play Mode에서 빠르게 확인하는 수동 점검 체크리스트입니다.
 참고:
 - wall 계열 입력은 `IEditorInputProvider` 경로로 통일되어 있어, 입력 이상 시 provider 주입 상태를 먼저 확인합니다.
 
+## 파일 열기·저장
+
+- DWG import, 오버레이 import(이미지·PDF), 작업 상태 저장·불러오기, JSON export 대화상자가 열리고 파일 형식 필터가 맞는지 확인
+- Windows 빌드에서 한글이 들어간 폴더·파일 이름으로 열고 저장해도 경로가 깨지지 않는지 확인
+
 ## Top / 3D Perspective View Toggle
 
 `EditorViewModeManager` switches the same editable scene between Top View and 3D Perspective inspection.
