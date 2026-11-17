@@ -153,6 +153,25 @@ popup 보조 클래스(Binder, Presenter, Validation, Coordinator, Controller, S
 - 가능하면 패널은 코드 생성 대신 prefab 기반으로 전환
 - PDF thumbnail은 Paroxe 한 경로만 유지하고 Shell fallback 제거 검토
 
+### 4-2. HandleManager (1차 완료)
+
+파일:
+
+- `Assets/Scripts/Draw/Wall/Core/HandleManager.*.cs` (partial 5개)
+
+2026-11 1차 정리:
+
+- 호출부 없는 split-chain·container drag 메서드 5개와 미사용 필드를 삭제했다.
+- 체인 끝점 드래그의 비율 재배치와 컨테이너 최소 길이 clamp를 `Common/Geometry/PolylineXZ`로 옮기고 EditMode 테스트를 붙였다.
+- 핸들 이미지 생성·배치·hit test·파괴를 `Draw/Wall/View/VertexHandleViews`로 분리했다.
+
+남은 후보 (2차):
+
+- 드래그 상태 머신과 split-point·linear-chain·container 드래그를 plain 클래스로 분리. `WallOpeningPlacementManager`의 재빌드가 벽을 다시 등록하는 재진입 결합(`suppressActiveDragCancellationDepth`)부터 정리해야 한다.
+- 체인 탐색 2벌(`TryBuildSplitChainFromWall`, `TryBuildLinearSplitChainFromElement`)과 "가장 가까운 vertex group" 검색 3벌 통합
+- `RoomHandleManager`의 핸들 이미지·원형 스프라이트 생성 중복을 `VertexHandleViews`로 통합
+- 쓰이지 않는 직렬화 필드 `roomManager` 제거 (씬 저장 필요)
+
 ## 5. 실제 실행 순서
 
 ### Phase 1 (완료)
