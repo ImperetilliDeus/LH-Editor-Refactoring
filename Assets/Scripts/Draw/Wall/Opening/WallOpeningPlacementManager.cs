@@ -185,11 +185,24 @@ public partial class WallOpeningPlacementManager : MonoBehaviour, IEditorModeInp
             EditorInputManager.Instance.UnregisterHandler(EditorMode.DetailEdit, this);
         }
 
-        visualResources.DestroyCachedMaterials(Destroy);
+        visualResources.DestroyCachedMaterials(DestroyOwnedObject);
 
         if (deactivatedWallsHolder != null)
         {
-            Destroy(deactivatedWallsHolder.gameObject);
+            DestroyOwnedObject(deactivatedWallsHolder.gameObject);
+        }
+    }
+
+    // EditMode tests drive this manager outside Play mode, where Destroy is not allowed.
+    private static void DestroyOwnedObject(Object target)
+    {
+        if (Application.isPlaying)
+        {
+            Destroy(target);
+        }
+        else
+        {
+            DestroyImmediate(target);
         }
     }
 

@@ -70,7 +70,7 @@ public partial class WallOpeningPlacementManager
         ClearOpeningSelection();
         if (opening != null)
         {
-            Destroy(opening.gameObject);
+            DestroyOwnedObject(opening.gameObject);
         }
     }
 
@@ -153,7 +153,7 @@ public partial class WallOpeningPlacementManager
 
         opening.transform.SetParent(null, false);
         opening.gameObject.SetActive(false);
-        Destroy(opening.gameObject);
+        DestroyOwnedObject(opening.gameObject);
     }
 
     private void SetMarkerUIRegistered(WallOpeningMarkerUI markerUI, bool registered)

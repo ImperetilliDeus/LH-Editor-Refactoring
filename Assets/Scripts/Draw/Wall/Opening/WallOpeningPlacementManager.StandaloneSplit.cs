@@ -248,7 +248,7 @@ public partial class WallOpeningPlacementManager
     private void RemoveStandaloneSplitSourceWall(Wall selectedWallComponent)
     {
         selectedWallComponent.ClearLengthDisplay(wallLengthDisplay);
-        Destroy(selectedWallComponent.gameObject);
+        DestroyOwnedObject(selectedWallComponent.gameObject);
     }
 
     private void UnregisterStandaloneSplitSourceWall(Wall selectedWallComponent)
@@ -284,6 +284,6 @@ public partial class WallOpeningPlacementManager
             handleManager.UnregisterWall(wallObject);
         }
 
-        Destroy(wallObject);
+        DestroyOwnedObject(wallObject);
     }
 }

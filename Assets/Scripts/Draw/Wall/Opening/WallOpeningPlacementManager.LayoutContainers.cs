@@ -49,14 +49,7 @@ public partial class WallOpeningPlacementManager
     private static void DestroyLayoutObject(GameObject target)
     {
         target.SetActive(false);
-        if (Application.isPlaying)
-        {
-            Destroy(target);
-        }
-        else
-        {
-            DestroyImmediate(target);
-        }
+        DestroyOwnedObject(target);
     }
 
     private void ClearContainerWallRegistrations(Transform container)
@@ -173,7 +166,7 @@ public partial class WallOpeningPlacementManager
                 wallLengthDisplay,
                 false))
         {
-            Destroy(wallObject);
+            DestroyOwnedObject(wallObject);
             return null;
         }
         return wallObject;
@@ -941,7 +934,7 @@ public partial class WallOpeningPlacementManager
 
         if (!applied)
         {
-            Destroy(wallObject);
+            DestroyOwnedObject(wallObject);
             return null;
         }
 

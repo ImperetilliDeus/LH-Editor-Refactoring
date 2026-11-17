@@ -60,7 +60,7 @@ public partial class WallOpeningPlacementManager
                 continue;
             }
 
-            Destroy(child.gameObject);
+            DestroyOwnedObject(child.gameObject);
         }
     }
 }

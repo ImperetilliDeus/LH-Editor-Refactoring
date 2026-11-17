@@ -124,7 +124,7 @@ public partial class WallOpeningPlacementManager
                 continue;
             }
 
-            Destroy(child.gameObject);
+            DestroyOwnedObject(child.gameObject);
         }
     }
 
@@ -154,7 +154,7 @@ public partial class WallOpeningPlacementManager
         if (selectionProxy != null)
         {
             selectionProxy.DestroyUI();
-            Destroy(selectionProxy);
+            DestroyOwnedObject(selectionProxy);
         }
 
         wall.transform.SetParent(deactivatedWallsHolder, false);
@@ -167,7 +167,7 @@ public partial class WallOpeningPlacementManager
             handleManager.UnregisterWall(wall.gameObject);
         }
 
-        Destroy(wall.gameObject);
+        DestroyOwnedObject(wall.gameObject);
     }
 
     private void CreateFillerSegment(
