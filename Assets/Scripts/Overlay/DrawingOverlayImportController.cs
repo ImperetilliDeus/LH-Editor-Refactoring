@@ -4,9 +4,6 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 [DisallowMultipleComponent]
 public sealed class DrawingOverlayImportController : MonoBehaviour
@@ -183,8 +180,8 @@ public sealed class DrawingOverlayImportController : MonoBehaviour
         error = string.Empty;
         string script = $@"
 Add-Type -AssemblyName System.Drawing
-$sourcePath = '{EscapePowerShellSingleQuotedString(sourcePath)}'
-$outputPath = '{EscapePowerShellSingleQuotedString(outputPath)}'
+$sourcePath = '{NativeFileDialog.EscapePowerShellSingleQuoted(sourcePath)}'
+$outputPath = '{NativeFileDialog.EscapePowerShellSingleQuoted(outputPath)}'
 $image = [System.Drawing.Image]::FromFile($sourcePath)
 try {{
     $image.Save($outputPath, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -232,11 +229,6 @@ try {{
         }
     }
 
-    private static string EscapePowerShellSingleQuotedString(string value)
-    {
-        return (value ?? string.Empty).Replace("'", "''");
-    }
-
     private static void TryDeleteFile(string path)
     {
         try
@@ -277,52 +269,15 @@ try {{
 
     private static string ShowOpenFileDialog()
     {
-#if UNITY_EDITOR
-        return EditorUtility.OpenFilePanel("Select Overlay File", string.Empty, "png,jpg,jpeg,pdf");
-#else
-        if (Application.platform != RuntimePlatform.WindowsPlayer)
-        {
-            return string.Empty;
-        }
-
-        try
-        {
-            using Process process = new Process();
-            process.StartInfo = new ProcessStartInfo
+        return NativeFileDialog.OpenFile(
+            "Select Overlay File",
+            string.Empty,
+            new[]
             {
-                FileName = "powershell.exe",
-                Arguments = BuildPowerShellArguments(),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
-            return output;
-        }
-        catch (Exception exception)
-        {
-            UnityEngine.Debug.LogException(exception);
-            return string.Empty;
-        }
-#endif
-    }
-
-    private static string BuildPowerShellArguments()
-    {
-        string script = @"
-Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.OpenFileDialog
-$dialog.Filter = 'Supported Files (*.png;*.jpg;*.jpeg;*.pdf)|*.png;*.jpg;*.jpeg;*.pdf|Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|PDF Files (*.pdf)|*.pdf|All Files (*.*)|*.*'
-$dialog.Multiselect = $false
-$dialog.Title = 'Select Overlay File'
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    Write-Output $dialog.FileName
-}";
-        return "-NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+                new FileDialogFilter("Supported Files", "png", "jpg", "jpeg", "pdf"),
+                new FileDialogFilter("Image Files", "png", "jpg", "jpeg"),
+                new FileDialogFilter("PDF Files", "pdf"),
+                new FileDialogFilter("All Files", "*"),
+            });
     }
 }

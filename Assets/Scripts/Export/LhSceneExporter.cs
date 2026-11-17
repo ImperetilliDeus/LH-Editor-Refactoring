@@ -4,8 +4,6 @@ using System.Text;
 using LH.Schema;
 using UnityEngine;
 using UnityEngine.UI;
-using Process = System.Diagnostics.Process;
-using ProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 
 namespace LH.Export
 {
@@ -166,45 +164,23 @@ namespace LH.Export
 
         private string ShowSaveFileDialog()
         {
-#if UNITY_EDITOR
-            string initialDirectory = GetInitialDirectory();
-            string initialFileName = GetInitialFileName();
-            return UnityEditor.EditorUtility.SaveFilePanel(
-                "Export LH Scene JSON",
-                initialDirectory,
-                initialFileName,
-                "json");
-#else
+#if !UNITY_EDITOR
             if (Application.platform != RuntimePlatform.WindowsPlayer)
             {
                 Debug.LogWarning($"[{nameof(LhSceneExporter)}] Runtime save dialog is only implemented for Windows Player.");
                 return ResolveExportPath();
             }
-
-            try
-            {
-                using Process process = new Process();
-                process.StartInfo = new ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = BuildSaveDialogPowerShellArguments(GetInitialDirectory(), GetInitialFileName()),
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true,
-                };
-
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd().Trim();
-                process.WaitForExit();
-                return output;
-            }
-            catch (System.Exception exception)
-            {
-                Debug.LogException(exception, this);
-                return string.Empty;
-            }
 #endif
+            return NativeFileDialog.SaveFile(
+                "Export LH Scene JSON",
+                GetInitialDirectory(),
+                GetInitialFileName(),
+                "json",
+                new[]
+                {
+                    new FileDialogFilter("JSON Files", "json"),
+                    new FileDialogFilter("All Files", "*"),
+                });
         }
 
         private string GetInitialDirectory()
@@ -229,30 +205,6 @@ namespace LH.Export
             }
 
             return string.IsNullOrWhiteSpace(defaultFileName) ? "lh_scene" : defaultFileName;
-        }
-
-        private static string BuildSaveDialogPowerShellArguments(string initialDirectory, string initialFileName)
-        {
-            string safeDirectory = EscapeForPowerShellSingleQuotedString(initialDirectory);
-            string safeFileName = EscapeForPowerShellSingleQuotedString(initialFileName);
-            string script = $@"
-Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.SaveFileDialog
-$dialog.Filter = 'JSON Files (*.json)|*.json|All Files (*.*)|*.*'
-$dialog.Title = 'Export LH Scene JSON'
-$dialog.InitialDirectory = '{safeDirectory}'
-$dialog.FileName = '{safeFileName}.json'
-$dialog.OverwritePrompt = $true
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    Write-Output $dialog.FileName
-}}";
-            return "-NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand " + System.Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        }
-
-        private static string EscapeForPowerShellSingleQuotedString(string value)
-        {
-            return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("'", "''");
         }
 
         private static bool IsExportExcludedWall(Wall wall)

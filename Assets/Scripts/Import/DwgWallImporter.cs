@@ -7,8 +7,6 @@ using UnityEngine.UI;
 using UnityColor = UnityEngine.Color;
 using UDebug = UnityEngine.Debug;
 using UnityMesh = UnityEngine.Mesh;
-using Process = System.Diagnostics.Process;
-using ProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 
 [AddComponentMenu("LH Editor/Import/DWG Wall Importer")]
 public sealed class DwgWallImporter : MonoBehaviour
@@ -935,53 +933,15 @@ public sealed class DwgWallImporter : MonoBehaviour
 
     private static string ShowOpenCadFileDialog()
     {
-#if UNITY_EDITOR
-        return UnityEditor.EditorUtility.OpenFilePanel("Select DWG/DXF File", string.Empty, "dwg,dxf");
-#else
-        if (Application.platform != RuntimePlatform.WindowsPlayer)
-        {
-            UnityEngine.Debug.LogWarning($"[{nameof(DwgWallImporter)}] Runtime file dialog is only implemented for Windows Player.");
-            return string.Empty;
-        }
-
-        try
-        {
-            using Process process = new Process();
-            process.StartInfo = new ProcessStartInfo
+        return NativeFileDialog.OpenFile(
+            "Select DWG/DXF File",
+            string.Empty,
+            new[]
             {
-                FileName = "powershell.exe",
-                Arguments = BuildPowerShellArguments(),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
-            return output;
-        }
-        catch (Exception exception)
-        {
-            UnityEngine.Debug.LogException(exception);
-            return string.Empty;
-        }
-#endif
-    }
-
-    private static string BuildPowerShellArguments()
-    {
-        string script = @"
-Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.OpenFileDialog
-$dialog.Filter = 'CAD Files (*.dwg;*.dxf)|*.dwg;*.dxf|DWG Files (*.dwg)|*.dwg|DXF Files (*.dxf)|*.dxf|All Files (*.*)|*.*'
-$dialog.Multiselect = $false
-$dialog.Title = 'Select DWG/DXF File'
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    Write-Output $dialog.FileName
-}";
-        return "-NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+                new FileDialogFilter("CAD Files", "dwg", "dxf"),
+                new FileDialogFilter("DWG Files", "dwg"),
+                new FileDialogFilter("DXF Files", "dxf"),
+                new FileDialogFilter("All Files", "*"),
+            });
     }
 }

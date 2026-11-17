@@ -1,15 +1,24 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
-using Debug = UnityEngine.Debug;
 
 public class LhWorkStatePersistenceController : MonoBehaviour
 {
     private const string WorkStateExtension = "lhscene";
-    private const string WorkStateDialogFilter = "LH Scene Files (*.lhscene)|*.lhscene|JSON Files (*.json)|*.json|All Files (*.*)|*.*";
+    private static readonly FileDialogFilter[] WorkStateOpenFilters =
+    {
+        new FileDialogFilter("Work State Files", WorkStateExtension, "json"),
+        new FileDialogFilter("All Files", "*"),
+    };
+
+    private static readonly FileDialogFilter[] WorkStateSaveFilters =
+    {
+        new FileDialogFilter("LH Scene Files", WorkStateExtension),
+        new FileDialogFilter("JSON Files", "json"),
+        new FileDialogFilter("All Files", "*"),
+    };
 
     [Header("References")]
     [SerializeField] private Transform wallRoot;
@@ -281,91 +290,22 @@ public class LhWorkStatePersistenceController : MonoBehaviour
 
     private static string ShowSaveFileDialog(string defaultPath)
     {
-#if UNITY_EDITOR
-        string directory = ResolveDialogDirectory(defaultPath);
-        string defaultName = Path.GetFileName(defaultPath);
-        return UnityEditor.EditorUtility.SaveFilePanel("Save Work State", directory, defaultName, WorkStateExtension);
-#else
-        return ShowWindowsFileDialog(defaultPath, true);
-#endif
+        return NativeFileDialog.SaveFile(
+            "Save Work State",
+            ResolveDialogDirectory(defaultPath),
+            Path.GetFileName(defaultPath),
+            WorkStateExtension,
+            WorkStateSaveFilters);
     }
 
     private static string ShowOpenFileDialog(string defaultPath)
     {
-#if UNITY_EDITOR
-        string directory = ResolveDialogDirectory(defaultPath);
-        return UnityEditor.EditorUtility.OpenFilePanelWithFilters(
-            "Load Work State",
-            directory,
-            new[] { "Work State Files", "lhscene,json", "All Files", "*" });
-#else
-        return ShowWindowsFileDialog(defaultPath, false);
-#endif
+        return NativeFileDialog.OpenFile("Load Work State", ResolveDialogDirectory(defaultPath), WorkStateOpenFilters);
     }
 
     private static string ResolveDialogDirectory(string path)
     {
         string directory = Path.GetDirectoryName(path);
         return string.IsNullOrWhiteSpace(directory) ? Application.dataPath : directory;
-    }
-
-    private static string ShowWindowsFileDialog(string defaultPath, bool saveDialog)
-    {
-        if (Application.platform != RuntimePlatform.WindowsPlayer && Application.platform != RuntimePlatform.WindowsEditor)
-        {
-            Debug.LogWarning("Native file dialog is only available on Windows runtime builds.");
-            return string.Empty;
-        }
-
-        string dialogType = saveDialog ? "SaveFileDialog" : "OpenFileDialog";
-        string script =
-            "Add-Type -AssemblyName System.Windows.Forms;" +
-            $"$dialog = New-Object System.Windows.Forms.{dialogType};" +
-            $"$dialog.Filter = '{WorkStateDialogFilter}';" +
-            $"$dialog.InitialDirectory = '{EscapePowerShellSingleQuoted(ResolveDialogDirectory(defaultPath))}';" +
-            $"$dialog.FileName = '{EscapePowerShellSingleQuoted(Path.GetFileName(defaultPath))}';" +
-            "$dialog.RestoreDirectory = $true;" +
-            "if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Write-Output $dialog.FileName }";
-
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = "powershell.exe",
-            Arguments = "-NoProfile -STA -ExecutionPolicy Bypass -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(script)),
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-
-        try
-        {
-            using Process process = Process.Start(startInfo);
-            if (process == null)
-            {
-                return string.Empty;
-            }
-
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (process.ExitCode != 0 && !string.IsNullOrWhiteSpace(error))
-            {
-                Debug.LogWarning($"Native file dialog failed: {error.Trim()}");
-            }
-
-            return output.Trim();
-        }
-        catch (Exception exception)
-        {
-            Debug.LogException(exception);
-            return string.Empty;
-        }
-    }
-
-    private static string EscapePowerShellSingleQuoted(string value)
-    {
-        return (value ?? string.Empty).Replace("'", "''");
     }
 }
