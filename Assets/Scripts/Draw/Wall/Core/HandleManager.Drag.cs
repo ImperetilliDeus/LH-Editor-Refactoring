@@ -102,7 +102,7 @@ public partial class HandleManager
                 continue;
             }
 
-            if (ContainsScreenPoint(group.handleRect, mousePosition))
+            if (VertexHandleViews.ContainsScreenPoint(group.handleRect, targetCanvas, mousePosition))
             {
                 pendingGroup = group;
                 pendingStartMousePosition = mousePosition;

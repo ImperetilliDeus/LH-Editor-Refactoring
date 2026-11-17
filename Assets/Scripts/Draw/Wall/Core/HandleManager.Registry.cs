@@ -114,7 +114,7 @@ public partial class HandleManager
         }
 
         EnsureCanvas();
-        RectTransform rect = CreateHandleRect($"{HandleObjectNamePrefix}{vertexId}", out Image image);
+        RectTransform rect = handleViews.Create(targetCanvas, $"{HandleObjectNamePrefix}{vertexId}", handleSize, IsHandleInteractionModeActive(), out Image image);
 
         VertexGroup group = new VertexGroup
         {
@@ -156,7 +156,7 @@ public partial class HandleManager
                 continue;
             }
 
-            DestroyHandleRect(group.handleRect);
+            VertexHandleViews.Destroy(group.handleRect);
 
             groupsByVertexId.Remove(group.vertexId);
             vertexGroups.RemoveAt(i);
@@ -222,7 +222,7 @@ public partial class HandleManager
                 continue;
             }
 
-            DestroyHandleRect(group?.handleRect);
+            VertexHandleViews.Destroy(group?.handleRect);
 
             if (group != null)
             {
@@ -347,56 +347,6 @@ public partial class HandleManager
         RefreshAllGroupWorldPoints();
     }
 
-    private void DestroyAllHandleRects()
-    {
-        HashSet<GameObject> destroyedObjects = new HashSet<GameObject>();
-        for (int i = 0; i < vertexGroups.Count; i++)
-        {
-            DestroyHandleObject(vertexGroups[i]?.handleRect != null ? vertexGroups[i].handleRect.gameObject : null, destroyedObjects);
-        }
-
-        if (targetCanvas == null)
-        {
-            return;
-        }
-
-        for (int i = targetCanvas.transform.childCount - 1; i >= 0; i--)
-        {
-            Transform child = targetCanvas.transform.GetChild(i);
-            if (child != null && child.name.StartsWith(HandleObjectNamePrefix, System.StringComparison.Ordinal))
-            {
-                DestroyHandleObject(child.gameObject, destroyedObjects);
-            }
-        }
-    }
-
-    private void DestroyHandleRect(RectTransform handleRect)
-    {
-        DestroyHandleObject(handleRect != null ? handleRect.gameObject : null, null);
-    }
-
-    private void DestroyHandleObject(GameObject handleObject, HashSet<GameObject> destroyedObjects)
-    {
-        if (handleObject == null)
-        {
-            return;
-        }
-
-        if (destroyedObjects != null && !destroyedObjects.Add(handleObject))
-        {
-            return;
-        }
-
-        if (Application.isPlaying)
-        {
-            Destroy(handleObject);
-        }
-        else
-        {
-            DestroyImmediate(handleObject);
-        }
-    }
-
     private void RemoveGroupById(int vertexId)
     {
         if (!groupsByVertexId.TryGetValue(vertexId, out VertexGroup group))
@@ -404,7 +354,7 @@ public partial class HandleManager
             return;
         }
 
-        DestroyHandleRect(group.handleRect);
+        VertexHandleViews.Destroy(group.handleRect);
 
         groupsByVertexId.Remove(vertexId);
         vertexGroups.Remove(group);

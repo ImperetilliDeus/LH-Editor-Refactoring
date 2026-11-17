@@ -105,7 +105,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private IEditorInputProvider inputProvider;
     private int nextVertexId = 1;
     private int suppressActiveDragCancellationDepth;
-    private Sprite circularHandleSprite;
     private bool handleLayoutDirty = true;
     private bool handlePositionsDirty = true;
     private bool suppressWallRenaming;
