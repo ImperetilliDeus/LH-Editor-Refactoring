@@ -95,6 +95,7 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private readonly List<Wall> splitChainWalls = new List<Wall>();
     private readonly List<int> splitChainVertexIds = new List<int>();
     private readonly List<Vector3> splitChainPoints = new List<Vector3>();
+    private readonly List<float> splitChainSegmentLengths = new List<float>();
     private readonly List<LinearChainElement> splitChainCandidates = new List<LinearChainElement>();
     private readonly List<LinearChainElement> splitChainElements = new List<LinearChainElement>();
     private readonly List<LinearChainElement> connectedChainElements = new List<LinearChainElement>();

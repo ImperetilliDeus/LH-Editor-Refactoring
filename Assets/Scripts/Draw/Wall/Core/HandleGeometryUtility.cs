@@ -53,7 +53,7 @@ internal static class HandleGeometryUtility
         Vector3 direction = segmentEnd - segmentStart;
         direction.y = 0f;
         float length = direction.magnitude;
-        if (length <= 0.0001f)
+        if (length <= GeometryTolerance.PolygonVertexEpsilon)
         {
             point = segmentStart;
             point.y = planeHeight;

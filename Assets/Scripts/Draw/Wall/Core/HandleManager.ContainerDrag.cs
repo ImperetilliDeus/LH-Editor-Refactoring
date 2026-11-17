@@ -90,15 +90,13 @@ public partial class HandleManager
 
         oldDirection /= oldLength;
 
-        Vector3 newDirection = isDraggingStart ? (fixedPoint - movedPoint) : (movedPoint - fixedPoint);
+        Vector3 newDirection = movedPoint - fixedPoint;
         newDirection.y = 0f;
         float newLength = newDirection.magnitude;
         if (newLength < minimumWallLength)
         {
             return false;
         }
-
-        newDirection /= newLength;
 
         float minimumContainerLength = GetMinimumContainerLengthForEndpointDrag(
             container,
@@ -108,10 +106,7 @@ public partial class HandleManager
             oldDirection);
         if (newLength < minimumContainerLength)
         {
-            newLength = minimumContainerLength;
-            movedPoint = isDraggingStart
-                ? fixedPoint - newDirection * newLength
-                : fixedPoint + newDirection * newLength;
+            movedPoint = PolylineXZ.PointAtDistanceToward(fixedPoint, movedPoint, minimumContainerLength);
         }
 
         Vector3 newStart = isDraggingStart ? movedPoint : fixedPoint;

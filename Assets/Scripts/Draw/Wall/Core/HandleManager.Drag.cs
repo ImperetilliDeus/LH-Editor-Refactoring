@@ -891,16 +891,13 @@ public partial class HandleManager
             oldDirection /= oldLength;
 
             Vector3 fixedPoint = isDraggingStart ? oldEnd : oldStart;
-            Vector3 movedPoint = constrainedPoint;
-            Vector3 newDirection = isDraggingStart ? (fixedPoint - movedPoint) : (movedPoint - fixedPoint);
+            Vector3 newDirection = constrainedPoint - fixedPoint;
             newDirection.y = 0f;
             float newLength = newDirection.magnitude;
             if (newLength < minimumWallLength)
             {
                 continue;
             }
-
-            newDirection /= newLength;
 
             float minimumContainerLength = IsDraggingOuterSplitPoint(element.container, draggedVertexId)
                 ? minimumWallLength
@@ -912,10 +909,7 @@ public partial class HandleManager
                     oldDirection);
             if (newLength < minimumContainerLength)
             {
-                newLength = minimumContainerLength;
-                movedPoint = isDraggingStart
-                    ? fixedPoint - newDirection * newLength
-                    : fixedPoint + newDirection * newLength;
+                Vector3 movedPoint = PolylineXZ.PointAtDistanceToward(fixedPoint, constrainedPoint, minimumContainerLength);
                 movedPoint.y = constrainedPoint.y;
                 constrainedPoint = movedPoint;
             }
@@ -1077,48 +1071,6 @@ public partial class HandleManager
         return false;
     }
 
-    private static bool TryResolveOriginalSegmentLengths(
-        List<Vector3> points,
-        int segmentCount,
-        float minimumSegmentLength,
-        out float originalTotalLength,
-        out List<float> originalSegmentLengths,
-        out float minimumRequiredTotalLength)
-    {
-        originalTotalLength = 0f;
-        minimumRequiredTotalLength = 0f;
-        originalSegmentLengths = new List<float>(segmentCount);
-        if (points == null || segmentCount <= 0 || points.Count != segmentCount + 1)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < segmentCount; i++)
-        {
-            float segmentLength = Vector3.Distance(points[i], points[i + 1]);
-            if (segmentLength <= 0.0001f)
-            {
-                return false;
-            }
-
-            originalTotalLength += segmentLength;
-            originalSegmentLengths.Add(segmentLength);
-        }
-
-        if (originalTotalLength <= 0.0001f)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < originalSegmentLengths.Count; i++)
-        {
-            float segmentRatio = originalSegmentLengths[i] / originalTotalLength;
-            minimumRequiredTotalLength = Mathf.Max(minimumRequiredTotalLength, minimumSegmentLength / segmentRatio);
-        }
-
-        return true;
-    }
-
     private bool TryApplyLinearSplitChainKeepingDraggedEndpoint(
         List<LinearChainElement> orderedElements,
         List<int> orderedVertexIds,
@@ -1135,41 +1087,10 @@ public partial class HandleManager
             return false;
         }
 
-        if (!TryResolveOriginalSegmentLengths(orderedPoints, orderedElements.Count, minimumWallLength, out float originalTotalLength, out List<float> originalSegmentLengths, out float minimumRequiredTotalLength))
+        if (!PolylineXZ.TryRescaleKeepingEnd(orderedPoints, draggedPoint, minimumWallLength, dragPlaneHeight, splitChainSegmentLengths))
         {
             return false;
         }
-
-        Vector3 terminalPoint = orderedPoints[orderedPoints.Count - 1];
-        terminalPoint.y = dragPlaneHeight;
-        draggedPoint.y = dragPlaneHeight;
-
-        Vector3 draggedToTerminal = draggedPoint - terminalPoint;
-        draggedToTerminal.y = 0f;
-        float newTotalLength = draggedToTerminal.magnitude;
-        if (newTotalLength <= minimumWallLength)
-        {
-            return false;
-        }
-
-        if (newTotalLength < minimumRequiredTotalLength)
-        {
-            return false;
-        }
-
-        Vector3 direction = (terminalPoint - draggedPoint).normalized;
-        orderedPoints[0] = draggedPoint;
-        float accumulatedDistance = 0f;
-        for (int i = 1; i < orderedPoints.Count - 1; i++)
-        {
-            float segmentRatio = originalSegmentLengths[i - 1] / originalTotalLength;
-            accumulatedDistance += newTotalLength * segmentRatio;
-            Vector3 point = draggedPoint + direction * accumulatedDistance;
-            point.y = dragPlaneHeight;
-            orderedPoints[i] = point;
-        }
-
-        orderedPoints[orderedPoints.Count - 1] = terminalPoint;
 
         List<int> deferredContainerIndices = new List<int>();
 
