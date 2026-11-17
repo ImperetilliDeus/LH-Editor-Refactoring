@@ -183,8 +183,8 @@ public static partial class RoomGraphUtility
             vertices.Add(boundary[i].Origin.Position);
         }
 
-        RemoveSequentialDuplicateVertices(vertices);
-        RemoveCollinearVertices(vertices);
+        PolygonXZ.RemoveSequentialDuplicateVertices(vertices);
+        PolygonXZ.RemoveCollinearVertices(vertices);
         if (vertices.Count < 3)
         {
             return false;
@@ -290,57 +290,6 @@ public static partial class RoomGraphUtility
         }
 
         return left.Count.CompareTo(right.Count);
-    }
-
-    private static void RemoveSequentialDuplicateVertices(List<Vector3> vertices)
-    {
-        if (vertices == null || vertices.Count < 2)
-        {
-            return;
-        }
-
-        for (int i = vertices.Count - 1; i >= 0; i--)
-        {
-            Vector3 current = vertices[i];
-            Vector3 next = vertices[(i + 1) % vertices.Count];
-            if ((current - next).sqrMagnitude > BoundarySplitEpsilon * BoundarySplitEpsilon)
-            {
-                continue;
-            }
-
-            vertices.RemoveAt(i);
-        }
-    }
-
-    private static void RemoveCollinearVertices(List<Vector3> vertices)
-    {
-        if (vertices == null || vertices.Count < 3)
-        {
-            return;
-        }
-
-        bool removedAny = true;
-        while (removedAny && vertices.Count >= 3)
-        {
-            removedAny = false;
-            for (int i = vertices.Count - 1; i >= 0; i--)
-            {
-                Vector3 previous = vertices[(i - 1 + vertices.Count) % vertices.Count];
-                Vector3 current = vertices[i];
-                Vector3 next = vertices[(i + 1) % vertices.Count];
-
-                Vector2 a = new Vector2(current.x - previous.x, current.z - previous.z);
-                Vector2 b = new Vector2(next.x - current.x, next.z - current.z);
-                float cross = a.x * b.y - a.y * b.x;
-                if (Mathf.Abs(cross) > BoundarySplitEpsilon)
-                {
-                    continue;
-                }
-
-                vertices.RemoveAt(i);
-                removedAny = true;
-            }
-        }
     }
 
     private static Vector3 CalculatePolygonCentroidXZ(List<Vector3> vertices)

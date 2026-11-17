@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -66,5 +67,92 @@ public static class PolygonXZ
         }
 
         return area * 0.5f;
+    }
+
+    // The outline is treated as closed. Duplicates are measured in 3D, as the callers' vertices share a height.
+    public static void RemoveSequentialDuplicateVertices(List<Vector3> vertices)
+    {
+        RemoveSequentialDuplicates(vertices, (a, b) => (a - b).sqrMagnitude);
+    }
+
+    public static void RemoveSequentialDuplicateVertices(List<Vector2> points)
+    {
+        RemoveSequentialDuplicates(points, (a, b) => (a - b).sqrMagnitude);
+    }
+
+    // Removes vertices that sit on a straight XZ line or next to a degenerate edge.
+    public static void RemoveCollinearVertices(List<Vector3> vertices)
+    {
+        RemoveCollinear(vertices, vertex => new Vector2(vertex.x, vertex.z));
+    }
+
+    // Vector2 points are read as (x, z).
+    public static void RemoveCollinearVertices(List<Vector2> points)
+    {
+        RemoveCollinear(points, point => point);
+    }
+
+    private static void RemoveSequentialDuplicates<T>(List<T> vertices, Func<T, T, float> sqrDistance)
+    {
+        if (vertices == null)
+        {
+            return;
+        }
+
+        bool removedAny = true;
+        while (removedAny && vertices.Count >= 2)
+        {
+            removedAny = false;
+            for (int i = vertices.Count - 1; i >= 0; i--)
+            {
+                T current = vertices[i];
+                T next = vertices[(i + 1) % vertices.Count];
+                if (sqrDistance(current, next) > GeometryTolerance.PolygonVertexEpsilonSqr)
+                {
+                    continue;
+                }
+
+                vertices.RemoveAt(i);
+                removedAny = true;
+            }
+        }
+    }
+
+    private static void RemoveCollinear<T>(List<T> vertices, Func<T, Vector2> toPlane)
+    {
+        if (vertices == null)
+        {
+            return;
+        }
+
+        bool removedAny = true;
+        while (removedAny && vertices.Count >= 3)
+        {
+            removedAny = false;
+            for (int i = vertices.Count - 1; i >= 0; i--)
+            {
+                Vector2 previous = toPlane(vertices[(i - 1 + vertices.Count) % vertices.Count]);
+                Vector2 current = toPlane(vertices[i]);
+                Vector2 next = toPlane(vertices[(i + 1) % vertices.Count]);
+
+                Vector2 a = current - previous;
+                Vector2 b = next - current;
+                if (a.sqrMagnitude <= GeometryTolerance.PolygonVertexEpsilonSqr || b.sqrMagnitude <= GeometryTolerance.PolygonVertexEpsilonSqr)
+                {
+                    vertices.RemoveAt(i);
+                    removedAny = true;
+                    continue;
+                }
+
+                float cross = a.x * b.y - a.y * b.x;
+                if (Mathf.Abs(cross) > GeometryTolerance.PolygonVertexEpsilon)
+                {
+                    continue;
+                }
+
+                vertices.RemoveAt(i);
+                removedAny = true;
+            }
+        }
     }
 }

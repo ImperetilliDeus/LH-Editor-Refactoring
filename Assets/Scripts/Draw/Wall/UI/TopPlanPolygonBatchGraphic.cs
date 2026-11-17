@@ -119,74 +119,10 @@ public sealed class TopPlanPolygonBatchGraphic : MaskableGraphic
             return;
         }
 
-        RemoveSequentialDuplicateVertices(points);
-        RemoveCollinearVertices(points);
-        RemoveSequentialDuplicateVertices(points);
+        PolygonXZ.RemoveSequentialDuplicateVertices(points);
+        PolygonXZ.RemoveCollinearVertices(points);
+        PolygonXZ.RemoveSequentialDuplicateVertices(points);
         EnsureCounterClockwiseWinding(points);
-    }
-
-    private static void RemoveSequentialDuplicateVertices(List<Vector2> points)
-    {
-        if (points == null || points.Count < 2)
-        {
-            return;
-        }
-
-        bool removedAny = true;
-        while (removedAny && points.Count >= 2)
-        {
-            removedAny = false;
-            for (int i = points.Count - 1; i >= 0; i--)
-            {
-                Vector2 current = points[i];
-                Vector2 next = points[(i + 1) % points.Count];
-                if ((current - next).sqrMagnitude > PolygonEpsilonSqr)
-                {
-                    continue;
-                }
-
-                points.RemoveAt(i);
-                removedAny = true;
-            }
-        }
-    }
-
-    private static void RemoveCollinearVertices(List<Vector2> points)
-    {
-        if (points == null || points.Count < 3)
-        {
-            return;
-        }
-
-        bool removedAny = true;
-        while (removedAny && points.Count >= 3)
-        {
-            removedAny = false;
-            for (int i = points.Count - 1; i >= 0; i--)
-            {
-                Vector2 previous = points[(i - 1 + points.Count) % points.Count];
-                Vector2 current = points[i];
-                Vector2 next = points[(i + 1) % points.Count];
-
-                Vector2 a = current - previous;
-                Vector2 b = next - current;
-                if (a.sqrMagnitude <= PolygonEpsilonSqr || b.sqrMagnitude <= PolygonEpsilonSqr)
-                {
-                    points.RemoveAt(i);
-                    removedAny = true;
-                    continue;
-                }
-
-                float cross = a.x * b.y - a.y * b.x;
-                if (Mathf.Abs(cross) > PolygonEpsilon)
-                {
-                    continue;
-                }
-
-                points.RemoveAt(i);
-                removedAny = true;
-            }
-        }
     }
 
     private static void EnsureCounterClockwiseWinding(List<Vector2> points)

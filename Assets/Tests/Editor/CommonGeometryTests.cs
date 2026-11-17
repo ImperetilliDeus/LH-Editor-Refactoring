@@ -100,4 +100,93 @@ public class CommonGeometryTests
             new Vector3(2f, 2f, 6f),
         }));
     }
+
+    [Test]
+    public void RemoveSequentialDuplicateVertices_RemovesRepeatsIncludingWrapAround()
+    {
+        List<Vector3> vertices = new List<Vector3>
+        {
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            new Vector3(4f, 0f, 0.00001f),
+            new Vector3(4f, 0f, 0f),
+            new Vector3(4f, 0f, 4f),
+            new Vector3(0f, 0f, 4f),
+            new Vector3(0f, 0f, 0f),
+        };
+
+        PolygonXZ.RemoveSequentialDuplicateVertices(vertices);
+
+        Assert.That(vertices, Is.EqualTo(new List<Vector3>
+        {
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            new Vector3(4f, 0f, 4f),
+            new Vector3(0f, 0f, 4f),
+        }));
+    }
+
+    [Test]
+    public void RemoveCollinearVertices_RemovesStraightAndDegenerateCornersInXZ()
+    {
+        List<Vector3> vertices = new List<Vector3>
+        {
+            new Vector3(0f, 0f, 0f),
+            new Vector3(2f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            new Vector3(4f, 3f, 4f),
+            new Vector3(0f, 0f, 4f),
+            new Vector3(0f, 0f, 2f),
+        };
+
+        PolygonXZ.RemoveCollinearVertices(vertices);
+
+        Assert.That(vertices, Is.EqualTo(new List<Vector3>
+        {
+            new Vector3(0f, 0f, 0f),
+            new Vector3(4f, 0f, 0f),
+            new Vector3(4f, 3f, 4f),
+            new Vector3(0f, 0f, 4f),
+        }));
+    }
+
+    [Test]
+    public void RemoveCollinearVertices_KeepsConcaveCornersAndCollapsesStraightOutlines()
+    {
+        List<Vector3> lShape = new List<Vector3>(LShape);
+        PolygonXZ.RemoveCollinearVertices(lShape);
+        Assert.That(lShape, Is.EqualTo(LShape));
+
+        List<Vector3> line = new List<Vector3> { Vector3.zero, new Vector3(1f, 0f, 0f), new Vector3(2f, 0f, 0f) };
+        PolygonXZ.RemoveCollinearVertices(line);
+        Assert.That(line.Count, Is.LessThan(3), "Callers reject outlines that collapse below a triangle.");
+
+        PolygonXZ.RemoveCollinearVertices((List<Vector3>)null);
+        PolygonXZ.RemoveSequentialDuplicateVertices((List<Vector3>)null);
+    }
+
+    [Test]
+    public void Vector2Overloads_MatchVector3BehaviourOnXZ()
+    {
+        List<Vector2> points = new List<Vector2>
+        {
+            new Vector2(0f, 0f),
+            new Vector2(0f, 0f),
+            new Vector2(2f, 0f),
+            new Vector2(4f, 0f),
+            new Vector2(4f, 4f),
+            new Vector2(0f, 4f),
+        };
+
+        PolygonXZ.RemoveSequentialDuplicateVertices(points);
+        PolygonXZ.RemoveCollinearVertices(points);
+
+        Assert.That(points, Is.EqualTo(new List<Vector2>
+        {
+            new Vector2(0f, 0f),
+            new Vector2(4f, 0f),
+            new Vector2(4f, 4f),
+            new Vector2(0f, 4f),
+        }));
+    }
 }
