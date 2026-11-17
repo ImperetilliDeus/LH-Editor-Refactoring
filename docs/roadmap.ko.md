@@ -6,7 +6,7 @@
 |---|---|---|
 | P0 | Export 계약 fixture와 validation | 모바일 연동 실패가 가장 큰 외부 리스크입니다. |
 | P0 | FurnitureAuthoringTool build worker | 가구 추가 때마다 Editor를 재배포해야 하는 문제를 해결해야 합니다. |
-| P0 | 저장/로드와 overlay 정책 확정 | 사용자가 작업 재개 시 도면 보정 상태를 기대할 수 있습니다. |
+| 완료 | 저장/로드와 overlay 정책 확정 | 2026-11-17 A안(저장하지 않음)으로 확정했습니다. |
 | P1 | Overlay/DWG importer 책임 분리 | 대형 bootstrap/importer는 유지보수 리스크가 큽니다. |
 | P1 | Room 자동 기능 범위 정리 | 현재 메인 흐름과 보류 기능이 문서에 섞여 있습니다. |
 | P1 | 3D wall join 검증 | 복잡한 코너에서 시각/geometry 품질 문제가 날 수 있습니다. |
@@ -66,6 +66,7 @@
 권장:
 
 - 단기에는 A안을 문서와 UI 문구로 명시합니다.
+- 결정(2026-11-17): A안으로 확정했습니다. 문서에 반영했고, UI 문구 안내는 남은 과제입니다.
 - 사용자가 도면 기반 작업 재개를 요구하면 B안을 `LhWorkStateDto` version 2로 설계합니다.
 
 ## 3. P1 과제
