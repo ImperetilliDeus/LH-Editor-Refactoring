@@ -145,22 +145,18 @@ public partial class WallSelectionManager
 
     private void PrepareSelectUI()
     {
-        presentationController.PrepareSelectUI(selectUIObject);
+        if (selectUIObject != null)
+        {
+            selectUIObject.SetActive(false);
+        }
     }
 
     private void SetSelectUIVisible(bool visible)
     {
-        presentationController.SetSelectUIVisible(selectUIObject, visible);
-    }
-
-    private void EnsureSelectionCanvas()
-    {
-        if (isShuttingDown)
+        if (selectUIObject != null && selectUIObject.activeSelf != visible)
         {
-            return;
+            selectUIObject.SetActive(visible);
         }
-
-        wallSelectionCanvas = presentationController.EnsureSelectionCanvas(wallSelectionCanvas);
     }
 
     private void RefreshWallSelectionUIStates()
@@ -172,7 +168,6 @@ public partial class WallSelectionManager
 
         // Proxies may be created or destroyed below, so positions must be recalculated afterwards.
         selectionUiPositionsDirty = true;
-        EnsureSelectionCanvas();
         CollectLogicalWallRoots(wallRoot, logicalWallRoots);
 
         presentationController.RefreshWallSelectionUIStates(
@@ -190,13 +185,7 @@ public partial class WallSelectionManager
             return;
         }
 
-        EnsureSelectionCanvas();
-        CollectLogicalWallRoots(wallRoot, logicalWallRoots);
-
-        presentationController.RefreshWallSelectionUIPositions(
-            wallRoot,
-            logicalWallRoots,
-            this);
+        presentationController.RefreshWallSelectionUIPositions(wallRoot, this);
         CacheSelectionUiSignature();
     }
 

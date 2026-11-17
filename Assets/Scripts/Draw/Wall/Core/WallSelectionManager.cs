@@ -179,7 +179,6 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
 
         EnsureWallRoot();
         PrepareSelectUI();
-        EnsureSelectionCanvas();
         BindHandleEvents();
         BindSelectionUiRefreshEvents();
         BindUIEvents();

@@ -4,34 +4,6 @@ using UnityEngine;
 
 internal sealed class WallSelectionPresentationController
 {
-    public void PrepareSelectUI(GameObject selectUIObject)
-    {
-        if (selectUIObject == null)
-        {
-            return;
-        }
-
-        selectUIObject.SetActive(false);
-    }
-
-    public void SetSelectUIVisible(GameObject selectUIObject, bool visible)
-    {
-        if (selectUIObject == null)
-        {
-            return;
-        }
-
-        if (selectUIObject.activeSelf != visible)
-        {
-            selectUIObject.SetActive(visible);
-        }
-    }
-
-    public Canvas EnsureSelectionCanvas(Canvas currentCanvas)
-    {
-        return currentCanvas;
-    }
-
     public void RefreshWallSelectionUIStates(
         Transform wallRoot,
         List<Transform> logicalWallRoots,
@@ -96,12 +68,9 @@ internal sealed class WallSelectionPresentationController
         }
     }
 
-    public void RefreshWallSelectionUIPositions(
-        Transform wallRoot,
-        List<Transform> logicalWallRoots,
-        WallSelectionManager selectionManager)
+    public void RefreshWallSelectionUIPositions(Transform wallRoot, WallSelectionManager selectionManager)
     {
-        if (wallRoot == null || logicalWallRoots == null || selectionManager == null || selectionManager.WallSelectionCanvas == null)
+        if (wallRoot == null || selectionManager == null || selectionManager.WallSelectionCanvas == null)
         {
             return;
         }

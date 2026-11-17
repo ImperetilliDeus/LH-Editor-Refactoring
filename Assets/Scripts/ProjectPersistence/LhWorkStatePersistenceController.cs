@@ -153,18 +153,6 @@ public class LhWorkStatePersistenceController : MonoBehaviour
         furnitureCatalog = testFurnitureCatalog;
     }
 
-    public void SetRuntimeManagersForTests(
-        HandleManager testHandleManager,
-        WallLengthDisplay testWallLengthDisplay,
-        WallOpeningPlacementManager testWallOpeningPlacementManager,
-        FurniturePlacementManager testFurniturePlacementManager)
-    {
-        handleManager = testHandleManager;
-        wallLengthDisplay = testWallLengthDisplay;
-        wallOpeningPlacementManager = testWallOpeningPlacementManager;
-        furniturePlacementManager = testFurniturePlacementManager;
-    }
-
     private void ResolveReferences()
     {
         if (wallRoot == null)
