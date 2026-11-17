@@ -312,11 +312,6 @@ public sealed partial class RoomCreateManager
             return true;
         }
 
-        if (hitObject.GetComponentInParent<WallLengthLabelClickHandler>() != null)
-        {
-            return true;
-        }
-
         if (LayerUtility.IsLayer(hitObject, LayerUtility.WallUILayerName))
         {
             return true;

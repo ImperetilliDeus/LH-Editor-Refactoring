@@ -1117,11 +1117,6 @@ public class FurniturePlacementManager : MonoBehaviour, IEditorModeInputHandler
 
     private bool IsNonBlockingPlacementLabel(GameObject hitObject)
     {
-        if (hitObject.GetComponentInParent<WallLengthLabelClickHandler>() != null)
-        {
-            return true;
-        }
-
         string objectName = hitObject.name;
         if (objectName.StartsWith("LengthLabel_", StringComparison.Ordinal) ||
             objectName == "RoomTypeLabel" ||

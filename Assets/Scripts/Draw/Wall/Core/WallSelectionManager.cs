@@ -330,6 +330,7 @@ public partial class WallSelectionManager : MonoBehaviour, IEditorModeInputHandl
         if (wall.TryGetComponent(out WallOpeningContainer container))
         {
             selectionState.SetPrimarySelection(container);
+            RefreshSelectionVisuals();
             return;
         }
 

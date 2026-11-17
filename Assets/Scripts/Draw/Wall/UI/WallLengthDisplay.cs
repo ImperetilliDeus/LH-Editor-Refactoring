@@ -1,7 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using System;
 using System.Collections.Generic;
 
 public class WallLengthDisplay : MonoBehaviour
@@ -25,14 +23,11 @@ public class WallLengthDisplay : MonoBehaviour
 
     private Camera targetCamera;
 
-    public event Action<Transform> LengthLabelClicked;
-
     private class LabelEntry
     {
         public Transform wallTransform;
         public RectTransform labelRect;
         public Text labelText;
-        public WallLengthLabelClickHandler clickHandler;
         public float wallHeight;
         public bool isPreview;
     }
@@ -105,7 +100,6 @@ public class WallLengthDisplay : MonoBehaviour
         entry.labelRect.localScale = Vector3.one * labelScale;
         entry.labelText.enabled = true;
         ApplyLabelVisibilityState(entry);
-        ApplyLabelInteractionState(entry);
 
         labelPositionsDirty = true;
     }
@@ -229,11 +223,6 @@ public class WallLengthDisplay : MonoBehaviour
         if (labelEntries.TryGetValue(key, out LabelEntry existingEntry) && existingEntry != null && existingEntry.labelRect != null && existingEntry.labelText != null)
         {
             existingEntry.wallTransform = wallTransform;
-            if (existingEntry.clickHandler != null)
-            {
-                existingEntry.clickHandler.Initialize(this, wallTransform);
-            }
-
             return existingEntry;
         }
 
@@ -294,14 +283,6 @@ public class WallLengthDisplay : MonoBehaviour
         lengthText.fontSize = fontSize;
         lengthText.color = textColor;
 
-        WallLengthLabelClickHandler clickHandler = existingLabel.GetComponent<WallLengthLabelClickHandler>();
-        if (clickHandler == null)
-        {
-            clickHandler = existingLabel.gameObject.AddComponent<WallLengthLabelClickHandler>();
-        }
-
-        clickHandler.Initialize(this, wallTransform);
-
         labelRect.sizeDelta = labelSize;
         labelRect.pivot = new Vector2(0.5f, 0.5f);
         labelRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -312,7 +293,6 @@ public class WallLengthDisplay : MonoBehaviour
             wallTransform = wallTransform,
             labelRect = labelRect,
             labelText = lengthText,
-            clickHandler = clickHandler,
             wallHeight = 0f,
             isPreview = false,
         };
@@ -495,16 +475,6 @@ public class WallLengthDisplay : MonoBehaviour
         labelRect.position = screenPosition;
     }
 
-    internal void NotifyLengthLabelClicked(Transform wallTransform)
-    {
-        if (wallTransform == null)
-        {
-            return;
-        }
-
-        LengthLabelClicked?.Invoke(wallTransform);
-    }
-
     private void MarkLabelPositionsDirty()
     {
         // Also drives stale-entry cleanup, since destroyed walls unregister (raising this event) before they become null.
@@ -605,10 +575,9 @@ public class WallLengthDisplay : MonoBehaviour
 
     private void RefreshLengthLabelVisibilityStates()
     {
-        bool showLengthLabels = ShouldShowLengthLabels();
         foreach (KeyValuePair<int, LabelEntry> pair in labelEntries)
         {
-            ApplyLabelVisibilityState(pair.Value, showLengthLabels);
+            ApplyLabelVisibilityState(pair.Value);
         }
 
         labelPositionsDirty = true;
@@ -616,45 +585,33 @@ public class WallLengthDisplay : MonoBehaviour
 
     private void ApplyLabelVisibilityState(LabelEntry entry)
     {
-        ApplyLabelVisibilityState(entry, ShouldShowLengthLabels());
-    }
-
-    private void ApplyLabelVisibilityState(LabelEntry entry, bool showLengthLabels)
-    {
         if (entry == null || entry.labelRect == null)
         {
             return;
         }
 
-        entry.labelRect.gameObject.SetActive(showLengthLabels && ShouldShowEntryLabel(entry));
+        entry.labelRect.gameObject.SetActive(ShouldShowEntryLabel(entry));
     }
 
-    private bool ShouldShowLengthLabels()
-    {
-        return modeManager == null || modeManager.CurrentMode == EditorMode.Default;
-    }
-
+    // Preview labels belong to wall drawing (Default); selected-wall labels belong to wall selection (DetailEdit).
     private bool ShouldShowEntryLabel(LabelEntry entry)
-    {
-        return entry != null && (entry.isPreview || entry.wallTransform == selectedWallTransform);
-    }
-
-    private void ApplyLabelInteractionState(LabelEntry entry)
     {
         if (entry == null)
         {
-            return;
+            return false;
         }
 
-        if (entry.labelText != null)
+        if (entry.isPreview)
         {
-            entry.labelText.raycastTarget = false;
+            return IsModeActiveOrUnknown(EditorMode.Default);
         }
 
-        if (entry.clickHandler != null)
-        {
-            entry.clickHandler.SetInteractable(false);
-        }
+        return entry.wallTransform == selectedWallTransform && IsModeActiveOrUnknown(EditorMode.DetailEdit);
+    }
+
+    private bool IsModeActiveOrUnknown(EditorMode mode)
+    {
+        return modeManager == null || modeManager.CurrentMode == mode;
     }
 
     private static void DestroyLabelObject(GameObject labelObject)
@@ -672,38 +629,5 @@ public class WallLengthDisplay : MonoBehaviour
         {
             DestroyImmediate(labelObject);
         }
-    }
-
-}
-
-internal sealed class WallLengthLabelClickHandler : MonoBehaviour, IPointerClickHandler
-{
-    private WallLengthDisplay owner;
-    private Transform wallTransform;
-    private bool interactable = true;
-
-    public void Initialize(WallLengthDisplay owner, Transform wallTransform)
-    {
-        this.owner = owner;
-        this.wallTransform = wallTransform;
-    }
-
-    public void SetInteractable(bool interactable)
-    {
-        this.interactable = interactable;
-    }
-
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        if (eventData == null ||
-            eventData.button != PointerEventData.InputButton.Left ||
-            !interactable ||
-            owner == null ||
-            wallTransform == null)
-        {
-            return;
-        }
-
-        owner.NotifyLengthLabelClicked(wallTransform);
     }
 }
