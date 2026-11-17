@@ -42,8 +42,21 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        container.gameObject.SetActive(false);
-        Destroy(container.gameObject);
+        DestroyLayoutObject(container.gameObject);
+    }
+
+    // Deactivate first so the object leaves active queries this frame even when Destroy is deferred in Play mode.
+    private static void DestroyLayoutObject(GameObject target)
+    {
+        target.SetActive(false);
+        if (Application.isPlaying)
+        {
+            Destroy(target);
+        }
+        else
+        {
+            DestroyImmediate(target);
+        }
     }
 
     private void ClearContainerWallRegistrations(Transform container)
@@ -237,8 +250,7 @@ public partial class WallOpeningPlacementManager
             return;
         }
 
-        wall.gameObject.SetActive(false);
-        Destroy(wall.gameObject);
+        DestroyLayoutObject(wall.gameObject);
     }
 
     private void SplitContainerWallSegment(WallOpeningContainer container, Wall selectedSegment)

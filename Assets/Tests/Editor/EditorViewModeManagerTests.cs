@@ -362,7 +362,7 @@ public class EditorViewModeManagerTests
 
             object result = InvokePublicWithResult(
                 framingController,
-                "FrameSelectionOrSceneBoundsForTests",
+                "FrameSelectionOrSceneBounds",
                 selectionBounds,
                 true,
                 sceneBounds,

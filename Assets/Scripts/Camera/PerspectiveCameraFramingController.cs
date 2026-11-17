@@ -64,11 +64,11 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
         bool hasSelectionBounds = TryGetSelectionBounds(out Bounds selectionBounds);
         if (hasSelectionBounds)
         {
-            return FrameSelectionOrSceneBoundsForTests(selectionBounds, true, default, false);
+            return FrameSelectionOrSceneBounds(selectionBounds, true, default, false);
         }
 
         bool hasSceneBounds = TryGetSceneBounds(out Bounds sceneBounds);
-        return FrameSelectionOrSceneBoundsForTests(selectionBounds, hasSelectionBounds, sceneBounds, hasSceneBounds);
+        return FrameSelectionOrSceneBounds(selectionBounds, hasSelectionBounds, sceneBounds, hasSceneBounds);
     }
 
     public bool FrameBounds(Bounds bounds)
@@ -153,7 +153,7 @@ public sealed class PerspectiveCameraFramingController : MonoBehaviour
         return hasBounds;
     }
 
-    public bool FrameSelectionOrSceneBoundsForTests(Bounds selectionBounds, bool hasSelectionBounds, Bounds sceneBounds, bool hasSceneBounds)
+    public bool FrameSelectionOrSceneBounds(Bounds selectionBounds, bool hasSelectionBounds, Bounds sceneBounds, bool hasSceneBounds)
     {
         if (hasSelectionBounds)
         {

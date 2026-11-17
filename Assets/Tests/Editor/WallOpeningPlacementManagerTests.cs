@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.TestTools;
 using static TestReflection;
 
 public class WallOpeningPlacementManagerTests
@@ -333,8 +332,6 @@ public class WallOpeningPlacementManagerTests
         object adjacentSnapshot = managerType.GetMethod("CaptureLayoutSnapshot", new[] { wallType })
             ?.Invoke(manager, new object[] { adjacentWall });
 
-        LogAssert.Expect(LogType.Error, "Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently.");
-        LogAssert.Expect(LogType.Error, "Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently.");
         object didRepartition = managerType.GetMethod("TryRepartitionContainerWithAdjacentWallAtSplit")
             ?.Invoke(
                 manager,
@@ -1053,10 +1050,9 @@ public class WallOpeningPlacementManagerTests
             ?.Invoke(manager, new object[] { wall });
         object emptyTargetSnapshot = Activator.CreateInstance(snapshotType);
 
-        LogAssert.Expect(LogType.Error, "Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently.");
         managerType.GetMethod("ApplyLayoutSnapshot")?.Invoke(manager, new[] { emptyTargetSnapshot, currentSnapshot });
 
-        Assert.That(wall.gameObject.activeInHierarchy, Is.False);
+        Assert.That(wall == null || !wall.gameObject.activeInHierarchy, Is.True);
 
         object hierarchyRows = sceneHierarchyModelType.GetMethod("BuildRows")
             ?.Invoke(null, new object[] { wallRoot.transform, null });
