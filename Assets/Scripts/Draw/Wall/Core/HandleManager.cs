@@ -89,7 +89,6 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     private Vector3 dragAnchorPoint;
     private readonly List<Vector3> dragSnapCandidates = new List<Vector3>();
     private readonly List<SnapManager.WallSnapSegment> dragWallSegmentSnapCandidates = new List<SnapManager.WallSnapSegment>();
-    private readonly List<Transform> containerChildren = new List<Transform>();
     private readonly HashSet<WallOpeningContainer> affectedOpeningContainers = new HashSet<WallOpeningContainer>();
     private readonly HashSet<GameObject> affectedWallObjects = new HashSet<GameObject>();
     private readonly List<Wall> affectedWallComponents = new List<Wall>();
@@ -771,28 +770,5 @@ public partial class HandleManager : MonoBehaviour, IEditorModeInputHandler
     {
         Debug.Assert(mainCamera != null, $"{nameof(HandleManager)} requires {nameof(mainCamera)}.", this);
         Debug.Assert(modeManager != null, $"{nameof(HandleManager)} requires {nameof(modeManager)}.", this);
-    }
-
-    private bool IsVertexInContainer(WallOpeningContainer container, int vertexId)
-    {
-        if (container == null || vertexId <= 0)
-        {
-            return false;
-        }
-
-        if (container.OuterStartVertexId == vertexId || container.OuterEndVertexId == vertexId)
-        {
-            return true;
-        }
-
-        Wall[] walls = container.GetComponentsInChildren<Wall>();
-        for (int i = 0; i < walls.Length; i++)
-        {
-            if (walls[i] != null && walls[i].ContainsVertexId(vertexId))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 }
